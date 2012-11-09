@@ -174,7 +174,8 @@
 //#define RT_USING_USB_HOST
 //#define RT_USB_CLASS_MASS_STORAGE
 
-#define USE_USB_OTG_FS
+
+
 
 
 #endif

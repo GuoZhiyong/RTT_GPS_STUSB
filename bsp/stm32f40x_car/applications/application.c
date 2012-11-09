@@ -61,22 +61,26 @@ static void rt_thread_entry_led1(void* parameter)
     /* GPIOD Periph clock enable */
 
     int i=0;
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD|RCC_AHB1Periph_GPIOE, ENABLE);
 
     /* Configure PD12, PD13, PD14 and PD15 in output pushpull mode */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13| GPIO_Pin_14| GPIO_Pin_15;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOD, &GPIO_InitStructure);
 
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
+    GPIO_Init(GPIOE, &GPIO_InitStructure);
+
+
     while (1)
     {
         rt_thread_delay(RT_TICK_PER_SECOND/2);
-        GPIO_ResetBits(GPIOD, GPIO_Pin_12|GPIO_Pin_13|GPIO_Pin_14);
+        GPIO_ResetBits(GPIOD, GPIO_Pin_9);
         rt_thread_delay(RT_TICK_PER_SECOND/2);
-        GPIO_SetBits(GPIOD, GPIO_Pin_12|GPIO_Pin_13|GPIO_Pin_14);
+        GPIO_SetBits(GPIOD, GPIO_Pin_9);
 		//rt_kprintf("%d\n",rt_tick_get());
         
     }
@@ -89,6 +93,16 @@ static char thread_usbmsc_stack[1024];
 struct rt_thread thread_usbmsc;
 static void rt_thread_entry_usbmsc(void* parameter)
 {
+
+	while(1)
+	{
+        rt_thread_delay(RT_TICK_PER_SECOND);
+        GPIO_ResetBits(GPIOE, GPIO_Pin_11);
+        rt_thread_delay(RT_TICK_PER_SECOND);
+        GPIO_SetBits(GPIOE, GPIO_Pin_11);
+	}
+
+
 	dfs_init();
     elm_init();
 
@@ -143,7 +157,7 @@ int rt_application_init()
                    rt_thread_entry_usbmsc,
                    RT_NULL,
                    &thread_usbmsc_stack[0],
-                   sizeof(thread_usbmsc_stack),8,5);
+                   sizeof(thread_usbmsc_stack),20,5);
     rt_thread_startup(&thread_usbmsc);
 
 	

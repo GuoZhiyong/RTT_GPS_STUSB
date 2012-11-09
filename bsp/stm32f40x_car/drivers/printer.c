@@ -28,39 +28,74 @@
 //#define PAPER_DETCET_PORT	GPIOA
 //#define PAPER_DETECT_PIN	GPIO_Pin_8
 
-#define  DATA_CLK_PORT	GPIOB
-#define  PRINT_CLK_PIN	GPIO_Pin_6
-#define  PRINT_DATA_PIN GPIO_Pin_7
+#define  CLK_PORT	GPIOD
+#define  CLK_PIN	GPIO_Pin_14
+#define  DI_PORT	GPIOB
+#define  DI_PIN 	GPIO_Pin_1
 
 #define  LAT_PORT	GPIOB
-#define  LAT_PIN	GPIO_Pin_5
+#define  LAT_PIN	GPIO_Pin_10
 
-#define  STB1_PORT	GPIOA
-#define  STB1_PIN	GPIO_Pin_4
+#define  STB1_3_PORT	GPIOB
+#define  STB1_3_PIN		GPIO_Pin_11
 
-#define  STB2_6_PORT	GPIOB
-#define  STB2_PIN		GPIO_Pin_1
-#define  STB3_PIN		GPIO_Pin_12
-#define  STB4_PIN		GPIO_Pin_13
-#define  STB5_PIN		GPIO_Pin_14
-#define  STB6_PIN		GPIO_Pin_15
+#define  STB4_6_PORT	GPIOD
+#define  STB4_6_PIN		GPIO_Pin_15
 
-#define  MTA_PORT	GPIOA
-#define  MTAP_PIN	GPIO_Pin_0
-#define  MTAM_PIN	GPIO_Pin_1
+#define  MTA_PORT	GPIOB
+#define  MTA_PIN	GPIO_Pin_5
 
-#define  MTB_PORT	GPIOC
-#define  MTBP_PIN	GPIO_Pin_14
-#define  MTBM_PIN	GPIO_Pin_15
+#define  MTAF_PORT	GPIOB
+#define  MTAF_PIN	GPIO_Pin_6
 
-#define  NO_PAPER_OUT_PORT	GPIOB
-#define  NO_PAPER_OUT_PIN	GPIO_Pin_8
+#define  MTB_PORT	GPIOB
+#define  MTB_PIN	GPIO_Pin_4
 
-#define  PHE_PORT	GPIOA
-#define  PHE_PIN	GPIO_Pin_8
+#define  MTBF_PORT	GPIOD
+#define  MTBF_PIN	GPIO_Pin_5
 
-#define PRINTER_POWER_PORT	GPIOC
-#define PRINTER_POWER_PIN	GPIO_Pin_13
+//#define  NO_PAPER_OUT_PORT	GPIOB
+//#define  NO_PAPER_OUT_PIN	GPIO_Pin_8
+
+#define  PHE_PORT	GPIOE
+#define  PHE_PIN	GPIO_Pin_0
+
+#define PRINTER_POWER_PORT	GPIOD
+#define PRINTER_POWER_PIN	GPIO_Pin_4
+
+/* 
+
+#define MTA_H	GPIO_SetBits(MTA_PORT,MTA_PIN)//(MTA_PORT->BSRRL=MTA_PIN)
+#define MTA_L	GPIO_ResetBits(MTA_PORT,MTA_PIN)//(MTA_PORT->BSRRH=MTA_PIN)
+
+#define MTAF_H	GPIO_SetBits(MTAF_PORT,MTAF_PIN)//(MTAF_PORT->BSRRL=MTAF_PIN)
+#define MTAF_L	GPIO_ResetBits(MTAF_PORT,MTAF_PIN)//(MTAF_PORT->BSRRH=MTAF_PIN)
+
+#define MTB_H	GPIO_SetBits(MTB_PORT,MTB_PIN)//(MTB_PORT->BSRRL=MTB_PIN)
+#define MTB_L	GPIO_ResetBits(MTB_PORT,MTB_PIN)//(MTB_PORT->BSRRH=MTB_PIN)
+
+#define MTBF_H	GPIO_SetBits(MTBF_PORT,MTBF_PIN)//(MTBF_PORT->BSRRL=MTBF_PIN)
+#define MTBF_L	GPIO_ResetBits(MTBF_PORT,MTBF_PIN)//(MTBF_PORT->BSRRH=MTBF_PIN)
+
+*/
+
+
+#define MTA_H	(MTA_PORT->BSRRL=MTA_PIN)
+#define MTA_L	(MTA_PORT->BSRRH=MTA_PIN)
+
+#define MTAF_H	(MTAF_PORT->BSRRL=MTAF_PIN)
+#define MTAF_L	(MTAF_PORT->BSRRH=MTAF_PIN)
+
+#define MTB_H	(MTB_PORT->BSRRL=MTB_PIN)
+#define MTB_L	(MTB_PORT->BSRRH=MTB_PIN)
+
+#define MTBF_H	(MTBF_PORT->BSRRL=MTBF_PIN)
+#define MTBF_L	(MTBF_PORT->BSRRH=MTBF_PIN)
+
+
+
+
+
 
 /*收到的打印数据的编码包括换行符*/
 #define PRINTER_DATA_SIZE 2048
@@ -88,13 +123,15 @@ static struct rt_timer	tmr_printer;
 
 struct _PRINTER_PARAM
 {
-	uint16_t	line_space;                 //行间隔
-	uint16_t	gray_level;                 //灰度,加热时间
-	uint16_t	margin_left;                //左边界
-	uint16_t	margin_right;               //右边界
+	uint16_t	step_delay;			//步进延时,影响行间隔
+	uint16_t	gray_level;         //灰度等级,加热时间
+	uint32_t	heat_delay[4];		//加热延时
+	uint16_t	line_space;         //行间隔
+	uint16_t	margin_left;        //左边界
+	uint16_t	margin_right;       //右边界
 } printer_param =
 {
-	4, 4, 0, 0
+	1000,0,{5000,10000,15000,20000},4, 0, 0
 };
 
 static unsigned short	dotremain = 384;    //还可使用的dot，每汉字24dot 每ascii 12dots
@@ -107,7 +144,8 @@ static unsigned char	font_glyph[80];     //每个汉字或ascii的最大字节数 24x24dot 
 
 //延时nus
 //nus为要延时的us数.
-void delay_us (const uint32_t usec)
+/*
+static void delay_us (const uint32_t usec)
 {
   
   __IO uint32_t count = 0;
@@ -118,8 +156,23 @@ void delay_us (const uint32_t usec)
     {
       return ;
     }
-  }
-  while (1);
+  }while (1);
+}
+*/
+
+
+static void delay_us (const uint32_t usec)
+{
+  
+  __IO uint32_t count = 0;
+  const uint32_t utime = (168 * usec / 7);
+  do
+  {
+    if ( ++count > utime )
+    {
+      return ;
+    }
+  }while (1);
 }
 
 
@@ -135,8 +188,10 @@ void delay_us (const uint32_t usec)
 ***********************************************************/
 void printer_stop( void )
 {
-	GPIO_ResetBits( MTA_PORT, MTAM_PIN | MTAP_PIN );
-	GPIO_ResetBits( MTB_PORT, MTBM_PIN | MTBP_PIN );
+ 	MTA_L;
+	MTAF_L;
+	MTB_L;
+	MTBF_L;
 }
 
 static uint8_t fprinting = 0;     //是否正在打印
@@ -154,63 +209,69 @@ static uint8_t fprinting = 0;     //是否正在打印
 static void printer_port_init( void )
 {
 	GPIO_InitTypeDef gpio_init;
-	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC, ENABLE );
+	
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOD | RCC_AHB1Periph_GPIOE, ENABLE );
+	/*去掉PB4 JTAG功能*/
+	//GPIOB->AFR[0]|=(1<<16);
+	GPIO_PinAFConfig(GPIOB,GPIO_Pin_4,1);
 
 	gpio_init.GPIO_Mode		= GPIO_Mode_OUT;
 	gpio_init.GPIO_OType	= GPIO_OType_PP;
-	gpio_init.GPIO_Speed	= GPIO_Speed_100MHz;
+	gpio_init.GPIO_Speed	= GPIO_Speed_50MHz;
 	gpio_init.GPIO_PuPd		= GPIO_PuPd_NOPULL;
 
-	gpio_init.GPIO_Pin = PRINT_DATA_PIN | PRINT_CLK_PIN;
-	GPIO_Init( DATA_CLK_PORT, &gpio_init );
-	GPIO_ResetBits( DATA_CLK_PORT, PRINT_DATA_PIN | PRINT_CLK_PIN );
+	gpio_init.GPIO_Pin = DI_PIN ;
+	GPIO_Init( DI_PORT, &gpio_init );
+	GPIO_ResetBits( DI_PORT, DI_PIN );
 
-	gpio_init.GPIO_Pin = STB6_PIN | STB5_PIN | STB4_PIN | STB3_PIN | STB2_PIN;
-	GPIO_Init( STB2_6_PORT, &gpio_init );
-	GPIO_ResetBits( STB2_6_PORT, STB6_PIN | STB5_PIN | STB4_PIN | STB3_PIN | STB2_PIN );
+	gpio_init.GPIO_Pin = CLK_PIN ;
+	GPIO_Init( CLK_PORT, &gpio_init );
+	GPIO_ResetBits( CLK_PORT, CLK_PIN );
+	
 
-	gpio_init.GPIO_Pin = STB1_PIN;
-	GPIO_Init( STB1_PORT, &gpio_init );
-	GPIO_ResetBits( STB1_PORT, STB1_PIN );
+	gpio_init.GPIO_Pin = STB4_6_PIN;
+	GPIO_Init( STB4_6_PORT, &gpio_init );
+	GPIO_ResetBits( STB4_6_PORT,STB4_6_PIN );
+
+	gpio_init.GPIO_Pin = STB1_3_PIN;
+	GPIO_Init( STB1_3_PORT, &gpio_init );
+	GPIO_ResetBits( STB1_3_PORT, STB1_3_PIN );
 
 	gpio_init.GPIO_Pin = LAT_PIN;
 	GPIO_Init( LAT_PORT, &gpio_init );
 	GPIO_ResetBits( LAT_PORT, LAT_PIN );
 
-	gpio_init.GPIO_Pin = MTAP_PIN | MTAM_PIN;
+	gpio_init.GPIO_Pin = MTA_PIN ;
 	GPIO_Init( MTA_PORT, &gpio_init );
-	GPIO_ResetBits( MTA_PORT, MTAP_PIN | MTAM_PIN );
+	MTA_L;
 
-	gpio_init.GPIO_Pin = MTBP_PIN | MTBM_PIN;
+	gpio_init.GPIO_Pin = MTAF_PIN ;
+	GPIO_Init( MTAF_PORT, &gpio_init );
+	MTAF_L;
+
+	gpio_init.GPIO_Pin = MTB_PIN ;
 	GPIO_Init( MTB_PORT, &gpio_init );
-	GPIO_ResetBits( MTB_PORT, MTBP_PIN | MTBM_PIN );
+	MTB_L;
 
-//	gpio_init.GPIO_Pin = LED_PIN;
-//	GPIO_Init( LED_PORT, &gpio_init );
+	gpio_init.GPIO_Pin = MTBF_PIN ;
+	GPIO_Init( MTBF_PORT, &gpio_init );
+	MTBF_L;
 
+
+/*
 	gpio_init.GPIO_Pin = NO_PAPER_OUT_PIN;
 	GPIO_Init( NO_PAPER_OUT_PORT, &gpio_init );
 	GPIO_ResetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
-
+*/
 	gpio_init.GPIO_Pin = PRINTER_POWER_PIN;
 	GPIO_Init( PRINTER_POWER_PORT, &gpio_init );
 	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
 
-	printer_stop( );
 
 	gpio_init.GPIO_Pin	= PHE_PIN;
 	gpio_init.GPIO_Mode		= GPIO_Mode_IN;
 	GPIO_Init( PHE_PORT, &gpio_init );
 }
-
-#define  mta_print		GPIOA       //PA0
-#define  mta_print_pin	GPIO_Pin_0  //PA0
-#define  mtaf_print		GPIOA       //PA1
-#define  mtaf_print_pin GPIO_Pin_1  //PA1
-#define  mtb_print		GPIOC       //PA11
-#define  mtb_print_pin	GPIO_Pin_14 //PA11
-#define  mtbf_print		GPIOC       //PA12
-#define  mtbf_print_pin GPIO_Pin_15 //PA12
 
 
 /***********************************************************
@@ -224,26 +285,14 @@ static void printer_port_init( void )
 ***********************************************************/
 void drivers1( void )
 {
-	GPIO_SetBits( mta_print, mta_print_pin );
-	GPIO_ResetBits( mtb_print, mtb_print_pin );
-	GPIO_ResetBits( mtaf_print, mtaf_print_pin );
-	GPIO_SetBits( mtbf_print, mtbf_print_pin );
-	delay_us( 500 );
-	GPIO_ResetBits( mta_print, mta_print_pin );
-	GPIO_ResetBits( mtb_print, mtb_print_pin );
-	GPIO_ResetBits( mtaf_print, mtaf_print_pin );
-	GPIO_SetBits( mtbf_print, mtbf_print_pin );
-	delay_us( 500 );
-	GPIO_ResetBits( mta_print, mta_print_pin );
-	GPIO_ResetBits( mtb_print, mtb_print_pin );
-	GPIO_SetBits( mtaf_print, mtaf_print_pin );
-	GPIO_SetBits( mtbf_print, mtbf_print_pin );
-	delay_us( 500 );
-	GPIO_ResetBits( mta_print, mta_print_pin );
-	GPIO_ResetBits( mtb_print, mtb_print_pin );
-	GPIO_SetBits( mtaf_print, mtaf_print_pin );
-	GPIO_ResetBits( mtbf_print, mtbf_print_pin );
-	delay_us( 500 );
+	MTA_H;MTAF_L;MTB_L;MTBF_H;
+	delay_us(printer_param.step_delay);
+	MTA_L;MTAF_L;MTB_L;MTBF_H;
+	delay_us(printer_param.step_delay);
+	MTA_L;MTAF_H;MTB_L;MTBF_H;
+	delay_us(printer_param.step_delay);
+	MTA_L;MTAF_H;MTB_L;MTBF_L;
+	delay_us(printer_param.step_delay);
 }
 
 /***********************************************************
@@ -257,44 +306,17 @@ void drivers1( void )
 ***********************************************************/
 void drivers2( void )
 {
-	GPIO_ResetBits( mta_print, mta_print_pin );
-	GPIO_SetBits( mtb_print, mtb_print_pin );
-	GPIO_SetBits( mtaf_print, mtaf_print_pin );
-	GPIO_ResetBits( mtbf_print, mtbf_print_pin );
-	delay_us( 500 );
-	GPIO_ResetBits( mta_print, mta_print_pin );
-	GPIO_SetBits( mtb_print, mtb_print_pin );
-	GPIO_ResetBits( mtaf_print, mtaf_print_pin );
-	GPIO_ResetBits( mtbf_print, mtbf_print_pin );
-	delay_us( 500 );
-	GPIO_SetBits( mta_print, mta_print_pin );
-	GPIO_SetBits( mtb_print, mtb_print_pin );
-	GPIO_ResetBits( mtaf_print, mtaf_print_pin );
-	GPIO_ResetBits( mtbf_print, mtbf_print_pin );
-	delay_us( 500 );
-	GPIO_SetBits( mta_print, mta_print_pin );
-	GPIO_ResetBits( mtb_print, mtb_print_pin );
-	GPIO_ResetBits( mtaf_print, mtaf_print_pin );
-	GPIO_ResetBits( mtbf_print, mtbf_print_pin );
-	delay_us( 500 );
+	MTA_L;MTAF_H;MTB_H;MTBF_L;
+	delay_us(printer_param.step_delay);
+	MTA_L;MTAF_L;MTB_H;MTBF_L;
+	delay_us(printer_param.step_delay);
+	MTA_H;MTAF_L;MTB_H;MTBF_L;
+	delay_us(printer_param.step_delay);
+	MTA_H;MTAF_L;MTB_L;MTBF_L;
+	delay_us(printer_param.step_delay);
 }
 
-/*
-   灰度级别，加热延时，时间越大，颜色越深
-   原先
-   level   delay
-   1       2000
-   2       3000
-   3       4000
-   ...
-   8       9000
 
-   现在改成1024
- */
-static void printer_heatdelay( void )
-{
-	delay_us( ( printer_param.gray_level + 1 ) << 10 ); //扩大1024倍
-}
 
 
 
@@ -333,6 +355,8 @@ void printer_print_glyph( unsigned char len )
 	unsigned char	*p;
 	unsigned char	b, c, row, col_byte;
 /*缺纸检测 PA8 缺纸为高*/
+
+/*
 	if( GPIO_ReadInputDataBit( PHE_PORT, PHE_PIN ) )
 	{
 		GPIO_SetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
@@ -341,7 +365,7 @@ void printer_print_glyph( unsigned char len )
 	{
 		GPIO_ResetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
 	}
-
+*/
 	fprinting=1;
 	GPIO_SetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
 
@@ -353,31 +377,30 @@ void printer_print_glyph( unsigned char len )
 			c = *p++;
 			for( b = 0; b < 8; b++ )
 			{
-				GPIO_ResetBits( DATA_CLK_PORT, PRINT_CLK_PIN );
+				GPIO_ResetBits( CLK_PORT, CLK_PIN );
 
 				if( 0x80 == ( c & 0x80 ) )
 				{
-					GPIO_SetBits( DATA_CLK_PORT, PRINT_DATA_PIN );
+					GPIO_SetBits( DI_PORT, DI_PIN );
 				}else
 				{
-					GPIO_ResetBits( DATA_CLK_PORT, PRINT_DATA_PIN );
+					GPIO_ResetBits( DI_PORT, DI_PIN );
 				}
 				c <<= 1;
-				GPIO_SetBits( DATA_CLK_PORT, PRINT_CLK_PIN );
+				GPIO_SetBits( CLK_PORT, CLK_PIN );
 			}
 		}
 		GPIO_ResetBits( LAT_PORT, LAT_PIN );
+		//delay_us(5);
 		GPIO_SetBits( LAT_PORT, LAT_PIN );
 
-		GPIO_SetBits( STB1_PORT, STB1_PIN );
-		GPIO_SetBits( STB2_6_PORT, STB2_PIN | STB3_PIN );
-		printer_heatdelay( );
-		GPIO_ResetBits( STB1_PORT, STB1_PIN );
-		GPIO_ResetBits( STB2_6_PORT, STB2_PIN | STB3_PIN );
+		GPIO_SetBits( STB1_3_PORT, STB1_3_PIN );
+		delay_us(printer_param.heat_delay[printer_param.gray_level]);
+		GPIO_ResetBits( STB1_3_PORT, STB1_3_PIN );
 
-		GPIO_SetBits( STB2_6_PORT, STB4_PIN | STB5_PIN | STB6_PIN );
-		printer_heatdelay( );
-		GPIO_ResetBits( STB2_6_PORT, STB4_PIN | STB5_PIN | STB6_PIN );
+		GPIO_SetBits( STB4_6_PORT, STB4_6_PIN);
+		delay_us(printer_param.heat_delay[printer_param.gray_level]);
+		GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN);
 		drivers1( );
 
 		p = print_glyph[row * 2 + 1];
@@ -386,31 +409,31 @@ void printer_print_glyph( unsigned char len )
 			c = *p++;
 			for( b = 0; b < 8; b++ )
 			{
-				GPIO_ResetBits( DATA_CLK_PORT, PRINT_CLK_PIN );
+				GPIO_ResetBits( CLK_PORT, CLK_PIN );
 
 				if( 0x80 == ( c & 0x80 ) )
 				{
-					GPIO_SetBits( DATA_CLK_PORT, PRINT_DATA_PIN );
+					GPIO_SetBits( DI_PORT, DI_PIN );
 				}else
 				{
-					GPIO_ResetBits( DATA_CLK_PORT, PRINT_DATA_PIN );
+					GPIO_ResetBits( DI_PORT, DI_PIN );
 				}
 				c <<= 1;
-				GPIO_SetBits( DATA_CLK_PORT, PRINT_CLK_PIN );
+				GPIO_SetBits( CLK_PORT, CLK_PIN );
 			}
 		}
 		GPIO_ResetBits( LAT_PORT, LAT_PIN );
+		//delay_us(5);
 		GPIO_SetBits( LAT_PORT, LAT_PIN );
 
-		GPIO_SetBits( STB1_PORT, STB1_PIN );
-		GPIO_SetBits( STB2_6_PORT, STB2_PIN | STB3_PIN );
-		printer_heatdelay( );
-		GPIO_ResetBits( STB1_PORT, STB1_PIN );
-		GPIO_ResetBits( STB2_6_PORT, STB2_PIN | STB3_PIN );
+		GPIO_SetBits( STB1_3_PORT, STB1_3_PIN );
+		delay_us(printer_param.heat_delay[printer_param.gray_level]);
+		GPIO_ResetBits( STB1_3_PORT, STB1_3_PIN );
 
-		GPIO_SetBits( STB2_6_PORT, STB4_PIN | STB5_PIN | STB6_PIN );
-		printer_heatdelay( );
-		GPIO_ResetBits( STB2_6_PORT, STB4_PIN | STB5_PIN | STB6_PIN );
+
+		GPIO_SetBits( STB4_6_PORT, STB4_6_PIN);
+		delay_us(printer_param.heat_delay[printer_param.gray_level]);
+		GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN);
 
 		drivers2( );
 	}
@@ -750,7 +773,7 @@ static rt_size_t printer_write( rt_device_t dev, rt_off_t pos, const void* buff,
 ***********************************************************/
 static rt_err_t printer_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 {
-	uint8_t code = *(uint8_t*)arg;
+	uint32_t code = *(uint32_t*)arg;
 	int		i;
 	switch( cmd )
 	{
@@ -773,8 +796,10 @@ static rt_err_t printer_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 		case PRINTER_CMD_FACTORY:
 			break;
 		case PRINTER_CMD_GRAYLEVEL:
+			printer_param.gray_level=code;
 			break;
 		case PRINTER_CMD_LINESPACE_DEFAULT:
+			printer_param.line_space=code;
 			break;
 		case PRINTER_CMD_LINESPACE_N:
 			if( code > 29 )
@@ -786,8 +811,10 @@ static rt_err_t printer_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 			}
 			break;
 		case PRINTER_CMD_MARGIN_LEFT:
+			printer_param.margin_left=code;
 			break;
 		case PRINTER_CMD_MARGIN_RIGHT:
+			printer_param.margin_right=code;
 			break;
 	}
 	return RT_EOK;
@@ -855,6 +882,42 @@ void printer( const char *str )
 
 FINSH_FUNCTION_EXPORT(printer, print string test);
 
+void step( const int count,const int delay )
+{
+	int i;
+
+	if( GPIO_ReadInputDataBit( PHE_PORT, PHE_PIN ) )
+	{
+		rt_kprintf("NO Paper\r\n");
+		return;
+	}
+	GPIO_SetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
+	for(i=0;i<count;i++)
+	{
+		//drivers1();
+		MTA_H;MTAF_L;MTB_L;MTBF_H;
+		delay_us(delay);
+		MTA_L;MTAF_L;MTB_L;MTBF_H;
+		delay_us(delay);
+		MTA_L;MTAF_H;MTB_L;MTBF_H;
+		delay_us(delay);
+		MTA_L;MTAF_H;MTB_L;MTBF_L;
+		delay_us(delay);
+		//drivers2();
+		MTA_L;MTAF_H;MTB_H;MTBF_L;
+		delay_us(delay);
+		MTA_L;MTAF_L;MTB_H;MTBF_L;
+		delay_us(delay);
+		MTA_H;MTAF_L;MTB_H;MTBF_L;
+		delay_us(delay);
+		MTA_H;MTAF_L;MTB_L;MTBF_L;
+		delay_us(delay);
+		printer_stop( );
+	}
+	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
+	
+}
+FINSH_FUNCTION_EXPORT(step, print step test);
 
 
 /************************************** The End Of File **************************************/

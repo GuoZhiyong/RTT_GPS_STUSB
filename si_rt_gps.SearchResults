@@ -1,4 +1,8 @@
----- rt_usb_class_driver_find Matches (3 in 3 files) ----
-Core.c (components\drivers\usb\usbhost\core):        drv = rt_usb_class_driver_find(intf_desc->bInterfaceClass, 
-Driver.c (components\drivers\usb\usbhost\core):ucd_t rt_usb_class_driver_find(int class_code, int subclass_code)
-Usb_host.h (components\drivers\include\drivers):ucd_t rt_usb_class_driver_find(int class_code, int subclass_code);
+---- RT_USING_CONSOLE Matches (4 in 3 files) ----
+Board.c (bsp\stm32f40x_car\drivers):#ifdef RT_USING_CONSOLE
+Kservice.c (src):#if defined(RT_USING_DEVICE) && defined(RT_USING_CONSOLE)
+Kservice.c (src):#ifdef RT_USING_CONSOLE
+Rtconfig.h (bsp\stm32f40x_car):#define RT_USING_CONSOLE
+---- RT_USING_CONSOLE Search Errors Encountered (1) ----
+The following 1 files could not be processed:
+E:\ArmWork\RTT_GPS_STUSB\bsp\stm32f40x_car\JLinkLog.txt : File could not be opened.
