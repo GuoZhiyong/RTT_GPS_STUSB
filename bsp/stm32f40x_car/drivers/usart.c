@@ -69,6 +69,20 @@ struct stm32_serial_device uart3 =
 struct rt_device uart3_device;
 #endif
 
+
+#ifdef RT_USING_UART4
+struct stm32_serial_int_rx uart4_int_rx;
+struct stm32_serial_dma_tx uart4_dma_tx;
+struct stm32_serial_device uart4 =
+{
+	UART4,
+	&uart4_int_rx,
+	&uart4_dma_tx
+};
+struct rt_device uart4_device;
+#endif
+
+
 //#define USART1_DR_Base  0x40013804
 //#define USART2_DR_Base  0x40004404
 //#define USART3_DR_Base  0x40004804
@@ -102,6 +116,17 @@ struct rt_device uart3_device;
 #define RCC_APBPeriph_UART3	RCC_APB1Periph_USART3
 #define UART3_TX_DMA		DMA1_Stream1
 #define UART3_RX_DMA		DMA1_Stream3
+
+
+#define UART4_GPIO_TX	    GPIO_Pin_2
+#define UART4_TX_PIN_SOURCE GPIO_PinSource2
+#define UART4_GPIO_RX	    GPIO_Pin_3
+#define UART4_RX_PIN_SOURCE GPIO_PinSource3
+#define UART4_GPIO	    	GPIOA
+#define UART4_GPIO_RCC   	RCC_AHB1Periph_GPIOA
+#define RCC_APBPeriph_UART4	RCC_APB1Periph_UART4
+
+
 
 static void RCC_Configuration(void)
 {
@@ -346,4 +371,24 @@ void rt_hw_usart_init()
 	/* enable interrupt */
 	USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
 #endif
+
+
+#ifdef RT_USING_UART4
+	USART_InitStructure.USART_BaudRate = 115200;
+	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+	USART_InitStructure.USART_StopBits = USART_StopBits_1;
+	USART_InitStructure.USART_Parity = USART_Parity_No;
+	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	USART_Init(UART4, &USART_InitStructure);
+
+	/* register uart4 */
+	rt_hw_serial_register(&uart4_device, "uart4",
+		RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
+		&uart4);
+
+	/* Enable USART2 DMA Rx request */
+	USART_ITConfig(UART4, USART_IT_RXNE, ENABLE);
+#endif
+
 }

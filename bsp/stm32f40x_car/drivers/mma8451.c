@@ -1143,8 +1143,6 @@ static rt_err_t mma8451_close( rt_device_t dev )
 
 void mma8451_driver_init( void )
 {
-		
-
 	dev_mma8451.type		= RT_Device_Class_Char;
 	dev_mma8451.init		= mma8451_init;
 	dev_mma8451.open		= mma8451_open;
