@@ -11,6 +11,9 @@
  *     <author>  <time>   <version >   <desc>
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
+
+#ifdef MG323
+ 
 #include <stdio.h>
 #include <rtthread.h>
 #include "stm32f4xx.h"
@@ -91,8 +94,8 @@ static rt_err_t mg323_open( rt_device_t dev, rt_uint16_t oflag )
 }
 
 /***********************************************************
-* Function:
-* Description:
+* Function:mg323_read
+* Description:数据模式下读取数据
 * Input:
 * Input:
 * Output:
@@ -103,6 +106,17 @@ static rt_size_t mg323_read( rt_device_t dev, rt_off_t pos, void* buff, rt_size_
 {
 	return RT_EOK;
 }
+
+
+/***********************************************************
+* Function:		mg323_write
+* Description:	数据模式下发送数据，要对数据进行封装
+* Input:		const void* buff	要发送的原始数据
+				rt_size_t count		要发送数据的长度
+* Output:
+* Return:
+* Others:
+***********************************************************/
 
 static rt_size_t mg323_write( rt_device_t dev, rt_off_t pos, const void* buff, rt_size_t count )
 {
@@ -117,6 +131,16 @@ static rt_err_t mg323_close( rt_device_t dev )
 }
 
 
+
+/***********************************************************
+* Function:		mg323_control
+* Description:	控制模块
+* Input:		rt_uint8_t cmd	命令类型
+				void *arg 		参数,依据cmd的不同，传递的数据格式不同
+* Output:
+* Return:
+* Others:
+***********************************************************/
 static rt_err_t mg323_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 {
 	return RT_EOK;
@@ -156,5 +180,8 @@ void gsm_init( void )
 	rt_device_init( &dev_gsm );
 	rt_timer_start( &tmr_gsm );
 }
+
+
+#endif
 
 /************************************** The End Of File **************************************/
