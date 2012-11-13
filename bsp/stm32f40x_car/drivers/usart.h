@@ -18,6 +18,8 @@
 #include <rthw.h>
 #include <rtthread.h>
 
+void uart_init(USART_TypeDef* UARTx,int buad);
+
 void rt_hw_usart_init(void);
 
 #endif

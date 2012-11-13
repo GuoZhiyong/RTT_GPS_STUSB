@@ -83,6 +83,7 @@ struct rt_device uart4_device;
 #endif
 
 
+
 //#define USART1_DR_Base  0x40013804
 //#define USART2_DR_Base  0x40004404
 //#define USART3_DR_Base  0x40004804
@@ -153,6 +154,15 @@ static void RCC_Configuration(void)
 	/* DMA clock enable */
 	RCC_APB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
 #endif
+
+#ifdef RT_USING_UART4
+	/* Enable USART2 GPIO clocks */
+	RCC_AHB1PeriphClockCmd(UART4_GPIO_RCC, ENABLE);
+	/* Enable USART2 clock */
+	RCC_APB1PeriphClockCmd(RCC_APBPeriph_UART4, ENABLE);
+#endif
+
+
 }
 
 static void GPIO_Configuration(void)
@@ -193,6 +203,20 @@ static void GPIO_Configuration(void)
     GPIO_PinAFConfig(UART2_GPIO, UART3_TX_PIN_SOURCE, GPIO_AF_USART3);
     GPIO_PinAFConfig(UART2_GPIO, UART3_RX_PIN_SOURCE, GPIO_AF_USART3);
 #endif
+
+
+#ifdef RT_USING_UART2
+	/* Configure USART2 Rx/tx PIN */
+	GPIO_InitStructure.GPIO_Pin = UART2_GPIO_TX | UART2_GPIO_RX;
+	GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
+
+    /* Connect alternate function */
+    GPIO_PinAFConfig(UART2_GPIO, UART2_TX_PIN_SOURCE, GPIO_AF_USART2);
+    GPIO_PinAFConfig(UART2_GPIO, UART2_RX_PIN_SOURCE, GPIO_AF_USART2);
+#endif
+
+
+
 }
 
 static void NVIC_Configuration(void)
@@ -229,6 +253,18 @@ static void NVIC_Configuration(void)
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 #endif
+
+#ifdef RT_USING_UART4
+	/* Enable the USART2 Interrupt */
+	NVIC_InitStructure.NVIC_IRQChannel = UART4_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+#endif
+
+
+
 }
 
 static void DMA_Configuration(void)
@@ -300,9 +336,23 @@ volatile USART_TypeDef * uart2_debug = USART2;
  * Init all related hardware in here
  * rt_hw_serial_init() will register all supported USART device
  */
-void rt_hw_usart_init()
+
+
+void uart_init(USART_TypeDef* UARTx,int buad)
 {
 	USART_InitTypeDef USART_InitStructure;
+	USART_InitStructure.USART_BaudRate = buad;
+	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+	USART_InitStructure.USART_StopBits = USART_StopBits_1;
+	USART_InitStructure.USART_Parity = USART_Parity_No;
+	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	USART_Init(UARTx, &USART_InitStructure);
+}
+
+void rt_hw_usart_init()
+{
+	
 
 	RCC_Configuration();
 
@@ -314,14 +364,8 @@ void rt_hw_usart_init()
 
 	/* uart init */
 #ifdef RT_USING_UART1
-	USART_InitStructure.USART_BaudRate = 115200;
-	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-	USART_InitStructure.USART_StopBits = USART_StopBits_1;
-	USART_InitStructure.USART_Parity = USART_Parity_No;
-	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-	USART_Init(USART1, &USART_InitStructure);
 
+	uart_init(USART1,115200);
 	/* register uart1 */
 	rt_hw_serial_register(&uart1_device, "uart1",
 		RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
@@ -332,13 +376,7 @@ void rt_hw_usart_init()
 #endif
 
 #ifdef RT_USING_UART2
-	USART_InitStructure.USART_BaudRate = 115200;
-	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-	USART_InitStructure.USART_StopBits = USART_StopBits_1;
-	USART_InitStructure.USART_Parity = USART_Parity_No;
-	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-	USART_Init(USART2, &USART_InitStructure);
+	uart_init(USART2,115200);
 
 	/* register uart2 */
 	rt_hw_serial_register(&uart2_device, "uart2",
@@ -350,13 +388,7 @@ void rt_hw_usart_init()
 #endif
 
 #ifdef RT_USING_UART3
-	USART_InitStructure.USART_BaudRate = 115200;
-	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-	USART_InitStructure.USART_StopBits = USART_StopBits_1;
-	USART_InitStructure.USART_Parity = USART_Parity_No;
-	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-	USART_Init(USART3, &USART_InitStructure);
+	uart_init(USART3,115200);
 
 //	uart3_dma_tx.dma_channel= UART3_TX_DMA;
 
@@ -374,13 +406,7 @@ void rt_hw_usart_init()
 
 
 #ifdef RT_USING_UART4
-	USART_InitStructure.USART_BaudRate = 115200;
-	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-	USART_InitStructure.USART_StopBits = USART_StopBits_1;
-	USART_InitStructure.USART_Parity = USART_Parity_No;
-	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-	USART_Init(UART4, &USART_InitStructure);
+	uart_init(UART4,115200);
 
 	/* register uart4 */
 	rt_hw_serial_register(&uart4_device, "uart4",

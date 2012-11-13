@@ -23,13 +23,25 @@
 //#define MC323
 //#define EM310
 
+#define GSM_UART_NAME	"uart2"
+
+#define MAX_SOCKETS	3	//EM310定义
+
+typedef int (*ONDATA)(uint8_t *s,uint16_t len);
+typedef int (*ONCMD)(uint8_t *s,uint16_t len);
+typedef int (*ONSTATUS)(uint8_t *s,uint16_t len);
+
 typedef struct
 {
-
-
-
-
+	uint8_t link_num;	//连接号
+	uint8_t proto;		//协议类型 TCP UDP
+	char ip[20];		//peer ip 字符串
+	uint16_t port;		//peer port
+	int	(*ondata)(uint8_t *s,uint16_t len);		//收到数据的回调函数
 }T_SOCKET;
+
+T_SOCKET gsm_sockets[MAX_SOCKETS];
+
 
 typedef struct 
 {
@@ -67,16 +79,23 @@ GSM支持操作功能的列表
 */
 typedef enum
 {
-	GSM_AT_CMD=1,		//发送AT命令
-	GSM_PPP,			//PPP链接维护
-	GSM_SOCKET,			//建立socket
-	GSM_DNS,			//进行DNS解析
-	GSM_TXRX_COUNT,		//发送接收的字节数
-}GSM_CONTROL_CMD;
+	CMD_STATUS=1,		//查询GSM状态
+	CMD_AT_CMD,			//发送AT命令
+	CMD_PPP,			//PPP链接维护
+	CMD_SOCKET,			//建立socket
+	CMD_DNS,			//进行DNS解析
+	CMD_TXRX_COUNT,		//发送接收的字节数
+}T_GSM_CONTROL_CMD;
 
 
-
-
+typedef enum
+{
+	GSM_IDLE=0,			//空闲  POWEROFF
+	GSM_POWERON,		//上电过程中
+	GSM_AT,				//处于AT命令收发状态
+	GSM_PPP,			//处于PPP连接状态
+	GSM_DATA,			//处于数据状态
+}T_GSM_STATE;
 
 
 #endif

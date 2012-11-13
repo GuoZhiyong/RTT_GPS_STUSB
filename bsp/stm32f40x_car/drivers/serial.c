@@ -253,9 +253,11 @@ static rt_size_t rt_serial_write (rt_device_t dev, rt_off_t pos, const void* buf
 	return (rt_uint32_t)ptr - (rt_uint32_t)buffer;
 }
 
+#define RT_DEVICE_CTRL_BAUD	(RT_DEVICE_CTRL_SUSPEND+1)
 static rt_err_t rt_serial_control (rt_device_t dev, rt_uint8_t cmd, void *args)
 {
 	struct stm32_serial_device* uart;
+	int i=*(int *)args;
 
 	RT_ASSERT(dev != RT_NULL);
 
@@ -272,6 +274,9 @@ static rt_err_t rt_serial_control (rt_device_t dev, rt_uint8_t cmd, void *args)
 		/* resume device */
 		dev->flag &= ~RT_DEVICE_FLAG_SUSPENDED;
 		USART_Cmd(uart->uart_device, ENABLE);
+		break;
+	case RT_DEVICE_CTRL_BAUD:
+		uart_init(uart,i);
 		break;
 	}
 

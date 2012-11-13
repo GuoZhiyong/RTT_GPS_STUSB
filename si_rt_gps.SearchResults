@@ -1,8 +1,3 @@
----- RT_USING_CONSOLE Matches (4 in 3 files) ----
-Board.c (bsp\stm32f40x_car\drivers):#ifdef RT_USING_CONSOLE
-Kservice.c (src):#if defined(RT_USING_DEVICE) && defined(RT_USING_CONSOLE)
-Kservice.c (src):#ifdef RT_USING_CONSOLE
-Rtconfig.h (bsp\stm32f40x_car):#define RT_USING_CONSOLE
----- RT_USING_CONSOLE Search Errors Encountered (1) ----
-The following 1 files could not be processed:
-E:\ArmWork\RTT_GPS_STUSB\bsp\stm32f40x_car\JLinkLog.txt : File could not be opened.
+---- RT_USING_SERIAL Matches (2 in 1 files) ----
+rtdevice.h (components\drivers\include):#ifdef RT_USING_SERIAL
+rtdevice.h (components\drivers\include):#endif /* RT_USING_SERIAL */

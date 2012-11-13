@@ -446,6 +446,11 @@
               <FileType>1</FileType>
               <FilePath>.\drivers\ringbuffer.c</FilePath>
             </File>
+            <File>
+              <FileName>mg323.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\mg323.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
