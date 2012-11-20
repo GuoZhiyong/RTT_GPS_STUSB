@@ -1072,6 +1072,7 @@ static rt_err_t mma8451_init( rt_device_t dev )
 ***********************************************************/
 static rt_err_t mma8451_open( rt_device_t dev, rt_uint16_t oflag )
 {
+	//初始化端口
 	return RT_EOK;
 }
 
@@ -1141,6 +1142,11 @@ static rt_err_t mma8451_close( rt_device_t dev )
 
 
 
+/*
+如何与其他程序交互，使用设备的rx_ind
+还是定时查询
+
+*/
 void mma8451_driver_init( void )
 {
 	dev_mma8451.type		= RT_Device_Class_Char;
