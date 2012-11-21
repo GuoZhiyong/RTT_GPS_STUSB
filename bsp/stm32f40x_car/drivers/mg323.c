@@ -31,7 +31,7 @@ typedef void (*URC_CB)(char *s,uint16_t len);
 #define GSM_RST_PORT		GPIOB
 #define GSM_RST_PIN			GPIO_Pin_9		//PB.9
 
-
+#define TIMEOUT_SYSSTART_S	5
 
 static struct
 {
@@ -54,7 +54,8 @@ static uint16_t gsm_rx_wr = 0;
 
 static T_GSM_STATE	gsmstate=GSM_IDLE;
 
-
+static uint32_t lastticks=0;
+static uint32_t	action_timeout=0;
 
 static void urc_cb_default(char *s,uint16_t len)
 {
@@ -94,8 +95,6 @@ static void urc_cb_cring(char *s,uint16_t len)
 
 }
 
-
-
 /*
 urc: unsolicited result code
 */
@@ -122,6 +121,9 @@ struct
 	{"CMS ERROR",urc_cb_default},
 	{"",NULL}
 };
+
+
+
 
 /***********************************************************
 * Function:		gsmrx_cb
@@ -191,6 +193,38 @@ static void gsmrx_cb( char *pInfo, uint16_t len )
 	
 
 }
+
+/***********************************************************
+* Function:       timer_gsm_cb
+* Description:    定时器函数,判断执行的超时
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void timer_gsm_cb( void* parameter )
+{
+	case 	
+	if(rt_tick_get()-lastticks>action_timeout)
+	{
+		switch(gsmstate)
+		{
+			case GSM_POWERON:	/*上电超时*/
+				gsmstate=GSM_IDLE;
+				break;
+			case GSM_POWEROFF:	/*断电超时*/
+				gsmstate=GSM_IDLE;
+				break;
+				
+
+		}
+	}
+
+
+
+}
+
 
 
 ALIGN( RT_ALIGN_SIZE )
@@ -292,7 +326,7 @@ static rt_err_t mg323_init( rt_device_t dev )
 }
 
 /***********************************************************
-* Function:
+* Function:	提供给其他thread调用，打开设备，超时判断
 * Description:
 * Input:
 * Input:
@@ -302,12 +336,17 @@ static rt_err_t mg323_init( rt_device_t dev )
 ***********************************************************/
 static rt_err_t mg323_open( rt_device_t dev, rt_uint16_t oflag )
 {
-	gsmstate=GSM_POWERON;	//置位上电过程中
-	GPIO_SetBits(GSM_PWR_PORT,GSM_PWR_PIN);
-	rt_thread_delay(RT_TICK_PER_SECOND/2);		//500ms
-	GPIO_SetBits(GSM_TERMON_PORT,GSM_TERMON_PIN);
-	rt_thread_delay(RT_TICK_PER_SECOND/10);		//100ms
-	GPIO_ResetBits(GSM_TERMON_PORT,GSM_TERMON_PIN);
+	if(gsmstate==GSM_IDLE)
+	{
+		gsmstate=GSM_POWERON;	//置位上电过程中
+		GPIO_SetBits(GSM_PWR_PORT,GSM_PWR_PIN);
+		rt_thread_delay(RT_TICK_PER_SECOND/2);		//500ms
+		GPIO_SetBits(GSM_TERMON_PORT,GSM_TERMON_PIN);
+		rt_thread_delay(RT_TICK_PER_SECOND/10);		//100ms
+		GPIO_ResetBits(GSM_TERMON_PORT,GSM_TERMON_PIN);
+
+		
+	}	
 	return RT_EOK;
 }
 
@@ -406,6 +445,7 @@ void gsm_init( void )
 	                &thread_gsm_stack[0],
 	                sizeof( thread_gsm_stack ), 7, 5 );
 	rt_thread_startup( &thread_gsm );
+
 
 	rt_timer_init( &tmr_gsm, \
 	               "tmr_gsm", \
