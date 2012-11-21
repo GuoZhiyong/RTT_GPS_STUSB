@@ -1,3 +1,0 @@
----- RT_USING_SERIAL Matches (2 in 1 files) ----
-rtdevice.h (components\drivers\include):#ifdef RT_USING_SERIAL
-rtdevice.h (components\drivers\include):#endif /* RT_USING_SERIAL */
