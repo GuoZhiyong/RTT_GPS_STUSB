@@ -20,9 +20,6 @@
 #include "printer.h"
 #include <finsh.h>
 
-
-
-
 /*打印头相关*/
 
 //#define PAPER_DETCET_PORT	GPIOA
@@ -31,7 +28,7 @@
 #define  CLK_PORT	GPIOD
 #define  CLK_PIN	GPIO_Pin_14
 #define  DI_PORT	GPIOB
-#define  DI_PIN 	GPIO_Pin_1
+#define  DI_PIN		GPIO_Pin_1
 
 #define  LAT_PORT	GPIOB
 #define  LAT_PIN	GPIO_Pin_10
@@ -63,39 +60,34 @@
 #define PRINTER_POWER_PORT	GPIOD
 #define PRINTER_POWER_PIN	GPIO_Pin_4
 
-/* 
 
-#define MTA_H	GPIO_SetBits(MTA_PORT,MTA_PIN)//(MTA_PORT->BSRRL=MTA_PIN)
-#define MTA_L	GPIO_ResetBits(MTA_PORT,MTA_PIN)//(MTA_PORT->BSRRH=MTA_PIN)
+/*
 
-#define MTAF_H	GPIO_SetBits(MTAF_PORT,MTAF_PIN)//(MTAF_PORT->BSRRL=MTAF_PIN)
-#define MTAF_L	GPIO_ResetBits(MTAF_PORT,MTAF_PIN)//(MTAF_PORT->BSRRH=MTAF_PIN)
+   #define MTA_H	GPIO_SetBits(MTA_PORT,MTA_PIN)//(MTA_PORT->BSRRL=MTA_PIN)
+   #define MTA_L	GPIO_ResetBits(MTA_PORT,MTA_PIN)//(MTA_PORT->BSRRH=MTA_PIN)
 
-#define MTB_H	GPIO_SetBits(MTB_PORT,MTB_PIN)//(MTB_PORT->BSRRL=MTB_PIN)
-#define MTB_L	GPIO_ResetBits(MTB_PORT,MTB_PIN)//(MTB_PORT->BSRRH=MTB_PIN)
+   #define MTAF_H	GPIO_SetBits(MTAF_PORT,MTAF_PIN)//(MTAF_PORT->BSRRL=MTAF_PIN)
+   #define MTAF_L	GPIO_ResetBits(MTAF_PORT,MTAF_PIN)//(MTAF_PORT->BSRRH=MTAF_PIN)
 
-#define MTBF_H	GPIO_SetBits(MTBF_PORT,MTBF_PIN)//(MTBF_PORT->BSRRL=MTBF_PIN)
-#define MTBF_L	GPIO_ResetBits(MTBF_PORT,MTBF_PIN)//(MTBF_PORT->BSRRH=MTBF_PIN)
+   #define MTB_H	GPIO_SetBits(MTB_PORT,MTB_PIN)//(MTB_PORT->BSRRL=MTB_PIN)
+   #define MTB_L	GPIO_ResetBits(MTB_PORT,MTB_PIN)//(MTB_PORT->BSRRH=MTB_PIN)
 
-*/
+   #define MTBF_H	GPIO_SetBits(MTBF_PORT,MTBF_PIN)//(MTBF_PORT->BSRRL=MTBF_PIN)
+   #define MTBF_L	GPIO_ResetBits(MTBF_PORT,MTBF_PIN)//(MTBF_PORT->BSRRH=MTBF_PIN)
 
+ */
 
-#define MTA_H	(MTA_PORT->BSRRL=MTA_PIN)
-#define MTA_L	(MTA_PORT->BSRRH=MTA_PIN)
+#define MTA_H	( MTA_PORT->BSRRL = MTA_PIN )
+#define MTA_L	( MTA_PORT->BSRRH = MTA_PIN )
 
-#define MTAF_H	(MTAF_PORT->BSRRL=MTAF_PIN)
-#define MTAF_L	(MTAF_PORT->BSRRH=MTAF_PIN)
+#define MTAF_H	( MTAF_PORT->BSRRL = MTAF_PIN )
+#define MTAF_L	( MTAF_PORT->BSRRH = MTAF_PIN )
 
-#define MTB_H	(MTB_PORT->BSRRL=MTB_PIN)
-#define MTB_L	(MTB_PORT->BSRRH=MTB_PIN)
+#define MTB_H	( MTB_PORT->BSRRL = MTB_PIN )
+#define MTB_L	( MTB_PORT->BSRRH = MTB_PIN )
 
-#define MTBF_H	(MTBF_PORT->BSRRL=MTBF_PIN)
-#define MTBF_L	(MTBF_PORT->BSRRH=MTBF_PIN)
-
-
-
-
-
+#define MTBF_H	( MTBF_PORT->BSRRL = MTBF_PIN )
+#define MTBF_L	( MTBF_PORT->BSRRH = MTBF_PIN )
 
 /*收到的打印数据的编码包括换行符*/
 #define PRINTER_DATA_SIZE 2048
@@ -116,22 +108,20 @@ RingBuffer		rb_printer_data;
 //static unsigned char print_glyph[GLYPH_ROW][GLYPH_COL] __attribute__( ( at( 0x20001000 ) ) ) = { 0 };
 static unsigned char	print_glyph[GLYPH_ROW][GLYPH_COL] = { 0 };
 
-
 static struct rt_device dev_printer;
 static struct rt_timer	tmr_printer;
 
-
 struct _PRINTER_PARAM
 {
-	uint16_t	step_delay;			//步进延时,影响行间隔
-	uint16_t	gray_level;         //灰度等级,加热时间
-	uint32_t	heat_delay[4];		//加热延时
-	uint16_t	line_space;         //行间隔
-	uint16_t	margin_left;        //左边界
-	uint16_t	margin_right;       //右边界
+	uint16_t	step_delay;                 //步进延时,影响行间隔
+	uint16_t	gray_level;                 //灰度等级,加热时间
+	uint32_t	heat_delay[4];              //加热延时
+	uint16_t	line_space;                 //行间隔
+	uint16_t	margin_left;                //左边界
+	uint16_t	margin_right;               //右边界
 } printer_param =
 {
-	1000,0,{5000,10000,15000,20000},4, 0, 0
+	1000, 0, { 5000, 10000, 15000, 20000 }, 4, 0, 0
 };
 
 static unsigned short	dotremain = 384;    //还可使用的dot，每汉字24dot 每ascii 12dots
@@ -139,43 +129,41 @@ static unsigned char	print_str[36];      //要打印的单行最大字节数 全ascii 384/12
 static unsigned char	print_str_len = 0;
 
 /*要不要4字节对齐*/
-static unsigned char	font_glyph[80];     //每个汉字或ascii的最大字节数 24x24dot = 72bytes
-
+static unsigned char font_glyph[80];        //每个汉字或ascii的最大字节数 24x24dot = 72bytes
 
 //延时nus
 //nus为要延时的us数.
+
+
 /*
-static void delay_us (const uint32_t usec)
-{
-  
-  __IO uint32_t count = 0;
-  const uint32_t utime = (120 * usec / 7);
-  do
-  {
+   static void delay_us (const uint32_t usec)
+   {
+
+   __IO uint32_t count = 0;
+   const uint32_t utime = (120 * usec / 7);
+   do
+   {
     if ( ++count > utime )
     {
       return ;
     }
-  }while (1);
-}
-*/
+   }while (1);
+   }
+ */
 
-
-static void delay_us (const uint32_t usec)
+static void delay_us( const uint32_t usec )
 {
-  
-  __IO uint32_t count = 0;
-  const uint32_t utime = (168 * usec / 7);
-  do
-  {
-    if ( ++count > utime )
-    {
-      return ;
-    }
-  }while (1);
+	__IO uint32_t	count	= 0;
+	const uint32_t	utime	= ( 168 * usec / 7 );
+	do
+	{
+		if( ++count > utime )
+		{
+			return;
+		}
+	}
+	while( 1 );
 }
-
-
 
 /***********************************************************
 * Function:       // 函数名称
@@ -188,7 +176,7 @@ static void delay_us (const uint32_t usec)
 ***********************************************************/
 void printer_stop( void )
 {
- 	MTA_L;
+	MTA_L;
 	MTAF_L;
 	MTB_L;
 	MTBF_L;
@@ -209,29 +197,28 @@ static uint8_t fprinting = 0;     //是否正在打印
 static void printer_port_init( void )
 {
 	GPIO_InitTypeDef gpio_init;
-	
+
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOD | RCC_AHB1Periph_GPIOE, ENABLE );
 	/*去掉PB4 JTAG功能*/
 	//GPIOB->AFR[0]|=(1<<16);
-	GPIO_PinAFConfig(GPIOB,GPIO_Pin_4,1);
+	GPIO_PinAFConfig( GPIOB, GPIO_Pin_4, 1 );
 
 	gpio_init.GPIO_Mode		= GPIO_Mode_OUT;
 	gpio_init.GPIO_OType	= GPIO_OType_PP;
 	gpio_init.GPIO_Speed	= GPIO_Speed_50MHz;
 	gpio_init.GPIO_PuPd		= GPIO_PuPd_NOPULL;
 
-	gpio_init.GPIO_Pin = DI_PIN ;
+	gpio_init.GPIO_Pin = DI_PIN;
 	GPIO_Init( DI_PORT, &gpio_init );
 	GPIO_ResetBits( DI_PORT, DI_PIN );
 
-	gpio_init.GPIO_Pin = CLK_PIN ;
+	gpio_init.GPIO_Pin = CLK_PIN;
 	GPIO_Init( CLK_PORT, &gpio_init );
 	GPIO_ResetBits( CLK_PORT, CLK_PIN );
-	
 
 	gpio_init.GPIO_Pin = STB4_6_PIN;
 	GPIO_Init( STB4_6_PORT, &gpio_init );
-	GPIO_ResetBits( STB4_6_PORT,STB4_6_PIN );
+	GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN );
 
 	gpio_init.GPIO_Pin = STB1_3_PIN;
 	GPIO_Init( STB1_3_PORT, &gpio_init );
@@ -241,38 +228,36 @@ static void printer_port_init( void )
 	GPIO_Init( LAT_PORT, &gpio_init );
 	GPIO_ResetBits( LAT_PORT, LAT_PIN );
 
-	gpio_init.GPIO_Pin = MTA_PIN ;
+	gpio_init.GPIO_Pin = MTA_PIN;
 	GPIO_Init( MTA_PORT, &gpio_init );
 	MTA_L;
 
-	gpio_init.GPIO_Pin = MTAF_PIN ;
+	gpio_init.GPIO_Pin = MTAF_PIN;
 	GPIO_Init( MTAF_PORT, &gpio_init );
 	MTAF_L;
 
-	gpio_init.GPIO_Pin = MTB_PIN ;
+	gpio_init.GPIO_Pin = MTB_PIN;
 	GPIO_Init( MTB_PORT, &gpio_init );
 	MTB_L;
 
-	gpio_init.GPIO_Pin = MTBF_PIN ;
+	gpio_init.GPIO_Pin = MTBF_PIN;
 	GPIO_Init( MTBF_PORT, &gpio_init );
 	MTBF_L;
 
 
 /*
-	gpio_init.GPIO_Pin = NO_PAPER_OUT_PIN;
-	GPIO_Init( NO_PAPER_OUT_PORT, &gpio_init );
-	GPIO_ResetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
-*/
+   gpio_init.GPIO_Pin = NO_PAPER_OUT_PIN;
+   GPIO_Init( NO_PAPER_OUT_PORT, &gpio_init );
+   GPIO_ResetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
+ */
 	gpio_init.GPIO_Pin = PRINTER_POWER_PIN;
 	GPIO_Init( PRINTER_POWER_PORT, &gpio_init );
 	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
 
-
 	gpio_init.GPIO_Pin	= PHE_PIN;
-	gpio_init.GPIO_Mode		= GPIO_Mode_IN;
+	gpio_init.GPIO_Mode = GPIO_Mode_IN;
 	GPIO_Init( PHE_PORT, &gpio_init );
 }
-
 
 /***********************************************************
 * Function:       // 函数名称
@@ -285,14 +270,14 @@ static void printer_port_init( void )
 ***********************************************************/
 void drivers1( void )
 {
-	MTA_H;MTAF_L;MTB_L;MTBF_H;
-	delay_us(printer_param.step_delay);
-	MTA_L;MTAF_L;MTB_L;MTBF_H;
-	delay_us(printer_param.step_delay);
-	MTA_L;MTAF_H;MTB_L;MTBF_H;
-	delay_us(printer_param.step_delay);
-	MTA_L;MTAF_H;MTB_L;MTBF_L;
-	delay_us(printer_param.step_delay);
+	MTA_H; MTAF_L; MTB_L; MTBF_H;
+	delay_us( printer_param.step_delay );
+	MTA_L; MTAF_L; MTB_L; MTBF_H;
+	delay_us( printer_param.step_delay );
+	MTA_L; MTAF_H; MTB_L; MTBF_H;
+	delay_us( printer_param.step_delay );
+	MTA_L; MTAF_H; MTB_L; MTBF_L;
+	delay_us( printer_param.step_delay );
 }
 
 /***********************************************************
@@ -306,20 +291,15 @@ void drivers1( void )
 ***********************************************************/
 void drivers2( void )
 {
-	MTA_L;MTAF_H;MTB_H;MTBF_L;
-	delay_us(printer_param.step_delay);
-	MTA_L;MTAF_L;MTB_H;MTBF_L;
-	delay_us(printer_param.step_delay);
-	MTA_H;MTAF_L;MTB_H;MTBF_L;
-	delay_us(printer_param.step_delay);
-	MTA_H;MTAF_L;MTB_L;MTBF_L;
-	delay_us(printer_param.step_delay);
+	MTA_L; MTAF_H; MTB_H; MTBF_L;
+	delay_us( printer_param.step_delay );
+	MTA_L; MTAF_L; MTB_H; MTBF_L;
+	delay_us( printer_param.step_delay );
+	MTA_H; MTAF_L; MTB_H; MTBF_L;
+	delay_us( printer_param.step_delay );
+	MTA_H; MTAF_L; MTB_L; MTBF_L;
+	delay_us( printer_param.step_delay );
 }
-
-
-
-
-
 
 /***********************************************************
 * Function:       // printer_load_param
@@ -356,17 +336,18 @@ void printer_print_glyph( unsigned char len )
 	unsigned char	b, c, row, col_byte;
 /*缺纸检测 PA8 缺纸为高*/
 
+
 /*
-	if( GPIO_ReadInputDataBit( PHE_PORT, PHE_PIN ) )
-	{
-		GPIO_SetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
-		return;
-	}else
-	{
-		GPIO_ResetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
-	}
-*/
-	fprinting=1;
+   if( GPIO_ReadInputDataBit( PHE_PORT, PHE_PIN ) )
+   {
+   GPIO_SetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
+   return;
+   }else
+   {
+   GPIO_ResetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
+   }
+ */
+	fprinting = 1;
 	GPIO_SetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
 
 	for( row = 0; row < 12; row++ )
@@ -395,12 +376,12 @@ void printer_print_glyph( unsigned char len )
 		GPIO_SetBits( LAT_PORT, LAT_PIN );
 
 		GPIO_SetBits( STB1_3_PORT, STB1_3_PIN );
-		delay_us(printer_param.heat_delay[printer_param.gray_level]);
+		delay_us( printer_param.heat_delay[printer_param.gray_level] );
 		GPIO_ResetBits( STB1_3_PORT, STB1_3_PIN );
 
-		GPIO_SetBits( STB4_6_PORT, STB4_6_PIN);
-		delay_us(printer_param.heat_delay[printer_param.gray_level]);
-		GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN);
+		GPIO_SetBits( STB4_6_PORT, STB4_6_PIN );
+		delay_us( printer_param.heat_delay[printer_param.gray_level] );
+		GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN );
 		drivers1( );
 
 		p = print_glyph[row * 2 + 1];
@@ -427,13 +408,12 @@ void printer_print_glyph( unsigned char len )
 		GPIO_SetBits( LAT_PORT, LAT_PIN );
 
 		GPIO_SetBits( STB1_3_PORT, STB1_3_PIN );
-		delay_us(printer_param.heat_delay[printer_param.gray_level]);
+		delay_us( printer_param.heat_delay[printer_param.gray_level] );
 		GPIO_ResetBits( STB1_3_PORT, STB1_3_PIN );
 
-
-		GPIO_SetBits( STB4_6_PORT, STB4_6_PIN);
-		delay_us(printer_param.heat_delay[printer_param.gray_level]);
-		GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN);
+		GPIO_SetBits( STB4_6_PORT, STB4_6_PIN );
+		delay_us( printer_param.heat_delay[printer_param.gray_level] );
+		GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN );
 
 		drivers2( );
 	}
@@ -446,7 +426,7 @@ void printer_print_glyph( unsigned char len )
 
 	printer_stop( );
 	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
-	fprinting=0;
+	fprinting = 0;
 }
 
 /*
@@ -463,6 +443,16 @@ void printer_print_glyph( unsigned char len )
 #define FONT_ASC_ADDR	0x08080000
 #define FONT_HZ24_ADDR	0x08081200
 
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 void printer_get_str_glyph( unsigned char *pstr, unsigned char len )
 {
 	unsigned long	addr;
@@ -490,19 +480,19 @@ void printer_get_str_glyph( unsigned char *pstr, unsigned char len )
 		}
 		msb = *p++;
 		charnum--;
-		if( msb <= 0x80 )//ascii字符
+		if( msb <= 0x80 ) //ascii字符
 		{
 			addr = ( msb - 0x20 ) * 48 + FONT_ASC_ADDR;
-			for(offset=0;offset<12;offset++)
+			for( offset = 0; offset < 12; offset++ )
 			{
-				val_new = *(__IO uint32_t*)addr;
-				font_glyph[offset*4+0]=(unsigned char)(val_new&0xff);
-				font_glyph[offset*4+1]=(unsigned char)(val_new>>8);
-				font_glyph[offset*4+2]=(unsigned char)(val_new>>16);
-				font_glyph[offset*4+3]=(unsigned char)(val_new>>24);
-				addr+=4;
-			}	
-			
+				val_new						= *(__IO uint32_t*)addr;
+				font_glyph[offset * 4 + 0]	= (unsigned char)( val_new & 0xff );
+				font_glyph[offset * 4 + 1]	= (unsigned char)( val_new >> 8 );
+				font_glyph[offset * 4 + 2]	= (unsigned char)( val_new >> 16 );
+				font_glyph[offset * 4 + 3]	= (unsigned char)( val_new >> 24 );
+				addr						+= 4;
+			}
+
 			for( row = 0; row < 24; row++ )
 			{
 				val_new = ( font_glyph[row * 2] << 24 ) | ( font_glyph[row * 2 + 1] << 16 );    //读出的字库2byte，只有高12位有效，左对齐
@@ -525,23 +515,21 @@ void printer_get_str_glyph( unsigned char *pstr, unsigned char len )
 			charnum--;
 			if( ( msb >= 0xa1 ) && ( msb <= 0xa3 ) && ( lsb >= 0xa1 ) )
 			{
-				addr = FONT_HZ24_ADDR+((( (unsigned long)msb ) - 0xa1 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 72;
-
+				addr = FONT_HZ24_ADDR + ( ( ( (unsigned long)msb ) - 0xa1 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 72;
 			}else if( ( msb >= 0xb0 ) && ( msb <= 0xf7 ) && ( lsb >= 0xa1 ) )
 			{
-				addr = FONT_HZ24_ADDR+( ( ( (unsigned long)msb ) - 0xb0 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 72 + 282 * 72;
-
+				addr = FONT_HZ24_ADDR + ( ( ( (unsigned long)msb ) - 0xb0 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 72 + 282 * 72;
 			}
-			for(offset=0;offset<18;offset++)
+			for( offset = 0; offset < 18; offset++ )
 			{
-				val_new = *(__IO uint32_t*)addr;
-				font_glyph[offset*4+0]=(unsigned char)(val_new&0xff);
-				font_glyph[offset*4+1]=(unsigned char)(val_new>>8);
-				font_glyph[offset*4+2]=(unsigned char)(val_new>>16);
-				font_glyph[offset*4+3]=(unsigned char)(val_new>>24);
+				val_new						= *(__IO uint32_t*)addr;
+				font_glyph[offset * 4 + 0]	= (unsigned char)( val_new & 0xff );
+				font_glyph[offset * 4 + 1]	= (unsigned char)( val_new >> 8 );
+				font_glyph[offset * 4 + 2]	= (unsigned char)( val_new >> 16 );
+				font_glyph[offset * 4 + 3]	= (unsigned char)( val_new >> 24 );
 
-				addr+=4;
-			}	
+				addr += 4;
+			}
 			for( row = 0; row < 24; row++ )
 			{
 				val_new = ( font_glyph[row * 3] << 24 ) | ( font_glyph[row * 3 + 1] << 16 ) | ( font_glyph[row * 3 + 2] << 8 ); //读出的字库24byte
@@ -561,25 +549,18 @@ void printer_get_str_glyph( unsigned char *pstr, unsigned char len )
 			start_col += 24;
 		}
 	}
+
+
 /*
    for(row=0;row<24;row++)
    {
    rt_kprintf("\r\n");
    for(col=0;col<48;col++) rt_kprintf("%02x ",print_glyph[row][col]);
    }
-*/
+ */
 	//启动打印
 	printer_print_glyph( len );
 }
-
-
-
-
-
-
-
-
-
 
 /*
    检查收到的打印数据,形成要打印的一行文字
@@ -601,7 +582,7 @@ void printer_get_str_glyph( unsigned char *pstr, unsigned char len )
 
    本函数实际上是获得一个可打印行的内容。
  */
-static void printer_get_str_line(void)
+static void printer_get_str_line( void )
 {
 	unsigned char CH, CL;
 
@@ -631,7 +612,7 @@ static void printer_get_str_line(void)
 					{
 						printer_get_str_glyph( print_str, print_str_len );
 						print_str_len	= 0;
-						dotremain		= 384 -printer_param.margin_left - printer_param.margin_right;
+						dotremain		= 384 - printer_param.margin_left - printer_param.margin_right;
 					}
 				}else //这个条件应该执行不到.主要是中英混排时,剩余点阵在12-24 之间又要打印汉字时产生。
 				{
@@ -677,24 +658,19 @@ static void printer_get_str_line(void)
 			//todo 断电
 		}
 	}
-
-
 }
 
-
 /*
-打印任务定时检查
-*/
-static void timer_printer_cb(void* parameter)
+   打印任务定时检查
+ */
+static void timer_printer_cb( void* parameter )
 {
 	if( fprinting )
 	{
 		return;
 	}
-	printer_get_str_line();
+	printer_get_str_line( );
 }
-
-
 
 /***********************************************************
 * Function:       // 函数名称
@@ -719,13 +695,13 @@ static rt_err_t printer_init( rt_device_t dev )
 }
 
 /***********************************************************
-* Function:       // 函数名称
-* Description:    // 函数功能、性能等的描述
-* Input:          // 1.输入参数1，说明，包括每个参数的作用、取值说明及参数间关系
-* Input:          // 2.输入参数2，说明，包括每个参数的作用、取值说明及参数间关系
-* Output:         // 1.输出参数1，说明
-* Return:         // 函数返回值的说明
-* Others:         // 其它说明
+* Function:
+* Description:    在此是否应该给打印上电，只是在要打印时上电
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
 ***********************************************************/
 static rt_err_t printer_open( rt_device_t dev, rt_uint16_t oflag )
 {
@@ -757,8 +733,8 @@ static rt_size_t printer_read( rt_device_t dev, rt_off_t pos, void* buff, rt_siz
 ***********************************************************/
 static rt_size_t printer_write( rt_device_t dev, rt_off_t pos, const void* buff, rt_size_t count )
 {
-	rt_size_t ret=RT_EOK;
-	ret=ringbuffer_put_data(&rb_printer_data,count,(unsigned char *)buff);
+	rt_size_t ret = RT_EOK;
+	ret = ringbuffer_put_data( &rb_printer_data, count, (unsigned char*)buff );
 	return ret;
 }
 
@@ -773,8 +749,8 @@ static rt_size_t printer_write( rt_device_t dev, rt_off_t pos, const void* buff,
 ***********************************************************/
 static rt_err_t printer_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 {
-	uint32_t code = *(uint32_t*)arg;
-	int		i;
+	uint32_t	code = *(uint32_t*)arg;
+	int			i;
 	switch( cmd )
 	{
 		case PRINTER_CMD_CHRLINE_N:
@@ -796,10 +772,10 @@ static rt_err_t printer_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 		case PRINTER_CMD_FACTORY:
 			break;
 		case PRINTER_CMD_GRAYLEVEL:
-			printer_param.gray_level=code;
+			printer_param.gray_level = code;
 			break;
 		case PRINTER_CMD_LINESPACE_DEFAULT:
-			printer_param.line_space=code;
+			printer_param.line_space = code;
 			break;
 		case PRINTER_CMD_LINESPACE_N:
 			if( code > 29 )
@@ -811,26 +787,27 @@ static rt_err_t printer_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 			}
 			break;
 		case PRINTER_CMD_MARGIN_LEFT:
-			printer_param.margin_left=code;
+			printer_param.margin_left = code;
 			break;
 		case PRINTER_CMD_MARGIN_RIGHT:
-			printer_param.margin_right=code;
+			printer_param.margin_right = code;
 			break;
 	}
 	return RT_EOK;
 }
 
 /***********************************************************
-* Function:       // 函数名称
-* Description:    // 函数功能、性能等的描述
-* Input:          // 1.输入参数1，说明，包括每个参数的作用、取值说明及参数间关系
-* Input:          // 2.输入参数2，说明，包括每个参数的作用、取值说明及参数间关系
-* Output:         // 1.输出参数1，说明
-* Return:         // 函数返回值的说明
-* Others:         // 其它说明
+* Function:
+* Description:在此给打印机断电
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
 ***********************************************************/
 static rt_err_t printer_close( rt_device_t dev )
 {
+	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
 	return RT_EOK;
 }
 
@@ -845,13 +822,11 @@ static rt_err_t printer_close( rt_device_t dev )
 ***********************************************************/
 void printer_driver_init( void )
 {
-
-	rt_timer_init(&tmr_printer,\
-					"tmr_p",\
-					timer_printer_cb,NULL,\
-					50, \
-					RT_TIMER_FLAG_PERIODIC);
-					
+	rt_timer_init( &tmr_printer, \
+	               "tmr_p", \
+	               timer_printer_cb, NULL, \
+	               50, \
+	               RT_TIMER_FLAG_PERIODIC );
 
 	dev_printer.type		= RT_Device_Class_Char;
 	dev_printer.init		= printer_init;
@@ -864,7 +839,7 @@ void printer_driver_init( void )
 
 	rt_device_register( &dev_printer, "printer", RT_DEVICE_FLAG_WRONLY );
 	rt_device_init( &dev_printer );
-	rt_timer_start(&tmr_printer);
+	rt_timer_start( &tmr_printer );
 }
 
 /***********************************************************
@@ -877,47 +852,56 @@ void printer_driver_init( void )
 ***********************************************************/
 void printer( const char *str )
 {
-	printer_write(&dev_printer,0,str,strlen(str));
+	printer_write( &dev_printer, 0, str, strlen( str ) );
 }
 
-FINSH_FUNCTION_EXPORT(printer, print string test);
+FINSH_FUNCTION_EXPORT( printer, print string test );
 
-void step( const int count,const int delay )
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void step( const int count, const int delay )
 {
 	int i;
 
 	if( GPIO_ReadInputDataBit( PHE_PORT, PHE_PIN ) )
 	{
-		rt_kprintf("NO Paper\r\n");
+		rt_kprintf( "NO Paper\r\n" );
 		return;
 	}
 	GPIO_SetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
-	for(i=0;i<count;i++)
+	for( i = 0; i < count; i++ )
 	{
 		//drivers1();
-		MTA_H;MTAF_L;MTB_L;MTBF_H;
-		delay_us(delay);
-		MTA_L;MTAF_L;MTB_L;MTBF_H;
-		delay_us(delay);
-		MTA_L;MTAF_H;MTB_L;MTBF_H;
-		delay_us(delay);
-		MTA_L;MTAF_H;MTB_L;MTBF_L;
-		delay_us(delay);
+		MTA_H; MTAF_L; MTB_L; MTBF_H;
+		delay_us( delay );
+		MTA_L; MTAF_L; MTB_L; MTBF_H;
+		delay_us( delay );
+		MTA_L; MTAF_H; MTB_L; MTBF_H;
+		delay_us( delay );
+		MTA_L; MTAF_H; MTB_L; MTBF_L;
+		delay_us( delay );
 		//drivers2();
-		MTA_L;MTAF_H;MTB_H;MTBF_L;
-		delay_us(delay);
-		MTA_L;MTAF_L;MTB_H;MTBF_L;
-		delay_us(delay);
-		MTA_H;MTAF_L;MTB_H;MTBF_L;
-		delay_us(delay);
-		MTA_H;MTAF_L;MTB_L;MTBF_L;
-		delay_us(delay);
+		MTA_L; MTAF_H; MTB_H; MTBF_L;
+		delay_us( delay );
+		MTA_L; MTAF_L; MTB_H; MTBF_L;
+		delay_us( delay );
+		MTA_H; MTAF_L; MTB_H; MTBF_L;
+		delay_us( delay );
+		MTA_H; MTAF_L; MTB_L; MTBF_L;
+		delay_us( delay );
 		printer_stop( );
 	}
 	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
-	
 }
-FINSH_FUNCTION_EXPORT(step, print step test);
 
+FINSH_FUNCTION_EXPORT( step, print step test );
 
 /************************************** The End Of File **************************************/

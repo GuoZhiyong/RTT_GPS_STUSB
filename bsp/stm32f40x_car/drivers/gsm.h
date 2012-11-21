@@ -90,8 +90,9 @@ typedef enum
 
 typedef enum
 {
-	GSM_IDLE=0,			//空闲  POWEROFF
+	GSM_IDLE=0,			//空闲
 	GSM_POWERON,		//上电过程中
+	GSM_POWEROFF,		//断电过程中
 	GSM_AT,				//处于AT命令收发状态
 	GSM_PPP,			//处于PPP连接状态
 	GSM_DATA,			//处于数据状态

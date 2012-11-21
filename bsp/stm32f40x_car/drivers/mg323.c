@@ -22,6 +22,14 @@
 
 typedef void (*URC_CB)(char *s,uint16_t len);
 
+#define GSM_PWR_PORT		GPIOB		
+#define GSM_PWR_PIN			GPIO_Pin_15		//PB.15
+
+#define GSM_TERMON_PORT		GPIOB
+#define GSM_TERMON_PIN		GPIO_Pin_8		//PB.8
+
+#define GSM_RST_PORT		GPIOB
+#define GSM_RST_PIN			GPIO_Pin_9		//PB.9
 
 
 
@@ -44,13 +52,13 @@ static struct rt_semaphore	gsm_sem;
 static uint8_t	gsm_rx[GSM_RX_SIZE];
 static uint16_t gsm_rx_wr = 0;
 
-
+static T_GSM_STATE	gsmstate=GSM_IDLE;
 
 
 
 static void urc_cb_default(char *s,uint16_t len)
 {
-
+	rt_kprintf("\rrx>%s",s);
 
 }
 
@@ -180,7 +188,7 @@ static void gsmrx_cb( char *pInfo, uint16_t len )
 	
 //AT命令的交互，区分是自身处理还是来自APP的命令
 
-
+	
 
 }
 
@@ -227,7 +235,7 @@ static void rt_thread_entry_gsm( void* parameter )
 
 /***********************************************************
 * Function:
-* Description:
+* Description:	接收到serial驱动的数据指示
 * Input:
 * Input:
 * Output:
@@ -242,7 +250,7 @@ static rt_err_t mg323_rx_ind( rt_device_t dev, rt_size_t size )
 
 /***********************************************************
 * Function:
-* Description: 查找并打开gsm对应的串口设备
+* Description: 配置控电管脚，查找并打开gsm对应的串口设备
 * Input:
 * Input:
 * Output:
@@ -251,6 +259,25 @@ static rt_err_t mg323_rx_ind( rt_device_t dev, rt_size_t size )
 ***********************************************************/
 static rt_err_t mg323_init( rt_device_t dev )
 {
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB , ENABLE );
+
+	GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+
+	GPIO_InitStructure.GPIO_Pin = GSM_PWR_PIN;
+	GPIO_Init( GSM_PWR_PORT, &GPIO_InitStructure );
+	GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );	
+
+	GPIO_InitStructure.GPIO_Pin = GSM_TERMON_PIN;
+	GPIO_Init( GSM_TERMON_PORT, &GPIO_InitStructure );
+	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );	
+
+	
 	rt_device_t dev_uart = RT_NULL;
 	dev_uart = rt_device_find( GSM_UART_NAME);
 	if( dev != RT_NULL && rt_device_open( dev, RT_DEVICE_OFLAG_RDWR ) == RT_EOK )
@@ -259,7 +286,7 @@ static rt_err_t mg323_init( rt_device_t dev )
 		rt_device_set_rx_indicate( dev, mg323_rx_ind );
 	}else
 	{
-		rt_kprintf( "finsh: can not find device:%s\n", device_name );
+		rt_kprintf( "GSM: can not find device:\n" );
 	}
 	return RT_EOK;
 }
@@ -275,8 +302,30 @@ static rt_err_t mg323_init( rt_device_t dev )
 ***********************************************************/
 static rt_err_t mg323_open( rt_device_t dev, rt_uint16_t oflag )
 {
+	gsmstate=GSM_POWERON;	//置位上电过程中
+	GPIO_SetBits(GSM_PWR_PORT,GSM_PWR_PIN);
+	rt_thread_delay(RT_TICK_PER_SECOND/2);		//500ms
+	GPIO_SetBits(GSM_TERMON_PORT,GSM_TERMON_PIN);
+	rt_thread_delay(RT_TICK_PER_SECOND/10);		//100ms
+	GPIO_ResetBits(GSM_TERMON_PORT,GSM_TERMON_PIN);
 	return RT_EOK;
 }
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static rt_err_t mg323_close( rt_device_t dev )
+{
+	gsmstate=GSM_POWEROFF;	//置位断电过程中
+	return RT_EOK;
+}
+
 
 /***********************************************************
 * Function:mg323_read
@@ -308,19 +357,7 @@ static rt_size_t mg323_write( rt_device_t dev, rt_off_t pos, const void* buff, r
 	return ret;
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static rt_err_t mg323_close( rt_device_t dev )
-{
-	return RT_EOK;
-}
+
 
 /***********************************************************
 * Function:		mg323_control
