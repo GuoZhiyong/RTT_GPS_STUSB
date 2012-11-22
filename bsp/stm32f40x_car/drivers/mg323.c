@@ -184,6 +184,7 @@ static void gsmrx_cb( char *pInfo, uint16_t len )
 		{
 			(urc[i].pfunc)(pInfo,len);
 			match=1;		//“—¥¶¿Ì
+			break;	
 		}	
 	}
 	if(match) return;
