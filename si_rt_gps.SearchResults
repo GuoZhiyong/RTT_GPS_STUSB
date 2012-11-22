@@ -1,0 +1,26 @@
+---- mg323_open Matches (25 in 5 files) ----
+mg323.c (bsp\stm32f40x_car\drivers):static rt_err_t mg323_open( rt_device_t dev, rt_uint16_t oflag )
+mg323.c (bsp\stm32f40x_car\drivers):	dev_gsm.open		= mg323_open;
+mg323.c (bsp\stm32f40x_car\drivers):	return mg323_open(&dev_gsm,RT_DEVICE_OFLAG_RDWR);
+mg323.c (bsp\stm32f40x_car\drivers):static rt_err_t mg323_open( rt_device_t dev, rt_uint16_t oflag )
+mg323.c (bsp\stm32f40x_car\drivers):	dev_gsm.open		= mg323_open;
+mg323.c (bsp\stm32f40x_car\drivers):	return mg323_open(&dev_gsm,RT_DEVICE_OFLAG_RDWR);
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build): <LI><a href="#[76]">mg323_open</a> from mg323.o(i.mg323_open) referenced from mg323.o(i.gsm_init)
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mg323_open
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mg323_open
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<BR><BR>[Stack]<UL><LI>Max Depth = 264<LI>Call Chain = gsm_open &rArr; mg323_open &rArr; rt_thread_delay &rArr; rt_thread_sleep &rArr; rt_timer_start &rArr; rt_schedule &rArr; _rt_scheduler_stack_check &rArr; list_thread &rArr; _list_thread &rArr; rt_kprintf &rArr; vsnprintf &rArr; print_number
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<BR>[Calls]<UL><LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mg323_open
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mg323_open
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<P><STRONG><a name="[76]"></a>mg323_open</STRONG> (Thumb, 56 bytes, Stack size 16 bytes, mg323.o(i.mg323_open))
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<BR><BR>[Stack]<UL><LI>Max Depth = 264<LI>Call Chain = mg323_open &rArr; rt_thread_delay &rArr; rt_thread_sleep &rArr; rt_timer_start &rArr; rt_schedule &rArr; _rt_scheduler_stack_check &rArr; list_thread &rArr; _list_thread &rArr; rt_kprintf &rArr; vsnprintf &rArr; print_number
+mg323.c (bsp\stm32f40x_car\drivers):static rt_err_t mg323_open( rt_device_t dev, rt_uint16_t oflag )
+mg323.c (bsp\stm32f40x_car\drivers):	dev_gsm.open		= mg323_open;
+mg323.c (bsp\stm32f40x_car\drivers):	return mg323_open(&dev_gsm,RT_DEVICE_OFLAG_RDWR);
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build): <LI><a href="#[76]">mg323_open</a> from mg323.o(i.mg323_open) referenced from mg323.o(i.gsm_init)
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mg323_open
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mg323_open
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<BR><BR>[Stack]<UL><LI>Max Depth = 264<LI>Call Chain = gsm_open &rArr; mg323_open &rArr; rt_thread_delay &rArr; rt_thread_sleep &rArr; rt_timer_start &rArr; rt_schedule &rArr; _rt_scheduler_stack_check &rArr; list_thread &rArr; _list_thread &rArr; rt_kprintf &rArr; vsnprintf &rArr; print_number
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<BR>[Calls]<UL><LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mg323_open
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mg323_open
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<P><STRONG><a name="[76]"></a>mg323_open</STRONG> (Thumb, 56 bytes, Stack size 16 bytes, mg323.o(i.mg323_open))
+rtthread-stm32f4xx.htm (bsp\stm32f40x_car\build):<BR><BR>[Stack]<UL><LI>Max Depth = 264<LI>Call Chain = mg323_open &rArr; rt_thread_delay &rArr; rt_thread_sleep &rArr; rt_timer_start &rArr; rt_schedule &rArr; _rt_scheduler_stack_check &rArr; list_thread &rArr; _list_thread &rArr; rt_kprintf &rArr; vsnprintf &rArr; print_number

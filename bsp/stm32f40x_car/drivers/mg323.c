@@ -12,13 +12,18 @@
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
 
-#ifdef MG323
+
 
 #include <stdio.h>
 #include <rtthread.h>
 #include "stm32f4xx.h"
 
 #include <finsh.h>
+
+#include <gsm.h>
+
+#ifdef MG323
+
 
 typedef void (*URC_CB)(char *s,uint16_t len);
 
@@ -33,17 +38,17 @@ typedef void (*URC_CB)(char *s,uint16_t len);
 
 #define TIMEOUT_SYSSTART_S	5
 
-static struct
-{
-	rt_device_t dev_uart;
-	ONDATA		ondata;
-	ONCMD		oncmd;
-	ONSTATUS	onstatus;
-}priv;
 
 
 
+/*声明一个gsm设备*/
 static struct rt_device		dev_gsm;
+
+/*声明一个uart设备指针,同gsm模块连接的串口
+指向一个已经打开的串口
+*/
+static rt_device_t	dev_uart;
+
 static struct rt_timer		tmr_gsm;
 
 static struct rt_semaphore	gsm_sem;
@@ -57,6 +62,35 @@ static T_GSM_STATE	gsmstate=GSM_IDLE;
 static uint32_t lastticks=0;
 static uint32_t	action_timeout=0;
 
+
+
+int ondata_default(uint8_t *pInfo,uint16_t len)
+{
+	rt_kprintf("%ld(%d)ondata>",rt_tick_get(),len);
+	return RT_EOK;
+}
+
+int oncmd_default(uint8_t *pInfo,uint16_t len)
+{
+	rt_kprintf("%ld(%d)oncmd>",rt_tick_get(),len);
+	return RT_EOK;
+}
+
+int onstatus_default(uint32_t *urc)
+{
+	rt_kprintf("%ld onstatus>",rt_tick_get());
+	return RT_EOK;
+}
+
+T_GSM_OPS gsm_ops_default=
+{
+ ondata_default,
+ oncmd_default,
+ onstatus_default,
+};
+
+
+
 static void urc_cb_default(char *s,uint16_t len)
 {
 	rt_kprintf("\rrx>%s",s);
@@ -66,7 +100,11 @@ static void urc_cb_default(char *s,uint16_t len)
 
 static void urc_cb_sysstart(char *s,uint16_t len)
 {
+	if(gsmstate==GSM_POWERON)	/*上电过程中收到该命令*/
+	{
 
+
+	}
 
 }
 
@@ -100,7 +138,7 @@ urc: unsolicited result code
 */
 struct 
 {
-	char *code,
+	char *code;
 	URC_CB pfunc;
 }urc[]=
 {
@@ -136,17 +174,16 @@ struct
 ***********************************************************/
 static void gsmrx_cb( char *pInfo, uint16_t len )
 {
-	int i;
+	int i,count;
 	char match=0;
 	uint8_t tbl[24]={0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0,0,0xa,0xb,0xc,0xd,0xe,0xf};
-	uint32_t linknum,len;
-	int16_t i,count;
+	uint32_t linknum,infolen;
 	char c,*pmsg;
 	uint8_t *p;
 /*网络侧的信息*/	
 	if(strncmp(pInfo,"%IPDATA",7)==0)
 	{
-		i=sscanf(pInfo,"%%IPDATA:%d,%d,",&linknum,&len);
+		i=sscanf(pInfo,"%%IPDATA:%d,%d,",&linknum,&infolen);
 		if(i!=2) return;		//没有正确解析三个参数
 		pmsg=pInfo+10;
 		while(*pmsg!='"'){
@@ -163,13 +200,15 @@ static void gsmrx_cb( char *pInfo, uint16_t len )
 			pmsg++;
 			*p++=c;
 			count++;
-			if(count>=len) break;
+			if(count>=infolen) break;
 		}	
 		*p=0;
 		p=pInfo;//指到开始处
+		((T_GSM_OPS *)(dev_gsm.user_data))->ondata(p,count);
+		
 	}
 
-	if(strncmp(s,"%IPCLOSE",7)==0)
+	if(strncmp(pInfo,"%IPCLOSE",7)==0)
 	{
 
 
@@ -180,7 +219,7 @@ static void gsmrx_cb( char *pInfo, uint16_t len )
 	for(i=0;;i++)
 	{
 		if(urc[i].pfunc==NULL) break;
-		if(strncmp(pInfo,urc[i].code,strlen(urc[i].code)==0)
+		if(strncmp(pInfo,urc[i].code,strlen(urc[i].code)==0))
 		{
 			(urc[i].pfunc)(pInfo,len);
 			match=1;		//已处理
@@ -206,7 +245,7 @@ static void gsmrx_cb( char *pInfo, uint16_t len )
 ***********************************************************/
 static void timer_gsm_cb( void* parameter )
 {
-	case 	
+//	case 	
 	if(rt_tick_get()-lastticks>action_timeout)
 	{
 		switch(gsmstate)
@@ -222,14 +261,12 @@ static void timer_gsm_cb( void* parameter )
 		}
 	}
 
-
-
 }
 
 
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_gsm_stack[1024];
+static char thread_gsm_stack[2048];
 struct rt_thread thread_gsm;
 /***********************************************************
 * Function:       rt_thread_entry_gsm
@@ -244,6 +281,9 @@ static void rt_thread_entry_gsm( void* parameter )
 {
 	rt_err_t		res;
 	unsigned char	ch, next;
+
+
+
 	/*接收超时判断*/
 	res = rt_sem_take( &gsm_sem, RT_TICK_PER_SECOND / 5 );  //等待200ms
 	if( res == -RT_ETIMEOUT )                               //超时退出，没有数据或接收数据完毕
@@ -256,7 +296,7 @@ static void rt_thread_entry_gsm( void* parameter )
 	}
 	else //收到数据,理论上1个字节触发一次,这里没有根据收到的<CRLF>处理，而是等到超时统一处理
 	{
-		while( rt_device_read( (rt_device_t)( dev_gsm->userdata ), 0, &ch, 1 ) == 1 )
+		while( rt_device_read( dev_uart , 0, &ch, 1 ) == 1 )
 		{
 			gsm_rx[gsm_rx_wr++] = ch;
 			if( gsm_rx_wr == GSM_RX_SIZE )
@@ -267,6 +307,12 @@ static void rt_thread_entry_gsm( void* parameter )
 		}
 	}
 }
+
+
+
+
+
+
 
 /***********************************************************
 * Function:
@@ -294,8 +340,8 @@ static rt_err_t mg323_rx_ind( rt_device_t dev, rt_size_t size )
 ***********************************************************/
 static rt_err_t mg323_init( rt_device_t dev )
 {
+	
 	GPIO_InitTypeDef GPIO_InitStructure;
-
 
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB , ENABLE );
 
@@ -313,15 +359,15 @@ static rt_err_t mg323_init( rt_device_t dev )
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );	
 
 	
-	rt_device_t dev_uart = RT_NULL;
+	
 	dev_uart = rt_device_find( GSM_UART_NAME);
-	if( dev != RT_NULL && rt_device_open( dev, RT_DEVICE_OFLAG_RDWR ) == RT_EOK )
+	if( dev_uart != RT_NULL && rt_device_open( dev_uart, RT_DEVICE_OFLAG_RDWR ) == RT_EOK )
 	{
-		dev->userdata = dev_uart; //指向所操作的串口
-		rt_device_set_rx_indicate( dev, mg323_rx_ind );
+		rt_device_set_rx_indicate( dev_uart, mg323_rx_ind );
 	}else
 	{
-		rt_kprintf( "GSM: can not find device:\n" );
+		rt_kprintf( "GSM: can not find uart\n" );
+		return RT_EEMPTY;
 	}
 	return RT_EOK;
 }
@@ -433,7 +479,7 @@ static rt_err_t mg323_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 * Return:
 * Others:
 ***********************************************************/
-void gsm_init( void )
+void gsm_init( T_GSM_OPS *gsm_ops)
 {
 	rt_thread_t tid;
 
@@ -461,13 +507,55 @@ void gsm_init( void )
 	dev_gsm.read		= mg323_read;
 	dev_gsm.write		= mg323_write;
 	dev_gsm.control		= mg323_control;
-	dev_gsm.user_data	= RT_NULL;
+
+	dev_gsm.user_data = &gsm_ops_default;
+	if(gsm_ops!=NULL)
+		dev_gsm.user_data	= gsm_ops;
+	
 
 	rt_device_register( &dev_gsm, "gsm", RT_DEVICE_FLAG_RDWR );
 	rt_device_init( &dev_gsm );
 	rt_timer_start( &tmr_gsm );
 }
 
+
+#ifdef TEST_GSM
+
+rt_err_t gsm_open(void)
+{
+	return mg323_open(&dev_gsm,RT_DEVICE_OFLAG_RDWR);
+}
+
+FINSH_FUNCTION_EXPORT( gsm_open, open gsm );
+
+
+rt_err_t gsm_close(void)
+{
+	return mg323_close(&dev_gsm);
+}
+
+FINSH_FUNCTION_EXPORT( gsm_close, close gsm );
+
+/*设置链接的socket参数*/
+rt_err_t gsm_control_socket(uint8_t linkno,char type,char *ip,uint32_t port)
+{
+	return mg323_control(&dev_gsm,0,NULL);
+}
+
+FINSH_FUNCTION_EXPORT( gsm_control, control gsm );
+
+
+rt_size_t gsm_write(char *sinfo)
+{
+	return mg323_write(&dev_gsm,0,sinfo,strlen(sinfo));
+}
+
+FINSH_FUNCTION_EXPORT( gsm_write, write gsm );
+
 #endif
+
+
+#endif
+
 
 /************************************** The End Of File **************************************/

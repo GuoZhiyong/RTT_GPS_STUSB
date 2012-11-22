@@ -43,6 +43,7 @@ void rt_init_thread_entry(void* parameter)
   //  rt_thread_delay(50);
   //  rt_device_init_all();
   printer_driver_init();
+  gsm_init(NULL);
 
   while(1)
   {
