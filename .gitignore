@@ -163,7 +163,7 @@ pip-log.txt
 .DS_Store
 
 #################
-#source insight
+# source insight
 #################
 *.CF3
 *.IAB
@@ -178,3 +178,10 @@ pip-log.txt
 *.SearchResults
 *.WK3
 
+
+#################
+# keil project
+#################
+*.axf
+*.plg
+*.dep

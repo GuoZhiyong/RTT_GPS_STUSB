@@ -93,6 +93,7 @@ typedef enum
 	CTL_SOCKET, 		//建立socket
 	CTL_DNS,			//进行DNS解析
 	CTL_TXRX_COUNT, 	//发送接收的字节数
+	CTL_CONNECT,		//直接建立连接
 	
 }T_GSM_CONTROL_CMD;
 
@@ -102,10 +103,9 @@ typedef enum
 typedef enum
 {
 	GSM_IDLE=0,			//空闲
-	GSM_POWERON,		//上电过程中
-	GSM_POWEROFF,		//断电过程中
-	GSM_AT_INIT,		//模块的AT命令初始化过程中
-	GSM_AT,				//处于AT命令收发状态
+	GSM_POWERON,		//上电过程并完成模块的AT命令初始化过程
+	GSM_POWEROFF,		//挂断链接，断电过程中
+	GSM_AT,				//处于AT命令收发状态,设置socket参数，收发短信
 	GSM_PPP,			//处于PPP连接状态
 	GSM_DATA,			//处于数据状态
 }T_GSM_STATE;

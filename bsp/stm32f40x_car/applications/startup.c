@@ -25,7 +25,7 @@
 
 /*@{*/
 
-extern int  rt_application_init(void);
+//extern int  rt_application_init(void);
 #ifdef RT_USING_FINSH
 extern void finsh_system_init(void);
 extern void finsh_set_device(const char* device);
@@ -89,7 +89,10 @@ void rtthread_startup(void)
 	rt_device_init_all();
 
 	/* init application */
-	rt_application_init();
+	//rt_application_init();
+
+	hmi_init();
+	jt808_init();
 
 #ifdef RT_USING_FINSH
 	/* init finsh */
