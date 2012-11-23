@@ -161,3 +161,20 @@ pip-log.txt
 
 # Mac crap
 .DS_Store
+
+#################
+#source insight
+#################
+*.CF3
+*.IAB
+*.IAD
+*.IMB
+*.IMD
+*.PFI
+*.PO
+*.PR
+*.PRI
+*.PS
+*.SearchResults
+*.WK3
+
