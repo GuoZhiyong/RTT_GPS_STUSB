@@ -24,7 +24,7 @@
 
 typedef void ( *URC_CB )( char *s, uint16_t len );
 
-typedef rt_err_t (*RESP_FUNC)(char *s);
+typedef rt_err_t (*RESP_FUNC)(char *s,uint16_t len);
 
 
 #define GSM_PWR_PORT	GPIOB
@@ -36,7 +36,7 @@ typedef rt_err_t (*RESP_FUNC)(char *s);
 #define GSM_RST_PORT	GPIOB
 #define GSM_RST_PIN		GPIO_Pin_9  //PB.9
 
-#define TIMEOUT_SYSSTART_S 5
+
 
 /*声明一个gsm设备*/
 static struct rt_device dev_gsm;
@@ -63,8 +63,9 @@ static uint32_t		action_timeout	= 0;
 
 static rt_tick_t	last_state_ticks; /*上一次状态的tick值*/
 
-static rt_thread_t	tid_gsm_power = RT_NULL;
+static rt_thread_t	tid_gsm_subthread = RT_NULL;
 
+static uint8_t fConnectToGprs=0; /*是否连接到数据模式*/
 
 /***********************************************************
 * Function:
@@ -478,7 +479,7 @@ static rt_err_t mg323_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 +CREG:0,1
 +CGREG:0,5
 */
-rt_err_t RespFunc_CGREG(char *p)
+rt_err_t RespFunc_CGREG(char *p,uint16_t len)
 {
 	uint32_t i,n,code;
 	rt_err_t res=RT_EOK;
@@ -490,7 +491,7 @@ rt_err_t RespFunc_CGREG(char *p)
 	return res;
 }
 
-rt_err_t RespFunc_COPS(char *p)
+rt_err_t RespFunc_COPS(char *p,uint16_t len)
 {
 /*
 	char *oper=(char*)0;
@@ -509,7 +510,7 @@ rt_err_t RespFunc_COPS(char *p)
 
 }
 
-rt_err_t RespFunc_CIFSR(char *p)
+rt_err_t RespFunc_CIFSR(char *p,uint16_t len)
 {
 	uint8_t i=0;
 	rt_err_t res=RT_ERROR;
@@ -534,7 +535,7 @@ SIM卡的IMSI号码为4600 00783208249，
 其6个字节的内容为 0x00 0x07 0x83 0x20 0x82 0x49
 
 */
-rt_err_t RespFunc_CIMI(char *p)
+rt_err_t RespFunc_CIMI(char *p,uint16_t len)
 {
 	rt_err_t res=RT_ERROR;
 	char *pimsi,i;
@@ -549,10 +550,6 @@ rt_err_t RespFunc_CIMI(char *p)
 
 
 
-
-
-
-
 /*等待固定信息的返回*/
 rt_err_t WaitResp( char *resp, rt_tick_t ticks )
 {
@@ -564,26 +561,16 @@ rt_err_t WaitResp( char *resp, rt_tick_t ticks )
 /*等待收到信息*/
 lbl_waitresp_again:
 	ret = rt_sem_take( &sem_gsmrx, localticks );
-	if( ret == -RT_ETIMEOUT )                               //超时退出，没有数据或接收数据完毕
+	if( ret == -RT_ETIMEOUT )   return ret;   //超时退出，没有数据或接收数据完毕
+	p = strstr( gsm_rx, resp );
+	if( p ) return RT_EOK;                    /*找到了*/
+	/*没找到，继续等，这个信息如何处理?比如来短信的通知等URC*/
+	localticks = start + ticks - rt_tick_get( );    /*计算剩余的时间*/
+	if( localticks > 1 )
 	{
-		return ret;
-	}else /*收到信息，要判断是不是需要的*/
-	{
-		p = strstr( gsm_rx, resp );
-		if( p )                                             /*找到了*/
-		{
-			return RT_EOK;
-		} /*没找到，继续等，这个信息如何处理?比如来短信的通知等URC*/
-		else
-		{
-			localticks = start + ticks - rt_tick_get( );    /*计算剩余的时间*/
-			if( localticks > 1 )
-			{
-				goto lbl_waitresp_again;
-			}
-			return -RT_ETIMEOUT;
-		}
+		goto lbl_waitresp_again;
 	}
+	return RT_ETIMEOUT;
 }
 
 /*
@@ -592,19 +579,22 @@ lbl_waitresp_again:
  */
 int8_t CheckResp( uint32_t ticks, RESP_FUNC resp_func )
 {
+	rt_tick_t	start		= rt_tick_get( );
+	rt_tick_t	localticks	= ticks;
 	rt_err_t	ret=RT_EOK;
-
-	/*等待收到信息*/
+/*等待收到信息*/
 lbl_checkresp_again:
-	ret = rt_sem_take( &sem_gsmrx, ticks );
-	if( ret == -RT_ETIMEOUT )                               //超时退出，没有数据或接收数据完毕
+	ret = rt_sem_take( &sem_gsmrx, localticks );
+	if( ret == -RT_ETIMEOUT )  return ret;        //超时退出，没有数据或接收数据完毕
+	/*收到信息，要判断是不是需要的*/
+	ret=resp_func(gsm_rx,gsm_rx_wr);
+	if (ret==RT_EOK) return RT_EOK;
+	localticks = start + ticks - rt_tick_get( );    /*计算剩余的时间*/
+	if( localticks > 1 )
 	{
-		return ret;
-	}else /*收到信息，要判断是不是需要的*/
-	{
-		resp_func(gsm_rx);
-	}
-	return ret;
+		goto lbl_checkresp_again;
+	}	
+	return RT_ETIMEOUT;
 }
 
 
@@ -618,7 +608,6 @@ int8_t SendATCmdWaitRespStr(char *atcmd,
 
   for (i = 0; i < no_of_attempts; i++) 
   {
-  		
   	mg323_write(dev_uart,0,atcmd,strlen(atcmd));
     ret_val = WaitResp(respstring,ticks); 
     if (ret_val == RT_EOK) {
@@ -638,13 +627,15 @@ int8_t SendATCmdWaitRespFunc(char *atcmd,
   int8_t ret_val = RT_ERROR;
   uint8_t i;
 
-  for (i = 0; i < no_of_attempts; i++) {
+  for (i = 0; i < no_of_attempts; i++) 
+  {
   	//printf("\r\n%d(waitrespfunc)>%s",OSTimeGet(),AT_cmd_string);
     mg323_write(dev_uart,0,atcmd,strlen(atcmd));
     ret_val = CheckResp(ticks,respfunc); 
-    if (ret_val == RT_EOK) {
+    if (ret_val == RT_EOK) 
+	{
         break;  
-     }	
+    }	
   }
   return (ret_val);
 }
@@ -690,6 +681,7 @@ lbl_start_pwr_on:
 	res=SendATCmdWaitRespFunc("AT+CIMI\r\n",3*RT_TICK_PER_SECOND,RespFunc_CIMI,3);
 	res=SendATCmdWaitRespFunc("AT+CGREG?\r\n",3*RT_TICK_PER_SECOND,RespFunc_CGREG,10);
 	res=SendATCmdWaitRespStr("AT+CGATT?\r\n",3*RT_TICK_PER_SECOND,"+CGATT:1",10);	
+	gsmstate=GSM_AT;  /*切换到AT状态*/
 }
 
 /***********************************************************
@@ -704,6 +696,11 @@ lbl_start_pwr_on:
 static void rt_thread_entry_gsm_poweroff( void* parameter )
 {
 /*此处可通过rt_thread_self获取线程信息*/
+
+/*关闭连接*/
+
+
+/*模块断电*/
 	rt_kprintf( "\r\n%ld>gsm pwr off start", rt_tick_get( ) );
 	GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
 	rt_thread_delay( RT_TICK_PER_SECOND / 2 );  //500ms
@@ -714,10 +711,9 @@ static void rt_thread_entry_gsm_poweroff( void* parameter )
 
 }
 
-
 /***********************************************************
-* Function:		rt_thread_entry_gsm_ppp
-* Description:	建立链接
+* Function:	rt_thread_entry_gsm_ppp
+* Description: 挂断当前链接，并关闭模块
 * Input:
 * Input:
 * Output:
@@ -726,9 +722,12 @@ static void rt_thread_entry_gsm_poweroff( void* parameter )
 ***********************************************************/
 static void rt_thread_entry_gsm_ppp( void* parameter )
 {
-	
+/*此处可通过rt_thread_self获取线程信息*/
+
 
 }
+
+
 
 
 
@@ -759,41 +758,53 @@ static void rt_thread_entry_gsm( void* parameter )
 		case GSM_IDLE:
 			break;
 		case GSM_POWERON:                               /*上电过程中，控制IO的操作放在此处，如何保证时间的可靠*/
-			if( tid_gsm_power == RT_NULL )
+			if( tid_gsm_subthread == RT_NULL )
 			{
-				tid_gsm_power = rt_thread_create( "pwron",
+				tid_gsm_subthread = rt_thread_create( "pwron",
 				                                  rt_thread_entry_gsm_poweron, (void*)1,
 				                                  512,  /* thread stack size */
 				                                  25,   /* thread priority */
 				                                  5     /* thread time slice*/
 				                                  );
-				if( tid_gsm_power != RT_NULL )
+				if( tid_gsm_subthread != RT_NULL )
 				{
-					rt_thread_startup( tid_gsm_power );
+					rt_thread_startup( tid_gsm_subthread );
 				}
 			}
 			break;
 		case GSM_POWEROFF:                              /*断电电过程中，控制IO的操作放在此处，如何保证时间的可靠*/
-			if( tid_gsm_power == RT_NULL )
+			if( tid_gsm_subthread == RT_NULL )
 			{
-				tid_gsm_power = rt_thread_create( "pwroff",
+				tid_gsm_subthread = rt_thread_create( "pwroff",
 				                                  rt_thread_entry_gsm_poweroff, (void*)1,
 				                                  512,  /* thread stack size */
 				                                  25,   /* thread priority */
 				                                  5     /* thread time slice*/
 				                                  );
-				if( tid_gsm_power != RT_NULL )
+				if( tid_gsm_subthread != RT_NULL )
 				{
-					rt_thread_startup( tid_gsm_power );
+					rt_thread_startup( tid_gsm_subthread );
 				}
 			}
 			break;
 		case GSM_AT:
+			if(fConnectToGprs) gsmstate=GSM_PPP; /*切换链接*/
 			break;
-
 		case GSM_PPP:
+			if( tid_gsm_subthread == RT_NULL )
+			{
+				tid_gsm_subthread = rt_thread_create( "ppp",
+				                                  rt_thread_entry_gsm_ppp, (void*)1,
+				                                  512,  /* thread stack size */
+				                                  25,   /* thread priority */
+				                                  5     /* thread time slice*/
+				                                  );
+				if( tid_gsm_subthread != RT_NULL )
+				{
+					rt_thread_startup( tid_gsm_subthread );
+				}
+			}			
 			break;
-
 		case GSM_DATA:
 			break;
 	}
