@@ -45,6 +45,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	scr_CarMulTrans=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

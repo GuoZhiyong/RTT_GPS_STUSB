@@ -108,6 +108,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_1_InforTirExspd=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

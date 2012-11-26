@@ -62,7 +62,7 @@ static void rt_thread_entry_usbmsc(void* parameter)
     {
     	GPIO_SetBits(GPIOD, GPIO_Pin_15);
 		USBH_Process(&USB_OTG_Core,&USB_Host);
-		rt_thread_delay(RT_TICK_PER_SECOND/100);
+		rt_thread_delay(RT_TICK_PER_SECOND/20);
 		GPIO_ResetBits(GPIOD, GPIO_Pin_15);
     }
 

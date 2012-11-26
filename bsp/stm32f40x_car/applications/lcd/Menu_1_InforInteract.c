@@ -202,6 +202,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_1_InforInteract=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

@@ -103,6 +103,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_3_2_sudu=
 {
+	"最近15分钟速度",
 	&show,
 	&keypress,
 	&timetick,

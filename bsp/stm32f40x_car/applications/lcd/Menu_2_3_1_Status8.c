@@ -59,6 +59,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_3_1_Sing8=
 {
+	"ÐÅºÅÏß×´Ì¬",
 	&show,
 	&keypress,
 	&timetick,

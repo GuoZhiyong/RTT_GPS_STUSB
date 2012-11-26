@@ -117,6 +117,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_2_6_oil=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

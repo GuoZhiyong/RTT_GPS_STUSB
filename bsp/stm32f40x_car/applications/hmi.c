@@ -106,8 +106,11 @@ void hmi_init( void )
 {
 	rt_thread_t tid;
 
+	printer_driver_init();
+	usbh_init();
+
 	rt_thread_init( &thread_hmi,
-	                "usbhmi",
+	                "hmi_lcd",
 	                rt_thread_entry_hmi,
 	                RT_NULL,
 	                &thread_hmi_stack[0],

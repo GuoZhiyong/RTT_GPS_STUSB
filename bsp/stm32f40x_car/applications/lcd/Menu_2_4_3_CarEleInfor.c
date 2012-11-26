@@ -50,6 +50,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_4_3_CarEleInfor=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

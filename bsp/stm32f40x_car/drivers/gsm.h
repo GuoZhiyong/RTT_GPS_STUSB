@@ -20,7 +20,7 @@
 
 #define GSM_UART_NAME	"uart2"
 
-#define MAX_SOCKETS	3	//EM310定义
+#define MAX_SOCKETS	6	//EM310定义3  MG323定义6
 
 /*
 定义使用的模块型号
@@ -57,17 +57,26 @@ typedef struct
 }T_GSM_AT_CMD;
 
 
+
+/*
+网络参数
+
+	MG323的Profile
+
+*/
+
 typedef struct 
 {
 	char	*apn;		//apn
-	char	*resp;		//响应
-	char	isok;		//是否返回OK	
-	int		timeout;	//等待超时时间
-}T_GSM_PPP;
+	char	*user;		//用户名
+	char	*password;	//密码
+}T_GSM_APN;
 
 
 typedef struct 
 {
+	char	active;			/*是否激活*/
+	char	status;			/*当前状态*/
 	char	op;				//操作
 	char	type;			//scoket类型 UDPorTCP
 	char	*ip;			//ip地址

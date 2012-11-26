@@ -265,6 +265,7 @@ else
 
 MENUITEM	Menu_2_4_6_CenterAffairSet=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

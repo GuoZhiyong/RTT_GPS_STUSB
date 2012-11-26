@@ -254,6 +254,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_2_2_CarType=
 {
+	"车辆类型选择",
 	&show,
 	&keypress,
 	&timetick,

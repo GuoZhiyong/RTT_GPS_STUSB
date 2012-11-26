@@ -128,6 +128,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM    Menu_2_4_7_LogOut=
 {
+	"",
    &show,
    &keypress,
    &timetick,

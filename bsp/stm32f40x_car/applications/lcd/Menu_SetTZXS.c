@@ -41,6 +41,7 @@ else
 
 MENUITEM	Menu_SetTZXS=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

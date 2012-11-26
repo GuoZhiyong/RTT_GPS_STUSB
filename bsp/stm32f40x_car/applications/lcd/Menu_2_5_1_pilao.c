@@ -51,6 +51,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_5_1_pilao=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

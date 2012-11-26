@@ -179,6 +179,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_3_5_jiayuan=
 {
+	"驾驶员信息查看",
 	&show,
 	&keypress,
 	&timetick,

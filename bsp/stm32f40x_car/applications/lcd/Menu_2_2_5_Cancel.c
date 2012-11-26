@@ -74,6 +74,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_2_5_Cancel=
 {
+	"Çå³ýÎ¥ÕÂ¼ÇÂ¼",
 	&show,
 	&keypress,
 	&timetick,

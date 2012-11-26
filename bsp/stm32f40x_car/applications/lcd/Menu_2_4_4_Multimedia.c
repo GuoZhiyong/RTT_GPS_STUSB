@@ -121,6 +121,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_4_4_Multimedia=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

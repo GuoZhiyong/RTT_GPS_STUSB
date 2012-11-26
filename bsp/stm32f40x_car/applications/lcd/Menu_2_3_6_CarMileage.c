@@ -63,6 +63,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_3_6_Mileage=
 {
+	"里程信息查看",
 	&show,
 	&keypress,
 	&timetick,

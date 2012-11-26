@@ -24,6 +24,7 @@ typedef void (*TIMETICK)(unsigned int);
 
 
 typedef struct _menuitem{
+	char *caption;			/*菜单项的文字信息*/
 	SHOW show;				/*显示时调用，初始化显示*/
 	KEYPRESS keypress;		/*发生按键时调用*/
 	//EXIT exit1(void);				/*退出时调用*/

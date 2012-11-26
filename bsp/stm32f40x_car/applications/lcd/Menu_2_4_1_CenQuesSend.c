@@ -191,6 +191,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_4_1_CenterQuestion=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

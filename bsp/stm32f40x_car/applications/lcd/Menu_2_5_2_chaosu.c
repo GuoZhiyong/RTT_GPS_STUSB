@@ -48,6 +48,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_5_2_chaosu=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

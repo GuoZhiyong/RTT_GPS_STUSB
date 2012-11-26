@@ -128,6 +128,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_3_4_carinfor=
 {
+	"车辆信息查看",
 	&show,
 	&keypress,
 	&timetick,

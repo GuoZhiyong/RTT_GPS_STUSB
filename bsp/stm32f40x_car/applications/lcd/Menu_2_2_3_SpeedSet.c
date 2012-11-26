@@ -114,6 +114,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_2_3_SpeedSet=
 {
+	"ÀŸ∂»…Ë÷√",
 	&show,
 	&keypress,
 	&timetick,

@@ -46,6 +46,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_6_1_Ver=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

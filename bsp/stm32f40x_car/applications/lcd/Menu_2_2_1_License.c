@@ -17,6 +17,9 @@ struct IMG_DEF test_dis_license={12,12,test_00};
 unsigned char select[]={0x0C,0x06,0xFF,0x06,0x0C};
 unsigned char select_kong[]={0x00,0x00,0x00,0x00,0x00};
 
+
+
+
 DECL_BMP(8,5,select); DECL_BMP(8,5,select_kong); 
 
 /*
@@ -610,6 +613,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_2_1_license=
 {
+	"≥µ≈∆∫≈ ‰»Î",
 	&show,
 	&keypress,
 	&timetick,

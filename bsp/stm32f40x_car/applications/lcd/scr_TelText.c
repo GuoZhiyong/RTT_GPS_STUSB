@@ -48,6 +48,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	scr_TelText=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

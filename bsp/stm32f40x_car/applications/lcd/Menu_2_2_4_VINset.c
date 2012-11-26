@@ -160,6 +160,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_2_4_VINset=
 {
+	"≥µ¡æVIN…Ë÷√",
 	&show,
 	&keypress,
 	&timetick,

@@ -188,6 +188,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_3_3_TextInforStor=
 {
+	"文字消息查看",
 	&show,
 	&keypress,
 	&timetick,

@@ -396,6 +396,7 @@ else
   
   MENUITEM	  Menu_2_3_7_CenterInforMeun=
   {
+	  "信息点播查看",
 	  &show,
 	  &keypress,
 	  &timetick,

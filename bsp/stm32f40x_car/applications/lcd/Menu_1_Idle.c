@@ -79,6 +79,7 @@ if(tickcount>=10)
 
 MENUITEM	Menu_1_Idle=
 {
+	"”Õ¡ø±Í∂®",
 	&show,
 	&keypress,
 	&timetick,

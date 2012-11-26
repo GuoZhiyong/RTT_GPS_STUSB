@@ -436,6 +436,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_1_usb=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

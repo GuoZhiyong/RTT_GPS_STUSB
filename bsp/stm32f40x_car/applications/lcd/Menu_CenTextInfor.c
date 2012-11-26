@@ -46,6 +46,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_CenterTextInfor=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,

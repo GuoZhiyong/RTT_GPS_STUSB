@@ -132,6 +132,7 @@ static void timetick(unsigned int systick)
 
 MENUITEM	Menu_2_4_2_CarStatus=
 {
+	"",
 	&show,
 	&keypress,
 	&timetick,
