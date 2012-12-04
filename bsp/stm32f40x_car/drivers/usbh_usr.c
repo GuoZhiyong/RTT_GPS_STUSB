@@ -163,13 +163,7 @@ void USBH_USR_Init( void )
 	if( startup == 0 )
 	{
 		startup = 1;
-#ifdef USE_USB_OTG_HS
-		rt_kprintf( "\r\n USB OTG HS MSC Host" );
-#else
-		rt_kprintf( "\n USB OTG FS MSC Host" );
-#endif
 		rt_kprintf( "> USB Host library started.\n" );
-		rt_kprintf( "     USB Host Library v2.1.0" );
 	}
 }
 
@@ -182,6 +176,7 @@ void USBH_USR_Init( void )
 void USBH_USR_DeviceAttached( void )
 {
 	rt_kprintf( "%s\n", MSG_DEV_ATTACHED );
+
 }
 
 /**

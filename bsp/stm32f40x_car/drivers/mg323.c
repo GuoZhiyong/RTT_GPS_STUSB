@@ -26,14 +26,14 @@ typedef void ( *URC_CB )( char *s, uint16_t len );
 
 typedef rt_err_t ( *RESP_FUNC )( char *s, uint16_t len );
 
-#define GSM_PWR_PORT	GPIOB
-#define GSM_PWR_PIN		GPIO_Pin_15 //PB.15
+#define GSM_PWR_PORT	GPIOD
+#define GSM_PWR_PIN		GPIO_Pin_13 
 
-#define GSM_TERMON_PORT GPIOB
-#define GSM_TERMON_PIN	GPIO_Pin_8  //PB.8
+#define GSM_TERMON_PORT GPIOD
+#define GSM_TERMON_PIN	GPIO_Pin_12
 
-#define GSM_RST_PORT	GPIOB
-#define GSM_RST_PIN		GPIO_Pin_9  //PB.9
+#define GSM_RST_PORT	GPIOD
+#define GSM_RST_PIN		GPIO_Pin_11
 
 /*声明一个gsm设备*/
 static struct rt_device dev_gsm;
@@ -388,7 +388,7 @@ static rt_err_t mg323_init( rt_device_t dev )
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
-	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB, ENABLE );
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOD, ENABLE );
 
 	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
@@ -402,6 +402,21 @@ static rt_err_t mg323_init( rt_device_t dev )
 	GPIO_InitStructure.GPIO_Pin = GSM_TERMON_PIN;
 	GPIO_Init( GSM_TERMON_PORT, &GPIO_InitStructure );
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
+
+/*
+RESET在开机过程不需要做任何时序配合（和通常CPU 的 reset不同）。
+建议该管脚接OC输出的GPIO，开机时 OC 输出高阻。
+*/
+	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_OType	= GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_50MHz;
+
+	GPIO_InitStructure.GPIO_Pin = GSM_RST_PIN;
+	GPIO_Init( GSM_RST_PORT, &GPIO_InitStructure );
+	GPIO_SetBits( GSM_RST_PORT, GSM_RST_PIN );
+
+
 
 	dev_uart = rt_device_find( GSM_UART_NAME );
 	if( dev_uart != RT_NULL && rt_device_open( dev_uart, RT_DEVICE_OFLAG_RDWR ) == RT_EOK )
@@ -782,10 +797,11 @@ static void rt_thread_entry_gsm_poweron( void* parameter )
 lbl_start_pwr_on:
 	rt_kprintf( "\r\n%ld>gsm pwr on start", rt_tick_get( ) );
 	GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND / 2 );  //500ms
 	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND / 10 ); //100ms
+	rt_thread_delay( RT_TICK_PER_SECOND / 2 ); 
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
+	rt_thread_delay( RT_TICK_PER_SECOND );  
+	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
 	rt_kprintf( "\r\n%ld>gsm pwr on end", rt_tick_get( ) );
 
 	res = WaitResp( "^SYSSTART", RT_TICK_PER_SECOND * 10 );
@@ -830,12 +846,16 @@ static void rt_thread_entry_gsm_poweroff( void* parameter )
 /*模块断电*/
 lbl_start_pwr_off:
 
-	rt_kprintf( "\r\n%ld>gsm pwr off start", rt_tick_get( ) );
+	rt_kprintf( "\r\n%ld>gsm pwr off start", rt_tick_get( ));
 	GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND / 2 );  //500ms
 	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND / 10 ); //100ms
+	rt_thread_delay( RT_TICK_PER_SECOND / 2 ); 
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
+	rt_thread_delay( RT_TICK_PER_SECOND );  
+	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
+	//SendATCmdWaitRespStr("AT^SMSO\r\n",RT_TICK_PER_SECOND,"OK",1);
+	rt_kprintf( "\r\n%ld>gsm pwr on end", rt_tick_get( ) );
+
 
 	res = WaitResp( "^SHUTDOWN", RT_TICK_PER_SECOND * 10 );
 	if( res != RT_EOK )

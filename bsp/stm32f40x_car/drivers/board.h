@@ -18,6 +18,31 @@
 
 #include <stm32f4xx.h>
 
+
+
+/*
+×Ö¿â¶¨Òå
+*/
+
+#define FONT_BASE_ADDR		0x08040000
+
+#define FONT_ASC0612_SIZE	0x480
+#define FONT_HZ1212_SIZE	0x294F0
+#define FONT_ASC1224_SIZE	0x1200
+#define FONT_HZ2424_SIZE	0x7bed0
+
+
+
+
+#define FONT_ASC0612_ADDR	(FONT_BASE_ADDR)
+#define FONT_HZ1212_ADDR	(FONT_BASE_ADDR+FONT_ASC0612_SIZE)
+#define FONT_ASC1224_ADDR	(FONT_BASE_ADDR+FONT_ASC0612_SIZE+FONT_HZ1212_SIZE)
+#define FONT_HZ2424_ADDR	(FONT_BASE_ADDR+FONT_ASC0612_SIZE+FONT_HZ1212_SIZE+FONT_ASC1224_SIZE)
+
+
+
+
+
 /* board configuration */
 // <o> SDCard Driver <1=>SDIO sdcard <0=>SPI MMC card
 // 	<i>Default: 1

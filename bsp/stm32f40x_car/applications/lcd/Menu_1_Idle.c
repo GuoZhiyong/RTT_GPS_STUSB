@@ -12,7 +12,8 @@ struct IMG_DEF test_1_Idle={12,12,test_00};
 static void show(void)
 {
 	lcd_fill(0);
-	DisAddRead_ZK(35,10,"行车记录仪",5,&test_1_Idle,0,0);
+	//DisAddRead_ZK(35,10,"行车记录仪",5,&test_1_Idle,0,0);
+	lcd_text12(15,10,"行车记录仪12aA",14,LCD_MODE_SET);
 	lcd_update_all();
 }
 
@@ -27,7 +28,8 @@ static void keypress(unsigned int key)
 			break;		
 		case 2:
 			lcd_fill(0);
-			DisAddRead_ZK(35,10,"确认键按下",5,&test_1_Idle,1,0);
+			//DisAddRead_ZK(35,10,"确认键按下",5,&test_1_Idle,1,0);
+			lcd_text12(35,10,"确认键按下",10,LCD_MODE_INVERT);
 			lcd_update_all();
 			break;		
 		case 3:

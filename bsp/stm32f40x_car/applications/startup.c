@@ -90,7 +90,7 @@ void rtthread_startup(void)
 
 	/* init application */
 	//rt_application_init();
-	gsm_init(RT_NULL);
+	//gsm_init(RT_NULL);
 	hmi_init();
 	jt808_init();
   

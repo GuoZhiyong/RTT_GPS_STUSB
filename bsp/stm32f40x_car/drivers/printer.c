@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <rtthread.h>
 #include "stm32f4xx.h"
-
+#include "board.h"
 #include "ringbuffer.h"
 #include "printer.h"
 #include <finsh.h>
@@ -25,57 +25,45 @@
 //#define PAPER_DETCET_PORT	GPIOA
 //#define PAPER_DETECT_PIN	GPIO_Pin_8
 
-#define  CLK_PORT	GPIOD
-#define  CLK_PIN	GPIO_Pin_14
+#define  CLK_PORT	GPIOE
+#define  CLK_PIN	GPIO_Pin_0
 #define  DI_PORT	GPIOB
-#define  DI_PIN		GPIO_Pin_1
+#define  DI_PIN		GPIO_Pin_9
 
-#define  LAT_PORT	GPIOB
-#define  LAT_PIN	GPIO_Pin_10
+#define  LAT_PORT	GPIOC
+#define  LAT_PIN	GPIO_Pin_13
 
-#define  STB1_3_PORT	GPIOB
-#define  STB1_3_PIN		GPIO_Pin_11
+#define  STB1_3_PORT	GPIOE
+#define  STB1_3_PIN		GPIO_Pin_6
 
-#define  STB4_6_PORT	GPIOD
-#define  STB4_6_PIN		GPIO_Pin_15
+#define  STB4_6_PORT	GPIOE
+#define  STB4_6_PIN		GPIO_Pin_4
 
-#define  MTA_PORT	GPIOB
-#define  MTA_PIN	GPIO_Pin_5
+#define  MTA_PORT	GPIOE
+#define  MTA_PIN	GPIO_Pin_3
 
-#define  MTAF_PORT	GPIOB
-#define  MTAF_PIN	GPIO_Pin_6
+#define  MTAF_PORT	GPIOE
+#define  MTAF_PIN	GPIO_Pin_5
 
-#define  MTB_PORT	GPIOB
-#define  MTB_PIN	GPIO_Pin_4
+#define  MTB_PORT	GPIOE
+#define  MTB_PIN	GPIO_Pin_1
 
-#define  MTBF_PORT	GPIOD
-#define  MTBF_PIN	GPIO_Pin_5
+#define  MTBF_PORT	GPIOE
+#define  MTBF_PIN	GPIO_Pin_2
 
 //#define  NO_PAPER_OUT_PORT	GPIOB
 //#define  NO_PAPER_OUT_PIN	GPIO_Pin_8
 
-#define  PHE_PORT	GPIOE
-#define  PHE_PIN	GPIO_Pin_0
+#define  PHE_PORT	GPIOD
+#define  PHE_PIN	GPIO_Pin_8
 
-#define PRINTER_POWER_PORT	GPIOD
-#define PRINTER_POWER_PIN	GPIO_Pin_4
+#define PRINTER_POWER_PORT_3V3	GPIOD
+#define PRINTER_POWER_PIN_3V3	GPIO_Pin_4
+
+#define PRINTER_POWER_PORT_5V	GPIOB
+#define PRINTER_POWER_PIN_5V	GPIO_Pin_7
 
 
-/*
-
-   #define MTA_H	GPIO_SetBits(MTA_PORT,MTA_PIN)//(MTA_PORT->BSRRL=MTA_PIN)
-   #define MTA_L	GPIO_ResetBits(MTA_PORT,MTA_PIN)//(MTA_PORT->BSRRH=MTA_PIN)
-
-   #define MTAF_H	GPIO_SetBits(MTAF_PORT,MTAF_PIN)//(MTAF_PORT->BSRRL=MTAF_PIN)
-   #define MTAF_L	GPIO_ResetBits(MTAF_PORT,MTAF_PIN)//(MTAF_PORT->BSRRH=MTAF_PIN)
-
-   #define MTB_H	GPIO_SetBits(MTB_PORT,MTB_PIN)//(MTB_PORT->BSRRL=MTB_PIN)
-   #define MTB_L	GPIO_ResetBits(MTB_PORT,MTB_PIN)//(MTB_PORT->BSRRH=MTB_PIN)
-
-   #define MTBF_H	GPIO_SetBits(MTBF_PORT,MTBF_PIN)//(MTBF_PORT->BSRRL=MTBF_PIN)
-   #define MTBF_L	GPIO_ResetBits(MTBF_PORT,MTBF_PIN)//(MTBF_PORT->BSRRH=MTBF_PIN)
-
- */
 
 #define MTA_H	( MTA_PORT->BSRRL = MTA_PIN )
 #define MTA_L	( MTA_PORT->BSRRH = MTA_PIN )
@@ -121,7 +109,7 @@ struct _PRINTER_PARAM
 	uint16_t	margin_right;               //右边界
 } printer_param =
 {
-	1000, 0, { 5000, 10000, 15000, 20000 }, 4, 0, 0
+	1000, 2, { 5000, 10000, 15000, 20000 }, 4, 0, 0
 };
 
 static unsigned short	dotremain = 384;    //还可使用的dot，每汉字24dot 每ascii 12dots
@@ -198,7 +186,7 @@ static void printer_port_init( void )
 {
 	GPIO_InitTypeDef gpio_init;
 
-	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOD | RCC_AHB1Periph_GPIOE, ENABLE );
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB |RCC_AHB1Periph_GPIOC | RCC_AHB1Periph_GPIOD | RCC_AHB1Periph_GPIOE, ENABLE );
 	/*去掉PB4 JTAG功能*/
 	//GPIOB->AFR[0]|=(1<<16);
 	GPIO_PinAFConfig( GPIOB, GPIO_Pin_4, 1 );
@@ -244,15 +232,14 @@ static void printer_port_init( void )
 	GPIO_Init( MTBF_PORT, &gpio_init );
 	MTBF_L;
 
+	gpio_init.GPIO_Pin = PRINTER_POWER_PIN_5V;
+	GPIO_Init( PRINTER_POWER_PORT_5V, &gpio_init );
+	GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V);
 
-/*
-   gpio_init.GPIO_Pin = NO_PAPER_OUT_PIN;
-   GPIO_Init( NO_PAPER_OUT_PORT, &gpio_init );
-   GPIO_ResetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
- */
-	gpio_init.GPIO_Pin = PRINTER_POWER_PIN;
-	GPIO_Init( PRINTER_POWER_PORT, &gpio_init );
-	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
+	gpio_init.GPIO_Pin = PRINTER_POWER_PIN_3V3;
+	GPIO_Init( PRINTER_POWER_PORT_3V3, &gpio_init );
+	GPIO_SetBits( PRINTER_POWER_PORT_3V3, PRINTER_POWER_PIN_3V3);
+
 
 	gpio_init.GPIO_Pin	= PHE_PIN;
 	gpio_init.GPIO_Mode = GPIO_Mode_IN;
@@ -348,7 +335,7 @@ void printer_print_glyph( unsigned char len )
    }
  */
 	fprinting = 1;
-	GPIO_SetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
+	GPIO_SetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
 
 	for( row = 0; row < 12; row++ )
 	{
@@ -425,7 +412,7 @@ void printer_print_glyph( unsigned char len )
 	}
 
 	printer_stop( );
-	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
+	GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
 	fprinting = 0;
 }
 
@@ -440,8 +427,7 @@ void printer_print_glyph( unsigned char len )
 
  */
 
-#define FONT_ASC_ADDR	0x08080000
-#define FONT_HZ24_ADDR	0x08081200
+
 
 
 /***********************************************************
@@ -482,7 +468,7 @@ void printer_get_str_glyph( unsigned char *pstr, unsigned char len )
 		charnum--;
 		if( msb <= 0x80 ) //ascii字符
 		{
-			addr = ( msb - 0x20 ) * 48 + FONT_ASC_ADDR;
+			addr = ( msb - 0x20 ) * 48 + FONT_ASC1224_ADDR;
 			for( offset = 0; offset < 12; offset++ )
 			{
 				val_new						= *(__IO uint32_t*)addr;
@@ -515,10 +501,10 @@ void printer_get_str_glyph( unsigned char *pstr, unsigned char len )
 			charnum--;
 			if( ( msb >= 0xa1 ) && ( msb <= 0xa3 ) && ( lsb >= 0xa1 ) )
 			{
-				addr = FONT_HZ24_ADDR + ( ( ( (unsigned long)msb ) - 0xa1 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 72;
+				addr = FONT_HZ2424_ADDR + ( ( ( (unsigned long)msb ) - 0xa1 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 72;
 			}else if( ( msb >= 0xb0 ) && ( msb <= 0xf7 ) && ( lsb >= 0xa1 ) )
 			{
-				addr = FONT_HZ24_ADDR + ( ( ( (unsigned long)msb ) - 0xb0 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 72 + 282 * 72;
+				addr = FONT_HZ2424_ADDR + ( ( ( (unsigned long)msb ) - 0xb0 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 72 + 282 * 72;
 			}
 			for( offset = 0; offset < 18; offset++ )
 			{
@@ -705,6 +691,7 @@ static rt_err_t printer_init( rt_device_t dev )
 ***********************************************************/
 static rt_err_t printer_open( rt_device_t dev, rt_uint16_t oflag )
 {
+	GPIO_SetBits( PRINTER_POWER_PORT_3V3, PRINTER_POWER_PIN_3V3 );
 	return RT_EOK;
 }
 
@@ -807,7 +794,8 @@ static rt_err_t printer_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 ***********************************************************/
 static rt_err_t printer_close( rt_device_t dev )
 {
-	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
+	GPIO_ResetBits( PRINTER_POWER_PORT_3V3, PRINTER_POWER_PIN_3V3 );
+	GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
 	return RT_EOK;
 }
 
@@ -876,7 +864,7 @@ void step( const int count, const int delay )
 		rt_kprintf( "NO Paper\r\n" );
 		return;
 	}
-	GPIO_SetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
+	GPIO_SetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
 	for( i = 0; i < count; i++ )
 	{
 		//drivers1();
@@ -899,7 +887,7 @@ void step( const int count, const int delay )
 		delay_us( delay );
 		printer_stop( );
 	}
-	GPIO_ResetBits( PRINTER_POWER_PORT, PRINTER_POWER_PIN );
+	GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
 }
 
 FINSH_FUNCTION_EXPORT( step, print step test );

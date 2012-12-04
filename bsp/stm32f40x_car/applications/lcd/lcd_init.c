@@ -57,6 +57,22 @@
 #include "Lcd_init.h"
 #include "menu.h"
 
+
+#define KEY_MENU_PORT	GPIOC
+#define KEY_MENU_PIN	GPIO_Pin_8
+
+#define KEY_OK_PORT		GPIOA
+#define KEY_OK_PIN		GPIO_Pin_8
+
+#define KEY_UP_PORT		GPIOC
+#define KEY_UP_PIN		GPIO_Pin_9
+
+#define KEY_DOWN_PORT	GPIOD
+#define KEY_DOWN_PIN	GPIO_Pin_3
+
+
+
+
 void Init_lcdkey(void)
 {
 
@@ -65,17 +81,25 @@ void Init_lcdkey(void)
 	//°´¼ü	  PE1:down	  PB7:up	PB8:ok	   PB9:mune
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, ENABLE);
-	
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOE, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = KEY_UP_PIN;
+	GPIO_Init(KEY_UP_PORT, &GPIO_InitStructure);
 	
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7| GPIO_Pin_8| GPIO_Pin_9;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin = KEY_DOWN_PIN;
+	GPIO_Init(KEY_DOWN_PORT, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = KEY_OK_PIN;
+	GPIO_Init(KEY_OK_PORT, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = KEY_MENU_PIN;
+	GPIO_Init(KEY_MENU_PORT, &GPIO_InitStructure);
+
 
     //OUT  (/MR	 SHCP	DS	 STCP	STCP)	
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12| GPIO_Pin_13| GPIO_Pin_14|GPIO_Pin_15;
@@ -84,6 +108,7 @@ void Init_lcdkey(void)
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOE, &GPIO_InitStructure);  
+/*	
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -91,12 +116,13 @@ void Init_lcdkey(void)
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	GPIO_SetBits(GPIOA,GPIO_Pin_15);
+*/	
 }
 
 
 void KeyCheckFun(void)
 {
-if((GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1)&0x01)==0)
+if((GPIO_ReadInputDataBit(KEY_DOWN_PORT,KEY_DOWN_PIN)&0x01)==0)
 		{
         KeyCheck_Flag[3]++;
 		if(KeyCheck_Flag[3]==2)
@@ -109,7 +135,7 @@ if((GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1)&0x01)==0)
 		KeyCheck_Flag[3]=0;
 		}
 
-if((GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_7)&0x01)==0)
+if((GPIO_ReadInputDataBit(KEY_UP_PORT,KEY_UP_PIN)&0x01)==0)
 	{
 	KeyCheck_Flag[0]++;
 	if(KeyCheck_Flag[0]==2)
@@ -122,7 +148,7 @@ else
 	KeyCheck_Flag[0]=0;
 	}
 
-if((GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_8)&0x01)==0)
+if((GPIO_ReadInputDataBit(KEY_OK_PORT,KEY_OK_PIN)&0x01)==0)
 	{
 	KeyCheck_Flag[1]++;
 	if(KeyCheck_Flag[1]==2)
@@ -135,7 +161,7 @@ else
 	KeyCheck_Flag[1]=0;
 	}
 
-if((GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_9)&0x01)==0)
+if((GPIO_ReadInputDataBit(KEY_MENU_PORT,KEY_MENU_PIN)&0x01)==0)
 	{
 	KeyCheck_Flag[2]++;
 	if(KeyCheck_Flag[2]==2)

@@ -52,8 +52,8 @@
 #include "sed1520.h"
 #include "fonts.h"
 #include "bmp.h"
-//#include "stm32f10x_gpio.h"
-  #include "stm32f4xx.h"
+#include "board.h"
+#include "stm32f4xx.h"
 
 /* pixel level bit masks for display */
 /* this array is setup to map the order */
@@ -63,7 +63,7 @@ const unsigned char l_mask_array[8] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80};
 
 /* the LCD display image memory */
 /* buffer arranged so page memory is sequential in RAM */
-unsigned char l_display_array[LCD_Y_BYTES][LCD_X_BYTES];
+static unsigned char l_display_array[LCD_Y_BYTES][LCD_X_BYTES];
 
 /* control-lines hardware-interface (only "write") */
 #define LCD_CMD_MODE()     LCDCTRLPORT &= ~(1<<LCDCMDPIN)
@@ -218,7 +218,7 @@ void lcd_init(void)
  { 
 	//IODIR0	= MR|SHCP|DS|STCP1|STCP2;
 	//IOSET0	= MR;
-	GPIO_SetBits(GPIOA,GPIO_Pin_15);
+	//GPIO_SetBits(GPIOA,GPIO_Pin_15);
 
 	lcd_out_ctl(0,3);
     lcd_out_ctl(LCD_RESET,3);
@@ -270,7 +270,7 @@ void lcd_raw(const unsigned char page, const unsigned char col, const unsigned c
 /* fill buffer and LCD with pattern */
 void lcd_fill(const unsigned char pattern)
  { unsigned char page, col;
-   //lcd_init(); 
+   lcd_init(); 
    lcd_out_ctl(LCD_DISP_OFF,3);
    for (page=0; page<LCD_Y_BYTES; page++) 
     { for (col=0; col<LCD_X_BYTES; col++) 
@@ -703,62 +703,7 @@ void lcd_text_p(uint8_t left, uint8_t top, uint8_t font, const char *str)
  }
 
 
-/* Draws a bitmap into the Framebuffer.
-   Bitmaps are converted from Windows BMP-Format to 
-   C-Arrays with the fontgen-tool (see files bmp.h/bmp.c) */
-void lcd_bitmap_old(const uint8_t left, const uint8_t top, const struct IMG_DEF *img_ptr, const uint8_t mode)
- { uint8_t width, heigth, h, w, pattern, mask;
-   uint8_t* ptable;
 
-   width  = pgm_read_byte( &(img_ptr->width_in_pixels) );
-   heigth = pgm_read_byte( &(img_ptr->height_in_pixels) );
-   ptable  = (uint8_t*) pgm_read_word( &(img_ptr->char_table) ); 
-
-   for ( h=0; h<heigth; h++ ) 
-    { mask = 0x80;
-      pattern = pgm_read_byte( ptable );
-      ptable++;
-      for ( w=0; w<width; w++ ) 
-       { if ( pattern & mask ) 
-            lcd_dot(w+left, h+top, mode);
-
-         mask >>= 1;
-         if ( mask == 0 ) 
-          { mask = 0x80;
-            pattern = pgm_read_byte( ptable );
-            ptable++;
-          }
-       }
-    }
- }
-
-/*
-有一个隐患!  当width是8的整数倍时，显示异常
-
-*/
-void lcd_bitmap_bak(const uint8_t left, const uint8_t top, const struct IMG_DEF *img_ptr, const uint8_t mode)
-{ 
-	uint8_t width, heigth, h, w, pattern, mask;
-	uint8_t* ptable;
-
-	width  = img_ptr->width_in_pixels;
-	heigth = img_ptr->height_in_pixels;
-	ptable  =(uint8_t*)(img_ptr->char_table); 
-	for ( h=0; h<heigth; h++ ){ 
-		mask = 0x80;
-		pattern = *ptable;
-		ptable++;
-		for ( w=0; w<width; w++ ) { 
-			if ( pattern & mask ) lcd_dot(w+left, h+top, mode);
-			mask >>= 1;
-			if ( mask == 0 ){ 
-				mask = 0x80;
-				pattern = *ptable;
-				ptable++;
-			}
-		}
-	}
-}
 
 
 void lcd_bitmap(const uint8_t left, const uint8_t top, const struct IMG_DEF *img_ptr, const uint8_t mode)
@@ -826,6 +771,116 @@ void lcd_bitmap(const uint8_t left, const uint8_t top, const struct IMG_DEF *img
 			pattern = *ptable;
 		}	
 	}
+}
+
+
+/*
+绘制12点阵的字符，包括中文和英文
+
+
+*/
+void lcd_text12(char left,char top ,char *p,char len,const char mode)
+{
+	int charnum=len;
+	int i;
+	char msb,lsb;
+	
+	int addr;
+	unsigned char start_col=left;
+	unsigned int  val_old, val_new, val_mask;
+
+	unsigned int glyph[12];   /*保存一个字符的点阵信息，以逐列式*/
+
+	
+	while( charnum )
+	{
+		for( i = 0; i < 12; i++ )
+		{
+			glyph[i] = 0;
+		}
+		msb = *p++;
+		charnum--;
+		if( msb <= 0x80 ) //ascii字符 0612
+		{
+			addr = ( msb - 0x20 ) * 12 + FONT_ASC0612_ADDR;
+			for( i = 0; i < 3; i++ )
+			{
+				val_new				= *(__IO uint32_t*)addr;
+				glyph[i * 2 + 0]	= ( val_new & 0xffff );
+				glyph[i * 2 + 1]	= ( val_new & 0xffff0000 )>>16;
+				addr						+= 4;
+			}
+			
+			val_mask=((0xfff)<<top);/*12bit*/
+
+			/*加上top的偏移*/
+			for( i = 0; i < 6; i++ )
+			{
+				glyph[i]<<=top;
+
+				val_old=l_display_array[0][start_col]|(l_display_array[1][start_col]<<8)|(l_display_array[2][start_col]<<16)|(l_display_array[3][start_col]<<24);
+				if(mode==LCD_MODE_SET)
+				{
+					val_new=val_old&(~val_mask)|glyph[i];
+				}
+				else if(mode==LCD_MODE_INVERT)
+				{
+					val_new=(val_old|val_mask)&(~glyph[i]);
+				}
+				l_display_array[0][start_col]=val_new&0xff;
+				l_display_array[1][start_col]=(val_new&0xff00)>>8;
+				l_display_array[2][start_col]=(val_new&0xff0000)>>16;
+				l_display_array[3][start_col]=(val_new&0xff000000)>>24;
+				start_col++;
+			}
+		}
+		else
+		{
+			lsb = *p++;
+			charnum--;
+			if( ( msb >= 0xa1 ) && ( msb <= 0xa3 ) && ( lsb >= 0xa1 ) )
+			{
+				addr = FONT_HZ1212_ADDR + ( ( ( (unsigned long)msb ) - 0xa1 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 24;
+			}else if( ( msb >= 0xb0 ) && ( msb <= 0xf7 ) && ( lsb >= 0xa1 ) )
+			{
+				addr = FONT_HZ1212_ADDR + ( ( ( (unsigned long)msb ) - 0xb0 ) * 94 + ( ( (unsigned long)lsb ) - 0xa1 ) ) * 24 + 282 * 24;
+			}
+			for( i = 0; i < 6; i++ )
+			{
+				val_new				= *(__IO uint32_t*)addr;
+				glyph[i * 2 + 0]	= ( val_new & 0xffff );
+				glyph[i * 2 + 1]	= ( val_new & 0xffff0000 )>>16;
+				addr				+= 4;
+			}
+			val_mask=((0xfff)<<top);/*12bit*/
+
+			/*加上top的偏移*/
+			for( i = 0; i < 12; i++ )
+			{
+				glyph[i]<<=top;
+				/*通过start_col映射到I_display_array中，注意mask*/
+				val_old=l_display_array[0][start_col]|(l_display_array[1][start_col]<<8)|(l_display_array[2][start_col]<<16)|(l_display_array[3][start_col]<<24);
+				if(mode==LCD_MODE_SET)
+				{
+					val_new=val_old&(~val_mask)|glyph[i];
+				}
+				else if(mode==LCD_MODE_INVERT)
+				{
+					val_new=(val_old|val_mask)&(~glyph[i]);
+				}
+				l_display_array[0][start_col]=val_new&0xff;
+				l_display_array[1][start_col]=(val_new&0xff00)>>8;
+				l_display_array[2][start_col]=(val_new&0xff0000)>>16;
+				l_display_array[3][start_col]=(val_new&0xff000000)>>24;
+				start_col++;
+			}
+
+		}
+	}
+
+
+
+
 }
 
 

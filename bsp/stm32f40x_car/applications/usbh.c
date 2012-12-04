@@ -37,14 +37,6 @@ struct rt_thread thread_usbmsc;
 static void rt_thread_entry_usbmsc(void* parameter)
 {
 
-	while(1)
-	{
-        rt_thread_delay(RT_TICK_PER_SECOND);
-        GPIO_ResetBits(GPIOE, GPIO_Pin_11);
-        rt_thread_delay(RT_TICK_PER_SECOND);
-        GPIO_SetBits(GPIOE, GPIO_Pin_11);
-	}
-
 
 	dfs_init();
     elm_init();
@@ -57,13 +49,17 @@ static void rt_thread_entry_usbmsc(void* parameter)
 	
 	rt_kprintf("\r\nUSBH_Init\r\n");
 
+	//USB_OTG_Core.regs.GREGS->GUSBCFG|=(1<<29);
+
+	//USB_OTG_WRITE_REG32(USB_OTG_Core.regs.GREGS->GUSBCFG,value)
+	rt_thread_delay(RT_TICK_PER_SECOND);
 	
     while (1)
     {
-    	GPIO_SetBits(GPIOD, GPIO_Pin_15);
+    	//GPIO_SetBits(GPIOD, GPIO_Pin_15);
 		USBH_Process(&USB_OTG_Core,&USB_Host);
 		rt_thread_delay(RT_TICK_PER_SECOND/20);
-		GPIO_ResetBits(GPIOD, GPIO_Pin_15);
+		//GPIO_ResetBits(GPIOD, GPIO_Pin_15);
     }
 
 }
@@ -81,7 +77,7 @@ void usbh_init(void)
                    rt_thread_entry_usbmsc,
                    RT_NULL,
                    &thread_usbmsc_stack[0],
-                   sizeof(thread_usbmsc_stack),20,5);
+                   sizeof(thread_usbmsc_stack),19,5);
     rt_thread_startup(&thread_usbmsc);
 }
 

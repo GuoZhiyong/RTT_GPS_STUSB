@@ -107,6 +107,39 @@ unsigned char UpAndDown_nm[4]={0xA1,0xFC,0xA1,0xFD};//¡ü ¡ý
 //================================================================
 //   ²éºº×Ö¿âÏÔÊ¾¾ØÕó
 //================================================================
+/*
+void  Check_Hz_Show(unsigned int i,unsigned int j)
+{
+unsigned char m=0;
+unsigned long int hz_address=0, hz_94_add_in=0,hz_94_add=0;
+unsigned long int addr=0,value=0;
+
+if((i>=0xb0)&&(i<=0xf7))	//ºº×ÖÇøÓò
+	hz_94_add=(i-0xB0)*ZIKU_94_24_hz+Dis_start_address_hz;
+else
+	{
+	if((i>=0xa1)&&(i<=0xa9))	//·ûºÅ
+	hz_94_add=(i-0xA1)*ZIKU_94_24_hz+Dis_start_address;
+	}
+
+hz_94_add_in=(j-0xA1)*24;
+hz_address=hz_94_add+hz_94_add_in;
+
+addr = hz_address;
+for(m=0;m<6;m++)
+	{
+	value=*(__IO uint32_t*)addr;
+	Read_ZK[m*4+0]=(unsigned char)(value&0xff);
+	Read_ZK[m*4+1]=(unsigned char)(value>>8);
+	Read_ZK[m*4+2]=(unsigned char)(value>>16);
+	Read_ZK[m*4+3]=(unsigned char)(value>>24);
+	addr+=4;
+	//rt_kprintf("\n%x,%x,%x,%x\n",Read_ZK[m*4],Read_ZK[m*4+1],Read_ZK[m*4+2],Read_ZK[m*4+3]);
+	}
+}
+
+*/
+
 void  Check_Hz_Show(unsigned int i,unsigned int j)
 {
 unsigned char m=0;
@@ -139,7 +172,7 @@ for(m=0;m<6;m++)
 
 
 
-void DisAddRead_ZK(char Left0ffset,char top ,char *p,char len,const struct IMG_DEF *img_ptr,char inver1,char inver2)
+void DisAddRead_ZK(char left,char top ,char *p,char len,const struct IMG_DEF *img_ptr,char inver1,char inver2)
 {
 char j=0;
 for(j=0;j<len;j++)
@@ -153,17 +186,17 @@ for(j=0;j<len;j++)
 		{
 		memcpy(test_00,&test_idle[j*24],24);
 		if(inver1==0)
-			lcd_bitmap((j*12)+Left0ffset,top,img_ptr,LCD_MODE_SET);
+			lcd_bitmap((j*12)+left,top,img_ptr,LCD_MODE_SET);
 		else if(inver1==1)
-			lcd_bitmap((j*12)+Left0ffset,top,img_ptr,LCD_MODE_INVERT);
+			lcd_bitmap((j*12)+left,top,img_ptr,LCD_MODE_INVERT);
 		}
 	else
 		{
 		memcpy(test_00,&test_idle[j*24],24);
 		if(inver2==0)
-			lcd_bitmap(((j-10)*12)+Left0ffset,top+16,img_ptr,LCD_MODE_SET);
+			lcd_bitmap(((j-10)*12)+left,top+16,img_ptr,LCD_MODE_SET);
 		else if(inver2==1)
-			lcd_bitmap(((j-10)*12)+Left0ffset,top+16,img_ptr,LCD_MODE_INVERT);
+			lcd_bitmap(((j-10)*12)+left,top+16,img_ptr,LCD_MODE_INVERT);
 		}
 	}
 }

@@ -46,8 +46,8 @@
 #define LCD_STARTCOL_REVERSE	19
 
 /* LCD Global data arrays */
-extern const unsigned char l_mask_array[8];
-extern unsigned char l_display_array[LCD_Y_BYTES][LCD_X_BYTES];
+//extern const unsigned char l_mask_array[8];
+//extern unsigned char l_display_array[LCD_Y_BYTES][LCD_X_BYTES];
 
 /* LCD function prototype list */
 extern void lcd_init(void);
@@ -78,6 +78,9 @@ extern void lcd_text_p(uint8_t left, uint8_t top, uint8_t font, const char *str)
 	lcd_text_p(lcdl_,lcdt_,lcdf_,PSTR(lcds_))
 
 extern void lcd_bitmap(const uint8_t left, const uint8_t top, const struct IMG_DEF *img_ptr, const uint8_t mode);
+extern void lcd_text12(char left,char top ,char *p,char len,const char mode);
+
+
 
 #ifdef LCD_DEBUG
 extern void lcd_test(const unsigned char pattern);
