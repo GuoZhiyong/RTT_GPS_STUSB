@@ -17,11 +17,10 @@
 #include "stm32f4xx.h"
 #include <board.h>
 #include <rtthread.h>
-
 #include <lcd\menu.h>
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_hmi_stack[1024];
+static char thread_hmi_stack[512];
 struct rt_thread thread_hmi;
 
 

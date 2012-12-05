@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <rtthread.h>
+#include <rtdevice.h>
 #include "stm32f4xx.h"
 
 #include <finsh.h>
@@ -22,12 +23,21 @@
 
 #ifdef MG323
 
+#define GSM_GPIO			GPIOC
+#define GSM_TX_PIN			GPIO_Pin_10
+#define GSM_TX_PIN_SOURCE	GPIO_PinSource10
+
+#define GSM_RX_PIN			GPIO_Pin_11
+#define GSM_RX_PIN_SOURCE	GPIO_PinSource11
+
+
+
 typedef void ( *URC_CB )( char *s, uint16_t len );
 
 typedef rt_err_t ( *RESP_FUNC )( char *s, uint16_t len );
 
 #define GSM_PWR_PORT	GPIOD
-#define GSM_PWR_PIN		GPIO_Pin_13 
+#define GSM_PWR_PIN		GPIO_Pin_13
 
 #define GSM_TERMON_PORT GPIOD
 #define GSM_TERMON_PIN	GPIO_Pin_12
@@ -42,16 +52,14 @@ static struct rt_device dev_gsm;
 /*声明一个uart设备指针,同gsm模块连接的串口
    指向一个已经打开的串口
  */
-static rt_device_t			dev_uart;
-
-static struct rt_timer		tmr_gsm;
 static struct rt_semaphore	sem_uart;
-
 static struct rt_semaphore	sem_gsmrx;
 
 #define GSM_RX_SIZE 2048
 static uint8_t		gsm_rx[GSM_RX_SIZE];
 static uint16_t		gsm_rx_wr = 0;
+static uint16_t		gsm_rx_rd = 0;
+
 
 static T_GSM_STATE	gsmstate = GSM_IDLE;
 
@@ -69,6 +77,39 @@ static uint8_t		fConnectToGprs = 0; /*是否连接到数据模式*/
 T_GSM_APN		gsm_apn;
 T_GSM_SOCKET	gsm_socket[MAX_SOCKETS];
 
+/*串口接收缓存区定义*/
+#define UART4_RX_SIZE	128
+static uint8_t uart4_rxbuf[UART4_RX_SIZE];
+struct rt_ringbuffer	rb_uart4_rx;
+
+static uint8_t fgsm_rawdata_out=1;
+
+/***********************************************************
+* Function:
+* Description: uart4的中断服务函数
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void UART4_IRQHandler( void )
+{
+	rt_interrupt_enter( );
+	if(USART_GetITStatus(UART4, USART_IT_RXNE) != RESET)
+	{
+		rt_ringbuffer_putchar(&rb_uart4_rx,USART_ReceiveData(UART4));
+		USART_ClearITPendingBit(UART4, USART_IT_RXNE);
+		rt_sem_release( &sem_uart );
+	}
+
+	if (USART_GetITStatus(UART4, USART_IT_TC) != RESET)
+	{
+		/* clear interrupt */
+		USART_ClearITPendingBit(UART4, USART_IT_TC);
+	}
+	rt_interrupt_leave( );
+}
 
 /***********************************************************
 * Function:
@@ -137,34 +178,7 @@ static void urc_cb_default( char *s, uint16_t len )
 	rt_kprintf( "\rrx>%s", s );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void urc_cb_sysstart( char *s, uint16_t len )
-{
-	if( gsmstate == GSM_POWERON ) /*上电过程中收到该命令*/
-	{
-	}
-}
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void urc_cb_shutdown( char *s, uint16_t len )
-{
-}
 
 /***********************************************************
 * Function:
@@ -214,8 +228,8 @@ struct
 	URC_CB	pfunc;
 } urc[] =
 {
-	{ "^SYSSTART", urc_cb_sysstart },
-	{ "^SHUTDOWN", urc_cb_shutdown },
+	//{ "^SYSSTART", urc_cb_sysstart },
+	//{ "^SHUTDOWN", urc_cb_shutdown },
 	{ "+CIEV:",	   urc_cb_ciev	   },
 	{ "RING",	   urc_cb_ring	   },
 	{ "+CRING:",   urc_cb_cring	   },
@@ -292,8 +306,11 @@ static void gsmrx_cb( char *pInfo, uint16_t len )
 	uint8_t		tbl[24] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf };
 	uint32_t	linknum, infolen;
 	char		c, *pmsg;
-	uint8_t		*p;
+	char		*p;
 /*网络侧的信息，直接通知上层软件*/
+
+	if(fgsm_rawdata_out) rt_kprintf("\r\ngsm>%s\r\n",pInfo);
+
 	if( strncmp( pInfo, "%IPDATA", 7 ) == 0 )
 	{
 		i = sscanf( pInfo, "%%IPDATA:%d,%d,", &linknum, &infolen );
@@ -334,7 +351,8 @@ static void gsmrx_cb( char *pInfo, uint16_t len )
 
 /***********************************************************
 * Function:
-* Description:
+* Description: 将小于0x20的字符忽略掉。并在结尾添加0，转为
+			可见的字符串。
 * Input:
 * Input:
 * Output:
@@ -377,7 +395,7 @@ static rt_err_t mg323_rx_ind( rt_device_t dev, rt_size_t size )
 
 /***********************************************************
 * Function:
-* Description: 配置控电管脚，查找并打开gsm对应的串口设备
+* Description: 配置控电管脚，配置对应的串口设备uart4
 * Input:
 * Input:
 * Output:
@@ -387,12 +405,17 @@ static rt_err_t mg323_rx_ind( rt_device_t dev, rt_size_t size )
 static rt_err_t mg323_init( rt_device_t dev )
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
+	USART_InitTypeDef USART_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+	
 
-	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOD, ENABLE );
+
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOC|RCC_AHB1Periph_GPIOD, ENABLE );
+	RCC_APB1PeriphClockCmd( RCC_APB1Periph_UART4, ENABLE );
 
 	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_NOPULL;
 	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_50MHz;
 
 	GPIO_InitStructure.GPIO_Pin = GSM_PWR_PIN;
@@ -404,29 +427,50 @@ static rt_err_t mg323_init( rt_device_t dev )
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
 
 /*
-RESET在开机过程不需要做任何时序配合（和通常CPU 的 reset不同）。
-建议该管脚接OC输出的GPIO，开机时 OC 输出高阻。
-*/
+   RESET在开机过程不需要做任何时序配合（和通常CPU 的 reset不同）。
+   建议该管脚接OC输出的GPIO，开机时 OC 输出高阻。
+ */
 	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType	= GPIO_OType_OD;
-	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_NOPULL;
 	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_50MHz;
 
 	GPIO_InitStructure.GPIO_Pin = GSM_RST_PIN;
 	GPIO_Init( GSM_RST_PORT, &GPIO_InitStructure );
 	GPIO_SetBits( GSM_RST_PORT, GSM_RST_PIN );
 
+/*uart4 管脚设置*/
 
+	/* Configure USART Tx as alternate function  */
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Pin = GSM_TX_PIN| GSM_RX_PIN;
+	GPIO_Init( GSM_GPIO, &GPIO_InitStructure );
 
-	dev_uart = rt_device_find( GSM_UART_NAME );
-	if( dev_uart != RT_NULL && rt_device_open( dev_uart, RT_DEVICE_OFLAG_RDWR ) == RT_EOK )
-	{
-		rt_device_set_rx_indicate( dev_uart, mg323_rx_ind );
-	}else
-	{
-		rt_kprintf( "GSM: can not find uart\n" );
-		return RT_EEMPTY;
-	}
+	GPIO_PinAFConfig( GSM_GPIO, GSM_TX_PIN_SOURCE, GPIO_AF_UART4 );
+	GPIO_PinAFConfig( GSM_GPIO, GSM_RX_PIN_SOURCE, GPIO_AF_UART4 );
+
+	
+
+	NVIC_InitStructure.NVIC_IRQChannel = UART4_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	USART_InitStructure.USART_BaudRate = 115200;
+	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+	USART_InitStructure.USART_StopBits = USART_StopBits_1;
+	USART_InitStructure.USART_Parity = USART_Parity_No;
+	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	USART_Init(UART4, &USART_InitStructure);
+	/* Enable USART */
+	USART_Cmd(UART4, ENABLE);
+	USART_ITConfig( UART4, USART_IT_RXNE, ENABLE );
+
 	return RT_EOK;
 }
 
@@ -477,6 +521,18 @@ static rt_size_t mg323_read( rt_device_t dev, rt_off_t pos, void* buff, rt_size_
 	return RT_EOK;
 }
 
+
+
+
+/* write one character to serial, must not trigger interrupt */
+static void uart4_putc(const char c)
+{
+	USART_SendData(UART4,  c); 
+	while (!(UART4->SR & USART_FLAG_TXE));  
+	UART4->DR = (c & 0x1FF);  
+}
+
+
 /***********************************************************
 * Function:		mg323_write
 * Description:	数据模式下发送数据，要对数据进行封装
@@ -490,10 +546,17 @@ static rt_size_t mg323_read( rt_device_t dev, rt_off_t pos, void* buff, rt_size_
 
 static rt_size_t mg323_write( rt_device_t dev, rt_off_t pos, const void* buff, rt_size_t count )
 {
-	rt_size_t ret = RT_EOK;
+	rt_size_t len=count;
+	uint8_t *p=(uint8_t *)buff;
 
-	//rt_device_write( dev_uart, 0, buff, count );
-	return ret;
+	while (len)
+	{
+		USART_SendData(UART4,*p++);
+		while (USART_GetFlagStatus(UART4, USART_FLAG_TC) == RESET)
+		{}
+		len--;
+	}
+	return RT_EOK;
 }
 
 /***********************************************************
@@ -528,17 +591,14 @@ static rt_err_t mg323_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 rt_err_t RespFunc_CGREG( char *p, uint16_t len )
 {
 	uint32_t	i, n, code;
-	rt_err_t	res = RT_EOK;
+
 	i = sscanf( p, "%*[^:]:%d,%d", &n, &code );
-	if( i != 2 )
+	if( i != 2 ) return RT_ERROR;
+	if( ( code != 1 ) && ( code != 5 ) )
 	{
 		return RT_ERROR;
 	}
-	if( ( code != 1 ) && ( code != 5 ) )
-	{
-		res = RT_ERROR;
-	}
-	return res;
+	return RT_EOK;
 }
 
 /***********************************************************
@@ -604,18 +664,16 @@ rt_err_t RespFunc_CIFSR( char *p, uint16_t len )
  */
 rt_err_t RespFunc_CIMI( char *p, uint16_t len )
 {
-	rt_err_t	res = RT_ERROR;
 	char		*pimsi, i;
-	if( strlen( p ) < 15 )
-	{
-		return RT_ERROR;
-	}
+	
+	if( len < 15 )	return RT_ERROR;
+	stripstring(p,p);
 	if( strncmp( p, "460", 3 ) == 0 )
 	{
 		//strncpy(sys_param.imsi,p,15);
-		res = RT_EOK;
+		return RT_EOK;
 	}
-	return res;
+	return RT_ERROR;
 }
 
 /***********************************************************
@@ -629,18 +687,13 @@ rt_err_t RespFunc_CIMI( char *p, uint16_t len )
 ***********************************************************/
 rt_err_t RespFunc_CPIN( char *p, uint16_t len )
 {
-	rt_err_t	res = RT_ERROR;
-	char		*pimsi, i;
-	if( strlen( p ) < 15 )
+	char *pstr;
+	pstr = strstr( p,"+CPIN: READY" );
+	if( pstr )
 	{
-		return RT_ERROR;
+		return RT_EOK;								/*找到了*/
 	}
-	if( strncmp( p, "460", 3 ) == 0 )
-	{
-		//strncpy(sys_param.imsi,p,15);
-		res = RT_EOK;
-	}
-	return res;
+	return RT_ERROR;
 }
 
 /***********************************************************
@@ -658,7 +711,10 @@ rt_err_t RespFunc_CSQ( char *p, uint16_t len )
 	uint32_t	i, n, code;
 
 	i = sscanf( p, "+CSQ%*[^:]:%d,%d", &n, &code );
-	if(i!=2) return RT_ERROR;
+	if( i != 2 )
+	{
+		return RT_ERROR;
+	}
 	return RT_EOK;
 }
 
@@ -677,6 +733,7 @@ lbl_waitresp_again:
 	{
 		return ret;                                 //超时退出，没有数据或接收数据完毕
 	}
+	stripstring(gsm_rx,gsm_rx);
 	p = strstr( gsm_rx, resp );
 	if( p )
 	{
@@ -705,7 +762,7 @@ lbl_checkresp_again:
 	ret = rt_sem_take( &sem_gsmrx, localticks );
 	if( ret == -RT_ETIMEOUT )
 	{
-		return ret;                      //超时退出，没有数据或接收数据完毕
+		return ret;          //超时退出，没有数据或接收数据完毕
 	}
 	/*收到信息，要判断是不是需要的*/
 	ret = resp_func( gsm_rx, gsm_rx_wr );
@@ -740,7 +797,7 @@ int8_t SendATCmdWaitRespStr( char *atcmd,
 
 	for( i = 0; i < no_of_attempts; i++ )
 	{
-		mg323_write( dev_uart, 0, atcmd, strlen( atcmd ) );
+		mg323_write( &dev_gsm, 0, atcmd, strlen( atcmd ) );
 		ret_val = WaitResp( respstring, ticks );
 		if( ret_val == RT_EOK )
 		{
@@ -770,7 +827,7 @@ int8_t SendATCmdWaitRespFunc( char *atcmd,
 	for( i = 0; i < no_of_attempts; i++ )
 	{
 		//printf("\r\n%d(waitrespfunc)>%s",OSTimeGet(),AT_cmd_string);
-		mg323_write( dev_uart, 0, atcmd, strlen( atcmd ) );
+		mg323_write(&dev_gsm, 0, atcmd, strlen( atcmd ) );
 		ret_val = CheckResp( ticks, respfunc );
 		if( ret_val == RT_EOK )
 		{
@@ -789,20 +846,18 @@ int8_t SendATCmdWaitRespFunc( char *atcmd,
 * Return:
 * Others:
 ***********************************************************/
-static void rt_thread_entry_gsm_poweron( void* parameter )
+static void gsm_poweron( void* parameter )
 {
 	rt_err_t res;
 
 /*此处可通过rt_thread_self获取线程信息*/
 lbl_start_pwr_on:
-	rt_kprintf( "\r\n%ld>gsm pwr on start", rt_tick_get( ) );
 	GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
 	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND / 2 ); 
+	rt_thread_delay( RT_TICK_PER_SECOND / 2 );
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND );  
+	rt_thread_delay( RT_TICK_PER_SECOND );
 	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_kprintf( "\r\n%ld>gsm pwr on end", rt_tick_get( ) );
 
 	res = WaitResp( "^SYSSTART", RT_TICK_PER_SECOND * 10 );
 	if( res != RT_EOK )
@@ -835,7 +890,7 @@ lbl_start_pwr_on:
 * Return:
 * Others:
 ***********************************************************/
-static void rt_thread_entry_gsm_poweroff( void* parameter )
+static void gsm_poweroff( void* parameter )
 {
 	rt_err_t res;
 
@@ -846,16 +901,15 @@ static void rt_thread_entry_gsm_poweroff( void* parameter )
 /*模块断电*/
 lbl_start_pwr_off:
 
-	rt_kprintf( "\r\n%ld>gsm pwr off start", rt_tick_get( ));
+	rt_kprintf( "\r\n%ld>gsm pwr off start", rt_tick_get( ) );
 	GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
 	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND / 2 ); 
+	rt_thread_delay( RT_TICK_PER_SECOND / 2 );
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND );  
+	rt_thread_delay( RT_TICK_PER_SECOND );
 	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
 	//SendATCmdWaitRespStr("AT^SMSO\r\n",RT_TICK_PER_SECOND,"OK",1);
 	rt_kprintf( "\r\n%ld>gsm pwr on end", rt_tick_get( ) );
-
 
 	res = WaitResp( "^SHUTDOWN", RT_TICK_PER_SECOND * 10 );
 	if( res != RT_EOK )
@@ -879,7 +933,7 @@ lbl_start_pwr_off:
 * Return:
 * Others:
 ***********************************************************/
-static void rt_thread_entry_gsm_ppp( void* parameter )
+static void gsm_ppp( void* parameter )
 {
 	rt_err_t	ret;
 	int			i;
@@ -917,16 +971,13 @@ static void rt_thread_entry_gsm_ppp( void* parameter )
 * Return:
 * Others:
 ***********************************************************/
-static void rt_thread_entry_gsm_send( void* parameter )
+static void gsm_send( void* parameter )
 {
 /*此处可通过rt_thread_self获取线程信息*/
-
-
-
 }
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_gsm_stack[2048];
+static char thread_gsm_stack[512];
 struct rt_thread thread_gsm;
 
 
@@ -946,85 +997,75 @@ static void rt_thread_entry_gsm( void* parameter )
 	unsigned char	ch, next;
 
 /*gsm的状态切换*/
-	curr_ticks = rt_tick_get( );
-	switch( gsmstate )
+	while( 1 )
 	{
-		case GSM_IDLE:
-			break;
-		case GSM_POWERON:                                   /*上电过程中，控制IO的操作放在此处，如何保证时间的可靠*/
-			if( tid_gsm_subthread == RT_NULL )
-			{
-				tid_gsm_subthread = rt_thread_create( "pwron",
-				                                      rt_thread_entry_gsm_poweron, (void*)1,
-				                                      512,  /* thread stack size */
-				                                      25,   /* thread priority */
-				                                      5     /* thread time slice*/
-				                                      );
-				if( tid_gsm_subthread != RT_NULL )
+		curr_ticks = rt_tick_get( );
+		switch( gsmstate )
+		{
+			case GSM_IDLE:
+				break;
+			case GSM_POWERON:                                   /*上电过程中，控制IO的操作放在此处，如何保证时间的可靠*/
+				if( tid_gsm_subthread == RT_NULL )
 				{
-					rt_thread_startup( tid_gsm_subthread );
+					tid_gsm_subthread = rt_thread_create( "pwron",gsm_poweron, (void*)1,512,25,5);
+					rt_kprintf("\r\ntid_gsm_subthread=%p\r\n",tid_gsm_subthread);
+					if( tid_gsm_subthread != RT_NULL )
+					{
+						rt_thread_startup( tid_gsm_subthread );
+					}
 				}
-			}
-			break;
-		case GSM_POWEROFF:                                  /*断电电过程中，控制IO的操作放在此处，如何保证时间的可靠*/
-			if( tid_gsm_subthread == RT_NULL )
-			{
-				tid_gsm_subthread = rt_thread_create( "pwroff",
-				                                      rt_thread_entry_gsm_poweroff, (void*)1,
-				                                      512,  /* thread stack size */
-				                                      25,   /* thread priority */
-				                                      5     /* thread time slice*/
-				                                      );
-				if( tid_gsm_subthread != RT_NULL )
+				break;
+			case GSM_POWEROFF:                                  /*断电电过程中，控制IO的操作放在此处，如何保证时间的可靠*/
+				if( tid_gsm_subthread == RT_NULL )
 				{
-					rt_thread_startup( tid_gsm_subthread );
+					tid_gsm_subthread = rt_thread_create( "pwroff",gsm_poweroff, (void*)1,512,25,5 );
+					if( tid_gsm_subthread != RT_NULL )
+					{
+						rt_thread_startup( tid_gsm_subthread );
+					}
 				}
-			}
-			break;
-		case GSM_AT:
-			if( fConnectToGprs )
-			{
-				gsmstate = GSM_PPP; /*切换链接*/
-			}
-			break;
-		case GSM_PPP:
-			if( tid_gsm_subthread == RT_NULL )
-			{
-				tid_gsm_subthread = rt_thread_create( "ppp",
-				                                      rt_thread_entry_gsm_ppp, (void*)1,
-				                                      512,  /* thread stack size */
-				                                      25,   /* thread priority */
-				                                      5     /* thread time slice*/
-				                                      );
-				if( tid_gsm_subthread != RT_NULL )
+				break;
+			case GSM_AT:
+				if( fConnectToGprs )
 				{
-					rt_thread_startup( tid_gsm_subthread );
+					gsmstate = GSM_PPP; /*切换链接*/
 				}
-			}
-			break;
-		case GSM_DATA:
-			break;
-	}
+				break;
+			case GSM_PPP:
+				if( tid_gsm_subthread == RT_NULL )
+				{
+					tid_gsm_subthread = rt_thread_create( "ppp",gsm_ppp, (void*)1,512,25,5);
+					if( tid_gsm_subthread != RT_NULL )
+					{
+						rt_thread_startup( tid_gsm_subthread );
+					}
+				}
+				break;
+			case GSM_DATA:
+				break;
+		}
 
 /*接收超时判断*/
-	res = rt_sem_take( &sem_uart, RT_TICK_PER_SECOND / 10 );    //等待100ms,实际上就是变长的延时,最长100ms
-	if( res == -RT_ETIMEOUT )                                   //超时退出，没有数据或接收数据完毕
-	{
-		if( gsm_rx_wr )
+		res = rt_sem_take( &sem_uart, RT_TICK_PER_SECOND / 10 );    //等待100ms,实际上就是变长的延时,最长100ms
+		if( res == -RT_ETIMEOUT )                                   //超时退出，没有数据或接收数据完毕
 		{
-			gsmrx_cb( gsm_rx, gsm_rx_wr );
-			gsm_rx_wr = 0;
-		}
-	}else //收到数据,理论上1个字节触发一次,这里没有根据收到的<CRLF>处理，而是等到超时统一处理
-	{
-		while( rt_device_read( dev_uart, 0, &ch, 1 ) == 1 )
-		{
-			gsm_rx[gsm_rx_wr++] = ch;
-			if( gsm_rx_wr == GSM_RX_SIZE )
+			if( gsm_rx_wr )
 			{
+				gsmrx_cb( gsm_rx, gsm_rx_wr );
 				gsm_rx_wr = 0;
 			}
-			gsm_rx[gsm_rx_wr] = 0;
+		}
+		else //收到数据,理论上1个字节触发一次,这里没有根据收到的<CRLF>处理，而是等到超时统一处理
+		{
+			while(rt_ringbuffer_getchar(&rb_uart4_rx,&ch)==1)
+			{
+				gsm_rx[gsm_rx_wr++] = ch;
+				if( gsm_rx_wr == GSM_RX_SIZE )
+				{
+					gsm_rx_wr = 0;
+				}
+				gsm_rx[gsm_rx_wr] = 0;
+			}
 		}
 	}
 }
@@ -1042,6 +1083,9 @@ void gsm_init( T_GSM_OPS *gsm_ops )
 {
 	rt_thread_t tid;
 
+/*初始化串口接收缓冲区*/
+	rt_ringbuffer_init(&rb_uart4_rx,uart4_rxbuf,UART4_RX_SIZE);	
+
 	rt_sem_init( &sem_uart, "sem_uart", 0, 0 );
 	rt_sem_init( &sem_gsmrx, "sem_gsmrx", 0, 0 );
 
@@ -1053,14 +1097,6 @@ void gsm_init( T_GSM_OPS *gsm_ops )
 	                sizeof( thread_gsm_stack ), 7, 5 );
 	rt_thread_startup( &thread_gsm );
 
-
-/*
-   rt_timer_init( &tmr_gsm, \
-                "tmr_gsm", \
-                timer_gsm_cb, NULL, \
-                50, \
-                RT_TIMER_FLAG_PERIODIC );
- */
 	dev_gsm.type	= RT_Device_Class_Char;
 	dev_gsm.init	= mg323_init;
 	dev_gsm.open	= mg323_open;
@@ -1077,8 +1113,9 @@ void gsm_init( T_GSM_OPS *gsm_ops )
 
 	rt_device_register( &dev_gsm, "gsm", RT_DEVICE_FLAG_RDWR );
 	rt_device_init( &dev_gsm );
-	rt_timer_start( &tmr_gsm );
 }
+
+
 
 #ifdef TEST_GSM
 
@@ -1142,7 +1179,6 @@ rt_size_t gsm_write( char *sinfo )
 FINSH_FUNCTION_EXPORT( gsm_write, write gsm );
 
 #endif
-
 #endif
 
 /************************************** The End Of File **************************************/

@@ -90,9 +90,10 @@ void rtthread_startup(void)
 
 	/* init application */
 	//rt_application_init();
-	//gsm_init(RT_NULL);
-	hmi_init();
-	jt808_init();
+	gsm_init(RT_NULL);
+	//hmi_init();
+	//jt808_init();
+
   
 
 #ifdef RT_USING_FINSH
@@ -103,6 +104,9 @@ void rtthread_startup(void)
 
     /* init timer thread */
     rt_system_timer_thread_init();
+
+
+
 
 	/* init idle thread */
 	rt_thread_idle_init();

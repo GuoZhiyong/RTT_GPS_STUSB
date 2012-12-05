@@ -32,7 +32,7 @@ USBH_HOST                USB_Host;
 
 
 ALIGN(RT_ALIGN_SIZE)
-static char thread_usbmsc_stack[1024];
+static char thread_usbmsc_stack[512];
 struct rt_thread thread_usbmsc;
 static void rt_thread_entry_usbmsc(void* parameter)
 {

@@ -1,6 +1,8 @@
 #ifndef _H_MENU_H_
 #define _H_MENU_H_
 
+#include <rtdef.h>
+
 #include "fonts.h"
 #include "sed1520.h"
 #include <stdio.h>
@@ -55,8 +57,8 @@ extern unsigned char UpAndDown;
 extern unsigned char KeyValue;
 extern unsigned char KeyCheck_Flag[4];
 
-
-typedef __packed struct
+ALIGN(1)
+typedef  struct
 {
 unsigned char Num;
 unsigned char PCard[18];
@@ -64,7 +66,7 @@ unsigned char StartTime[6];
 unsigned char EndTime[6];
 }PilaoRecord;
 
-typedef __packed struct
+ALIGN(1) typedef  struct
 {
 unsigned char Num;
 unsigned char PCard[18];
@@ -73,7 +75,8 @@ unsigned char EndTime[6];
 unsigned char Speed;
 }ChaosuRecord;
 
-typedef __packed struct
+
+ALIGN(1) typedef  struct
 {
 unsigned char Head[3];
 unsigned int Flag;
@@ -85,21 +88,21 @@ unsigned char CheckOut;
 unsigned char End[3];
 }DispMailBoxInfor;
 
-typedef __packed struct
+ALIGN(1) typedef  struct
 {
 unsigned char SingleNum;
 unsigned char SingleConfignre;
 unsigned char SingleName;
 }StatusSingle;
 
-typedef __packed struct
+ALIGN(1) typedef  struct
 {
 unsigned char DriverTime[6];
 unsigned char DriverCardNum[18];
 unsigned char Type;  //01H£ºµÇÂ¼         02H£ºÍË³ö          03H£º¸ü»»¼ÝÊ»ÈË
 }DriverLandExit;
 
-typedef __packed struct
+ALIGN(1) typedef struct
 {
 unsigned char ACCTime[6];
 unsigned char Type;  //1£ºACC ON      2£ºACC OFF

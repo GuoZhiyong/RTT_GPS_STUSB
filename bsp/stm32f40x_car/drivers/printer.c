@@ -14,9 +14,9 @@
 
 #include <stdio.h>
 #include <rtthread.h>
+#include <rtdevice.h>
 #include "stm32f4xx.h"
 #include "board.h"
-#include "ringbuffer.h"
 #include "printer.h"
 #include <finsh.h>
 
@@ -80,7 +80,9 @@
 /*收到的打印数据的编码包括换行符*/
 #define PRINTER_DATA_SIZE 2048
 unsigned char	printer_data[PRINTER_DATA_SIZE];
-RingBuffer		rb_printer_data;
+struct rt_ringbuffer		rb_printer_data;
+
+
 
 
 /*
@@ -572,7 +574,7 @@ static void printer_get_str_line( void )
 {
 	unsigned char CH, CL;
 
-	while( ringbuffer_get( &rb_printer_data, &CH ) == 0 )
+	while( rt_ringbuffer_getchar( &rb_printer_data, &CH ) == 1 )
 	{
 		if( CH == 0x00 )
 		{
@@ -610,7 +612,7 @@ static void printer_get_str_line( void )
 			}
 		}else if( ( CH > 0x80 ) && ( CH < 0xff ) ) //GBK编码，保证取到完整,正好，多一个，多两个
 		{
-			ringbuffer_get( &rb_printer_data, &CL );
+			rt_ringbuffer_getchar( &rb_printer_data, &CL );
 			if( ( CL >= 0x40 ) && ( CL <= 0xfe ) )
 			{
 				if( dotremain >= 24 )
@@ -671,7 +673,7 @@ static rt_err_t printer_init( rt_device_t dev )
 {
 //	delay_init( 72 );
 
-	ringbuffer_init( &rb_printer_data, PRINTER_DATA_SIZE, printer_data );
+	rt_ringbuffer_init( &rb_printer_data, printer_data,PRINTER_DATA_SIZE );
 	printer_load_param( );
 	dotremain = 384 - printer_param.margin_left - printer_param.margin_right; //新的一行可打印字符点阵数
 	printer_port_init( );
@@ -721,7 +723,7 @@ static rt_size_t printer_read( rt_device_t dev, rt_off_t pos, void* buff, rt_siz
 static rt_size_t printer_write( rt_device_t dev, rt_off_t pos, const void* buff, rt_size_t count )
 {
 	rt_size_t ret = RT_EOK;
-	ret = ringbuffer_put_data( &rb_printer_data, count, (unsigned char*)buff );
+	ret = rt_ringbuffer_put( &rb_printer_data, (unsigned char*)buff,count );
 	return ret;
 }
 

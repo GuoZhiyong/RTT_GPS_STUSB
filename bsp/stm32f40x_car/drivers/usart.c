@@ -59,28 +59,16 @@ struct rt_device uart2_device;
 
 #ifdef RT_USING_UART3
 struct stm32_serial_int_rx uart3_int_rx;
-struct stm32_serial_dma_tx uart3_dma_tx;
 struct stm32_serial_device uart3 =
 {
 	USART3,
 	&uart3_int_rx,
-	&uart3_dma_tx
+	RT_NULL
 };
 struct rt_device uart3_device;
 #endif
 
 
-#ifdef RT_USING_UART4
-struct stm32_serial_int_rx uart4_int_rx;
-struct stm32_serial_dma_tx uart4_dma_tx;
-struct stm32_serial_device uart4 =
-{
-	UART4,
-	&uart4_int_rx,
-	&uart4_dma_tx
-};
-struct rt_device uart4_device;
-#endif
 
 
 
@@ -119,15 +107,6 @@ struct rt_device uart4_device;
 #define UART3_RX_DMA		DMA1_Stream3
 
 
-#define UART4_GPIO_TX	    GPIO_Pin_2
-#define UART4_TX_PIN_SOURCE GPIO_PinSource2
-#define UART4_GPIO_RX	    GPIO_Pin_3
-#define UART4_RX_PIN_SOURCE GPIO_PinSource3
-#define UART4_GPIO	    	GPIOA
-#define UART4_GPIO_RCC   	RCC_AHB1Periph_GPIOA
-#define RCC_APBPeriph_UART4	RCC_APB1Periph_UART4
-
-
 
 static void RCC_Configuration(void)
 {
@@ -153,13 +132,6 @@ static void RCC_Configuration(void)
 
 	/* DMA clock enable */
 	RCC_APB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
-#endif
-
-#ifdef RT_USING_UART4
-	/* Enable USART2 GPIO clocks */
-	RCC_AHB1PeriphClockCmd(UART4_GPIO_RCC, ENABLE);
-	/* Enable USART2 clock */
-	RCC_APB1PeriphClockCmd(RCC_APBPeriph_UART4, ENABLE);
 #endif
 
 
@@ -205,15 +177,7 @@ static void GPIO_Configuration(void)
 #endif
 
 
-#ifdef RT_USING_UART2
-	/* Configure USART2 Rx/tx PIN */
-	GPIO_InitStructure.GPIO_Pin = UART2_GPIO_TX | UART2_GPIO_RX;
-	GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
 
-    /* Connect alternate function */
-    GPIO_PinAFConfig(UART2_GPIO, UART2_TX_PIN_SOURCE, GPIO_AF_USART2);
-    GPIO_PinAFConfig(UART2_GPIO, UART2_RX_PIN_SOURCE, GPIO_AF_USART2);
-#endif
 
 
 
@@ -405,16 +369,6 @@ void rt_hw_usart_init()
 #endif
 
 
-#ifdef RT_USING_UART4
-	uart_init(UART4,115200);
 
-	/* register uart4 */
-	rt_hw_serial_register(&uart4_device, "uart4",
-		RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
-		&uart4);
-
-	/* Enable USART2 DMA Rx request */
-	USART_ITConfig(UART4, USART_IT_RXNE, ENABLE);
-#endif
 
 }
