@@ -58,16 +58,8 @@ static struct rt_semaphore	sem_gsmrx;
 #define GSM_RX_SIZE 2048
 static uint8_t		gsm_rx[GSM_RX_SIZE];
 static uint16_t		gsm_rx_wr = 0;
-static uint16_t		gsm_rx_rd = 0;
-
 
 static T_GSM_STATE	gsmstate = GSM_IDLE;
-
-static uint32_t		lastticks		= 0;
-static uint32_t		action_timeout	= 0;
-
-static rt_tick_t	last_state_ticks;   /*上一次状态的tick值*/
-
 static rt_thread_t	tid_gsm_subthread = RT_NULL;
 
 static uint8_t		fConnectToGprs = 0; /*是否连接到数据模式*/
@@ -378,20 +370,6 @@ static uint16_t stripstring( char *from, char *to )
 	return len;
 }
 
-/***********************************************************
-* Function:
-* Description:	接收到serial驱动的数据指示
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static rt_err_t mg323_rx_ind( rt_device_t dev, rt_size_t size )
-{
-	rt_sem_release( &sem_uart );
-	return RT_EOK;
-}
 
 /***********************************************************
 * Function:
@@ -935,8 +913,7 @@ lbl_start_pwr_off:
 ***********************************************************/
 static void gsm_ppp( void* parameter )
 {
-	rt_err_t	ret;
-	int			i;
+	int i=0;
 	uint8_t		linkid = *(char*)parameter;
 	char		buf[100];
 	uint8_t		linkid_from = 0, linkid_to = MAX_SOCKETS;
@@ -994,7 +971,7 @@ static void rt_thread_entry_gsm( void* parameter )
 {
 	rt_tick_t		curr_ticks;
 	rt_err_t		res;
-	unsigned char	ch, next;
+	unsigned char	ch;
 
 /*gsm的状态切换*/
 	while( 1 )
@@ -1139,7 +1116,7 @@ FINSH_FUNCTION_EXPORT( gsm_open, open gsm );
 
 /***********************************************************
 * Function:
-* Description:
+* Description: 释放链接，gsm断电
 * Input:
 * Input:
 * Output:
@@ -1154,12 +1131,12 @@ rt_err_t gsm_close( void )
 FINSH_FUNCTION_EXPORT( gsm_close, close gsm );
 
 /*设置链接的socket参数*/
-rt_err_t gsm_control_socket( uint8_t linkno, char type, char *ip, uint32_t port )
+rt_err_t gsm_control( uint8_t linkno, char type, char *ip, uint32_t port )
 {
 	return mg323_control( &dev_gsm, 0, NULL );
 }
 
-FINSH_FUNCTION_EXPORT( gsm_control_socket, control gsm );
+FINSH_FUNCTION_EXPORT( gsm_control, control gsm );
 
 
 /***********************************************************

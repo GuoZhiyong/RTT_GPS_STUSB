@@ -224,7 +224,6 @@ int dfs_mount(const char *device_name, const char *path,
 		/* which is a non-device filesystem mount */
 		dev_id = RT_NULL;
 	}
-
 	/* find out specific filesystem */
 	dfs_lock();
 	for (index = 0; index < DFS_FILESYSTEM_TYPES_MAX; index++)

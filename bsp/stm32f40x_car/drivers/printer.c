@@ -101,6 +101,7 @@ static unsigned char	print_glyph[GLYPH_ROW][GLYPH_COL] = { 0 };
 static struct rt_device dev_printer;
 static struct rt_timer	tmr_printer;
 
+
 struct _PRINTER_PARAM
 {
 	uint16_t	step_delay;                 //步进延时,影响行间隔
@@ -126,7 +127,7 @@ static unsigned char font_glyph[80];        //每个汉字或ascii的最大字节数 24x24d
 
 
 /*
-   static void delay_us (const uint32_t usec)
+   static void printer_delay_us (const uint32_t usec)
    {
 
    __IO uint32_t count = 0;
@@ -141,7 +142,7 @@ static unsigned char font_glyph[80];        //每个汉字或ascii的最大字节数 24x24d
    }
  */
 
-static void delay_us( const uint32_t usec )
+static void printer_delay_us( const uint32_t usec )
 {
 	__IO uint32_t	count	= 0;
 	const uint32_t	utime	= ( 168 * usec / 7 );
@@ -260,13 +261,13 @@ static void printer_port_init( void )
 void drivers1( void )
 {
 	MTA_H; MTAF_L; MTB_L; MTBF_H;
-	delay_us( printer_param.step_delay );
+	printer_delay_us( printer_param.step_delay );
 	MTA_L; MTAF_L; MTB_L; MTBF_H;
-	delay_us( printer_param.step_delay );
+	printer_delay_us( printer_param.step_delay );
 	MTA_L; MTAF_H; MTB_L; MTBF_H;
-	delay_us( printer_param.step_delay );
+	printer_delay_us( printer_param.step_delay );
 	MTA_L; MTAF_H; MTB_L; MTBF_L;
-	delay_us( printer_param.step_delay );
+	printer_delay_us( printer_param.step_delay );
 }
 
 /***********************************************************
@@ -281,13 +282,13 @@ void drivers1( void )
 void drivers2( void )
 {
 	MTA_L; MTAF_H; MTB_H; MTBF_L;
-	delay_us( printer_param.step_delay );
+	printer_delay_us( printer_param.step_delay );
 	MTA_L; MTAF_L; MTB_H; MTBF_L;
-	delay_us( printer_param.step_delay );
+	printer_delay_us( printer_param.step_delay );
 	MTA_H; MTAF_L; MTB_H; MTBF_L;
-	delay_us( printer_param.step_delay );
+	printer_delay_us( printer_param.step_delay );
 	MTA_H; MTAF_L; MTB_L; MTBF_L;
-	delay_us( printer_param.step_delay );
+	printer_delay_us( printer_param.step_delay );
 }
 
 /***********************************************************
@@ -361,15 +362,15 @@ void printer_print_glyph( unsigned char len )
 			}
 		}
 		GPIO_ResetBits( LAT_PORT, LAT_PIN );
-		//delay_us(5);
+		//printer_delay_us(5);
 		GPIO_SetBits( LAT_PORT, LAT_PIN );
 
 		GPIO_SetBits( STB1_3_PORT, STB1_3_PIN );
-		delay_us( printer_param.heat_delay[printer_param.gray_level] );
+		printer_delay_us( printer_param.heat_delay[printer_param.gray_level] );
 		GPIO_ResetBits( STB1_3_PORT, STB1_3_PIN );
 
 		GPIO_SetBits( STB4_6_PORT, STB4_6_PIN );
-		delay_us( printer_param.heat_delay[printer_param.gray_level] );
+		printer_delay_us( printer_param.heat_delay[printer_param.gray_level] );
 		GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN );
 		drivers1( );
 
@@ -393,15 +394,15 @@ void printer_print_glyph( unsigned char len )
 			}
 		}
 		GPIO_ResetBits( LAT_PORT, LAT_PIN );
-		//delay_us(5);
+		//printer_delay_us(5);
 		GPIO_SetBits( LAT_PORT, LAT_PIN );
 
 		GPIO_SetBits( STB1_3_PORT, STB1_3_PIN );
-		delay_us( printer_param.heat_delay[printer_param.gray_level] );
+		printer_delay_us( printer_param.heat_delay[printer_param.gray_level] );
 		GPIO_ResetBits( STB1_3_PORT, STB1_3_PIN );
 
 		GPIO_SetBits( STB4_6_PORT, STB4_6_PIN );
-		delay_us( printer_param.heat_delay[printer_param.gray_level] );
+		printer_delay_us( printer_param.heat_delay[printer_param.gray_level] );
 		GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN );
 
 		drivers2( );
@@ -871,22 +872,22 @@ void step( const int count, const int delay )
 	{
 		//drivers1();
 		MTA_H; MTAF_L; MTB_L; MTBF_H;
-		delay_us( delay );
+		printer_delay_us( delay );
 		MTA_L; MTAF_L; MTB_L; MTBF_H;
-		delay_us( delay );
+		printer_delay_us( delay );
 		MTA_L; MTAF_H; MTB_L; MTBF_H;
-		delay_us( delay );
+		printer_delay_us( delay );
 		MTA_L; MTAF_H; MTB_L; MTBF_L;
-		delay_us( delay );
+		printer_delay_us( delay );
 		//drivers2();
 		MTA_L; MTAF_H; MTB_H; MTBF_L;
-		delay_us( delay );
+		printer_delay_us( delay );
 		MTA_L; MTAF_L; MTB_H; MTBF_L;
-		delay_us( delay );
+		printer_delay_us( delay );
 		MTA_H; MTAF_L; MTB_H; MTBF_L;
-		delay_us( delay );
+		printer_delay_us( delay );
 		MTA_H; MTAF_L; MTB_L; MTBF_L;
-		delay_us( delay );
+		printer_delay_us( delay );
 		printer_stop( );
 	}
 	GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );

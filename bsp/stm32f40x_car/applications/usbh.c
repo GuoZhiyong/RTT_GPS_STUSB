@@ -23,20 +23,21 @@
 #include "usbh_msc_core.h"
 
 
-ALIGN(RT_ALIGN_SIZE)
+#ifdef RT_USING_DFS_ROMFS 
+#include <dfs_romfs.h> 
+#endif 
 
+
+
+ALIGN(RT_ALIGN_SIZE)
+	
 USB_OTG_CORE_HANDLE      USB_OTG_Core ;
 USBH_HOST                USB_Host;
-
-
-
-
-ALIGN(RT_ALIGN_SIZE)
 static char thread_usbmsc_stack[512];
 struct rt_thread thread_usbmsc;
 static void rt_thread_entry_usbmsc(void* parameter)
 {
-
+	int ret;
 
 	dfs_init();
     elm_init();
@@ -48,6 +49,23 @@ static void rt_thread_entry_usbmsc(void* parameter)
 			  &USR_cb);
 	
 	rt_kprintf("\r\nUSBH_Init\r\n");
+
+
+#if defined(RT_USING_DFS_ROMFS) 
+		dfs_romfs_init(); 
+		if (dfs_mount(RT_NULL, "/", "rom", 0, &romfs_root) == 0) 
+		{ 
+			rt_kprintf("Root File System initialized!\n"); 
+		} 
+		else 
+			rt_kprintf("Root File System initialzation failed!\n"); 
+#endif
+
+
+
+
+
+
 
 	//USB_OTG_Core.regs.GREGS->GUSBCFG|=(1<<29);
 

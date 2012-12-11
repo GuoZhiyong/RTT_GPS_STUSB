@@ -551,7 +551,8 @@ int USBH_USR_MSC_Application( void )
 	rt_device_register( &mscdev, "udisk", RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_REMOVABLE );
 	rt_device_init( &mscdev );
 	rt_thread_delay( RT_TICK_PER_SECOND / 10 );
-	ret = dfs_mount( "udisk", "/", "elm", 0, 0 );
+	ret = dfs_mount( "udisk", "/udisk", "elm", 0, 0 );
+	
 	rt_kprintf( "dfs_mount ret=%x  now udisk start\r\n", ret );
 
 	return 0;
@@ -567,7 +568,7 @@ void USBH_USR_DeInit( void )
 {
 	rt_kprintf( "%s\r\n", __func__ );
 	//USBH_USR_ApplicationState = USH_USR_FS_INIT;
-	dfs_unmount( "udisk" );
+	dfs_unmount( "/udisk" );
 	rt_device_unregister( &mscdev );
 	diskinited = 0;
 }

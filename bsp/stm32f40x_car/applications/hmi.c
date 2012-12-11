@@ -68,8 +68,11 @@ void hmi_init( void )
 {
 	rt_thread_t tid;
 
-	printer_driver_init();
+	printer_driver_init();	
+
 	usbh_init();
+	spi_sd_init();
+
 
 	rt_thread_init( &thread_hmi,
 	                "hmi_lcd",

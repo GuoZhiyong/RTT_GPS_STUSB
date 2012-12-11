@@ -91,10 +91,9 @@ void rtthread_startup(void)
 	/* init application */
 	//rt_application_init();
 	gsm_init(RT_NULL);
-	//hmi_init();
+	hmi_init();
 	//jt808_init();
-
-  
+ 
 
 #ifdef RT_USING_FINSH
 	/* init finsh */
