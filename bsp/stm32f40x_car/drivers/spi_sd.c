@@ -1023,15 +1023,15 @@ void spi_sd_init( void )
 
 
 
-void tf_open( const char *str )
+void tf_open( void )
 {
-	rt_sdcard_open( &dev_spi_sd,RT_DEVICE_FLAG_RDWR|RT_DEVICE_FLAG_REMOVABLE);
+	rt_sdcard_open( &dev_spi_sd,RT_DEVICE_FLAG_RDWR);
 }
 
 FINSH_FUNCTION_EXPORT( tf_open, open a tf card );
 
 
-void tf_close( const char *str )
+void tf_close( void )
 {
 	rt_sdcard_close( &dev_spi_sd);
 }

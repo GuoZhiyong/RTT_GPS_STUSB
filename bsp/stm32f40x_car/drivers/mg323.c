@@ -94,12 +94,12 @@ void UART4_IRQHandler( void )
 		USART_ClearITPendingBit(UART4, USART_IT_RXNE);
 		rt_sem_release( &sem_uart );
 	}
-
+/*
 	if (USART_GetITStatus(UART4, USART_IT_TC) != RESET)
 	{
-		/* clear interrupt */
 		USART_ClearITPendingBit(UART4, USART_IT_TC);
 	}
+*/
 	rt_interrupt_leave( );
 }
 

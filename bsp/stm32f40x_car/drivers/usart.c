@@ -46,28 +46,6 @@ struct stm32_serial_device uart1 =
 struct rt_device uart1_device;
 #endif
 
-#ifdef RT_USING_UART2
-struct stm32_serial_int_rx uart2_int_rx;
-struct stm32_serial_device uart2 =
-{
-	USART2,
-	&uart2_int_rx,
-	RT_NULL
-};
-struct rt_device uart2_device;
-#endif
-
-#ifdef RT_USING_UART3
-struct stm32_serial_int_rx uart3_int_rx;
-struct stm32_serial_device uart3 =
-{
-	USART3,
-	&uart3_int_rx,
-	RT_NULL
-};
-struct rt_device uart3_device;
-#endif
-
 
 
 
@@ -87,25 +65,6 @@ struct rt_device uart3_device;
 #define UART1_TX_DMA		DMA1_Channel4
 #define UART1_RX_DMA		DMA1_Channel5
 
-#define UART2_GPIO_TX	    GPIO_Pin_2
-#define UART2_TX_PIN_SOURCE GPIO_PinSource2
-#define UART2_GPIO_RX	    GPIO_Pin_3
-#define UART2_RX_PIN_SOURCE GPIO_PinSource3
-#define UART2_GPIO	    	GPIOA
-#define UART2_GPIO_RCC   	RCC_AHB1Periph_GPIOA
-#define RCC_APBPeriph_UART2	RCC_APB1Periph_USART2
-
-/* USART3_REMAP[1:0] = 00 */
-#define UART3_GPIO_TX		GPIO_Pin_10
-#define UART3_TX_PIN_SOURCE GPIO_PinSource10
-#define UART3_GPIO_RX		GPIO_Pin_11
-#define UART3_RX_PIN_SOURCE GPIO_PinSource11
-#define UART3_GPIO			GPIOB
-#define UART3_GPIO_RCC   	RCC_AHB1Periph_GPIOB
-#define RCC_APBPeriph_UART3	RCC_APB1Periph_USART3
-#define UART3_TX_DMA		DMA1_Stream1
-#define UART3_RX_DMA		DMA1_Stream3
-
 
 
 static void RCC_Configuration(void)
@@ -117,22 +76,6 @@ static void RCC_Configuration(void)
 	RCC_APB2PeriphClockCmd(RCC_APBPeriph_UART1, ENABLE);
 #endif
 
-#ifdef RT_USING_UART2
-	/* Enable USART2 GPIO clocks */
-	RCC_AHB1PeriphClockCmd(UART2_GPIO_RCC, ENABLE);
-	/* Enable USART2 clock */
-	RCC_APB1PeriphClockCmd(RCC_APBPeriph_UART2, ENABLE);
-#endif
-
-#ifdef RT_USING_UART3
-	/* Enable USART3 GPIO clocks */
-	RCC_AHB1PeriphClockCmd(UART3_GPIO_RCC, ENABLE);
-	/* Enable USART3 clock */
-	RCC_APB1PeriphClockCmd(RCC_APBPeriph_UART3, ENABLE);
-
-	/* DMA clock enable */
-	RCC_APB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
-#endif
 
 
 }
@@ -155,30 +98,6 @@ static void GPIO_Configuration(void)
     GPIO_PinAFConfig(UART1_GPIO, UART1_TX_PIN_SOURCE, GPIO_AF_USART1);
     GPIO_PinAFConfig(UART1_GPIO, UART1_RX_PIN_SOURCE, GPIO_AF_USART1);
 #endif
-
-#ifdef RT_USING_UART2
-	/* Configure USART2 Rx/tx PIN */
-	GPIO_InitStructure.GPIO_Pin = UART2_GPIO_TX | UART2_GPIO_RX;
-	GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
-
-    /* Connect alternate function */
-    GPIO_PinAFConfig(UART2_GPIO, UART2_TX_PIN_SOURCE, GPIO_AF_USART2);
-    GPIO_PinAFConfig(UART2_GPIO, UART2_RX_PIN_SOURCE, GPIO_AF_USART2);
-#endif
-
-#ifdef RT_USING_UART3
-	/* Configure USART3 Rx/tx PIN */
-	GPIO_InitStructure.GPIO_Pin = UART3_GPIO_RX | UART3_GPIO_RX;
-	GPIO_Init(UART3_GPIO, &GPIO_InitStructure);
-
-    /* Connect alternate function */
-    GPIO_PinAFConfig(UART2_GPIO, UART3_TX_PIN_SOURCE, GPIO_AF_USART3);
-    GPIO_PinAFConfig(UART2_GPIO, UART3_RX_PIN_SOURCE, GPIO_AF_USART3);
-#endif
-
-
-
-
 
 
 }
