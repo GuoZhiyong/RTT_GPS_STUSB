@@ -104,8 +104,8 @@
         <TargetDlgDllArguments>-pCM4</TargetDlgDllArguments>
       </DllOpt>
       <DebugOpt>
-        <uSim>0</uSim>
-        <uTrg>1</uTrg>
+        <uSim>1</uSim>
+        <uTrg>0</uTrg>
         <sLdApp>1</sLdApp>
         <sGomain>1</sGomain>
         <sRbreak>1</sRbreak>
@@ -123,7 +123,7 @@
         <tRtrace>0</tRtrace>
         <sRunDeb>0</sRunDeb>
         <sLrtime>0</sLrtime>
-        <nTsel>7</nTsel>
+        <nTsel>5</nTsel>
         <sDll></sDll>
         <sDllPa></sDllPa>
         <sDlgDll></sDlgDll>
@@ -186,7 +186,7 @@
       <DebugFlag>
         <trace>0</trace>
         <periodic>0</periodic>
-        <aLwin>0</aLwin>
+        <aLwin>1</aLwin>
         <aCover>0</aCover>
         <aSer1>0</aSer1>
         <aSer2>0</aSer2>
@@ -229,10 +229,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>15</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>1</TopLine>
-      <CurrentLine>10</CurrentLine>
+      <CurrentLine>1</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>applications\application.c</PathWithFileName>
       <FilenameWithoutPath>application.c</FilenameWithoutPath>
@@ -263,8 +263,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>1</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808.c</PathWithFileName>
       <FilenameWithoutPath>jt808.c</FilenameWithoutPath>
@@ -416,7 +416,7 @@
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>1</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <CurrentLine>19</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\drivers\mg323.c</PathWithFileName>
       <FilenameWithoutPath>mg323.c</FilenameWithoutPath>
@@ -503,8 +503,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>208</TopLine>
-      <CurrentLine>215</CurrentLine>
+      <TopLine>224</TopLine>
+      <CurrentLine>227</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>STM32F4xx_Libraries\CMSIS\ST\STM32F4xx\Source\Templates\system_stm32f4xx.c</PathWithFileName>
       <FilenameWithoutPath>system_stm32f4xx.c</FilenameWithoutPath>
@@ -1157,10 +1157,10 @@
       <FileType>2</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>38</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>118</TopLine>
-      <CurrentLine>14</CurrentLine>
+      <TopLine>175</TopLine>
+      <CurrentLine>182</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>STM32F4xx_Libraries\CMSIS\ST\STM32F4xx\Source\Templates\arm\startup_stm32f4xx.s</PathWithFileName>
       <FilenameWithoutPath>startup_stm32f4xx.s</FilenameWithoutPath>

@@ -17,8 +17,8 @@
 /* SECTION: RT_DEBUG */
 /* Thread Debug */
 #define RT_DEBUG
-#define RT_DEBUG_MEM                   0
-#define RT_DEBUG_MEMHEAP               0
+#define RT_DEBUG_MEM                   1
+#define RT_DEBUG_MEMHEAP               1
 #define RT_DEBUG_MODULE                0
 #define RT_DEBUG_SCHEDULER             0
 #define RT_DEBUG_SLAB                  0
@@ -77,7 +77,7 @@
 /* SECTION: Console options */
 #define RT_USING_CONSOLE
 /* the buffer size of console*/
-#define RT_CONSOLEBUF_SIZE	128
+#define RT_CONSOLEBUF_SIZE	256
 
 /* SECTION: finsh, a C-Express shell */
 #define RT_USING_FINSH//

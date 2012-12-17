@@ -32,7 +32,6 @@
 
 /*声明一个gps设备*/
 static struct rt_device dev_gps;
-static uint32_t	gps_baud=9600;
 static uint32_t	gps_out_mode=GPS_OUTMODE_ALL;
 
 
@@ -135,7 +134,7 @@ static rt_err_t dev_gps_init( rt_device_t dev )
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
-	USART_InitStructure.USART_BaudRate = gps_baud;
+	USART_InitStructure.USART_BaudRate = 9600;
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
 	USART_InitStructure.USART_Parity = USART_Parity_No;
@@ -153,28 +152,7 @@ static rt_err_t dev_gps_init( rt_device_t dev )
 
 static rt_err_t dev_gps_open( rt_device_t dev, rt_uint16_t oflag )
 {
-	USART_InitTypeDef USART_InitStructure;
-
-	rt_kprintf("baud=%d\n",gps_baud);
-	//rt_hw_interrupt_disable();
-	//USART_DeInit(UART5);
-	//USART_ITConfig( UART5, USART_IT_RXNE, DISABLE);	
-	//USART_Cmd(UART5,DISABLE);
-	//RCC_APB1PeriphClockCmd( RCC_APB1Periph_UART5, ENABLE );
-	//USART_InitStructure.USART_BaudRate = gps_baud;
-	//USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-	//USART_InitStructure.USART_StopBits = USART_StopBits_1;
-	//USART_InitStructure.USART_Parity = USART_Parity_No;
-	//USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	//USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-	//USART_Init(UART5, &USART_InitStructure);
-	/* Enable USART */
-	//USART_Cmd(UART5, ENABLE);
-	//USART_ClearITPendingBit(UART5, USART_IT_RXNE);
-	//USART_ITConfig( UART5, USART_IT_RXNE, ENABLE );	
-	//rt_hw_interrupt_enable();
-	//GPIO_SetBits( GPS_PWR_PORT, GPS_PWR_PIN );
-	GPIO_SetBits(GPIOD, GPIO_Pin_10); 
+	GPIO_SetBits( GPS_PWR_PORT, GPS_PWR_PIN ); 
 	return RT_EOK;
 }
 
@@ -183,8 +161,7 @@ static rt_err_t dev_gps_open( rt_device_t dev, rt_uint16_t oflag )
 
 static rt_err_t dev_gps_close( rt_device_t dev )
 {
-	//GPIO_ResetBits( GPS_PWR_PORT, GPS_PWR_PIN );
-	GPIO_ResetBits(GPIOD, GPIO_Pin_10); 
+	GPIO_ResetBits( GPS_PWR_PORT, GPS_PWR_PIN );
 	return RT_EOK;
 }
 
@@ -255,8 +232,6 @@ static rt_err_t dev_gps_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 {
 	switch( cmd )
 	{
-		case CTL_GPS_BAUD:
-			break;
 		case CTL_GPS_OUTMODE: 
 			break;
 	}
@@ -326,19 +301,11 @@ void gps_init( void )
 
 
 
-rt_err_t gps_open(const int baud)
+rt_err_t gps_onoff(uint8_t openflag)
 {
-	//gps_baud=baud;
-	//return dev_gps_open(&dev_gps,RT_DEVICE_OFLAG_RDONLY);
-	GPIO_SetBits(GPIOD, GPIO_Pin_10); 
+	if(openflag==0) GPIO_ResetBits(GPIOD, GPIO_Pin_10); 
+	else GPIO_SetBits(GPIOD, GPIO_Pin_10); 
 }
-FINSH_FUNCTION_EXPORT( gps_open, open gps with baud );
-
-void gps_close(void)
-{
-	GPIO_ResetBits(GPIOD, GPIO_Pin_10); 
-}
-FINSH_FUNCTION_EXPORT( gps_close, close gps );
-
+FINSH_FUNCTION_EXPORT( gps_onoff, gps_onoff([1|0]) );
 
 /************************************** The End Of File **************************************/
