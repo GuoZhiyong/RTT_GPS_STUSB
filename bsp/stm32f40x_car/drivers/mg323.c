@@ -20,6 +20,7 @@
 #include <finsh.h>
 
 #include <gsm.h>
+#include "jt808.h"
 
 #ifdef MG323
 
@@ -1137,7 +1138,7 @@ static void rt_thread_entry_gsm( void* parameter )
 		}
 
 /*接收超时判断*/
-		while(rt_ringbuffer_getchar(&rb_uart4_rx,&ch)==1)
+		while(rt_ringbuffer_getchar(&rb_uart4_rx,&ch)==1) /*有数据时，保存数据*/
 		{
 			gsm_rx[gsm_rx_wr++] = ch;
 			if( gsm_rx_wr == GSM_RX_SIZE )
@@ -1146,7 +1147,7 @@ static void rt_thread_entry_gsm( void* parameter )
 			}
 			gsm_rx[gsm_rx_wr] = 0;
 		}
-		if(rt_tick_get()-last_tick>20)    //等待100ms,实际上就是变长的延时,最迟100ms处理完一个数据包
+		if(rt_tick_get()-last_tick>RT_TICK_PER_SECOND/10)    //等待100ms,实际上就是变长的延时,最迟100ms处理完一个数据包
 		{
 			if( gsm_rx_wr )
 			{
@@ -1154,7 +1155,7 @@ static void rt_thread_entry_gsm( void* parameter )
 				gsm_rx_wr = 0;
 			}
 		}
-		rt_thread_delay(RT_TICK_PER_SECOND/20);
+		rt_thread_delay(RT_TICK_PER_SECOND/50);	/*延时20ms*/
 	}
 }
 

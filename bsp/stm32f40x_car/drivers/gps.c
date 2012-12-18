@@ -16,6 +16,7 @@
 #include <rtdevice.h>
 #include "stm32f4xx.h"
 #include "gps.h"
+#include "jt808.h"
 
 
 #include <finsh.h>
@@ -252,20 +253,7 @@ static void rt_thread_entry_gps( void* parameter )
 		res = rt_sem_take( &sem_gps, RT_TICK_PER_SECOND / 20 );    //等待100ms,实际上就是变长的延时,最长100ms
 		if( res == RT_EOK ) //收到一包数据
 		{
-			if(strncmp((char*)gps_rawinfo,"$GPRMC",6)==0)
-			{
-				/*解析*/
-				rt_kprintf("$GPRMC\n");
-				/*是否传递出去*/
-				if(gps_out_mode&GPS_OUTMODE_TRIGGER)
-				{
-
-				}
-			}
-			if(gps_out_mode==GPS_OUTMODE_ALL)
-			{
-				rt_kprintf("%s\n",gps_rawinfo);
-			}
+			gps_rx(gps_rawinfo,gps_rawinfo_wr);
 			gps_rawinfo_wr=0;
 		}
 		rt_thread_delay(RT_TICK_PER_SECOND/20);

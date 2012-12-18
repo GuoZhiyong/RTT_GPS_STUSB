@@ -12,10 +12,12 @@
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
 #include <stdio.h>
-#include "stm32f10x.h"
+#include <rtthread.h>
+#include <rtdevice.h>
+
+#include "stm32f4xx.h"
 #include "mma8451.h"
 #include "math.h"
-#include "gt21.h"
 
 
 /*
@@ -26,12 +28,6 @@
    INT1  PA14
    INT2  PA15
  */
-
-#include <rtthread.h>
-#include "stm32f4xx.h"
-#include <stdlib.h>
-
-
 #define TRUE	1
 #define FALSE	0
 
@@ -41,13 +37,13 @@
 #define I2C1_SLAVE_ADDRESS7 0x42
 #define I2C_PageSize		256
 
-#define SCL_H		( GPIOB->BSRR = GPIO_Pin_4 )
-#define SCL_L		( GPIOB->BRR = GPIO_Pin_4 )
-#define SCL_read	( GPIOB->IDR & GPIO_Pin_4 )
+#define SCL_H		( GPIOB->BSRRL = GPIO_Pin_5 )
+#define SCL_L		( GPIOB->BSRRH = GPIO_Pin_5 )
+#define SCL_read	( GPIOB->IDR & GPIO_Pin_5 )
 
-#define SDA_H		( GPIOB->BSRR = GPIO_Pin_3 )
-#define SDA_L		( GPIOB->BRR = GPIO_Pin_3 )
-#define SDA_read	( GPIOB->IDR & GPIO_Pin_3 )
+#define SDA_H		( GPIOB->BSRRL = GPIO_Pin_4 )
+#define SDA_L		( GPIOB->BSRRH = GPIO_Pin_4 )
+#define SDA_read	( GPIOB->IDR & GPIO_Pin_4 )
 
 #define ERR_NONE	0x00
 #define ERR_START1	0x01
@@ -197,10 +193,10 @@
 #define OFF_Y_REG	0x30
 #define OFF_Z_REG	0x31
 
-vu8 mma8451_need_config = 1;
+vu8						mma8451_need_config = 1;
 
+static struct rt_device dev_mma8451;
 
-static rt_device dev_mma8451;
 
 /***********************************************************
 * Function:       // 函数名称
@@ -455,7 +451,7 @@ static uint8_t IIC_RegWrite( uint8_t address, uint8_t reg, uint8_t val )
 lbl_ERR_REG_WR_STOP:
 	I2C_Stop( );
 lbl_ERR_REG_WR:
-	printf( "reg_wr error=%02x reg=%02x value=%02x\r\n", err, reg, val );
+	rt_kprintf( "reg_wr error=%02x reg=%02x value=%02x\r\n", err, reg, val );
 	return err;
 }
 
@@ -620,7 +616,6 @@ static uint8_t mma8451_config( uint16_t param1, uint16_t param2 )
 	unsigned char res, value;
 
 //standby
-	printf( "\r\n%d>mma8451_config", SysTicks );
 	if( IIC_RegWrite( MMA845X_ADDR, CTRL_REG1, ( CTRL_REG1_value & ~ACTIVE_MASK ) ) )
 	{
 		goto lbl_mma8451_config_err;
@@ -860,10 +855,8 @@ static uint8_t mma8451_config( uint16_t param1, uint16_t param2 )
 	return ERR_NONE;
 
 lbl_mma8451_config_err:
-	printf( "\r\n%d>(%s) err=%d\r\n", SysTicks, __func__, res );
 	return res;
 }
-
 
 /*
    碰撞时间门限
@@ -872,93 +865,8 @@ lbl_mma8451_config_err:
    指定时间门限内，加速度持续大于门限即为碰撞
  */
 
-static uint8_t	sensor_info[2]	= { 0 };
+static uint8_t sensor_info[2] = { 0 };
 
-
-/***********************************************************
-* Function:       // 函数名称
-* Description:    // 函数功能、性能等的描述
-* Input:          // 1.输入参数1，说明，包括每个参数的作用、取值说明及参数间关系
-* Input:          // 2.输入参数2，说明，包括每个参数的作用、取值说明及参数间关系
-* Output:         // 1.输出参数1，说明
-* Return:         // 函数返回值的说明
-* Others:         // 其它说明
-***********************************************************/
-void mma8451_proc( void )
-{
-	uint8_t		int_source, pl;
-	uint16_t	res;
-
-/*IIC出错,重新连接*/
-	if( mma8451_need_config )
-	{
-		res = mma8451_config( param_mma8451_word1, param_mma8451_word2 );
-		if( res == 0 )
-		{
-			mma8451_need_config = 0;
-		}
-		return;
-	}
-
-	if( ( param_mma8451_word1 & 0x8000 ) == 0x0 )
-	{
-		return;
-	}
-/*倾斜*/
-	res = IIC_RegRead( MMA845X_ADDR, INT_SOURCE_REG, &int_source );
-	if( res )
-	{
-		mma8451_need_config = 1;
-		return;
-	}
-
-	if( ( int_source & 0x10 ) == 0x10 )
-	{
-		res = IIC_RegRead( MMA845X_ADDR, PL_STATUS_REG, &pl );
-		if( res )
-		{
-			mma8451_need_config = 1;
-			return;
-		}
-
-		if( ( sensor_info[0] & 0x40 ) == 0x40 ) //首次使用,不发送
-		{
-			if( ( SysTicks - lastsend_rotation_ticks ) > 1000 )
-			{
-				printf( "\r\n%d>pl=%02x", SysTicks, pl );
-				if( pl != last_plstatus )
-				{
-					uart2_send_frame( '2', 2, sensor_info, 1 );
-					last_plstatus = pl;
-				}
-				lastsend_rotation_ticks = SysTicks;
-			}
-		}else
-		{
-			printf( "\r\n%d>First pl=%02x", SysTicks, pl );
-		}
-		sensor_info[0] |= 0x40;
-	}
-/*碰撞 TAP*/
-
-	res = IIC_RegRead( MMA845X_ADDR, PULSE_SRC_REG, &int_source );
-	if( res )
-	{
-		mma8451_need_config = 1;
-		return;
-	}
-
-	if( int_source >= 0x80 )
-	{
-		if( ( SysTicks - lastsend_crash_ticks ) > 1000 )
-		{
-			sensor_info[0] |= 0x80;
-			uart2_send_frame( '2',2, sensor_info, 1 );
-			lastsend_crash_ticks = SysTicks;
-		}
-		printf( "\r\n%d>PULSE_SRC_REG=%02x", SysTicks, int_source );
-	}
-}
 
 /***********************************************************
 * Function:       // 函数名称
@@ -975,89 +883,49 @@ int mma8451_rx( unsigned char *pdata, unsigned int len )
 	{
 		param_mma8451_word1 = ( pdata[1] << 8 ) | pdata[2];
 		param_mma8451_word2 = ( pdata[3] << 8 ) | pdata[4];
-		EE_WriteVariable( VirtAddVarTab[12], param_mma8451_word1 );
-		EE_WriteVariable( VirtAddVarTab[13], param_mma8451_word2 );
+//		EE_WriteVariable( VirtAddVarTab[12], param_mma8451_word1 );
+//		EE_WriteVariable( VirtAddVarTab[13], param_mma8451_word2 );
 		mma8451_config( param_mma8451_word1, param_mma8451_word2 );
 	}
 	return 0;
 }
 
-
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 static rt_err_t mma8451_init( rt_device_t dev )
 {
-		GPIO_InitTypeDef	GPIO_InitStructure;
-		uint16_t			res;
-		uint16_t			param1	= 0x8000, param2 = 0x1e02;
-		uint16_t			i		= 0;
-	
-		RCC_APB2PeriphClockCmd( RCC_APB2Periph_AFIO | RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB, ENABLE );
-		/*去掉JTAG功能*/
-		GPIO_PinRemapConfig( GPIO_Remap_SWJ_JTAGDisable, ENABLE );
-		GPIO_PinRemapConfig( GPIO_Remap_SWJ_Disable, ENABLE );
-	
-		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	//	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_AF_OD;
-		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
-	
-		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
-		GPIO_Init( GPIOB, &GPIO_InitStructure );
-	
-		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-		GPIO_Init( GPIOB, &GPIO_InitStructure );
-	
-		res = EE_ReadVariable( VirtAddVarTab[12], &i );
-		if( res )
-		{
-			EE_WriteVariable( VirtAddVarTab[12], param1 ); //还没有初始化,写入缺省值
-		}else
-		{
-			param1 = i;
-		}
-	
-		res = EE_ReadVariable( VirtAddVarTab[13], &i );
-		if( res )
-		{
-			EE_WriteVariable( VirtAddVarTab[13], param2 );
-		} else
-		{
-			param2 = i;
-		}
-	
-		res = EE_ReadVariable( VirtAddVarTab[14], &i );
-		if( res )
-		{
-			EE_WriteVariable( VirtAddVarTab[14], CTRL_REG1_value );
-		} else
-		{
-			CTRL_REG1_value = i;
-		}
-	
-		res = EE_ReadVariable( VirtAddVarTab[15], &i );
-		if( res )
-		{
-			EE_WriteVariable( VirtAddVarTab[15], PL_BF_ZCOMP_REG_value );
-		} else
-		{
-			PL_BF_ZCOMP_REG_value = i;
-		}
-	
-		res = EE_ReadVariable( VirtAddVarTab[16], &i );
-		if( res )
-		{
-			EE_WriteVariable( VirtAddVarTab[16], PL_P_L_THS_REG_vlaue );
-		} else
-		{
-			PL_P_L_THS_REG_vlaue = i;
-		}
-	
-		printf( "\r\n%d>(%s) param1=%04x param2=%04x\r\n", SysTicks, __func__, param1, param2 );
-		res = mma8451_config( param1, param2 );
-		if( res == 0 )
-		{
-			mma8451_need_config = 0;
-		}
+	GPIO_InitTypeDef	GPIO_InitStructure;
+	uint16_t			res;
+	uint16_t			param1	= 0x8000, param2 = 0x1e02;
+	uint16_t			i		= 0;
 
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB, ENABLE );
+	/*去掉JTAG功能*/
+	GPIO_PinAFConfig( GPIOB, GPIO_Pin_4, 1 );
 
+	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_2MHz;
+	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_OType	= GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;   /*SCL*/
+	GPIO_Init( GPIOB, &GPIO_InitStructure );
+
+	GPIO_InitStructure.GPIO_OType	= GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;   /*SDA*/
+	GPIO_Init( GPIOB, &GPIO_InitStructure );
+	SCL_H;
+	SDA_H;
+	mma8451_config( param_mma8451_word1, param_mma8451_word2 );
 	return RT_EOK;
 }
 
@@ -1100,9 +968,7 @@ static rt_size_t mma8451_read( rt_device_t dev, rt_off_t pos, void* buff, rt_siz
 ***********************************************************/
 static rt_size_t mma8451_write( rt_device_t dev, rt_off_t pos, const void* buff, rt_size_t count )
 {
-	rt_size_t ret=RT_EOK;
-	ret=ringbuffer_put_data(&rb_printer_data,count,(unsigned char *)buff);
-	return ret;
+	return RT_EOK;
 }
 
 /***********************************************************
@@ -1120,7 +986,6 @@ static rt_err_t mma8451_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 	int		i;
 	switch( cmd )
 	{
-
 	}
 	return RT_EOK;
 }
@@ -1139,10 +1004,124 @@ static rt_err_t mma8451_close( rt_device_t dev )
 	return RT_EOK;
 }
 
+/*
+
+   传感器处理线程
+   原先为函数方式，现在采用线程，使用状态机
+ */
+
+#define MMA8451_CONFIG	1
+#define MMA8451_TILT	2   /*倾斜检测*/
+#define MMA8451_TAP		3   /*震动检测*/
+
+ALIGN( RT_ALIGN_SIZE )
+static char thread_sensor_stack[512];
+struct rt_thread thread_sensor;
 
 
+/***********************************************************
+***********************************************************/
+static void rt_thread_entry_sensor( void* parameter )
+{
+	uint8_t		int_source, pl;
+	uint16_t	res;
+	uint8_t		status = MMA8451_CONFIG;
+	while( 1 )
+	{
+		if( ( param_mma8451_word1 & 0x8000 ) == 0x0 )
+		{
+			continue;
+		}
+		switch( status )
+		{
+			case MMA8451_CONFIG:
+				res = mma8451_config( param_mma8451_word1, param_mma8451_word2 );
+				if( res == 0 )
+				{
+					status = MMA8451_TILT;
+				}
+				break;
+			case MMA8451_TILT:
+				res = IIC_RegRead( MMA845X_ADDR, INT_SOURCE_REG, &int_source );
+				if( res )
+				{
+					status = MMA8451_CONFIG;
+					break;;
+				}
+
+				if( ( int_source & 0x10 ) == 0x10 )
+				{
+					res = IIC_RegRead( MMA845X_ADDR, PL_STATUS_REG, &pl );
+					if( res )
+					{
+						status = MMA8451_CONFIG;
+						break;;
+					}
+
+					if( ( sensor_info[0] & 0x40 ) == 0x40 ) //首次使用,不发送
+					{
+						if( ( rt_tick_get( ) - lastsend_rotation_ticks ) > 1000 )
+						{
+							rt_kprintf( "\r\n%d>pl=%02x", rt_tick_get( ), pl );
+							if( pl != last_plstatus )
+							{
+								//uart2_send_frame( '2', 2, sensor_info, 1 );
+								last_plstatus = pl;
+							}
+							lastsend_rotation_ticks = rt_tick_get( );
+						}
+					}else
+					{
+						rt_kprintf( "\r\n%d>First pl=%02x", rt_tick_get( ), pl );
+					}
+					sensor_info[0] |= 0x40;
+				}
+				break;
+
+			case MMA8451_TAP:
+				res = IIC_RegRead( MMA845X_ADDR, PULSE_SRC_REG, &int_source );
+				if( res )
+				{
+					status = MMA8451_CONFIG;
+					break;;
+				}
+
+				if( int_source >= 0x80 )
+				{
+					if( ( rt_tick_get( ) - lastsend_crash_ticks ) > 1000 )
+					{
+						sensor_info[0] |= 0x80;
+						//uart2_send_frame( '2', 2, sensor_info, 1 );
+						lastsend_crash_ticks = rt_tick_get( );
+					}
+					rt_kprintf( "\r\n%d>PULSE_SRC_REG=%02x", rt_tick_get( ), int_source );
+				}
+				break;
+		}
+		rt_thread_delay( RT_TICK_PER_SECOND / 50 );
+	}
+}
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 void mma8451_driver_init( void )
 {
+
+	rt_thread_init( &thread_sensor,
+	                "sensor",
+	                rt_thread_entry_sensor,
+	                RT_NULL,
+	                &thread_sensor_stack[0],
+	                sizeof( thread_sensor_stack ), 22, 5 );
+	rt_thread_startup( &thread_sensor );
+
 	dev_mma8451.type		= RT_Device_Class_Char;
 	dev_mma8451.init		= mma8451_init;
 	dev_mma8451.open		= mma8451_open;
@@ -1155,9 +1134,5 @@ void mma8451_driver_init( void )
 	rt_device_register( &dev_mma8451, "sensor", RT_DEVICE_FLAG_RDWR );
 	rt_device_init( &dev_mma8451 );
 }
-
-
-
-
 
 /************************************** The End Of File **************************************/
