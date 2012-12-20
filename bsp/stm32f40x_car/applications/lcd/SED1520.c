@@ -50,7 +50,6 @@
 
 #include <stdint.h>
 #include "sed1520.h"
-#include "fonts.h"
 #include "bmp.h"
 #include "board.h"
 #include "stm32f4xx.h"
@@ -623,6 +622,7 @@ void lcd_glyph(uint8_t left, uint8_t top, uint8_t width, uint8_t height, uint8_t
 	font       font number to use for display (see fonts.h)
 	str        text string to display (null-terminated)
 */
+#if 0
 static void lcd_text_intern(uint8_t left, uint8_t top, uint8_t font, const char *str, uint8_t inprogmem)
  { uint8_t x = left;
    uint8_t glyph;
@@ -702,7 +702,7 @@ void lcd_text_p(uint8_t left, uint8_t top, uint8_t font, const char *str)
  { lcd_text_intern(left, top, font, str, 1);
  }
 
-
+#endif
 
 
 

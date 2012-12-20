@@ -1,7 +1,6 @@
-#include "menu.h"
+#include "Menu_Include.h"
 
-
-struct IMG_DEF test_1_Check={12,12,test_00};
+#define  DIS_Dur_width_check 11
 
 unsigned char noselect_check[]={0x3C,0x7E,0xC3,0xC3,0xC3,0xC3,0x7E,0x3C};//空心
 unsigned char select_check[]={0x3C,0x7E,0xFF,0xFF,0xFF,0xFF,0x7E,0x3C};//实心
@@ -29,11 +28,12 @@ static void menuswitch(void)
 {
 	unsigned char i;
 	lcd_fill(0);
-	DisAddRead_ZK(0,3,"信息",2,&test_1_Check,0,0);
-	DisAddRead_ZK(0,17,"查看",2,&test_1_Check,0,0);
-	for(i=0;i<6;i++) lcd_bitmap(47+i*12, 5, &BMP_noselect_check, LCD_MODE_SET);
-	lcd_bitmap(35+menu_pos*12,5, &BMP_select_check, LCD_MODE_SET);
-	DisAddRead_ZK(35,19,(char *)(psubmenu[menu_pos]->caption),5,&test_1_Check,1,0);
+	lcd_text12(0,3,"信息",4,LCD_MODE_SET);
+	lcd_text12(0,17,"查看",4,LCD_MODE_SET);
+	for(i=0;i<7;i++) 
+		lcd_bitmap(35+i*DIS_Dur_width_check, 5, &BMP_noselect_check, LCD_MODE_SET);
+	lcd_bitmap(35+menu_pos*DIS_Dur_width_check,5, &BMP_select_check, LCD_MODE_SET);
+	lcd_text12(30,19,(char *)(psubmenu[menu_pos]->caption),psubmenu[menu_pos]->len,LCD_MODE_SET);
 	lcd_update_all();
 }
 
@@ -59,13 +59,16 @@ switch(KeyValue)
 		pMenuItem->show();
 		break;
 	case KeyValueUP:
-		if(menu_pos==0) menu_pos=6;
-		menu_pos--;
-		menuswitch();
+		if(menu_pos==0) 
+			menu_pos=6;
+		else
+			menu_pos--;
+		menuswitch();		
 		break;
 	case KeyValueDown:
 		menu_pos++;
-		menu_pos%=6;
+		if(menu_pos>6)
+			menu_pos=0;
 		menuswitch();
 		break;
 	}
@@ -85,10 +88,11 @@ static void timetick(unsigned int systick)
 
 }
 
-
+ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_1_InforCheck=
 {
-	"",
+	"查看信息",
+	8,
 	&show,
 	&keypress,
 	&timetick,

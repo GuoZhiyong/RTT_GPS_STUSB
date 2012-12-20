@@ -184,7 +184,8 @@ static rt_uint8_t _spi_sd_wait4ready( void )
 *****************************************************************************/
 static rt_uint8_t _spi_sd_sendcmd( rt_uint8_t cmd, rt_uint32_t arg, rt_uint8_t crc )
 {
-	rt_uint32_t r1, n;
+	rt_uint32_t n;
+	rt_uint8_t r1;
 #if 1
 	if( cmd & 0x80 )                                    /* ACMD<n> is the command sequence of CMD55-CMD<n> */
 	{
@@ -218,6 +219,8 @@ static rt_uint8_t _spi_sd_sendcmd( rt_uint8_t cmd, rt_uint32_t arg, rt_uint8_t c
 	}
 	while( ( r1 & 0x80 ) && --n );
 #endif
+
+#if 1
 	for( n = 0; n < 200; n++ )
 	{
 		r1 = _spi_send_recv( DUMMY_BYTE );
@@ -226,6 +229,7 @@ static rt_uint8_t _spi_sd_sendcmd( rt_uint8_t cmd, rt_uint32_t arg, rt_uint8_t c
 			break;
 		}
 	}
+#endif	
 	_card_disable( );
 	_spi_send_recv( DUMMY_BYTE );
 	return r1; /* Return with the response value */
@@ -573,15 +577,16 @@ static rt_uint8_t _spi_sd_init( void )
 	_spi1_init( );
 
 	//_card_power_on();
+	_card_disable();
 
-	for( i = 0; i < 80; i++ )  /* 80 dummy clocks */
+	for( i = 0; i < 74; i++ )  /* 80 dummy clocks */
 	{
 		r1 = _spi_send_recv( DUMMY_BYTE );
 	}
 
 	ct = CT_NONE;
-
-	for( i = 1; i < 0xff; i++ )
+/*有的卡需要发送多次的CMD0，才能工作*/
+	for( i = 1; i < 0xfff; i++ )
 	{
 		r1 = _spi_sd_sendcmd( GO_IDLE_STATE, 0, 0x95 );
 		if( r1 == 0x01 )
@@ -785,72 +790,9 @@ static rt_err_t rt_sdcard_init( rt_device_t dev )
 	return RT_EOK;
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static rt_err_t rt_sdcard_open_1( rt_device_t dev, rt_uint16_t oflag )
-{
-	rt_uint8_t	status;
-	rt_uint8_t	*sector;
-
-
-	if( !_spi_sd_init( ) ) 
-	{
-		rt_kprintf("_spi_sd_init fail\n");
-		goto err;
-	}
-
-	if( !_spi_sd_readcfg( &SDCfg ) )
-	{
-		rt_kprintf("_spi_sd_init fail\n");
-		goto err;
-	}
-
-	/* get the first sector to read partition table */
-	sector = (rt_uint8_t*)rt_malloc( 512 );
-	if( sector == RT_NULL )
-	{
-		rt_kprintf( "allocate partition sector buffer failed\n" );
-		return;
-	}
-
-	status = _spi_sd_readsector( 0, sector, 1 );
-	if( status == true )
-	{
-		/* get the first partition */
-		if( dfs_filesystem_get_partition( &part, sector, 0 ) != 0 )
-		{
-			/* there is no partition */
-			part.offset = 0;
-			part.size	= 0;
-		}
-	}else
-	{
-		/* there is no partition table */
-		part.offset = 0;
-		part.size	= 0;
-	}
-
-	/* release sector buffer */
-	rt_free( sector );
-
-
-
-	return RT_EOK;
-
-err:
-	rt_kprintf( "sdcard init failed\n" );
-
-	return RT_ERROR;
-}
-
-
+/*
+打开tf卡
+*/
 static rt_err_t rt_sdcard_open( rt_device_t dev, rt_uint16_t oflag )
 {
 	rt_uint8_t	status;
@@ -900,6 +842,9 @@ static rt_err_t rt_sdcard_open( rt_device_t dev, rt_uint16_t oflag )
 #endif
 	_spi_sd_readcfg(&SDCfg);
 
+/*
+在mount的时候还是会调用设备的open
+*/
 	dfs_mount("spi_sd","/sd","elm",0,0);
 	return RT_EOK;
 

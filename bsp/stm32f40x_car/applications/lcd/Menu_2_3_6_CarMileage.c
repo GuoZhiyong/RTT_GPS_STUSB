@@ -1,29 +1,29 @@
-#include "menu.h"
-#include "Lcd_init.h"
+#include "Menu_Include.h"
+#include "Lcd.h"
+#include <string.h>
+#include <stdlib.h>
 
-struct IMG_DEF test_dis_Mileage={12,12,test_00};
 
 
-unsigned char licheng_sum[12]={":000000 km"};
+unsigned char licheng_sum[18]={"总里程:000000 KM"};
 
 static void show(void)
 {
 	unsigned long DisKm=0;
 
-	licheng_sum[1]=DisKm%1000000/100000+0x30;
-	licheng_sum[2]=DisKm%100000/10000+0x30;
-	licheng_sum[3]=DisKm%10000/1000+0x30;
-	licheng_sum[4]=DisKm%1000/100+0x30;
-	licheng_sum[5]=DisKm%100/10+0x30;
-	licheng_sum[6]=DisKm%10+0x30; 
-
+	/*licheng_sum[7]=DisKm%1000000/100000+0x30;
+	licheng_sum[8]=DisKm%100000/10000+0x30;
+	licheng_sum[9]=DisKm%10000/1000+0x30;
+	licheng_sum[10]=DisKm%1000/100+0x30;
+	licheng_sum[11]=DisKm%100/10+0x30;
+	licheng_sum[12]=DisKm%10+0x30; 
+	*/
+    //ultoa(DisKm,licheng_sum,10);
+	
 
 	lcd_fill(0);
-	lcd_text(0,5,FONT_SEVEN_DOT,"20");
-	lcd_text(12,5,FONT_SEVEN_DOT,(char *)Dis_date);
-	lcd_text(70,5,FONT_SEVEN_DOT,(char *)Dis_time);
-	DisAddRead_ZK(0,17,"总里程",3,&test_dis_Mileage,0,0);
-	lcd_text(36,18,FONT_NINE_DOT,(char *)licheng_sum);
+	lcd_text12(0, 3,(char *)Dis_date,20,LCD_MODE_SET);
+	lcd_text12(0,18,(char *)licheng_sum,16,LCD_MODE_SET);
 	lcd_update_all();
 }
 
@@ -60,10 +60,11 @@ static void timetick(unsigned int systick)
 
 }
 
-
+ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_2_3_6_Mileage=
 {
 	"里程信息查看",
+	12,
 	&show,
 	&keypress,
 	&timetick,

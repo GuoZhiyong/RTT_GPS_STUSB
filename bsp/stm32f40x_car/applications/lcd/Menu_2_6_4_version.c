@@ -1,29 +1,32 @@
-#include "menu.h"
-#include "Lcd_init.h"
+#include "Menu_Include.h"
 
+
+
+
+u8 version_screen=0;
 
 static void show(void)
 {
-	
-	lcd_fill(0);
-	lcd_text12(0,10,"Ver:MG323_1.1",13,LCD_MODE_SET);
-	lcd_update_all();
-	
+	version_disp();
 }
 
 
 static void keypress(unsigned int key)
 {
+
 	switch(KeyValue)
 		{
 		case KeyValueMenu:
-			pMenuItem=&Menu_1_Idle;
+			pMenuItem=&Menu_2_6_5_tel;
 			pMenuItem->show();
 			CounterBack=0;
+
+			version_screen=0;
 			break;
 		case KeyValueOk:
+			version_disp();
 			break;
-		case KeyValueUP:  
+		case KeyValueUP:
 			break;
 		case KeyValueDown:
 			break;
@@ -34,19 +37,23 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)
 {
+       Cent_To_Disp();
 	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
+	if(CounterBack!=MaxBankIdleTime*5)
 		return;
 	CounterBack=0;
 	pMenuItem=&Menu_1_Idle;
 	pMenuItem->show();
 
+
+
 }
 
 
-MENUITEM	Menu_2_6_1_Ver=
+MENUITEM	Menu_2_6_4_version=
 {
-	"",
+"∞Ê±æœ‘ æ",
+	8,
 	&show,
 	&keypress,
 	&timetick,

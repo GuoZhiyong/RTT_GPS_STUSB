@@ -1,8 +1,7 @@
 #include  <string.h>
-#include "menu.h"
-#include "Lcd_init.h"
+#include "Menu_Include.h"
+#include "Lcd.h"
 
-struct IMG_DEF test_dis_Driver={12,12,test_00};
 
 /*
 static unsigned char Jiayuan_screen=0;  //  显示查看/发送界面   =1时选择是查看还是发送界面
@@ -27,33 +26,45 @@ unsigned char i=0;
 lcd_fill(0);
 if(NameCode==1)
 	{
-	DisAddRead_ZK(30,3,"驾驶员姓名",5,&test_dis_Driver,0,0);
-	/*for(i=0;i<20;i++)
-		{
-		if((Driver_Info.DriveName[i]>=0xb0)&&(Driver_Info.DriveName[i]<=0xf7))
-			i++;
-		else
-			break;
-		}
-	DisAddRead_ZK(48,19,(char *)Driver_Info.DriveName,i/2,&test_dis_Driver,0,0); */
+	lcd_text12(30,3,"驾驶员姓名",10,LCD_MODE_SET);
+	//lcd_text12(48,19,(char *)Driver_Info.DriveName,strlen(Driver_Info.DriveName),LCD_MODE_SET);
 	}
 else
 	{
-	DisAddRead_ZK(30,3,"驾驶证号码",5,&test_dis_Driver,0,0);
-	//lcd_text(15,19,FONT_SIX_DOT,(char *)Driver_Info.DriverCard_ID);
+	lcd_text12(30,3,"驾驶证号码",10,LCD_MODE_SET);
+	//lcd_text12(15,19,(char *)Driver_Info.DriverCard_ID,sizeof(Driver_Info.DriverCard_ID),LCD_MODE_SET);
 	}
 lcd_update_all();
 } 
 
-
+static void Dis_DriverInfor(unsigned char type,unsigned char disscreen)
+{
+lcd_fill(0);
+if(type==1)
+	{
+	if(disscreen==1)
+		{
+		lcd_text12(0, 3,"1.驾驶员信息查看",16,LCD_MODE_INVERT); 
+	    lcd_text12(0,19,"2.驾驶员信息发送",16,LCD_MODE_SET);
+		}
+	else if(disscreen==2)
+		{
+		lcd_text12(0, 3,"1.驾驶员信息查看",16,LCD_MODE_SET); 
+		lcd_text12(0,19,"2.驾驶员信息发送",16,LCD_MODE_INVERT);
+		}
+	}
+else if(type==2)
+	{
+	if(disscreen==1)
+		lcd_text12(0,10,"按确认发送驾驶员信息",20,LCD_MODE_SET);
+	else if(disscreen==2)
+		lcd_text12(5,10,"驾驶员信息发送成功",18,LCD_MODE_SET);
+	}	
+lcd_update_all();
+}
 static void show(void)
 {
-	lcd_fill(0);
-	lcd_text(10,3,FONT_NINE_DOT,"1."); 
-	DisAddRead_ZK(30,3,"驾驶员信息查看",7,&test_dis_Driver,1,0); 
-	lcd_text(10,19,FONT_NINE_DOT,"2.");
-	DisAddRead_ZK(30,19,"驾驶员信息发送",7,&test_dis_Driver,0,0);
-	lcd_update_all();
+	Dis_DriverInfor(1,1);
 	DIS_DRIVER_inform_temp.DIS_SELECT_check_send=1;
 	DIS_DRIVER_inform_temp.DIS_ENTER_check_send=1;
 }
@@ -80,10 +91,7 @@ static void keypress(unsigned int key)
 					Display_jiayuan(1);
 				else if(DIS_DRIVER_inform_temp.DIS_SHOW_check_send==1)//进入发送驾驶员信息界面
 					{
-					lcd_fill(0);
-					DisAddRead_ZK(10,10,"发送驾驶员信息",7,&test_dis_Driver,1,0);
-					lcd_text(94,10,FONT_NINE_DOT," ?");
-					lcd_update_all();
+					Dis_DriverInfor(2,1);
 					}
 				}
 			else if(DIS_DRIVER_inform_temp.DIS_ENTER_check_send==2)
@@ -91,22 +99,15 @@ static void keypress(unsigned int key)
 				DIS_DRIVER_inform_temp.DIS_ENTER_check_send=3;
 				if(DIS_DRIVER_inform_temp.DIS_SHOW_check_send==0)//返回查看和发送界面
 					{
-					lcd_fill(0);
-					lcd_text(10,3,FONT_NINE_DOT,"1.");
-					DisAddRead_ZK(30,3,"驾驶员信息查看",7,&test_dis_Driver,1,0);
-					lcd_text(10,19,FONT_NINE_DOT,"2.");
-					DisAddRead_ZK(30,19,"驾驶员信息发送",7,&test_dis_Driver,0,0);
-					lcd_update_all();
+					Dis_DriverInfor(1,1);
 					DIS_DRIVER_inform_temp.DIS_SELECT_check_send=1;
 					DIS_DRIVER_inform_temp.DIS_ENTER_check_send=1;
 					}
 				else if(DIS_DRIVER_inform_temp.DIS_SHOW_check_send==1)//提示发送成功
 					{
-					lcd_fill(0);
-					DisAddRead_ZK(5,10,"驾驶员信息发送成功",9,&test_dis_Driver,1,0);
-					lcd_update_all();
+					Dis_DriverInfor(2,2);
 					//SD_ACKflag.f_DriverInfoSD_0702H=1;
-					DIS_DRIVER_inform_temp.DIS_ENTER_check_send=1;
+					DIS_DRIVER_inform_temp.DIS_ENTER_check_send=0;//    1
 					DIS_DRIVER_inform_temp.DIS_SELECT_check_send=0;
 					DIS_DRIVER_inform_temp.DIS_SHOW_check_send=0;
 					}
@@ -119,20 +120,13 @@ static void keypress(unsigned int key)
 					Display_jiayuan(1);
 				else if(DIS_DRIVER_inform_temp.DIS_SHOW_check_send==1)//发送
 					{
-					lcd_fill(0);
-					DisAddRead_ZK(30,10,"发送驾驶员信息",7,&test_dis_Driver,1,0);
-					lcd_update_all();
+					Dis_DriverInfor(2,1);
 					}
 				}
 			else if(DIS_DRIVER_inform_temp.DIS_SELECT_check_send==1)//选择进入查看或者发送
 				{
 				DIS_DRIVER_inform_temp.DIS_SHOW_check_send=0;
-				lcd_fill(0);
-				lcd_text(10,3,FONT_NINE_DOT,"1.");
-				DisAddRead_ZK(30,3,"驾驶员信息查看",7,&test_dis_Driver,1,0);
-				lcd_text(10,19,FONT_NINE_DOT,"2.");
-				DisAddRead_ZK(30,19,"驾驶员信息发送",7,&test_dis_Driver,0,0);
-				lcd_update_all();
+				Dis_DriverInfor(1,1);
 				}
 			break;
 		case KeyValueDown:
@@ -141,21 +135,12 @@ static void keypress(unsigned int key)
 				if(DIS_DRIVER_inform_temp.DIS_SHOW_check_send==0)//查看
 					Display_jiayuan(2);
 				else if(DIS_DRIVER_inform_temp.DIS_SHOW_check_send==1)//发送
-					{
-					lcd_fill(0);
-					DisAddRead_ZK(30,10,"发送驾驶员信息",7,&test_dis_Driver,1,0);
-					lcd_update_all();
-					}
+					Dis_DriverInfor(2,1);
 				}
 			else if(DIS_DRIVER_inform_temp.DIS_SELECT_check_send==1)//选择进入查看或者发送
 				{
 				DIS_DRIVER_inform_temp.DIS_SHOW_check_send=1;
-				lcd_fill(0);
-				lcd_text(10,3,FONT_NINE_DOT,"1.");
-				DisAddRead_ZK(30,3,"驾驶员信息查看",7,&test_dis_Driver,0,0);
-				lcd_text(10,19,FONT_NINE_DOT,"2.");
-				DisAddRead_ZK(30,19,"驾驶员信息发送",7,&test_dis_Driver,1,0);
-				lcd_update_all();
+				Dis_DriverInfor(1,2);
 				}
 			break;
 		}
@@ -176,10 +161,11 @@ static void timetick(unsigned int systick)
     memset(&DIS_DRIVER_inform_temp,0,sizeof(DIS_DRIVER_inform_temp));
 }
 
-
+ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_2_3_5_jiayuan=
-{
+{	
 	"驾驶员信息查看",
+    14,
 	&show,
 	&keypress,
 	&timetick,

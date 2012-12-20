@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-
+#include "jt808.h"
 
 unsigned char CarMulTrans_screen=0;
 
@@ -16,7 +16,7 @@ static void keypress(unsigned int key)
 switch(KeyValue)
 	{
 	case KeyValueMenu:
-		pMenuItem=&Menu_1_Idle;
+		pMenuItem=&Menu_Check_DnsIp;
 		pMenuItem->show();
 		CounterBack=0;
 
@@ -30,14 +30,14 @@ switch(KeyValue)
 			lcd_text12(7,10,"多媒体事件上传成功",18,LCD_MODE_INVERT);
 			lcd_update_all();
             //置上传多媒体信息的标志
-			/*printf("\r\n -----  多媒体事件上传成功 \r\n");  
+			rt_kprintf("\r\n -----  多媒体事件上传成功 \r\n");  
 			MediaObj.Media_Type=0; //图像
 		    MediaObj.Media_totalPacketNum=1;  // 图片总包数
 		    MediaObj.Media_currentPacketNum=1;	// 图片当前报数
 		    MediaObj.Media_ID=1;   //  多媒体ID
 		    MediaObj.Media_Channel=Camera_Number;  // 图片摄像头通道号
 		    MediaObj.SD_media_Flag=1; //setflag 
-		    Duomeiti_sdFlag=1; */
+		    Duomeiti_sdFlag=1; 
 			}
 		break;
 	case KeyValueUP:
@@ -52,6 +52,7 @@ KeyValue=0;
 
 static void timetick(unsigned int systick)
 {
+
 	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime)
 		return;
@@ -63,11 +64,11 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
-MENUITEM	scr_CarMulTrans=
+
+MENUITEM	Menu_DisMultimedia=
 {
-    "多媒体事件上传",
-	14,
+"多媒体上传",
+	10,
 	&show,
 	&keypress,
 	&timetick,

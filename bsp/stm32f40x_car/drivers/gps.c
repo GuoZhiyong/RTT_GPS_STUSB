@@ -18,67 +18,68 @@
 #include "gps.h"
 #include "jt808.h"
 
-
 #include <finsh.h>
 
 #define GPS_PWR_PORT	GPIOD
 #define GPS_PWR_PIN		GPIO_Pin_10
 
-#define GPS_GPIO_TX	    GPIO_Pin_12      // PC12
-#define GPS_GPIO_RX	    GPIO_Pin_2        // PD2
-#define GPS_GPIO_TxC	GPIOC
-#define GPS_GPIO_RxD	GPIOD
-#define RCC_APBPeriph_UART5	RCC_APB1Periph_UART5
-
+#define GPS_GPIO_TX			GPIO_Pin_12 // PC12
+#define GPS_GPIO_RX			GPIO_Pin_2  // PD2
+#define GPS_GPIO_TxC		GPIOC
+#define GPS_GPIO_RxD		GPIOD
+#define RCC_APBPeriph_UART5 RCC_APB1Periph_UART5
 
 /*声明一个gps设备*/
 static struct rt_device dev_gps;
-static uint32_t	gps_out_mode=GPS_OUTMODE_ALL;
-
+static uint32_t			gps_out_mode = GPS_OUTMODE_ALL;
 
 /*串口接收缓存区定义*/
-#define UART5_RX_SIZE	256
-static uint8_t uart5_rxbuf[UART5_RX_SIZE];
-static uint16_t uart5_rxbuf_wr=0;
-
+#define UART5_RX_SIZE 256
+static uint8_t	uart5_rxbuf[UART5_RX_SIZE];
+static uint16_t uart5_rxbuf_wr = 0;
 
 /*gps原始信息数据区定义*/
-#define GPS_RAWINFO_SIZE	256
-static uint8_t gps_rawinfo[GPS_RAWINFO_SIZE];
-static uint16_t gps_rawinfo_wr=0;
+#define GPS_RAWINFO_SIZE 256
+static uint8_t				gps_rawinfo[GPS_RAWINFO_SIZE];
+static uint16_t				gps_rawinfo_wr = 0;
 
 static struct rt_semaphore	sem_gps;
 
+uint8_t						flag_bd_upgrade_uart = 0;
+
+extern struct rt_device		dev_vuart;
+
 
 /*
-gps接收中断处理，收到\n认为收到一包
-收到一包调用处理函数
-*/
+   gps接收中断处理，收到\n认为收到一包
+   收到一包调用处理函数
+ */
 void UART5_IRQHandler( void )
 {
 	uint8_t ch;
 	rt_interrupt_enter( );
-	if(USART_GetITStatus(UART5, USART_IT_RXNE) != RESET)
+	if( USART_GetITStatus( UART5, USART_IT_RXNE ) != RESET )
 	{
-		ch=USART_ReceiveData(UART5);
-		if(ch<0x20)
+		ch = USART_ReceiveData( UART5 );
+		if( ch < 0x20 )
 		{
-			if(ch==0x0d)
+			if( ch == 0x0d )
 			{
-				memcpy(gps_rawinfo,uart5_rxbuf,uart5_rxbuf_wr);
-				gps_rawinfo_wr=uart5_rxbuf_wr;
-				uart5_rxbuf_wr=0;
-				rt_sem_release( &sem_gps);
+				memcpy( gps_rawinfo, uart5_rxbuf, uart5_rxbuf_wr );
+				gps_rawinfo_wr	= uart5_rxbuf_wr;
+				uart5_rxbuf_wr	= 0;
+				rt_sem_release( &sem_gps );
 			}
-		}
-		else
+		}else
 		{
-			uart5_rxbuf[uart5_rxbuf_wr++]=ch;
-			if(uart5_rxbuf_wr==UART5_RX_SIZE) uart5_rxbuf_wr=0;
-			uart5_rxbuf[uart5_rxbuf_wr]=0;
+			uart5_rxbuf[uart5_rxbuf_wr++] = ch;
+			if( uart5_rxbuf_wr == UART5_RX_SIZE )
+			{
+				uart5_rxbuf_wr = 0;
+			}
+			uart5_rxbuf[uart5_rxbuf_wr] = 0;
 		}
-		USART_ClearITPendingBit(UART5, USART_IT_RXNE);
-
+		USART_ClearITPendingBit( UART5, USART_IT_RXNE );
 	}
 	//if (USART_GetITStatus(UART5, USART_IT_TC) != RESET)
 	//{
@@ -87,18 +88,12 @@ void UART5_IRQHandler( void )
 	rt_interrupt_leave( );
 }
 
-
-
-
-
-
 /*初始化*/
 static rt_err_t dev_gps_init( rt_device_t dev )
 {
-	GPIO_InitTypeDef GPIO_InitStructure;
-	NVIC_InitTypeDef NVIC_InitStructure;
-	USART_InitTypeDef USART_InitStructure;
-
+	GPIO_InitTypeDef	GPIO_InitStructure;
+	NVIC_InitTypeDef	NVIC_InitStructure;
+	USART_InitTypeDef	USART_InitStructure;
 
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOC, ENABLE );
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOD, ENABLE );
@@ -115,11 +110,11 @@ static rt_err_t dev_gps_init( rt_device_t dev )
 
 /*uart5 管脚设置*/
 
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Pin		= GPIO_Pin_12;
 	GPIO_Init( GPIOC, &GPIO_InitStructure );
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
@@ -129,44 +124,56 @@ static rt_err_t dev_gps_init( rt_device_t dev )
 	GPIO_PinAFConfig( GPIOD, GPIO_PinSource2, GPIO_AF_UART5 );
 
 /*NVIC 设置*/
-	NVIC_InitStructure.NVIC_IRQChannel = UART5_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
+	NVIC_InitStructure.NVIC_IRQChannel						= UART5_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority	= 1;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority			= 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd					= ENABLE;
+	NVIC_Init( &NVIC_InitStructure );
 
-	USART_InitStructure.USART_BaudRate = 9600;
-	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-	USART_InitStructure.USART_StopBits = USART_StopBits_1;
-	USART_InitStructure.USART_Parity = USART_Parity_No;
-	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-	USART_Init(UART5, &USART_InitStructure);
-	
-	USART_Cmd(UART5, ENABLE);
-	USART_ITConfig( UART5, USART_IT_RXNE, ENABLE );	
-	//GPIO_SetBits(GPIOD, GPIO_Pin_10); 
+	USART_InitStructure.USART_BaudRate				= 9600;
+	USART_InitStructure.USART_WordLength			= USART_WordLength_8b;
+	USART_InitStructure.USART_StopBits				= USART_StopBits_1;
+	USART_InitStructure.USART_Parity				= USART_Parity_No;
+	USART_InitStructure.USART_HardwareFlowControl	= USART_HardwareFlowControl_None;
+	USART_InitStructure.USART_Mode					= USART_Mode_Rx | USART_Mode_Tx;
+	USART_Init( UART5, &USART_InitStructure );
+
+	USART_Cmd( UART5, ENABLE );
+	USART_ITConfig( UART5, USART_IT_RXNE, ENABLE );
+	//GPIO_SetBits(GPIOD, GPIO_Pin_10);
 
 	return RT_EOK;
 }
 
-
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 static rt_err_t dev_gps_open( rt_device_t dev, rt_uint16_t oflag )
 {
-	GPIO_SetBits( GPS_PWR_PORT, GPS_PWR_PIN ); 
+	GPIO_SetBits( GPS_PWR_PORT, GPS_PWR_PIN );
 	return RT_EOK;
 }
 
-
-
-
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 static rt_err_t dev_gps_close( rt_device_t dev )
 {
 	GPIO_ResetBits( GPS_PWR_PORT, GPS_PWR_PIN );
 	return RT_EOK;
 }
-
-
 
 /***********************************************************
 * Function:gps_read
@@ -182,17 +189,16 @@ static rt_size_t dev_gps_read( rt_device_t dev, rt_off_t pos, void* buff, rt_siz
 	return RT_EOK;
 }
 
-
-
-
 /* write one character to serial, must not trigger interrupt */
-static void uart5_putc(const char c)
+static void uart5_putc( const char c )
 {
-	USART_SendData(UART5,  c); 
-	while (!(UART5->SR & USART_FLAG_TXE));  
-	UART5->DR = (c & 0x1FF);  
+	USART_SendData( UART5, c );
+	while( !( UART5->SR & USART_FLAG_TXE ) )
+	{
+		;
+	}
+	UART5->DR = ( c & 0x1FF );
 }
-
 
 /***********************************************************
 * Function:		gps_write
@@ -207,14 +213,15 @@ static void uart5_putc(const char c)
 
 static rt_size_t dev_gps_write( rt_device_t dev, rt_off_t pos, const void* buff, rt_size_t count )
 {
-	rt_size_t len=count;
-	uint8_t *p=(uint8_t *)buff;
+	rt_size_t	len = count;
+	uint8_t		*p	= (uint8_t*)buff;
 
-	while (len)
+	while( len )
 	{
-		USART_SendData(UART5,*p++);
-		while (USART_GetFlagStatus(UART5, USART_FLAG_TC) == RESET)
-		{}
+		USART_SendData( UART5, *p++ );
+		while( USART_GetFlagStatus( UART5, USART_FLAG_TC ) == RESET )
+		{
+		}
 		len--;
 	}
 	return RT_EOK;
@@ -233,37 +240,51 @@ static rt_err_t dev_gps_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 {
 	switch( cmd )
 	{
-		case CTL_GPS_OUTMODE: 
+		case CTL_GPS_OUTMODE:
 			break;
 	}
 	return RT_EOK;
 }
 
-
 ALIGN( RT_ALIGN_SIZE )
 static char thread_gps_stack[512];
 struct rt_thread thread_gps;
 
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 static void rt_thread_entry_gps( void* parameter )
 {
-	rt_err_t		res;
-/*gsm的状态切换*/
+	rt_err_t res;
 	while( 1 )
 	{
-		res = rt_sem_take( &sem_gps, RT_TICK_PER_SECOND / 20 );    //等待100ms,实际上就是变长的延时,最长100ms
-		if( res == RT_EOK ) //收到一包数据
+		res = rt_sem_take( &sem_gps, RT_TICK_PER_SECOND / 20 ); //等待100ms,实际上就是变长的延时,最长100ms
+		if( res == RT_EOK )                                     //收到一包数据
 		{
-			gps_rx(gps_rawinfo,gps_rawinfo_wr);
-			gps_rawinfo_wr=0;
+			if( flag_bd_upgrade_uart == 0 )
+			{
+				gps_rx( gps_rawinfo, gps_rawinfo_wr );
+				gps_rawinfo_wr = 0;
+			}else
+			{
+				rt_kprintf( "\r\nbd<%d\r\n", gps_rawinfo_wr );
+				rt_device_write( &dev_vuart, 0, gps_rawinfo, gps_rawinfo_wr );
+			}
 		}
-		rt_thread_delay(RT_TICK_PER_SECOND/20);
+		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
 }
 
 /*gps设备初始化*/
 void gps_init( void )
 {
-
 	rt_sem_init( &sem_gps, "sem_gps", 0, 0 );
 
 	rt_thread_init( &thread_gps,
@@ -282,18 +303,113 @@ void gps_init( void )
 	dev_gps.write	= dev_gps_write;
 	dev_gps.control = dev_gps_control;
 
-	rt_device_register( &dev_gps, "gps", RT_DEVICE_FLAG_RDWR|RT_DEVICE_FLAG_STANDALONE);
+	rt_device_register( &dev_gps, "gps", RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE );
 	rt_device_init( &dev_gps );
 }
 
-
-
-
-rt_err_t gps_onoff(uint8_t openflag)
+/*gps开关*/
+rt_err_t gps_onoff( uint8_t openflag )
 {
-	if(openflag==0) GPIO_ResetBits(GPIOD, GPIO_Pin_10); 
-	else GPIO_SetBits(GPIOD, GPIO_Pin_10); 
+	if( openflag == 0 )
+	{
+		GPIO_ResetBits( GPIOD, GPIO_Pin_10 );
+	} else
+	{
+		GPIO_SetBits( GPIOD, GPIO_Pin_10 );
+	}
 }
-FINSH_FUNCTION_EXPORT( gps_onoff, gps_onoff([1|0]) );
+
+FINSH_FUNCTION_EXPORT( gps_onoff, gps_onoff([1 | 0] ) );
+
+/*更新北斗线程，接收调试串口来的数据，透传到gps串口中*/
+static void thread_gps_upgrade_uart( void* parameter )
+{
+	rt_uint8_t	buf[128];
+	rt_uint8_t	*pinfo = RT_NULL;
+	rt_uint8_t	*p;
+	rt_uint16_t count = 0;
+	rt_uint8_t	i, len;
+
+	pinfo = rt_malloc( 1200 );
+	if( pinfo == RT_NULL )
+	{
+		return;
+	}
+	while( 1 )
+	{
+		rt_thread_delay( RT_TICK_PER_SECOND / 50 );
+		len = rt_device_read( &dev_vuart, 0, buf, 100 );
+		if( len )                           /*读取数据并形成要发送的内容*/
+		{
+			for( i = 0; i < len; i++ )
+			{
+				if( buf[i] == '@' )         /*报文头*/
+				{
+					p		= pinfo;
+					*p		= '@';
+					count	= 1;
+				}else
+				{
+					if( buf[i] == 0x0a )    /*报文结束标志 0d 0a*/
+					{
+						if( *p == 0x0d )    /*结束报文，发送给gps*/
+						{
+							p++;
+							*p = 0x0a;
+							count++;
+							rt_kprintf( "\r\nbd(%d)>%02x %02x %02x\r\n", count, *pinfo, *( pinfo + 1 ), *( pinfo + 2 ) );
+							rt_thread_delay(RT_TICK_PER_SECOND/2);
+							dev_gps_write( &dev_gps, 0, pinfo, count );
+						}
+					}else
+					{
+						p++; /*先加，是为了判断结束标志*/
+						*p = buf[i];
+						count++;
+					}
+				}
+			}
+		}
+	}
+}
+
+/*更新北斗线程，接收调试串口来的数据，透传到gps串口中*/
+static void thread_gps_upgrade_udisk( void* parameter )
+{
+}
+
+/*gps升级*/
+rt_err_t gps_upgrade( char *src )
+{
+	rt_thread_t tid;
+	int			buad = 9600;
+	rt_kprintf( "\nNow upgrade from %s\n", src );
+	if( strncmp( src, "COM", 3 ) == 0 ) /*串口升级*/
+	{
+		//rt_device_control(&dev_vuart,0x03,&buad);
+		flag_bd_upgrade_uart	= 1;
+		dev_vuart.flag			&= ~RT_DEVICE_FLAG_STREAM;
+		tid						= rt_thread_create( "upgrade", thread_gps_upgrade_uart, (void*)1, 512, 8, 5 );
+		if( tid != RT_NULL )
+		{
+			rt_thread_startup( tid );
+		}else
+		{
+			rt_kprintf( "\n Upgrade from uart fail\n" );
+		}
+	}else
+	{
+		tid = rt_thread_create( "upgrade", thread_gps_upgrade_udisk, (void*)1, 512, 7, 5 );
+		if( tid != RT_NULL )
+		{
+			rt_thread_startup( tid );
+		}else
+		{
+			rt_kprintf( "\n Upgrade from uart fail\n" );
+		}
+	}
+}
+
+FINSH_FUNCTION_EXPORT( gps_upgrade, upgrade bd_gps );
 
 /************************************** The End Of File **************************************/

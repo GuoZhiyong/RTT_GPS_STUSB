@@ -1,7 +1,6 @@
-#include "menu.h"
+#include "Menu_Include.h"
 
 
-struct IMG_DEF test_dis_Multimedia={12,12,test_00};
 
 unsigned char Menu_Multimedia=0;
 unsigned char Multimedia_change=1;//选择
@@ -10,25 +9,20 @@ unsigned char Multimedia_screen=0;//界面切换使用
 
 void Multimedia(unsigned char type)
 {
-switch(type)
-	{
-	case 1:
-		lcd_fill(0);
-		DisAddRead_ZK(18,3,"多媒体信息选择",7,&test_dis_Multimedia,0,0);
-		DisAddRead_ZK(24,19,"音频",2,&test_dis_Multimedia,1,0);
-		DisAddRead_ZK(72,19,"视频",2,&test_dis_Multimedia,0,0);
-		lcd_update_all();
-		break;
-	case 2:
-		lcd_fill(0);
-		DisAddRead_ZK(18,3,"多媒体信息选择",7,&test_dis_Multimedia,0,0);
-		DisAddRead_ZK(24,19,"音频",2,&test_dis_Multimedia,0,0);
-		DisAddRead_ZK(72,19,"视频",2,&test_dis_Multimedia,1,0);
-		lcd_update_all();
-		break;
-	default:
-		break;
-	}
+	lcd_fill(0);
+	lcd_text12(18,3,"多媒体信息选择",14,LCD_MODE_SET);	
+	if(type==1)
+		{
+		lcd_text12(24,19,"音频",4,LCD_MODE_INVERT);
+		lcd_text12(72,19,"视频",4,LCD_MODE_SET);
+		}
+	else if(type==2)
+		{
+		lcd_text12(24,19,"音频",4,LCD_MODE_SET);
+		lcd_text12(72,19,"视频",4,LCD_MODE_INVERT);
+		}
+	lcd_update_all();
+
 }
 static void show(void)
 {
@@ -54,16 +48,16 @@ switch(KeyValue)
 			{
 			Multimedia_screen=1;
 			lcd_fill(0);
-			DisAddRead_ZK(7,3,"发送多媒体数据类型",9,&test_dis_Multimedia,0,0);  
+			
 			if(Multimedia_change==1)
 				{
 				//CarLoadState_Write();
-				DisAddRead_ZK(48,19,"音频",2,&test_dis_Multimedia,1,0);
+				lcd_text12(7,10,"多媒体数据类型:音频",19,LCD_MODE_SET);  
 				}
 			else if(Multimedia_change==2)
 				{
 				//CarLoadState_Write(); 
-				DisAddRead_ZK(48,19,"视频",2,&test_dis_Multimedia,1,0);
+				lcd_text12(7,10,"多媒体数据类型:视频",19,LCD_MODE_SET);  
 				}
 			lcd_update_all();
 			}
@@ -73,18 +67,17 @@ switch(KeyValue)
 			lcd_fill(0);
 			if(Multimedia_change==1)
 				{
-				DisAddRead_ZK(24,10,"音频",2,&test_dis_Multimedia,1,0);
+				lcd_text12(18,10,"音频  开始发送",14,LCD_MODE_SET);
 				//Multimedia_Flag=1;
 				////MP3_send_start();       //   以前的 音频 1
 				//Sound_send_start();   //   以前的 音频2
 				}
 			else if(Multimedia_change==2)
 				{
-				DisAddRead_ZK(24,10,"视频",2,&test_dis_Multimedia,1,0);
+				lcd_text12(18,10,"视频  开始发送",14,LCD_MODE_SET);
 				//Multimedia_Flag=2;
 				////Video_send_start(); 
 				}
-			DisAddRead_ZK(48,10,"开始发送",4,&test_dis_Multimedia,0,0);
 			lcd_update_all();
 			}
 		break;
@@ -118,10 +111,11 @@ static void timetick(unsigned int systick)
 
 }
 
-
+ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_2_4_4_Multimedia=
 {
-	"",
+	"发送多媒体数据",
+	14,
 	&show,
 	&keypress,
 	&timetick,

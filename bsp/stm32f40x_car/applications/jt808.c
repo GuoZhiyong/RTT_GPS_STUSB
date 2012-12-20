@@ -12,10 +12,11 @@
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
 #include <stdio.h>
-
-#include "stm32f4xx.h"
 #include <board.h>
 #include <rtthread.h>
+#include "stm32f4xx.h"
+#include "jt808.h"
+
 
 static struct rt_mailbox	mb_gprsdata;
 #define MB_GPRSDATA_POOL_SIZE 32
@@ -37,6 +38,62 @@ typedef struct
 uint32_t jt808_alarm=0x0;
 uint32_t jt808_status=0x0;
 
+
+TEXT_INFO 	TextInfo;
+MSG_TEXT    TEXT_Obj;
+MSG_TEXT    TEXT_Obj_8[8],TEXT_Obj_8bak[8];
+//------- 事件 ----
+EVENT          EventObj;    // 事件   
+EVENT          EventObj_8[8]; // 事件  
+//------ 提问  --------
+CENTRE_ASK  ASK_Centre;  // 中心提问
+
+//------  信息点播  ---
+MSG_BRODCAST   MSG_BroadCast_Obj;    // 信息点播         
+MSG_BRODCAST   MSG_Obj_8[8];  // 信息点播    
+
+//------  电话本  -----
+PHONE_BOOK    PhoneBook,Rx_PhoneBOOK;   //  电话本
+PHONE_BOOK    PhoneBook_8[8];
+
+MULTIMEDIA   MediaObj;      // 多媒体信息 
+
+
+//------- 车辆负载状态 ---------------
+uint8_t  CarLoadState_Flag=1;//选中车辆状态的标志   1:空车   2:半空   3:重车
+uint8_t		Warn_Status[4]		=
+{
+		0x00, 0x00,0x00,0x00
+}; //  报警标志位状态信息
+
+//----------- 行车记录仪相关  -----------------
+Avrg_MintSpeed  Avrgspd_Mint; 
+uint32_t         PerMinSpdTotal=0; //记录每分钟速度总数  
+uint8_t          avgspd_Mint_Wr=0;       // 填写每分钟平均速度记录下标
+uint8_t          avgspd_Sec_Wr=0;       // 填写每秒钟平均速度记录下标
+uint8_t          avgWriteOver=0;   // 写溢出标志位
+uint8_t          AspdCounter=0;    // 每分钟速度有效报数计数器 
+
+
+//-----  ISP    远程下载相关 -------
+u8       f_ISP_ACK=0;   // 远程升级应答	
+u8       ISP_FCS[2];    //  下发的校验
+u16      ISP_total_packnum=0;  // ISP  总包数
+u16      ISP_current_packnum=0;// ISP  当前包数
+u32      ISP_content_fcs=0;    // ISP  的内容校验
+u8       ISP_ack_resualt=0;    // ISP 响应
+u8       ISP_rxCMD=0;          // ISP 收到的命令
+u8       f_ISP_88_ACK=0;       // Isp  内容应答
+u8       ISP_running_state=0;  // Isp  程序运行状态
+u8       f_ISP_23_ACK=0;    //  Isp  返回 文件完成标识
+u16      ISP_running_counter=0;// Isp  运行状态寄存器
+u8       ISP_RepeatCounter=0; //   ISP 单包发送重复次数 超过5次校验失败擦除区域
+
+
+u8          APN_String[30]="UNINET"; //"CMNET";   //  河北天地通  移动的卡
+
+u8  Camera_Number;
+u8	Duomeiti_sdFlag; 
 
 
 /*

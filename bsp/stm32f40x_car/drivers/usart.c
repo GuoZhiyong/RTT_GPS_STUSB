@@ -214,7 +214,6 @@ static void DMA_Configuration(void)
 #endif
 }
 
-volatile USART_TypeDef * uart2_debug = USART2;
 /*
  * Init all related hardware in here
  * rt_hw_serial_init() will register all supported USART device
@@ -287,7 +286,5 @@ void rt_hw_usart_init()
 	USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
 #endif
 
-
-
-
 }
+

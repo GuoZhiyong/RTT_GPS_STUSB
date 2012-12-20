@@ -1,9 +1,12 @@
-#include "menu.h"
-#include "Lcd_init.h"
+#include <rtthread.h>
+#include "Menu_Include.h"
+#include "Lcd.h"
+#include "jt808.h"
 
-struct IMG_DEF test_dis_15min={12,12,test_00};
-unsigned char Speed_15minFlag=0;//取速度正确或者错误 0:正确 1:错误
+unsigned long AvrgSpdPerMin_write=0;//存储过整小时的速度，记录存储的条数
+unsigned char Speed_15min[120];//读取 最近15分钟的速度信息
 
+static unsigned char Speed_15minFlag=0;//取速度正确或者错误 0:正确 1:错误
 static unsigned char CheckSpeedFlag=0;
 static unsigned char index_speednum;
 static unsigned char SpeedNumScreen=0;
@@ -11,20 +14,136 @@ static unsigned char ReadSpeedFlag=0;//进入读取一次，再次按下确认键不读
 
 unsigned char Fetch_15minSpeed(unsigned char Num15)
 {
+unsigned char i=0,j=0,k=0;
+unsigned char Read_15minData[75];
+unsigned int  kk=0;		 
+//数据格式:15 1 xx xx xx xx xx sp 2 xx xx xx xx xx sp ... ...15 xx xx xx xx xx sp
 
+	if(avgspd_Mint_Wr>=14)
+		{
+		for(i=0;i<15;i++)
+			{
+			memcpy(&Speed_15min[2+i*7],Avrgspd_Mint.datetime,4);//BCD
+			Speed_15min[2+i*7+4]=avgspd_Mint_Wr-14+i;//不是BCD码,ascii码
+			Speed_15min[2+i*7+5]=Avrgspd_Mint.avgrspd[avgspd_Mint_Wr-14+i];
+			}
+		}
+	else
+		{
+		//printf("\r\n当前分钟数<15,已有 %d 条,需要从前一小时内读取 %d 条",avgspd_Mint_Wr,(15-avgspd_Mint_Wr));
+        if(AvrgSpdPerMin_write)
+        	{
+			//Read_PerMinContent(AvrgSpdPerMin_write-1, Read_15minData, 70); 
+			//判断读出的前一条记录是不是当前小时的前一个小时
+			if((Read_15minData[2]==Avrgspd_Mint.datetime[2])&&(Avrgspd_Mint.datetime[3]==(Read_15minData[3]+1)))
+				{
+				for(i=0;i<(14-avgspd_Mint_Wr);i++)//avgspd_Mint_Wr 
+					{
+					//printf(" %d",Read_15minData[64-(14-avgspd_Mint_Wr-1)+i]);//不需要读取存储的数据
+					memcpy(&Speed_15min[2+i*7],Read_15minData,4);//yymmddhh
+					Speed_15min[2+i*7+4]=60-(14-avgspd_Mint_Wr)+i;//mm
+					Speed_15min[2+i*7+5]=Read_15minData[64-(13-avgspd_Mint_Wr)+i];//speed
+					}
+				k=i;  
+				}
+			else//读出的前一条记录不是当前小时的前一个小时的数据
+				{
+				for(i=0;i<(14-avgspd_Mint_Wr);i++)//avgspd_Mint_Wr 
+					{
+					//printf(" %d",Avrgspd_Mint.avgrspd[i]);//不需要读取存储的数据
+					memcpy(&Speed_15min[2+i*7+k*7],Avrgspd_Mint.datetime,3);
+					kk=(Avrgspd_Mint.datetime[3]>>4)*10+(Avrgspd_Mint.datetime[3]&0x0f)-1;
+					Speed_15min[2+i*7+k*7+3]=((kk/10)<<4)+(kk%10);//
+					Speed_15min[2+i*7+k*7+4]=60-(14-avgspd_Mint_Wr)+i;;
+					Speed_15min[2+i*7+k*7+5]=0;
+					}
+				k=i;
+				}
+	        for(i=0;i<=avgspd_Mint_Wr;i++)
+	        	{
+				printf(" %d",Avrgspd_Mint.avgrspd[i]);//不需要读取存储的数据 
+				memcpy(&Speed_15min[2+i*7+k*7],Avrgspd_Mint.datetime,4);
+				Speed_15min[2+i*7+k*7+4]=i;
+				Speed_15min[2+i*7+k*7+5]=Avrgspd_Mint.avgrspd[i];
+				}
+        	}
+		else //没有存过整小时的速度
+			{
+			//printf("\r\n 没有整小时的数据存入 ");
+			for(i=0;i<(14-avgspd_Mint_Wr);i++)//avgspd_Mint_Wr 
+				{
+				//printf(" %d",Avrgspd_Mint.avgrspd[i]);//不需要读取存储的数据
+				memcpy(&Speed_15min[2+i*7+k*7],Avrgspd_Mint.datetime,3);
+				kk=(Avrgspd_Mint.datetime[3]>>4)*10+(Avrgspd_Mint.datetime[3]&0x0f)-1;
+				Speed_15min[2+i*7+k*7+3]=((kk/10)<<4)+(kk%10);//
+				Speed_15min[2+i*7+k*7+4]=60-(14-avgspd_Mint_Wr)+i;;
+				Speed_15min[2+i*7+k*7+5]=0;
+				}
+			k=i;
+			//printf("\r\n  %d  条人为补充数据,  分钟数下标=%d",k,avgspd_Mint_Wr);
+	        for(i=0;i<=avgspd_Mint_Wr;i++)
+	        	{
+				//printf(" %d",Avrgspd_Mint.avgrspd[i]);//不需要读取存储的数据 
+				memcpy(&Speed_15min[2+i*7+k*7],Avrgspd_Mint.datetime,4);
+				Speed_15min[2+i*7+k*7+4]=i;
+				Speed_15min[2+i*7+k*7+5]=Avrgspd_Mint.avgrspd[i];
+				}
+			}
+		//printf("\r\n 停车前15分钟车速读完");
+		}	
+	Speed_15min[0]=Num15;//总条数
+	for(i=0,j=0;i<Num15;i++,j++)
+		Speed_15min[1+j*7]=i+1;
+
+	//转换填成需要的格式
+	for(i=0;i<Num15;i++)
+		{
+		memcpy(speed_time_rec[i],&Speed_15min[2+i*7],6);
+		//printf("\r\ni=%d,yy=%x,mm=%x,dd=%x,hh=%x,mm=%x,speed=%d",i,Speed_15min[2+i*7],Speed_15min[2+i*7+1],Speed_15min[2+i*7+2],Speed_15min[2+i*7+3],Speed_15min[2+i*7+4],Speed_15min[2+i*7+5]);
+	    speed_time_rec[i][0]=(speed_time_rec[i][0]>>4)*10+(speed_time_rec[i][0]&0x0F);//yy   	
+		speed_time_rec[i][1]=(speed_time_rec[i][1]>>4)*10+(speed_time_rec[i][1]&0x0F);//mm
+		speed_time_rec[i][2]=(speed_time_rec[i][2]>>4)*10+(speed_time_rec[i][2]&0x0F);//dd
+		
+		speed_time_rec[i][3]=(speed_time_rec[i][3]>>4)*10+(speed_time_rec[i][3]&0x0F);//hh	
+		speed_time_rec[i][4]=speed_time_rec[i][4];//mm	
+		speed_time_rec[i][5]=speed_time_rec[i][5];//speed
+		//printf("\r\ni=%d, min=%d",i,speed_time_rec[i][4]);
+		}
+	//判断错误数据,分钟数全为0
+	for(i=0;i<(Num15-1);i++)
+		{
+		if((speed_time_rec[i][3]>23)||(speed_time_rec[i][4]>59))
+			{
+			rt_kprintf("\r\n小时:%d, 分钟:%d,",speed_time_rec[i][3],speed_time_rec[i][4]);
+			for(i=0;i<15;i++)
+				{
+				speed_time_rec[i][3]=0;//hh	
+				speed_time_rec[i][4]=0;//mm	
+				speed_time_rec[i][5]=0;//speed
+				}
+			return 1;
+			}
+		if(speed_time_rec[i][4]==speed_time_rec[i+1][4])
+			{
+			rt_kprintf("\r\n取到错误信息");
+			return 1;
+			}
+		}
+	return 0;
 }
 
 static void drawspeed(unsigned char num)
 {
 	unsigned char t[32];
 	
-	lcd_fill(0);	
-	sprintf((char*)t,"%02d  %02d:%02d %02d",num,speed_time_rec[num-1][3],speed_time_rec[num-1][4],speed_time_rec[num-1][5]);
-	lcd_text(10,0,FONT_NINE_DOT,(char*)t);
-	sprintf((char*)t,"%02d  %02d:%02d %02d",num+1,speed_time_rec[num][3],speed_time_rec[num][4],speed_time_rec[num][5]);
-	lcd_text(10,11,FONT_NINE_DOT,(char*)t);
-	sprintf((char*)t,"%02d  %02d:%02d %02d",num+2,speed_time_rec[num+1][3],speed_time_rec[num+1][4],speed_time_rec[num+1][5]);
-	lcd_text(10,22,FONT_NINE_DOT,(char*)t);	
+	lcd_fill(0);
+	
+	rt_kprintf((char*)t,"%02d  %02d:%02d %02d",num,speed_time_rec[num-1][3],speed_time_rec[num-1][4],speed_time_rec[num-1][5]);
+	lcd_text12(10,0,(char*)t,sizeof(t),LCD_MODE_SET);
+	rt_kprintf((char*)t,"%02d  %02d:%02d %02d",num+1,speed_time_rec[num][3],speed_time_rec[num][4],speed_time_rec[num][5]);
+	lcd_text12(10,11,(char*)t,sizeof(t),LCD_MODE_SET);
+	rt_kprintf((char*)t,"%02d  %02d:%02d %02d",num+2,speed_time_rec[num+1][3],speed_time_rec[num+1][4],speed_time_rec[num+1][5]);
+	lcd_text12(10,22,(char*)t,sizeof(t),LCD_MODE_SET);
 	if(index_speednum<=9)
 		index_speednum+=3;
 	lcd_update_all();
@@ -34,12 +153,11 @@ static void show(void)
 {
 	index_speednum=1;
 	SpeedNumScreen=0;//显示速度第几屏的序号
-	ReadSpeedFlag=1;	
+	ReadSpeedFlag=1;
+	
 	lcd_fill(0);
-	DisAddRead_ZK(10,3,"前",1,&test_dis_15min,0,0);
-	lcd_text(22,3,FONT_TEN_DOT,"15");
-	DisAddRead_ZK(38,3,"分钟车速查询",6,&test_dis_15min,0,0);
-    DisAddRead_ZK(24,19,"按确认键查看",6,&test_dis_15min,0,0);
+	lcd_text12(10,3,"停车前15分钟速度",16,LCD_MODE_SET);
+    lcd_text12(24,19,"按确认键查看",12,LCD_MODE_SET);
 	lcd_update_all();
 
 }
@@ -49,19 +167,19 @@ static void keypress(unsigned int key)
 	switch(KeyValue)
 		{
 		case KeyValueMenu:
-				Speed_15minFlag=0;
-				CounterBack=0;
-				CheckSpeedFlag=0;
-				pMenuItem=&Menu_1_InforCheck;
-				pMenuItem->show();
-				ReadSpeedFlag=0;
-				break;
+			Speed_15minFlag=0;
+			CounterBack=0;
+			CheckSpeedFlag=0;
+			pMenuItem=&Menu_1_InforCheck;
+			pMenuItem->show();
+			ReadSpeedFlag=0;
+			break;
 		case KeyValueOk:
 			if(ReadSpeedFlag==1)
 				{
 				ReadSpeedFlag=0;
 				Speed_15minFlag=Fetch_15minSpeed(15);//取最近15分钟的速度信息
-				printf("\r\n读最近15分钟的速度信息结果= %d 0:right 1:error\r\n",Speed_15minFlag);
+				rt_kprintf("\r\n读最近15分钟的速度信息结果= %d 0:right 1:error\r\n",Speed_15minFlag);
 				drawspeed(1);//显示第1屏
 				SpeedNumScreen=0;
 				CheckSpeedFlag=1;
@@ -88,7 +206,8 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)
 {
-    CounterBack++;
+       Cent_To_Disp();
+	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime)
 		return;
 	pMenuItem=&Menu_1_Idle;
@@ -101,9 +220,11 @@ static void timetick(unsigned int systick)
 }
 
 
+ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_2_3_2_sudu=
 {
-	"最近15分钟速度",
+	"停车前15min速度",
+	15,
 	&show,
 	&keypress,
 	&timetick,

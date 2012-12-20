@@ -1,8 +1,6 @@
-#include "menu.h"
+#include "Menu_Include.h"
 #include <stdio.h>
-#include<string.h>
-
-struct IMG_DEF test_dis_question={12,12,test_00};
+#include <string.h>
 
 /*unsigned char Question_menu=0;//=0时显示提问问题然后让其=1，=2显示答案，再按确认键把问题答案发送出来(前提:有中心提问消息)
 unsigned char Question_Len=0;//问题长度
@@ -29,7 +27,7 @@ unsigned char DIS_QUESTION_effic;//有中心下发的消息
 DIS_QUESTION_INFOR DIS_QUESTION_INFOR_temp;
 
 //-----  提问 ------
-typedef struct _CENTER_ASK
+/*typedef struct _CENTER_ASK
 {
   unsigned char  ASK_SdFlag; //  标志位           发给 TTS  1  ；   TTS 回来  2
   unsigned int   ASK_floatID; // 提问流水号
@@ -40,7 +38,7 @@ typedef struct _CENTER_ASK
 }CENTRE_ASK;
 
 CENTRE_ASK     ASK_Centre;  // 中心提问
-
+*/
 
 static void show(void)
 	{
@@ -70,14 +68,14 @@ static void show(void)
 
 			lcd_fill(0);
 			if(DIS_QUESTION_INFOR_temp.DIS_QUESTION_len<40)
-				DisAddRead_ZK(0,0,(char *)ASK_Centre.ASK_info,ASK_Centre.ASK_infolen/2,&test_dis_question,0,0);
+				lcd_text12(0,0,(char *)ASK_Centre.ASK_info,ASK_Centre.ASK_infolen,LCD_MODE_SET);
 			lcd_update_all();
 			}		
 		}
 	else
 		{
 		lcd_fill(0);
-		DisAddRead_ZK(18,19,"没有提问消息",6,&test_dis_question,1,0);
+		lcd_text12(24,10,"没有提问消息",12,LCD_MODE_SET);
 		lcd_update_all();
 		}
 	}
@@ -97,7 +95,7 @@ static void keypress(unsigned int key)
 			if((DIS_QUESTION_INFOR_temp.DIS_QUESTION_effic==1)&&(DIS_QUESTION_INFOR_temp.DIS_QUESTION_answer==2))//把选择的结果发给中心
 				{
 				lcd_fill(0);
-				DisAddRead_ZK(30,5,"发送成功",4,&test_dis_question,1,0);
+				lcd_text12(30,5,"发送成功",4,LCD_MODE_SET);
 				lcd_update_all();
 				if(DIS_QUESTION_INFOR_temp.DIS_QUESTION_answer==1)
 					ASK_Centre.ASK_answerID=ASK_Centre.ASK_answer[0]; 
@@ -116,13 +114,13 @@ static void keypress(unsigned int key)
 					if(DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len<10)
 						{
 						lcd_fill(0);
-						DisAddRead_ZK(15,0,(char *)ASK_Centre.ASK_answer+3,DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len/2,&test_dis_question,1,0);
+						lcd_text12(15,0,(char *)ASK_Centre.ASK_answer+3,DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len,LCD_MODE_SET);
 						lcd_update_all();
 						}
 					if(DIS_QUESTION_INFOR_temp.DIS_ANSWER2_len<10)
 						{
 						lcd_fill(0);
-						DisAddRead_ZK(15,16,(char *)ASK_Centre.ASK_answer+6+DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len,DIS_QUESTION_INFOR_temp.DIS_ANSWER2_len/2,&test_dis_question,0,0);
+						lcd_text12(15,16,(char *)ASK_Centre.ASK_answer+6+DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len,DIS_QUESTION_INFOR_temp.DIS_ANSWER2_len,LCD_MODE_SET);
 						lcd_update_all();
 						}
 					}
@@ -140,13 +138,13 @@ static void keypress(unsigned int key)
 						if(DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len<10)
 							{
 							lcd_fill(0);
-							DisAddRead_ZK(15,0,(char *)ASK_Centre.ASK_answer+3,DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len/2,&test_dis_question,1,0);
+							lcd_text12(15,0,(char *)ASK_Centre.ASK_answer+3,DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len,LCD_MODE_SET);
 							lcd_update_all();
 							}
 						if(DIS_QUESTION_INFOR_temp.DIS_ANSWER2_len<10)
 							{
 							lcd_fill(0);
-							DisAddRead_ZK(15,16,(char *)ASK_Centre.ASK_answer+6+DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len,DIS_QUESTION_INFOR_temp.DIS_ANSWER2_len/2,&test_dis_question,0,0);
+							lcd_text12(15,16,(char *)ASK_Centre.ASK_answer+6+DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len,DIS_QUESTION_INFOR_temp.DIS_ANSWER2_len,LCD_MODE_SET);
 							lcd_update_all();
 							}
 						}
@@ -156,13 +154,13 @@ static void keypress(unsigned int key)
 					if(DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len<10)
 						{
 						lcd_fill(0);
-						DisAddRead_ZK(15,0,(char *)ASK_Centre.ASK_answer+3,DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len/2,&test_dis_question,0,0);
+						lcd_text12(15,0,(char *)ASK_Centre.ASK_answer+3,DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len,LCD_MODE_SET);
 						lcd_update_all();
 						}
 					if(DIS_QUESTION_INFOR_temp.DIS_ANSWER2_len<10)
 						{
 						lcd_fill(0);
-						DisAddRead_ZK(15,16,(char *)ASK_Centre.ASK_answer+6+DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len,DIS_QUESTION_INFOR_temp.DIS_ANSWER2_len/2,&test_dis_question,1,0);
+						lcd_text12(15,16,(char *)ASK_Centre.ASK_answer+6+DIS_QUESTION_INFOR_temp.DIS_ANSWER1_len,DIS_QUESTION_INFOR_temp.DIS_ANSWER2_len,LCD_MODE_SET);
 						lcd_update_all();
 						}
 					}
@@ -189,9 +187,12 @@ static void timetick(unsigned int systick)
 }
 
 
+
+ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_2_4_1_CenterQuestion=
 {
-	"",
+	"中心提问消息",
+	12,
 	&show,
 	&keypress,
 	&timetick,

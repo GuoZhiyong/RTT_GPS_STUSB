@@ -18,6 +18,35 @@
 #include <board.h>
 #include <rtthread.h>
 #include <lcd\menu.h>
+#include "jt808.h"
+
+/* 消息队列控制块 */
+static struct rt_messagequeue hmi2app808_mq;   // 消息队列
+static u8 hmi2app808_pool[64]; 
+
+static struct rt_messagequeue hmi2gsm_mq;   // 消息队列  
+static u8 hmi2gsm_pool[64]; 
+
+
+ //  1.   MsgQueue  Rx
+rt_err_t rt_Rx_hmi2gsm_MsgQue(u8 *buffer,u16 rec_len) 
+{       
+     if(rt_mq_recv(&hmi2gsm_mq,&buffer[0], rec_len, MsgQ_Timeout) //RT_WAITING_FOREVER
+            != RT_EOK )
+          return  RT_ERROR; 
+    else
+	   return RT_EOK;            
+}
+
+rt_err_t rt_Rx_hmi2app808_MsgQue(u8 *buffer,u16 rec_len)  
+{       
+     if(rt_mq_recv(&hmi2app808_mq,&buffer[0], rec_len, MsgQ_Timeout) 
+            != RT_EOK )
+          return  RT_ERROR; 
+    else
+	   return RT_EOK;            
+}
+
 
 ALIGN( RT_ALIGN_SIZE )
 static char thread_hmi_stack[512];

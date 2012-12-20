@@ -1,15 +1,13 @@
-#include "menu.h"
+#include "Menu_Include.h"
 #include <stdio.h>
 #include <string.h>
-
-struct IMG_DEF test_dis_affair={12,12,test_00};
 
 unsigned char Menu_Affair=0;
 unsigned char Affair_scree=1;
 
 
 //------- 事件 ----
-typedef struct _EVENT
+/*typedef struct _EVENT
 {
   unsigned char Event_ID;   //  事件ID
   unsigned char Event_Len;  //  事件长度
@@ -20,7 +18,7 @@ typedef struct _EVENT
 EVENT          EventObj;    // 事件   
 EVENT          EventObj_8[8]; // 事件 
 
-
+*/
 
 void SendAffairMeun(unsigned char screen,unsigned char SendOK)
 {
@@ -29,7 +27,7 @@ if(SendOK==1)
 	if(EventObj_8[screen-1].Event_Effective)
 		{
 		lcd_fill(0);
-		DisAddRead_ZK(30,5,"发送成功",4,&test_dis_affair,1,0);
+		lcd_text12(30,5,"发送成功",8,LCD_MODE_INVERT);
 		lcd_update_all();
 		}
 	}
@@ -40,8 +38,7 @@ else
 		if(EventObj_8[screen-1].Event_Effective)
 			{
 			lcd_fill(0);
-			DisAddRead_ZK(15,5,(char *)a1,EventObj_8[screen-1].Event_Len/2,&test_dis_affair,1,0);
-			lcd_text(50,20,FONT_NINE_DOT,"OK ?");
+			lcd_text12(15,5,(char *)a1,EventObj_8[screen-1].Event_Len,LCD_MODE_INVERT);
 			lcd_update_all();
 			}
 		}
@@ -51,134 +48,120 @@ else
 
 void Dis_Affair(unsigned char screen)
 {
+lcd_fill(0);
 switch(screen)
 	{
 	case 1:
-		lcd_fill(0);
-		lcd_text(0,0,FONT_NINE_DOT,"1.");
+		lcd_text12(0,0,"1.",2,LCD_MODE_SET);
 		if(EventObj_8[0].Event_Effective)
-			DisAddRead_ZK(15,0,(char *)a1,EventObj_8[0].Event_Len/2,&test_dis_affair,1,0);
+			lcd_text12(15,0,(char *)a1,EventObj_8[0].Event_Len,LCD_MODE_INVERT);
 		else
-			DisAddRead_ZK(15,0,"无",1,&test_dis_affair,1,0);
-		lcd_text(0,16,FONT_NINE_DOT,"2.");
+			lcd_text12(15,0,"无",2,LCD_MODE_INVERT);	
+		lcd_text12(0,16,"2.",2,LCD_MODE_SET);
 		if(EventObj_8[1].Event_Effective)
-			DisAddRead_ZK(15,16,(char *)a2,EventObj_8[1].Event_Len/2,&test_dis_affair,0,0);
+			lcd_text12(15,16,(char *)a2,EventObj_8[1].Event_Len,LCD_MODE_SET);
 		else
-			DisAddRead_ZK(15,16,"无",1,&test_dis_affair,1,0);
-		lcd_update_all();
+			lcd_text12(15,16,"无",2,LCD_MODE_SET);
 		break;
+		
 	case 2:
-		lcd_fill(0);
-		lcd_text(0,0,FONT_NINE_DOT,"1.");
+		lcd_text12(0,0,"1.",2,LCD_MODE_SET);
 		if(EventObj_8[0].Event_Effective)
-			DisAddRead_ZK(15,0,(char *)a1,EventObj_8[0].Event_Len/2,&test_dis_affair,0,0);
+			lcd_text12(15,0,(char *)a1,EventObj_8[0].Event_Len,LCD_MODE_SET);
 		else
-			DisAddRead_ZK(15,0,"无",1,&test_dis_affair,1,0);
-		lcd_text(0,16,FONT_NINE_DOT,"2.");
+			lcd_text12(15,0,"无",2,LCD_MODE_SET);
+		lcd_text12(0,16,"2.",2,LCD_MODE_SET);
 		if(EventObj_8[1].Event_Effective)
-			DisAddRead_ZK(15,16,(char *)a2,EventObj_8[1].Event_Len/2,&test_dis_affair,1,0);
+			lcd_text12(15,16,(char *)a2,EventObj_8[1].Event_Len,LCD_MODE_INVERT);
 		else
-			DisAddRead_ZK(15,16,"无",1,&test_dis_affair,1,0);
-		lcd_update_all();
+			lcd_text12(15,16,"无",2,LCD_MODE_INVERT); 
 		break;
 	case 3:
-		lcd_fill(0);
-		lcd_text(0,0,FONT_NINE_DOT,"3.");
+		lcd_text12(0,0,"3.",2,LCD_MODE_SET);
 		if(EventObj_8[2].Event_Effective)
-			DisAddRead_ZK(15,0,(char *)a3,EventObj_8[2].Event_Len/2,&test_dis_affair,1,0);
+			lcd_text12(15,0,(char *)a3,EventObj_8[2].Event_Len,LCD_MODE_INVERT);
 		else
-			DisAddRead_ZK(15,0,"无",1,&test_dis_affair,1,0);
-		lcd_text(0,16,FONT_NINE_DOT,"4.");
+			lcd_text12(15,0,"无",12,LCD_MODE_INVERT);
+		lcd_text12(0,16,"4.",2,LCD_MODE_SET);
 		if(EventObj_8[3].Event_Effective)
-			DisAddRead_ZK(15,16,(char *)a4,EventObj_8[3].Event_Len/2,&test_dis_affair,0,0);
+			lcd_text12(15,16,(char *)a4,EventObj_8[3].Event_Len,LCD_MODE_SET);
 		else
-			DisAddRead_ZK(15,16,"无",1,&test_dis_affair,1,0);
-		lcd_update_all();
+			lcd_text12(15,16,"无",2,LCD_MODE_SET);
 		break;
 	case 4: 
-		lcd_fill(0);
-		lcd_text(0,0,FONT_NINE_DOT,"3.");
+		lcd_text12(0,0,"3.",2,LCD_MODE_SET);
 		if(EventObj_8[2].Event_Effective)
-			DisAddRead_ZK(15,0,(char *)a3,EventObj_8[2].Event_Len/2,&test_dis_affair,0,0);
+			lcd_text12(15,0,(char *)a3,EventObj_8[2].Event_Len,LCD_MODE_SET);
 		else
-			DisAddRead_ZK(15,0,"无",1,&test_dis_affair,1,0);
-		lcd_text(0,16,FONT_NINE_DOT,"4.");
+			lcd_text12(15,0,"无",2,LCD_MODE_SET);
+		lcd_text12(0,16,"4.",2,LCD_MODE_SET);
 		if(EventObj_8[3].Event_Effective)
-			DisAddRead_ZK(15,16,(char *)a4,EventObj_8[3].Event_Len/2,&test_dis_affair,1,0);
+			lcd_text12(15,16,(char *)a4,EventObj_8[3].Event_Len,LCD_MODE_INVERT);
 		else
-			DisAddRead_ZK(15,16,"无",1,&test_dis_affair,1,0);
-		lcd_update_all();
+			lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
 		break;
 	case 5:
-		lcd_fill(0);
-		lcd_text(0,0,FONT_NINE_DOT,"5.");
+		lcd_text12(0,0,"5.",2,LCD_MODE_SET);
 		if(EventObj_8[4].Event_Effective)
-			DisAddRead_ZK(15,0,(char *)a5,EventObj_8[4].Event_Len/2,&test_dis_affair,1,0);
+			lcd_text12(15,0,(char *)a5,EventObj_8[4].Event_Len,LCD_MODE_INVERT);
 		else
-			DisAddRead_ZK(15,0,"无",1,&test_dis_affair,1,0);
-		lcd_text(0,16,FONT_NINE_DOT,"6.");
+			lcd_text12(15,0,"无",2,LCD_MODE_INVERT);
+		lcd_text12(0,16,"6.",2,LCD_MODE_SET);
 		if(EventObj_8[5].Event_Effective)
-			DisAddRead_ZK(15,16,(char *)a6,EventObj_8[5].Event_Len/2,&test_dis_affair,0,0);
+			lcd_text12(15,16,(char *)a6,EventObj_8[5].Event_Len,LCD_MODE_SET);
 		else
-			DisAddRead_ZK(15,16,"无",1,&test_dis_affair,0,0);
-		lcd_update_all();
+			lcd_text12(15,16,"无",2,LCD_MODE_SET);
 		break;
 	case 6:
-		lcd_fill(0);
-		lcd_text(0,0,FONT_NINE_DOT,"5.");
+		lcd_text12(0,0,"5.",2,LCD_MODE_SET);
 		if(EventObj_8[4].Event_Effective)
-			DisAddRead_ZK(15,0,(char *)a5,EventObj_8[4].Event_Len/2,&test_dis_affair,0,0);
+			lcd_text12(15,0,(char *)a5,EventObj_8[4].Event_Len,LCD_MODE_SET);
 		else
-			DisAddRead_ZK(15,0,"无",1,&test_dis_affair,1,0);
-		lcd_text(0,16,FONT_NINE_DOT,"6.");
+			lcd_text12(15,0,"无",2,LCD_MODE_SET);
+		lcd_text12(0,16,"6.",2,LCD_MODE_SET);
 		if(EventObj_8[5].Event_Effective)
-			DisAddRead_ZK(15,16,(char *)a6,EventObj_8[5].Event_Len/2,&test_dis_affair,0,0);
+			lcd_text12(15,16,(char *)a6,EventObj_8[5].Event_Len,LCD_MODE_SET);
 		else
-			DisAddRead_ZK(15,16,"无",1,&test_dis_affair,1,0);
-		lcd_update_all();
+			lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
 		break;
 	case 7:
-		lcd_fill(0);
-		lcd_text(0,0,FONT_NINE_DOT,"7.");
+		lcd_text12(0,0,"7.",2,LCD_MODE_SET);
 		if(EventObj_8[6].Event_Effective)
-			DisAddRead_ZK(15,0,(char *)a7,EventObj_8[6].Event_Len/2,&test_dis_affair,1,0);
+			lcd_text12(15,0,(char *)a7,EventObj_8[6].Event_Len,LCD_MODE_INVERT);
 		else
-			DisAddRead_ZK(15,0,"无",1,&test_dis_affair,1,0);
-		lcd_text(0,16,FONT_NINE_DOT,"8.");
+			lcd_text12(15,0,"无",2,LCD_MODE_INVERT);
+		lcd_text12(0,16,"8.",2,LCD_MODE_SET);
 		if(EventObj_8[7].Event_Effective)
-			DisAddRead_ZK(15,16,(char *)a8,EventObj_8[7].Event_Len/2,&test_dis_affair,0,0);
+			lcd_text12(15,16,(char *)a8,EventObj_8[7].Event_Len,LCD_MODE_SET);
 		else
-			DisAddRead_ZK(15,16,"无",1,&test_dis_affair,0,0);
-		lcd_update_all();
+			lcd_text12(15,16,"无",2,LCD_MODE_SET);
 		break;
 	case 8:
-		lcd_fill(0);
-		lcd_text(0,0,FONT_NINE_DOT,"7.");
+		lcd_text12(0,0,"7.",2,LCD_MODE_SET);
 		if(EventObj_8[6].Event_Effective)
-			DisAddRead_ZK(15,0,(char *)a7,EventObj_8[6].Event_Len/2,&test_dis_affair,0,0);
+			lcd_text12(15,0,(char *)a7,EventObj_8[6].Event_Len,LCD_MODE_SET);
 		else
-			DisAddRead_ZK(15,0,"无",1,&test_dis_affair,0,0);
-		lcd_text(0,16,FONT_NINE_DOT,"8.");
+			lcd_text12(15,0,"无",2,LCD_MODE_SET);
+		lcd_text12(0,16,"8.",2,LCD_MODE_SET);
 		if(EventObj_8[7].Event_Effective)
-			DisAddRead_ZK(15,16,(char *)a8,EventObj_8[7].Event_Len/2,&test_dis_affair,1,0);
+			lcd_text12(15,16,(char *)a8,EventObj_8[7].Event_Len,LCD_MODE_INVERT);
 		else
-			DisAddRead_ZK(15,16,"无",1,&test_dis_affair,1,0);
-		lcd_update_all();
+			lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
+		
 		break;
 	default :
 		break;	
 	}
+lcd_update_all();
 }
 
 static void show(void)
 	{
 	memset(test_idle,0,sizeof(test_idle));
 	lcd_fill(0);
-	DisAddRead_ZK(36,0,"事件设置",4,&test_dis_affair,0,0);
-	lcd_text(40,16,FONT_NINE_DOT,"OK ?");
+	lcd_text12(36,3,"事件设置",8,LCD_MODE_SET);
+	lcd_text12(24,18,"按确认键查看",12,LCD_MODE_SET);
 	lcd_update_all();
-
-
 	}
 
 static void keypress(unsigned int key)
@@ -262,10 +245,11 @@ else
 	}
 }
 
-
+ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_2_4_6_CenterAffairSet=
 {
-	"",
+    "事件信息",
+	8,
 	&show,
 	&keypress,
 	&timetick,

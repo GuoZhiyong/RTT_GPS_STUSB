@@ -92,7 +92,7 @@ void rtthread_startup(void)
 	rt_application_init();
 	gps_init();
 	gsm_init(RT_NULL);
-	hmi_init();
+	//hmi_init();
 	jt808_init();
  	
 

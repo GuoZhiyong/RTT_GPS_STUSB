@@ -1,14 +1,11 @@
-#include "menu.h"
-#include <stdio.h>
-#include <string.h>
+#include "Menu_Include.h"
 
-struct IMG_DEF test_dis_meun={12,12,test_00};
 
 unsigned char Menu_dianbo=0;
 unsigned char dianbo_scree=1;
 unsigned char MSG_TypeToCenter=0;//发送给中心的序号
 
-
+/*
 typedef struct _MSG_BROADCAST
 {
 unsigned char	 INFO_TYPE; 	//	信息类型
@@ -22,7 +19,7 @@ unsigned char	 INFO_STR[30];	//	信息内容
 MSG_BRODCAST	 MSG_Obj;	 // 信息点播		 
 MSG_BRODCAST	 MSG_Obj_8[8];	// 信息点播    
 
-
+*/
 void SenddianboMeun(unsigned char screen,unsigned char SendOK)
 {
 if(SendOK==1)
@@ -32,13 +29,13 @@ if(SendOK==1)
 	  lcd_fill(0);
 	  if(MSG_Obj_8[screen-1].INFO_PlyCancel==1)
 		  {
-		  DisAddRead_ZK(30,3,(char*)MSG_Obj_8[screen-1].INFO_STR,MSG_Obj_8[screen-1].INFO_LEN/2,&test_dis_meun,1,0);
-		  DisAddRead_ZK(30,19,"点播成功",4,&test_dis_meun,1,0);
+		  lcd_text12(30,3,(char*)MSG_Obj_8[screen-1].INFO_STR,MSG_Obj_8[screen-1].INFO_LEN,LCD_MODE_INVERT);
+		  lcd_text12(30,19,"点播成功",8,LCD_MODE_INVERT);
 		  }
 	  else if(MSG_Obj_8[screen-1].INFO_PlyCancel==0)
 		  {
-		  DisAddRead_ZK(30,3,(char*)MSG_Obj_8[screen-1].INFO_STR,MSG_Obj_8[screen-1].INFO_LEN/2,&test_dis_meun,1,0);
-		  DisAddRead_ZK(30,19,"取消成功",4,&test_dis_meun,1,0);
+		  lcd_text12(30,3,(char*)MSG_Obj_8[screen-1].INFO_STR,MSG_Obj_8[screen-1].INFO_LEN,LCD_MODE_INVERT);
+		  lcd_text12(30,19,"取消成功",8,LCD_MODE_INVERT);
 		  }
 	  lcd_update_all();
 	  }
@@ -51,16 +48,16 @@ else
 	  if(MSG_Obj_8[screen-1].INFO_Effective)
 		  {
 		  lcd_fill(0);
-		  DisAddRead_ZK(15,5,(char *)b1,MSG_Obj_8[screen-1].INFO_LEN/2,&test_dis_meun,1,0);
+		  lcd_text12(15,5,(char *)b1,MSG_Obj_8[screen-1].INFO_LEN,LCD_MODE_INVERT);
 		  if(MSG_Obj_8[screen-1].INFO_PlyCancel)
 			  {
-			  DisAddRead_ZK(15,20,"点播",2,&test_dis_meun,1,0);
-			  DisAddRead_ZK(80,20,"取消",2,&test_dis_meun,0,0);
+			  lcd_text12(15,20,"点播",4,LCD_MODE_INVERT);
+			  lcd_text12(80,20,"取消",4,LCD_MODE_SET);
 			  }
 		  else
 			  {
-			  DisAddRead_ZK(15,20,"点播",2,&test_dis_meun,0,0);
-			  DisAddRead_ZK(80,20,"取消",2,&test_dis_meun,1,0);
+			  lcd_text12(15,20,"点播",4,LCD_MODE_SET);
+			  lcd_text12(80,20,"取消",4,LCD_MODE_INVERT);
 			  }
 		  lcd_update_all();
 		  }
@@ -74,211 +71,211 @@ else
 	  {
 	  case 1:
 		  lcd_fill(0);
-		  lcd_text(0,0,FONT_NINE_DOT,"1.");
+		  lcd_text12(0,0,"1.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[0].INFO_Effective)
-			  DisAddRead_ZK(15,0,(char *)b1,MSG_Obj_8[0].INFO_LEN/2,&test_dis_meun,1,0);
+			  lcd_text12(15,0,(char *)b1,MSG_Obj_8[0].INFO_LEN,LCD_MODE_INVERT);
 		  else
-			  DisAddRead_ZK(15,0,"无",1,&test_dis_meun,1,0);
+			  lcd_text12(15,0,"无",2,LCD_MODE_INVERT);
 		  
-		  lcd_text(0,16,FONT_NINE_DOT,"2.");
+		  lcd_text12(0,16,"2.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[1].INFO_Effective)
-			  DisAddRead_ZK(15,16,(char *)b2,MSG_Obj_8[1].INFO_LEN/2,&test_dis_meun,0,0);
+			  lcd_text12(15,16,(char *)b2,MSG_Obj_8[1].INFO_LEN,LCD_MODE_SET);
 		  else
-			  DisAddRead_ZK(15,16,"无",1,&test_dis_meun,0,0);
+			  lcd_text12(15,16,"无",2,LCD_MODE_SET);
   
 		  if(MSG_Obj_8[0].INFO_Effective)
 			  {
 			  if(MSG_Obj_8[0].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,0,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,0,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"取消",4,LCD_MODE_INVERT);
   
 			  if(MSG_Obj_8[1].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,16,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,16,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"取消",4,LCD_MODE_INVERT);
 			  }
 		  lcd_update_all();
 		  break;
 	  case 2:
 		  lcd_fill(0);
-		  lcd_text(0,0,FONT_NINE_DOT,"1.");
+		  lcd_text12(0,0,"1.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[0].INFO_Effective)
-			  DisAddRead_ZK(15,0,(char *)b1,MSG_Obj_8[0].INFO_LEN/2,&test_dis_meun,0,0);
+			  lcd_text12(15,0,(char *)b1,MSG_Obj_8[0].INFO_LEN,LCD_MODE_SET);
 		  else
-			  DisAddRead_ZK(15,0,"无",1,&test_dis_meun,0,0);
-		  lcd_text(0,16,FONT_NINE_DOT,"2.");
+			  lcd_text12(15,0,"无",2,LCD_MODE_SET);
+		  lcd_text12(0,16,"2.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[1].INFO_Effective)
-			  DisAddRead_ZK(15,16,(char *)b2,MSG_Obj_8[1].INFO_LEN/2,&test_dis_meun,1,0);
+			  lcd_text12(15,16,(char *)b2,MSG_Obj_8[1].INFO_LEN,LCD_MODE_INVERT);
 		  else
-			  DisAddRead_ZK(15,16,"无",1,&test_dis_meun,1,0);
+			  lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
 		  if(MSG_Obj_8[1].INFO_Effective)
 			  {
 			  if(MSG_Obj_8[0].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,0,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,0,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"取消",4,LCD_MODE_INVERT);
   
 			  if(MSG_Obj_8[1].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,16,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,16,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"取消",4,LCD_MODE_INVERT);
 			  }
 		  lcd_update_all();
 		  break;
 	  case 3:
 		  lcd_fill(0);
-		  lcd_text(0,0,FONT_NINE_DOT,"3.");
+		  lcd_text12(0,0,"3.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[2].INFO_Effective)
-			  DisAddRead_ZK(15,0,(char *)b3,MSG_Obj_8[2].INFO_LEN/2,&test_dis_meun,1,0);
+			  lcd_text12(15,0,(char *)b3,MSG_Obj_8[2].INFO_LEN,LCD_MODE_INVERT);
 		  else
-			  DisAddRead_ZK(15,0,"无",1,&test_dis_meun,1,0);
-		  lcd_text(0,16,FONT_NINE_DOT,"4.");
+			  lcd_text12(15,0,"无",2,LCD_MODE_INVERT);
+		  lcd_text12(0,16,"4.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[3].INFO_Effective)
-			  DisAddRead_ZK(15,16,(char *)b4,MSG_Obj_8[3].INFO_LEN/2,&test_dis_meun,0,0);
+			  lcd_text12(15,16,(char *)b4,MSG_Obj_8[3].INFO_LEN,LCD_MODE_SET);
 		  else
-			  DisAddRead_ZK(15,16,"无",1,&test_dis_meun,0,0);
+			  lcd_text12(15,16,"无",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[2].INFO_Effective)
 			  {
 			  if(MSG_Obj_8[2].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,0,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,0,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"取消",4,LCD_MODE_INVERT);
   
 			  if(MSG_Obj_8[3].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,16,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,16,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"取消",4,LCD_MODE_INVERT);
 			  }
 		  lcd_update_all();
 		  break;
 	  case 4: 
 		  lcd_fill(0);
-		  lcd_text(0,0,FONT_NINE_DOT,"3.");
+		  lcd_text12(0,0,"3.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[2].INFO_Effective)
-			  DisAddRead_ZK(15,0,(char *)b3,MSG_Obj_8[2].INFO_LEN/2,&test_dis_meun,0,0);
+			  lcd_text12(15,0,(char *)b3,MSG_Obj_8[2].INFO_LEN,LCD_MODE_SET);
 		  else
-			  DisAddRead_ZK(15,0,"无",1,&test_dis_meun,0,0);
-		  lcd_text(0,16,FONT_NINE_DOT,"4.");
+			  lcd_text12(15,0,"无",2,LCD_MODE_SET);
+		  lcd_text12(0,16,"4.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[3].INFO_Effective)
-			  DisAddRead_ZK(15,16,(char *)b4,MSG_Obj_8[3].INFO_LEN/2,&test_dis_meun,1,0);
+			  lcd_text12(15,16,(char *)b4,MSG_Obj_8[3].INFO_LEN,LCD_MODE_INVERT);
 		  else
-			  DisAddRead_ZK(15,16,"无",1,&test_dis_meun,1,0);
+			  lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
 		  if(MSG_Obj_8[3].INFO_Effective)
 			  {
 			  if(MSG_Obj_8[2].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,0,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,0,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"取消",4,LCD_MODE_INVERT);
   
 			  if(MSG_Obj_8[3].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,16,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,16,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"取消",4,LCD_MODE_INVERT);
 			  }
 		  lcd_update_all();
 		  break;
 	  case 5:
 		  lcd_fill(0);
-		  lcd_text(0,0,FONT_NINE_DOT,"5.");
+		  lcd_text12(0,0,"5.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[4].INFO_Effective)
-			  DisAddRead_ZK(15,0,(char *)b5,MSG_Obj_8[4].INFO_LEN/2,&test_dis_meun,1,0);
+			  lcd_text12(15,0,(char *)b5,MSG_Obj_8[4].INFO_LEN,LCD_MODE_INVERT);
 		  else
-			  DisAddRead_ZK(15,0,"无",1,&test_dis_meun,1,0);
-		  lcd_text(0,16,FONT_NINE_DOT,"6.");
+			  lcd_text12(15,0,"无",2,LCD_MODE_INVERT);
+		  lcd_text12(0,16,"6.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[5].INFO_Effective)
-			  DisAddRead_ZK(15,16,(char *)b6,MSG_Obj_8[5].INFO_LEN/2,&test_dis_meun,0,0);
+			  lcd_text12(15,16,(char *)b6,MSG_Obj_8[5].INFO_LEN,LCD_MODE_SET);
 		  else
-			  DisAddRead_ZK(15,16,"无",1,&test_dis_meun,0,0);
+			  lcd_text12(15,16,"无",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[4].INFO_Effective)
 			  {
 			  if(MSG_Obj_8[4].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,0,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,0,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"取消",4,LCD_MODE_INVERT);
   
 			  if(MSG_Obj_8[5].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,16,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,16,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"取消",4,LCD_MODE_INVERT);
 			  }
 		  lcd_update_all();
 		  break;
 	  case 6: 
 		  lcd_fill(0);
-		  lcd_text(0,0,FONT_NINE_DOT,"5.");
+		  lcd_text12(0,0,"5.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[4].INFO_Effective)
-			  DisAddRead_ZK(15,0,(char *)b5,MSG_Obj_8[4].INFO_LEN/2,&test_dis_meun,0,0);
+			  lcd_text12(15,0,(char *)b5,MSG_Obj_8[4].INFO_LEN,LCD_MODE_SET);
 		  else
-			  DisAddRead_ZK(15,0,"无",1,&test_dis_meun,0,0);
-		  lcd_text(0,16,FONT_NINE_DOT,"6.");
+			  lcd_text12(15,0,"无",2,LCD_MODE_SET);
+		  lcd_text12(0,16,"6.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[5].INFO_Effective)
-			  DisAddRead_ZK(15,16,(char *)b6,MSG_Obj_8[5].INFO_LEN/2,&test_dis_meun,1,0);
+			  lcd_text12(15,16,(char *)b6,MSG_Obj_8[5].INFO_LEN,LCD_MODE_INVERT);
 		  else
-			  DisAddRead_ZK(15,16,"无",1,&test_dis_meun,1,0);
+			  lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
 		  if(MSG_Obj_8[5].INFO_Effective)
 			  {
 			  if(MSG_Obj_8[4].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,0,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,0,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"取消",4,LCD_MODE_INVERT);
   
 			  if(MSG_Obj_8[5].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,16,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,16,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"取消",4,LCD_MODE_INVERT);
 			  }
 		  lcd_update_all();
 		  break;
 	  case 7:
 		  lcd_fill(0);
-		  lcd_text(0,0,FONT_NINE_DOT,"7.");
+		  lcd_text12(0,0,"7.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[6].INFO_Effective)
-			  DisAddRead_ZK(15,0,(char *)b7,MSG_Obj_8[6].INFO_LEN/2,&test_dis_meun,1,0);
+			  lcd_text12(15,0,(char *)b7,MSG_Obj_8[6].INFO_LEN,LCD_MODE_INVERT);
 		  else
-			  DisAddRead_ZK(15,0,"无",1,&test_dis_meun,1,0);
-		  lcd_text(0,16,FONT_NINE_DOT,"8.");
+			  lcd_text12(15,0,"无",2,LCD_MODE_INVERT);
+		  lcd_text12(0,16,"8.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[7].INFO_Effective)
-			  DisAddRead_ZK(15,16,(char *)b8,MSG_Obj_8[7].INFO_LEN/2,&test_dis_meun,0,0);
+			  lcd_text12(15,16,(char *)b8,MSG_Obj_8[7].INFO_LEN,LCD_MODE_SET);
 		  else
-			  DisAddRead_ZK(15,16,"无",1,&test_dis_meun,0,0);
+			  lcd_text12(15,16,"无",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[6].INFO_Effective)
 			  {
 			  if(MSG_Obj_8[6].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,0,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,0,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"取消",4,LCD_MODE_INVERT);
   
 			  if(MSG_Obj_8[7].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,16,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,16,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"取消",4,LCD_MODE_INVERT);
 			  }
 		  lcd_update_all();
 		  break;
 	  case 8: 
 		  lcd_fill(0);
-		  lcd_text(0,0,FONT_NINE_DOT,"7.");
+		  lcd_text12(0,0,"7.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[6].INFO_Effective)
-			  DisAddRead_ZK(15,0,(char *)b7,MSG_Obj_8[6].INFO_LEN/2,&test_dis_meun,0,0);
+			  lcd_text12(15,0,(char *)b7,MSG_Obj_8[6].INFO_LEN,LCD_MODE_SET);
 		  else
-			  DisAddRead_ZK(15,0,"无",1,&test_dis_meun,0,0);
-		  lcd_text(0,16,FONT_NINE_DOT,"8.");
+			  lcd_text12(15,0,"无",2,LCD_MODE_SET);
+		  lcd_text12(0,16,"8.",2,LCD_MODE_SET);
 		  if(MSG_Obj_8[7].INFO_Effective)
-			  DisAddRead_ZK(15,16,(char *)b8,MSG_Obj_8[7].INFO_LEN/2,&test_dis_meun,1,0);
+			  lcd_text12(15,16,(char *)b8,MSG_Obj_8[7].INFO_LEN,LCD_MODE_INVERT);
 		  else
-			  DisAddRead_ZK(15,16,"无",1,&test_dis_meun,1,0);
+			  lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
 		  if(MSG_Obj_8[7].INFO_Effective)
 			  {
 			  if(MSG_Obj_8[6].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,0,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,0,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,0,"取消",4,LCD_MODE_INVERT);
   
 			  if(MSG_Obj_8[7].INFO_PlyCancel==1)
-				  DisAddRead_ZK(95,16,"点播",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"点播",4,LCD_MODE_INVERT);
 			  else
-				  DisAddRead_ZK(95,16,"取消",2,&test_dis_meun,1,0);
+				  lcd_text12(95,16,"取消",4,LCD_MODE_INVERT);
 			  }
 		  lcd_update_all();
 		  break;
@@ -292,10 +289,11 @@ else
   static void show(void)
 	  {
 	  memset(test_idle,0,sizeof(test_idle));
-	  lcd_fill(0);
-	  DisAddRead_ZK(12,0,"信息点播菜单查看",8,&test_dis_meun,0,0);
-	  lcd_text(40,16,FONT_NINE_DOT,"OK ?");
-	  lcd_update_all();   
+	  
+	  //读出8条消息在判断显示
+	  //MSG_Read(); 
+	  Dis_dianbo(1);
+      Menu_dianbo=1;
 	  }
   
   static void keypress(unsigned int key)
@@ -311,14 +309,7 @@ else
 			  dianbo_scree=1;
 			  break; 
 		  case KeyValueOk:
-			  if(Menu_dianbo==0)
-				  {
-				  //读出8条消息在判断显示
-				  //MSG_Read(); 
-				  Menu_dianbo=1;
-				  Dis_dianbo(1);
-				  }
-			  else if(Menu_dianbo==1)
+			  if(Menu_dianbo==1)
 				  {
 				  Menu_dianbo=2;
 				  //将选中的序号数据显示发送的界面
@@ -327,8 +318,8 @@ else
 			  else if(Menu_dianbo==2)
 				  {
 				  //SD_ACKflag.f_MsgBroadCast_0303H=1;
-				  MSG_Obj.INFO_TYPE=MSG_Obj_8[dianbo_scree-1].INFO_TYPE;
-				  MSG_Obj.INFO_PlyCancel=MSG_Obj_8[dianbo_scree-1].INFO_PlyCancel;
+				  /*MSG_Obj.INFO_TYPE=MSG_Obj_8[dianbo_scree-1].INFO_TYPE;
+				  MSG_Obj.INFO_PlyCancel=MSG_Obj_8[dianbo_scree-1].INFO_PlyCancel;*/
   
 				  //--- 更新最新的状态 ----------- 
 				  //DF_WriteFlash(DF_Msg_Page+dianbo_scree-1, 0, (u8*)&MSG_Obj_8[dianbo_scree-1], sizeof(MSG_Obj_8[dianbo_scree-1]));
@@ -394,9 +385,11 @@ else
   }
   
   
+  ALIGN(RT_ALIGN_SIZE)
   MENUITEM	  Menu_2_3_7_CenterInforMeun=
   {
 	  "信息点播查看",
+	  12,
 	  &show,
 	  &keypress,
 	  &timetick,

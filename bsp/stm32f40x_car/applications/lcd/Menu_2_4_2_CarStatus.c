@@ -1,42 +1,22 @@
-#include "menu.h"
+#include "Menu_Include.h"
 
-
-struct IMG_DEF test_dis_CarStatus={12,12,test_00};
+unsigned char car_status_str[3][4]={"空车","半空","重车"};
 
 unsigned char CarStatus_change=1;//状态选择
 unsigned char CarStatus_screen=0;//界面切换使用
 
+
+
 void CarStatus(unsigned char Status)
 {
-switch(Status)
-	{
-	case 1:
-		lcd_fill(0);
-		DisAddRead_ZK(12,3,"车辆负载状态选择",8,&test_dis_CarStatus,0,0);
-		DisAddRead_ZK(20,19,"空车",2,&test_dis_CarStatus,1,0);
-		DisAddRead_ZK(50,19,"半空",2,&test_dis_CarStatus,0,0);
-		DisAddRead_ZK(80,19,"重车",2,&test_dis_CarStatus,0,0);
-		lcd_update_all();
-		break;
-	case 2:
-		lcd_fill(0);
-		DisAddRead_ZK(12,3,"车辆负载状态选择",8,&test_dis_CarStatus,0,0);
-		DisAddRead_ZK(20,19,"空车",2,&test_dis_CarStatus,0,0);
-		DisAddRead_ZK(50,19,"半空",2,&test_dis_CarStatus,1,0);
-		DisAddRead_ZK(80,19,"重车",2,&test_dis_CarStatus,0,0);
-		lcd_update_all();
-		break;
-	case 3:
-		lcd_fill(0);
-		DisAddRead_ZK(12,3,"车辆负载状态选择",8,&test_dis_CarStatus,0,0);
-		DisAddRead_ZK(20,19,"空车",2,&test_dis_CarStatus,0,0);
-		DisAddRead_ZK(50,19,"半空",2,&test_dis_CarStatus,0,0);
-		DisAddRead_ZK(80,19,"重车",2,&test_dis_CarStatus,1,0);
-		lcd_update_all();
-		break;
-	default:
-		break;
-	}
+unsigned char i=0;
+
+	lcd_fill(0);
+	lcd_text12(12,3,"车辆负载状态选择",16,LCD_MODE_SET);
+	for(i=0;i<3;i++)
+		lcd_text12(20+i*30,19,(char *)car_status_str[i],4,LCD_MODE_SET);
+	lcd_text12(20+30*Status,19,(char *)car_status_str[Status-1],4,LCD_MODE_INVERT);
+	lcd_update_all();
 }
 static void show(void)
 {
@@ -57,42 +37,23 @@ switch(KeyValue)
 		CarStatus_screen=0;//界面切换使用
 		break;
 	case KeyValueOk:
+		
 		if(CarStatus_screen==0)
 			{
 			CarStatus_screen=1;
 			lcd_fill(0);
-			DisAddRead_ZK(12,10,"发送车辆状态",6,&test_dis_CarStatus,0,0);
-			if(CarStatus_change==1)
-				{
-				//CarLoadState_Flag=1;
-				//CarLoadState_Write();
-				DisAddRead_ZK(88,10,"空车",2,&test_dis_CarStatus,1,0);
-				}
-			else if(CarStatus_change==2)
-				{
-				//CarLoadState_Flag=2;
-				//CarLoadState_Write();
-				DisAddRead_ZK(88,10,"半空",2,&test_dis_CarStatus,1,0);
-				}
-			else if(CarStatus_change==3)
-				{
-				//CarLoadState_Flag=3; 
-				//CarLoadState_Write();
-				DisAddRead_ZK(88,10,"重车",2,&test_dis_CarStatus,1,0);
-				}
+			lcd_text12(12,10,"发送车辆状态",12,LCD_MODE_SET);
+			lcd_text12(88,10,(char *)car_status_str[CarStatus_change-1],4,LCD_MODE_SET);
 			lcd_update_all();
+			//CarLoadState_Flag=CarStatus_change;
+			//CarLoadState_Write();
 			}
 		else if(CarStatus_screen==1)
 			{
-			CarStatus_screen=2;
+			CarStatus_screen=2;	
 			lcd_fill(0);
-			if(CarStatus_change==1)
-				DisAddRead_ZK(20,10,"空车",2,&test_dis_CarStatus,1,0);
-			else if(CarStatus_change==2)
-				DisAddRead_ZK(20,10,"半空",2,&test_dis_CarStatus,1,0);
-			else if(CarStatus_change==3)
-				DisAddRead_ZK(20,10,"重车",2,&test_dis_CarStatus,1,0);
-			DisAddRead_ZK(48,10,"发送成功",4,&test_dis_CarStatus,0,0);
+			lcd_text12(20,10,(char *)car_status_str[CarStatus_change-1],4,LCD_MODE_SET);
+			lcd_text12(48,10,"发送成功",8,LCD_MODE_SET);
 			lcd_update_all();
 			}
 		break;
@@ -129,10 +90,11 @@ static void timetick(unsigned int systick)
 
 }
 
+ALIGN(RT_ALIGN_SIZE)
+MENUITEM	Menu_2_4_2_CarStatus= {
 
-MENUITEM	Menu_2_4_2_CarStatus=
-{
-	"",
+    "车辆状态发送",
+    12,
 	&show,
 	&keypress,
 	&timetick,

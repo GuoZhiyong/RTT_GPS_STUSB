@@ -1,12 +1,10 @@
-#include "menu.h"
+#include "Menu_Include.h"
 
-struct IMG_DEF test_dis_CarEleInfor={12,12,test_00};
 
 static void show(void)
 {
 	lcd_fill(0);
-	DisAddRead_ZK(25,3,"电子运单发送",6,&test_dis_CarEleInfor,0,0);
-    lcd_text(50,19,FONT_NINE_DOT,"OK ?");
+	lcd_text12(0,10,"按确认键发送电子运单",20,LCD_MODE_SET);
 	lcd_update_all();
 }
 
@@ -23,7 +21,7 @@ switch(KeyValue)
 		break;
 	case KeyValueOk:
 		lcd_fill(0);
-		DisAddRead_ZK(10,10,"电子运单发送成功",8,&test_dis_CarEleInfor,1,0);
+		lcd_text12(10,10,"电子运单发送成功",16,LCD_MODE_SET);
 		lcd_update_all();
 		//SD_ACKflag.f_Worklist_SD_0701H=1;//按键选择发送电子运单标志
 		break;
@@ -47,10 +45,11 @@ static void timetick(unsigned int systick)
 
 }
 
-
+ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_2_4_3_CarEleInfor=
 {
-	"",
+    "电子运单发送",
+	12,
 	&show,
 	&keypress,
 	&timetick,

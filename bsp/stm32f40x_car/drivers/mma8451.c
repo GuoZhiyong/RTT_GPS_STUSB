@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <rtthread.h>
 #include <rtdevice.h>
+#include <finsh.h>
 
 #include "stm32f4xx.h"
 #include "mma8451.h"
@@ -193,10 +194,11 @@
 #define OFF_Y_REG	0x30
 #define OFF_Z_REG	0x31
 
-vu8						mma8451_need_config = 1;
 
 static struct rt_device dev_mma8451;
 
+/*是否是首次运行，首次运行不上报状态*/
+static uint8_t firstrun=1;
 
 /***********************************************************
 * Function:       // 函数名称
@@ -602,6 +604,61 @@ uint8_t				PL_BF_ZCOMP_REG_value	= 0xc7;
 uint8_t				PL_P_L_THS_REG_vlaue	= 0xcf;
 
 
+/*
+读取
+ */
+void EXTI9_5_IRQHandler( void )
+{
+	uint8_t ret,value1,value2,value3;
+	if( EXTI_GetITStatus( EXTI_Line5 ) != RESET )
+	{
+		ret=IIC_RegRead( MMA845X_ADDR, INT_SOURCE_REG, &value1 );
+		ret=IIC_RegRead( MMA845X_ADDR, PL_STATUS_REG, &value2 );
+		ret=IIC_RegRead( MMA845X_ADDR, PULSE_SRC_REG, &value3 );
+		rt_kprintf("\nINT=%02x %02x %02x\n",value1,value2,value3);
+		EXTI_ClearITPendingBit( EXTI_Line5 );
+	}
+}
+
+/*
+   使用外部中断触发 PD5
+ */
+
+void EXTILine5_Config( void )
+{
+	GPIO_InitTypeDef	GPIO_InitStructure;
+	NVIC_InitTypeDef	NVIC_InitStructure;
+	EXTI_InitTypeDef	EXTI_InitStructure;
+
+	/* Enable GPIOD clock */
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOD, ENABLE );
+	/* Enable SYSCFG clock */
+	RCC_APB2PeriphClockCmd( RCC_APB2Periph_SYSCFG, ENABLE );
+
+	/* Configure PD5 pin as input floating */
+	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_NOPULL;
+	GPIO_InitStructure.GPIO_Pin		= GPIO_Pin_5;
+	GPIO_Init( GPIOD, &GPIO_InitStructure );
+
+	/* Connect EXTI Line5 to PD5 pin */
+	SYSCFG_EXTILineConfig( EXTI_PortSourceGPIOD, EXTI_PinSource5 );
+
+	/* Configure EXTI Line5 */
+	EXTI_InitStructure.EXTI_Line	= EXTI_Line5;
+	EXTI_InitStructure.EXTI_Mode	= EXTI_Mode_Interrupt;
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_Init( &EXTI_InitStructure );
+
+	/* Enable and set EXTI Line0 Interrupt to the lowest priority */
+	NVIC_InitStructure.NVIC_IRQChannel						= EXTI9_5_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority	= 0x01;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority			= 0x01;
+	NVIC_InitStructure.NVIC_IRQChannelCmd					= ENABLE;
+	NVIC_Init( &NVIC_InitStructure );
+}
+
 /***********************************************************
 * Function:       // 函数名称
 * Description:    // 函数功能、性能等的描述
@@ -614,6 +671,8 @@ uint8_t				PL_P_L_THS_REG_vlaue	= 0xcf;
 static uint8_t mma8451_config( uint16_t param1, uint16_t param2 )
 {
 	unsigned char res, value;
+	param_mma8451_word1=param1;
+	param_mma8451_word2=param2;
 
 //standby
 	if( IIC_RegWrite( MMA845X_ADDR, CTRL_REG1, ( CTRL_REG1_value & ~ACTIVE_MASK ) ) )
@@ -819,13 +878,13 @@ static uint8_t mma8451_config( uint16_t param1, uint16_t param2 )
 //active
 
 /*TAP设置*/
-	if( IIC_RegWrite( MMA845X_ADDR, PULSE_CFG_REG, 0x55 ) )
+	if( IIC_RegWrite( MMA845X_ADDR, PULSE_CFG_REG, 0xd5 ) )
 	{
 		goto lbl_mma8451_config_err;
 	}
 
 	//加速度门限 0.1g 1-79	扩展为0.0625  1-127  扩大1.6倍
-
+/*
 	res = ( ( param_mma8451_word2 & 0xff00 ) >> 8 ) * 1.6;
 
 	if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSX_REG, res ) )
@@ -846,17 +905,52 @@ static uint8_t mma8451_config( uint16_t param1, uint16_t param2 )
 	{
 		goto lbl_mma8451_config_err;
 	}
+*/
+
+	res = ( param_mma8451_word2 & 0xff)*1.6;
+
+	if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSX_REG, res ) )
+	{
+		goto lbl_mma8451_config_err;
+	}
+	if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSY_REG, res ) )
+	{
+		goto lbl_mma8451_config_err;
+	}
+	if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSZ_REG, res ) )
+	{
+		goto lbl_mma8451_config_err;
+	}
+
+	res = (param_mma8451_word2 & 0xff00)>>8;
+	if( IIC_RegWrite( MMA845X_ADDR, PULSE_TMLT_REG, res ) )
+	{
+		goto lbl_mma8451_config_err;
+	}
+
+
 
 	if( IIC_RegWrite( MMA845X_ADDR, CTRL_REG1, ( CTRL_REG1_value | ACTIVE_MASK ) ) )
 	{
 		goto lbl_mma8451_config_err;
 	}
 
+	if( IIC_RegWrite( MMA845X_ADDR, CTRL_REG4, 0x18 ) )
+	{
+		goto lbl_mma8451_config_err;
+	}
+
+
 	return ERR_NONE;
 
 lbl_mma8451_config_err:
 	return res;
 }
+
+FINSH_FUNCTION_EXPORT(mma8451_config ,setup sensor);
+
+
+
 
 /*
    碰撞时间门限
@@ -926,6 +1020,7 @@ static rt_err_t mma8451_init( rt_device_t dev )
 	SCL_H;
 	SDA_H;
 	mma8451_config( param_mma8451_word1, param_mma8451_word2 );
+	EXTILine5_Config( );
 	return RT_EOK;
 }
 
@@ -1018,9 +1113,6 @@ ALIGN( RT_ALIGN_SIZE )
 static char thread_sensor_stack[512];
 struct rt_thread thread_sensor;
 
-
-/***********************************************************
-***********************************************************/
 static void rt_thread_entry_sensor( void* parameter )
 {
 	uint8_t		int_source, pl;
@@ -1113,15 +1205,15 @@ static void rt_thread_entry_sensor( void* parameter )
 ***********************************************************/
 void mma8451_driver_init( void )
 {
-
-	rt_thread_init( &thread_sensor,
-	                "sensor",
-	                rt_thread_entry_sensor,
-	                RT_NULL,
-	                &thread_sensor_stack[0],
-	                sizeof( thread_sensor_stack ), 22, 5 );
-	rt_thread_startup( &thread_sensor );
-
+/*
+   rt_thread_init( &thread_sensor,
+                 "sensor",
+                 rt_thread_entry_sensor,
+                 RT_NULL,
+                 &thread_sensor_stack[0],
+                 sizeof( thread_sensor_stack ), 22, 5 );
+   rt_thread_startup( &thread_sensor );
+ */
 	dev_mma8451.type		= RT_Device_Class_Char;
 	dev_mma8451.init		= mma8451_init;
 	dev_mma8451.open		= mma8451_open;
@@ -1134,5 +1226,11 @@ void mma8451_driver_init( void )
 	rt_device_register( &dev_mma8451, "sensor", RT_DEVICE_FLAG_RDWR );
 	rt_device_init( &dev_mma8451 );
 }
+
+
+
+
+
+
 
 /************************************** The End Of File **************************************/

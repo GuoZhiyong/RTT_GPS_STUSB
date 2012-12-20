@@ -1,5 +1,5 @@
-#include "menu.h"
-#include "Lcd_init.h"
+#include "Menu_Include.h"
+#include "Lcd.h"
 
 
 static void show(void)
@@ -43,10 +43,11 @@ static void timetick(unsigned int systick)
 
 }
 
-
-MENUITEM	Menu_2_6_1_Ver=
+ALIGN(RT_ALIGN_SIZE)
+MENUITEM	Menu_2_3_8_Ver=
 {
-	"",
+    "∞Ê±æ≤È—Ø",
+	8,
 	&show,
 	&keypress,
 	&timetick,

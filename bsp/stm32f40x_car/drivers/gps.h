@@ -13,7 +13,5 @@
 #define GPS_OUTMODE_ALL		0xFFFFFFFF	/*全数据输出*/
 
 
-
-
 #endif
 

@@ -1,23 +1,33 @@
-#include "menu.h"
+#include "Menu_Include.h"
 #include <stdio.h>
 #include <string.h>
 
-struct IMG_DEF test_dis_logout={12,12,test_00};
 	   
 unsigned char Menu_Logout=0;  //  1:准备注册再按确认键=2   =2:发送注册
 unsigned char LogIn_Flag=0;//准备鉴权让其=1，再按确认键发送鉴权清0
 unsigned char LogInorOut_screen=0;//选择鉴权/注销,选择好以后按确认键清0
 unsigned char LogInorOut=0;//  1:选择鉴权	2:选择注册
 
+
+void confirm_login(unsigned char par)
+{
+lcd_fill(0);
+if(par==1)
+	{
+	lcd_text12(30, 3,"1.车台鉴权",10,LCD_MODE_INVERT);
+	lcd_text12(30,19,"2.车台注册",10,LCD_MODE_SET);
+	}
+else if(par==2)
+	{
+	lcd_text12(30, 3,"1.车台鉴权",10,LCD_MODE_SET);
+	lcd_text12(30,19,"2.车台注册",10,LCD_MODE_INVERT);
+	}
+lcd_update_all();
+}
 static void show(void)
    {
    memset(test_idle,0,sizeof(test_idle));
-   lcd_fill(0);
-   lcd_text(5,3,FONT_NINE_DOT,"1.");
-   DisAddRead_ZK(25,3,"车台鉴权",4,&test_dis_logout,1,0);
-   lcd_text(5,19,FONT_NINE_DOT,"2.");
-   DisAddRead_ZK(25,19,"车台注册",4,&test_dis_logout,0,0);
-   lcd_update_all();
+   confirm_login(1);
    LogInorOut_screen=1;
    LogInorOut=1;
    }
@@ -42,8 +52,7 @@ static void keypress(unsigned int key)
 			   LogInorOut_screen=0;
 			   LogInorOut=0;
 			   lcd_fill(0);
-			   DisAddRead_ZK(36,3,"车台鉴权",4,&test_dis_logout,0,0);
-			   DisAddRead_ZK(24,19,"按确认键发送",6,&test_dis_logout,0,0);
+			   lcd_text12(0,10,"按确认键发送车台鉴权",20,LCD_MODE_SET);
 			   lcd_update_all();
 			   LogIn_Flag=1;
 			   }
@@ -51,7 +60,7 @@ static void keypress(unsigned int key)
 			   {
 			   LogIn_Flag=0;
 			   lcd_fill(0);
-			   DisAddRead_ZK(30,10,"鉴权已发送",5,&test_dis_logout,0,0);
+			   lcd_text12(30,10,"鉴权已发送",10,LCD_MODE_SET);
 			   lcd_update_all();
 			   
 			   //DEV_Login.Operate_enable=1;
@@ -62,8 +71,7 @@ static void keypress(unsigned int key)
 			   LogInorOut_screen=0;
 			   LogInorOut=0;
 			   lcd_fill(0);
-			   DisAddRead_ZK(36,3,"车台注册",4,&test_dis_logout,0,0);
-			   DisAddRead_ZK(24,19,"按确认键发送",6,&test_dis_logout,0,0);
+			   lcd_text12(0,10,"按确认键发送车台注册",20,LCD_MODE_SET);
 			   lcd_update_all();
 			   Menu_Logout=1;
 			   }
@@ -71,7 +79,7 @@ static void keypress(unsigned int key)
 			   {
 			   Menu_Logout=2;
 			   lcd_fill(0);
-			   DisAddRead_ZK(30,10,"注册已发送",5,&test_dis_logout,0,0);
+			   lcd_text12(30,10,"注册已发送",10,LCD_MODE_SET);
 			   lcd_update_all();
 			   //DEV_regist.Enable_sd=1; // set 发送注册标志位
 			   }
@@ -80,12 +88,7 @@ static void keypress(unsigned int key)
 		   if(LogInorOut_screen==1)
 			   {
 			   LogInorOut=1;
-			   lcd_fill(0);
-			   lcd_text(5,3,FONT_NINE_DOT,"1.");
-			   DisAddRead_ZK(25,3,"车台鉴权",4,&test_dis_logout,1,0);
-			   lcd_text(5,19,FONT_NINE_DOT,"2.");
-			   DisAddRead_ZK(25,19,"车台注册",4,&test_dis_logout,0,0);
-			   lcd_update_all();
+			   confirm_login(1);
 			   }
 		   break;
 		   
@@ -93,12 +96,7 @@ static void keypress(unsigned int key)
 		   if(LogInorOut_screen==1)
 			   {
 			   LogInorOut=2;
-			   lcd_fill(0);
-			   lcd_text(5,3,FONT_NINE_DOT,"1.");
-			   DisAddRead_ZK(25,3,"车台鉴权",4,&test_dis_logout,0,0);
-			   lcd_text(5,19,FONT_NINE_DOT,"2.");
-			   DisAddRead_ZK(25,19,"车台注册",4,&test_dis_logout,1,0);
-			   lcd_update_all();
+			   confirm_login(2);
 			   }
 		   break;
 		   
@@ -125,10 +123,11 @@ static void timetick(unsigned int systick)
 	   }
 }
 
-
+ALIGN(RT_ALIGN_SIZE)
 MENUITEM    Menu_2_4_7_LogOut=
 {
-	"",
+   "鉴权注册",
+   8,
    &show,
    &keypress,
    &timetick,

@@ -117,7 +117,7 @@
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
           <Simulator>
-            <UseSimulator>1</UseSimulator>
+            <UseSimulator>0</UseSimulator>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -128,7 +128,7 @@
             <LimitSpeedToRealTime>0</LimitSpeedToRealTime>
           </Simulator>
           <Target>
-            <UseTarget>0</UseTarget>
+            <UseTarget>1</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -139,7 +139,7 @@
             <RestoreTracepoints>0</RestoreTracepoints>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>5</TargetSelection>
+          <TargetSelection>7</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -411,6 +411,21 @@
               <FileType>1</FileType>
               <FilePath>.\applications\hmi.c</FilePath>
             </File>
+            <File>
+              <FileName>jt808_gprs.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_gprs.c</FilePath>
+            </File>
+            <File>
+              <FileName>jt808_gps.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_gps.c</FilePath>
+            </File>
+            <File>
+              <FileName>gps_bd_upgrade.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\gps_bd_upgrade.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -422,19 +437,9 @@
               <FilePath>drivers\board.c</FilePath>
             </File>
             <File>
-              <FileName>serial.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\serial.c</FilePath>
-            </File>
-            <File>
               <FileName>stm32f4xx_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\stm32f4xx_it.c</FilePath>
-            </File>
-            <File>
-              <FileName>usart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\usart.c</FilePath>
             </File>
             <File>
               <FileName>usb_bsp.c</FileName>
@@ -475,6 +480,16 @@
               <FileName>gps.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\gps.c</FilePath>
+            </File>
+            <File>
+              <FileName>mma8451.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\mma8451.c</FilePath>
+            </File>
+            <File>
+              <FileName>vuart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\vuart.c</FilePath>
             </File>
           </Files>
         </Group>
