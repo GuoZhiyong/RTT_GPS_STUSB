@@ -6,6 +6,7 @@ finsh和rt_printf的重定向
 #include <rtdevice.h>
 #include "serial.h"
 #include <stm32f4xx_usart.h>
+#include <finsh.h>
 
 
 #define UART1_GPIO_TX		GPIO_Pin_9
@@ -16,11 +17,17 @@ finsh和rt_printf的重定向
 #define UART1_GPIO_RCC      RCC_AHB1Periph_GPIOA
 #define RCC_APBPeriph_UART1	RCC_APB2Periph_USART1
 
-#define VUART_RXBUF_SIZE	256
+#define VUART_RXBUF_SIZE	1024
 static uint8_t vuart_rxbuf[VUART_RXBUF_SIZE];
 
 static struct rt_ringbuffer rb_vuart;
 struct rt_device dev_vuart;
+
+
+#define BD_SYNC_40	0
+#define BD_SYNC_0D	1
+#define BD_SYNC_0A	2
+static uint8_t bd_packet_status=BD_SYNC_40; /*北斗升级报文接收状态*/
 
 
 extern uint8_t flag_bd_upgrade_uart;
@@ -32,15 +39,43 @@ void USART1_IRQHandler(void)
     if( USART_GetITStatus( USART1, USART_IT_RXNE ) != RESET )
 	{
 		ch = USART_ReceiveData( USART1 );
-		rt_ringbuffer_putchar(&rb_vuart,ch);
 		USART_ClearITPendingBit( USART1, USART_IT_RXNE );
+		
 		if(flag_bd_upgrade_uart==0)
 		{
+			rt_ringbuffer_putchar(&rb_vuart,ch);	
 			//if (dev_vuart.rx_indicate != RT_NULL)  /*默认finsh使用*/
 			{
 				dev_vuart.rx_indicate(&dev_vuart,1);
 			}
 		}
+#if 1		
+		else	/*接收升级数据，由于串口波特率可变,需要同步到正确的数据头*/
+		{
+			switch(bd_packet_status)
+			{
+				case BD_SYNC_40:
+					if(ch==0x40) 
+					{
+						rt_ringbuffer_init(&rb_vuart,vuart_rxbuf,VUART_RXBUF_SIZE);
+						rt_ringbuffer_putchar(&rb_vuart,ch);
+						bd_packet_status=BD_SYNC_0D;
+					}
+					break;
+				case BD_SYNC_0D:
+					if(ch==0x0D) bd_packet_status=BD_SYNC_0A;
+					rt_ringbuffer_putchar(&rb_vuart,ch);
+					break;
+				case BD_SYNC_0A:
+					if(ch==0x0A) bd_packet_status=BD_SYNC_40;
+					else bd_packet_status=BD_SYNC_0D;
+					rt_ringbuffer_putchar(&rb_vuart,ch);
+					break;
+			}
+
+		}
+#endif
+
 	
     }	
 
@@ -48,7 +83,7 @@ void USART1_IRQHandler(void)
 
 }
 
-void uart1_init(int buad)
+void uart1_baud(int buad)
 {
 	USART_InitTypeDef USART_InitStructure;
 	USART_InitStructure.USART_BaudRate = buad;
@@ -59,6 +94,7 @@ void uart1_init(int buad)
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 	USART_Init(USART1, &USART_InitStructure);
 }
+FINSH_FUNCTION_EXPORT( uart1_baud, uart1 baud );
 
 
 /*初始化串口1*/
@@ -88,7 +124,7 @@ static rt_err_t dev_vuart_init( rt_device_t dev )
 	NVIC_InitStructure.NVIC_IRQChannelCmd					= ENABLE;
 	NVIC_Init( &NVIC_InitStructure );
 
-	uart1_init(115200);
+	uart1_baud(9600);
 
 	USART_Cmd( USART1, ENABLE );
 	USART_ITConfig( USART1, USART_IT_RXNE, ENABLE );
@@ -230,7 +266,7 @@ static rt_err_t dev_vuart_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 		USART_Cmd(USART1, ENABLE);
 		break;
 	case RT_DEVICE_CTRL_BAUD:
-		uart1_init(i);
+		uart1_baud(i);
 		break;
 	}
 
