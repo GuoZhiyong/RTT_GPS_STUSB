@@ -32,18 +32,20 @@
 typedef void (*SHOW)(void);
 typedef void (*KEYPRESS)(unsigned int);
 typedef void (*TIMETICK)(unsigned int);
+typedef void (*MSG)(void *p);
 
 
-typedef  __packed struct _menuitem{
+typedef  struct _menuitem{
 	char *caption;			/*菜单项的文字信息*/
 	unsigned char len;
 	SHOW show;				/*显示时调用，初始化显示*/
 	KEYPRESS keypress;		/*发生按键时调用*/
 	TIMETICK timetick;		/*向其提供系统tick，比如返回待机画面*/
+	MSG msg;				/*对外提供回调函数*/
 	struct _menuitem *parent;	   
 }MENUITEM; 
 
-typedef __packed struct _menuitem * PMENUITEM; 
+typedef struct _menuitem * PMENUITEM; 
 
 
 extern unsigned int CounterBack;
@@ -199,6 +201,8 @@ extern MENUITEM	Menu_DisMultimedia;
 
 ALIGN(RT_ALIGN_SIZE)
 extern MENUITEM	Menu_Check_DnsIp;
+
+extern MENUITEM	Menu_1_bdupgrade;
 
 
 extern unsigned char SetVIN_NUM;//   1:设置车牌号码  2:设置VIN

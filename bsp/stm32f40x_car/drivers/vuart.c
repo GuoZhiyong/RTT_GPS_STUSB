@@ -40,7 +40,7 @@ void USART1_IRQHandler(void)
 	{
 		ch = USART_ReceiveData( USART1 );
 		USART_ClearITPendingBit( USART1, USART_IT_RXNE );
-		
+		//rt_ringbuffer_putchar(&rb_vuart,ch);
 		if(flag_bd_upgrade_uart==0)
 		{
 			rt_ringbuffer_putchar(&rb_vuart,ch);	
@@ -124,7 +124,7 @@ static rt_err_t dev_vuart_init( rt_device_t dev )
 	NVIC_InitStructure.NVIC_IRQChannelCmd					= ENABLE;
 	NVIC_Init( &NVIC_InitStructure );
 
-	uart1_baud(9600);
+	uart1_baud(115200);
 
 	USART_Cmd( USART1, ENABLE );
 	USART_ITConfig( USART1, USART_IT_RXNE, ENABLE );

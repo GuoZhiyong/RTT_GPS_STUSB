@@ -1,4 +1,4 @@
-#include "menu.h"
+#include "menu_include.h"
 #include "Lcd_init.h"
 
 struct IMG_DEF test_dis_tzxs={12,12,test_00};

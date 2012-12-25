@@ -31,7 +31,7 @@ static void menuswitch(void)
 	DisAddRead_ZK(0,17,"…Ë÷√",2,&test_1_MeunSet,0,0);
 	for(i=0;i<5;i++) lcd_bitmap(35+index*12, 5, &BMP_noselect_set, LCD_MODE_SET);
 	lcd_bitmap(35+index*12, 5, &BMP_select_set, LCD_MODE_SET);
-	DisAddRead_ZK(35,19,(char *)(psubmenu[menu_pos]->caption),5,&test_1_MeunSet,1,0);
+	DisAddRead_ZK(35,19,(char *)(psubmenu[menu_pos]->caption),4,&test_1_MeunSet,1,0);
 	lcd_update_all();
 }
 

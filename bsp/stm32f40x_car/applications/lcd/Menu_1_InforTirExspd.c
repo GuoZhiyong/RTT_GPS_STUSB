@@ -23,7 +23,6 @@ lcd_text12(0,17,"¼ÝÊ»",4,LCD_MODE_SET);
 for(i=0;i<2;i++)
 	lcd_bitmap(30+i*11, 5, &BMP_noselect_TirExspd, LCD_MODE_SET);
 lcd_bitmap(30+menu_pos*11,5,&BMP_select_TirExspd,LCD_MODE_SET);
-lcd_text12(30,19,(char *)(psubmenu[menu_pos]->caption),psubmenu[menu_pos]->len,LCD_MODE_SET);
 lcd_update_all();
 }
 

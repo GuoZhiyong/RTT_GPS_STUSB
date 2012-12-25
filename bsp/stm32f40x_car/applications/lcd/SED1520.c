@@ -163,7 +163,7 @@ void lcd_out_ctl(const unsigned char cmd, const unsigned char ncontr)
 // 	LCD_CMD_MODE();
 //	LCDDATAPORT = cmd;
 
-	ControlBitShift(RST0|0x0);
+	ControlBitShift(RST0|0x40);
 	DataBitShift(cmd);
 	ctr=RST0;
 	if(ncontr&0x01){
@@ -172,10 +172,10 @@ void lcd_out_ctl(const unsigned char cmd, const unsigned char ncontr)
 	if(ncontr&0x02){
 		ctr|=E2;
 	}	
-	ControlBitShift(ctr);
+	ControlBitShift(ctr|0x40);
 	//delay(1);
 	for(i=0;i<0xf;i++){}
-	ControlBitShift(RST0|0);
+	ControlBitShift(RST0|0x40);
 }
 
 /* 
@@ -193,7 +193,7 @@ void lcd_out_dat(const unsigned char dat, const unsigned char ncontr)
 //   LCDDATAPORT = dat;
 
 	ctr=RST0|A0;
-	ControlBitShift(ctr);
+	ControlBitShift(ctr|0x40);
 	DataBitShift(dat);
 	if(ncontr&0x01){
 	  ctr|=E1;
@@ -201,10 +201,10 @@ void lcd_out_dat(const unsigned char dat, const unsigned char ncontr)
 	if(ncontr&0x02){
 		ctr|=E2;
 	}
-	ControlBitShift(ctr);
+	ControlBitShift(ctr|0x40);
 	//delay(1);
 	for(i=0;i<0xf;i++){}
-	ControlBitShift(RST0|A0);
+	ControlBitShift(RST0|A0|0x40);
 }
 
 

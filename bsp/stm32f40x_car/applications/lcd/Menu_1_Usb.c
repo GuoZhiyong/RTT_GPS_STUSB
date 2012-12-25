@@ -28,13 +28,13 @@ void DataInOutSe(unsigned char num)
 	lcd_text12(0,11,"USB",3,LCD_MODE_SET);
 	if(num==1)
 		{
-		lcd_text12(60, 3,"1.数据导出",8,LCD_MODE_INVERT);
-		lcd_text12(60,19,"2.固件升级",8,LCD_MODE_SET);
+		lcd_text12(35, 3,"1.数据导出",8,LCD_MODE_INVERT);
+		lcd_text12(35,19,"2.固件升级",8,LCD_MODE_SET);
 		}
 	else
 		{
-		lcd_text12(60, 3,"1.数据导出",8,LCD_MODE_SET);
-		lcd_text12(60,19,"2.固件升级",8,LCD_MODE_INVERT);
+		lcd_text12(35, 3,"1.数据导出",8,LCD_MODE_SET);
+		lcd_text12(35,19,"2.固件升级",8,LCD_MODE_INVERT);
 		}
 	lcd_update_all();
 }

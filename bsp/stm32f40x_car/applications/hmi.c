@@ -17,7 +17,7 @@
 #include "stm32f4xx.h"
 #include <board.h>
 #include <rtthread.h>
-#include <lcd\menu.h>
+#include <lcd\menu_include.h>
 #include "jt808.h"
 
 /* 消息队列控制块 */
@@ -49,19 +49,9 @@ rt_err_t rt_Rx_hmi2app808_MsgQue(u8 *buffer,u16 rec_len)
 
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_hmi_stack[512];
+static char thread_hmi_stack[2048];
 struct rt_thread thread_hmi;
-
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/*hmi线程*/
 static void rt_thread_entry_hmi( void* parameter )
 {
 
@@ -69,18 +59,14 @@ static void rt_thread_entry_hmi( void* parameter )
 	Init_lcdkey();
 	lcd_init();
 
-	pMenuItem = &Menu_1_Idle;
+	pMenuItem = &Menu_1_bdupgrade;
 	pMenuItem->show( );
 	while( 1 )
 	{
+		KeyCheckFun( );
 		pMenuItem->timetick( 10 );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
 		pMenuItem->keypress( 10 );  //每个子菜单的 按键检测  时钟源100ms timer
-		KeyCheckFun( );
 		rt_thread_delay( 5 );
-		GPIO_ResetBits( GPIOD, GPIO_Pin_9 );
-		rt_thread_delay( 5 );
-		GPIO_SetBits( GPIOD, GPIO_Pin_9 );
-		//rt_kprintf("%d\n",rt_tick_get());
 	}
 }
 
@@ -100,7 +86,7 @@ void hmi_init( void )
 
 
 	rt_thread_init( &thread_hmi,
-	                "hmi_lcd",
+	                "hmi",
 	                rt_thread_entry_hmi,
 	                RT_NULL,
 	                &thread_hmi_stack[0],
