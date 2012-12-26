@@ -22,22 +22,22 @@
 */
 
 
-#define BDUPG_RES_UART_OK			(0x10000000)	/*没有错误升级成功-升级成功*/
-#define BDUPG_RES_UART_READY		(0x1000FFFF)	/*串口更新就绪*/
+#define BDUPG_RES_UART_OK		(0x10000000)	/*没有错误升级成功-升级成功*/
+#define BDUPG_RES_UART_READY	(0x1000FFFF)	/*串口更新就绪*/
 
 
-#define BDUPG_RES_USB_OK			(0x20000000)	/*没有错误升级成功-升级成功*/
+#define BDUPG_RES_USB_OK		(0x20000000)	/*没有错误升级成功-升级成功*/
 
-#define BDUPG_RES_USB_FILE_ERR		(0x2000FFFC)	/*更新文件格式错误*/
-#define BDUPG_RES_USB_NOFILE		(0x2000FFFD)	/*更新文件不存在*/
-#define BDUPG_RES_USB_WAITINSERT	(0x2000FFFD)	/*更新文件不存在*/
-#define BDUPG_RES_USB_NOEXIST		(0x2000FFFE)	/*u盘不存在*/
-#define BDUPG_RES_USB_READY			(0x2000FFFF)	/*u盘就绪*/
+#define BDUPG_RES_USB_FILE_ERR	(0x2000FFFC)	/*更新文件格式错误*/
+#define BDUPG_RES_USB_NOFILE	(0x2000FFFD)	/*更新文件不存在*/
+#define BDUPG_RES_USB_WAITUSB	(0x2000FFFD)	/*更新文件不存在*/
+#define BDUPG_RES_USB_NOEXIST	(0x2000FFFE)	/*u盘不存在*/
+#define BDUPG_RES_USB_READY		(0x2000FFFF)	/*u盘就绪*/
 
 
-#define BDUPG_RES_USB_MODULE_H		(0x20010000)	/*模块型号高16bit*/
-#define BDUPG_RES_USB_MODULE_L		(0x20020000)	/*模块型号低16bit*/
-#define BDUPG_RES_USB_FILE_VER		(0x20030000)	/*软件版本*/
+#define BDUPG_RES_USB_MODULE_H	(0x20010000)	/*模块型号高16bit*/
+#define BDUPG_RES_USB_MODULE_L	(0x20020000)	/*模块型号低16bit*/
+#define BDUPG_RES_USB_FILE_VER	(0x20030000)	/*软件版本*/
 
 
 #define BDUPG_RES_THREAD	(0xFFFFFFFE)	/*创建升级线程失败-创建更新失败*/

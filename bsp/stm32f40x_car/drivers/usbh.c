@@ -33,7 +33,7 @@ ALIGN(RT_ALIGN_SIZE)
 	
 USB_OTG_CORE_HANDLE      USB_OTG_Core ;
 USBH_HOST                USB_Host;
-static char thread_usbmsc_stack[512];
+static char thread_usbmsc_stack[1024];
 struct rt_thread thread_usbmsc;
 static void rt_thread_entry_usbmsc(void* parameter)
 {
@@ -76,7 +76,7 @@ static void rt_thread_entry_usbmsc(void* parameter)
     {
     	//GPIO_SetBits(GPIOD, GPIO_Pin_15);
 		USBH_Process(&USB_OTG_Core,&USB_Host);
-		rt_thread_delay(RT_TICK_PER_SECOND/20);
+		rt_thread_delay(RT_TICK_PER_SECOND/50);
 		//GPIO_ResetBits(GPIOD, GPIO_Pin_15);
     }
 

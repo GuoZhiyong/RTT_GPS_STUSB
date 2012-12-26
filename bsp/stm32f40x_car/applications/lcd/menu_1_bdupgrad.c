@@ -67,6 +67,7 @@ static void show( void )
 /*
 提供回调函数用以显示信息
 */
+#if 0
 static void msg( unsigned int res )
 {
 	char buf[32];
@@ -140,8 +141,27 @@ static void msg( unsigned int res )
 	}
 	lcd_update_all( );
 }
+#endif
 
+static void msg( void *p)
+{
+	char buf[32];
+	unsigned int len;
+	char *pinfo;
+	lcd_fill( 0 );
+	lcd_text12( 0, 3, "北斗", 4, LCD_MODE_SET );
+	lcd_text12( 0, 17, "升级", 4, LCD_MODE_SET );
+	pinfo=(char *)p;
+	len=strlen(pinfo);
+	lcd_text12( 35, 10,pinfo+1,len-1, LCD_MODE_SET );
+	if(*pinfo=='E')	/*出错或结束*/
+	{
+		fupgrading=0;
+		tid_upgrade=RT_NULL;
+	}
 
+	lcd_update_all( );
+}
 
 /***********************************************************
 * Function:
@@ -170,22 +190,22 @@ static void keypress( unsigned int key )
 				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_uart, (void*)msg, 1024, 5, 5 );
 				if( tid_upgrade != RT_NULL )
 				{
-					msg(BDUPG_RES_UART_READY);
+					msg("I等待串口升级");
 					rt_thread_startup( tid_upgrade );
 				}else
 				{
-					msg(BDUPG_RES_THREAD);
+					msg("E线程创建失败");
 				}
 			}else /*U盘升级*/
 			{
 				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_udisk, (void*)msg, 1024, 5, 5 );
 				if( tid_upgrade != RT_NULL )
 				{
-					msg(BDUPG_RES_USB_READY);
+					msg("I等待U盘升级");
 					rt_thread_startup( tid_upgrade );
 				}else
 				{
-					msg(BDUPG_RES_THREAD);
+					msg("E线程创建失败");
 				}
 			}
 			break;
