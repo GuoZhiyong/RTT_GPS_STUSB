@@ -270,7 +270,7 @@ static rt_err_t dev_gps_init( rt_device_t dev )
 	USART_Cmd( UART5, ENABLE );
 	USART_ITConfig( UART5, USART_IT_RXNE, ENABLE );
 
-	GPIO_SetBits( GPIOD, GPIO_Pin_10 );
+	GPIO_SetBits( GPS_PWR_PORT, GPS_PWR_PIN );
 
 	return RT_EOK;
 }
@@ -404,7 +404,7 @@ static void rt_thread_entry_gps( void* parameter )
 		{
 			if( flag_bd_upgrade_uart == 0 )
 			{
-				gps_rx( buf.body, buf.wr );
+				//gps_rx( buf.body, buf.wr );
 			}else
 			{
 				if( buf.body[0] == 0x40 )

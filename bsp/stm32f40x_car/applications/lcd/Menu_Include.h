@@ -29,9 +29,9 @@
 #define MaxBankIdleTime  1000//60s  LCD任务执行周期60ms,1min没有按键操作推出到idle状态
 
 
-typedef void (*SHOW)(void);
-typedef void (*KEYPRESS)(unsigned int);
-typedef void (*TIMETICK)(unsigned int);
+typedef void (*SHOW)(void );
+typedef void (*KEYPRESS)(int);
+typedef void (*TIMETICK)(int);
 typedef void (*MSG)(void *p);
 
 

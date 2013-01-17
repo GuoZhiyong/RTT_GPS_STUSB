@@ -96,6 +96,12 @@ u8  Camera_Number;
 u8	Duomeiti_sdFlag; 
 
 
+
+JT808_PARAM jt808_param;
+
+
+
+
 /*
    连接状态维护
    jt808协议处理
@@ -137,6 +143,10 @@ static void rt_thread_entry_jt808( void* parameter )
 			rt_free(pstr);
 		}
 /*维护链路*/
+
+/*是否有消息要发送*/
+
+
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
 }

@@ -25,25 +25,10 @@
 /*
 定义使用的模块型号
 */
-#define MG323
-
+//#define MG323
+#define M66
 //#define MC323
 //#define EM310
-
-/*
-定义GSM设备的操作函数，主要用来通知
-分为三类
-ondata 收到来自网络侧的信息
-oncmd  发送命令的应答
-onstatus 主动状态上报，状态切换，或urc出现
-*/
-typedef struct
-{
-	int	(*ondata)(uint8_t *pInfo,uint16_t len);
-	int	(*oncmd)(uint8_t *pInfo,uint16_t len);
-	int (*onstatus)(uint32_t *urc);
-}T_GSM_OPS;
-
 
 
 
@@ -103,7 +88,7 @@ typedef enum
 	CTL_DNS,			//进行DNS解析
 	CTL_TXRX_COUNT, 	//发送接收的字节数
 	CTL_CONNECT,		//直接建立连接
-	
+
 }T_GSM_CONTROL_CMD;
 
 
@@ -115,10 +100,18 @@ typedef enum
 	GSM_POWERON,		//上电过程并完成模块的AT命令初始化过程
 	GSM_POWEROFF,		//挂断链接，断电过程中
 	GSM_AT,				//处于AT命令收发状态,设置socket参数，收发短信
-	GSM_PPP,			//处于PPP连接状态
-	GSM_DATA,			//处于数据状态
 }T_GSM_STATE;
 
+
+typedef enum
+{
+	SOCKET_IDLE=0,	/*无需启动*/
+	SOCKET_TCPIP_INIT,	/*tcpip初始化*/
+	SOCKET_READY,	/*已完成，可以建立链接*/
+}T_SOCKET_STATE;
+
+extern void gsm_init(void);
+extern int gsm_send(uint8_t *pinfo,uint16_t len);
 
 
 #endif

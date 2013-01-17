@@ -6,6 +6,8 @@
 #define   MsgQ_Timeout            3
 
 
+
+
 /*字节顺序的定义网络顺序*/
 typedef struct
 {
@@ -163,6 +165,40 @@ extern u8	Duomeiti_sdFlag;
 
 extern Avrg_MintSpeed  Avrgspd_Mint; 
 extern u8          avgspd_Mint_Wr;       // 填写每分钟平均速度记录下标
+
+
+
+
+/*for new use*/
+
+typedef struct
+{
+	uint32_t ver;	/*版本信息四个字节yy_mm_dd_build,比较大小*/
+/*网络有关*/
+	char	apn[32];
+
+
+	
+
+
+
+
+}JT808_PARAM;
+
+
+extern JT808_PARAM jt808_param;
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

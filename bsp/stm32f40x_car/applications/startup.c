@@ -91,7 +91,7 @@ void rtthread_startup(void)
 	/* init application */
 	rt_application_init();
 	gps_init();
-	gsm_init(RT_NULL);
+	gsm_init();
 	hmi_init();
 	jt808_init();
  	
@@ -122,6 +122,7 @@ void rtthread_startup(void)
 
 int main(void)
 {
+
 
 	/* disable interrupt first */
 	rt_hw_interrupt_disable();

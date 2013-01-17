@@ -104,6 +104,10 @@ static void GPIO_Configuration(void)
 
 static void NVIC_Configuration(void)
 {
+	//NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x4000);
+
+
+#if 0
 	NVIC_InitTypeDef NVIC_InitStructure;
 
 #ifdef RT_USING_UART1
@@ -146,7 +150,7 @@ static void NVIC_Configuration(void)
 	NVIC_Init(&NVIC_InitStructure);
 #endif
 
-
+#endif
 
 }
 
