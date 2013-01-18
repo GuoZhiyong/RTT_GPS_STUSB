@@ -23,6 +23,8 @@
 
 #include "jt808.h"
 
+#include "pt.h"
+
 #ifdef M66
 
 #define GSM_GPIO                        GPIOC
@@ -91,6 +93,8 @@ struct
 	uint16_t port;                      /**/
 } gsm_socket[MAX_SOCKET_NUM];
 
+
+static struct pt pt_gsm_poweron,pt_gsm_poweroff;
 
 /***********************************************************
 * Function:
@@ -982,6 +986,66 @@ int gsm_send( uint8_t *pinfo, uint16_t len )
 	}
 }
 
+/*简单的时间管理机制*/
+struct timer 
+{ 
+	rt_tick_t start;
+	rt_tick_t interval; 
+};
+
+struct timer timer_gsm_poweron;
+struct timer timer_gsm_poweroff;
+
+
+/*获取当前时刻*/
+static int clock_time(void)
+{ 
+	return rt_tick_get(); 
+}
+
+/*检查是否超时*/
+static int timer_expired(struct timer *t)
+{ 
+	return (int)(clock_time() - t->start) >= (int)t->interval; 
+}
+
+/*设定一个简单的定时器*/
+static void timer_set(struct timer * t, int interval)
+{ 
+	t->interval = interval; 
+	t->start = clock_time(); 
+}
+
+/*上电的处理纤程*/
+static int protothread_gsm_poweron(struct pt *pt)
+{
+	PT_BEGIN(pt);
+	if(gsm_state==GSM_POWERON)
+	{
+		GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
+		timer_set(&timer_gsm_poweron,RT_TICK_PER_SECOND*5);
+		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron)||rx_ok);
+		if(!timer_expired(&timer_gsm_poweron)) /*超时*/
+		{
+			rt_kprintf("not receive ok\r\n");
+			PT_EXIT(pt);
+      	} 
+		
+	
+	}
+	PT_END(pt);
+
+}
+
+/*关机的处理纤程*/
+static int protothread_gsm_poweroff(struct pt *pt)
+{
+	PT_BEGIN(pt);
+
+	PT_END(pt);
+}
+
+
 ALIGN( RT_ALIGN_SIZE )
 static char thread_socket_stack[512];
 struct rt_thread thread_socket;
@@ -1057,6 +1121,17 @@ static void rt_thread_entry_gsm( void* parameter )
 	rt_tick_t curr_ticks;
 	rt_err_t res;
 	unsigned char ch;
+
+	PT_INIT(&pt_gsm_poweron);
+	PT_INIT(&pt_gsm_poweroff);
+
+
+	while(1)
+	{
+		protothread_gsm_poweron(&pt_gsm_poweron);
+		protothread_gsm_poweron(&pt_gsm_poweron);
+	}
+	
 
 /*gsm的状态切换*/
 	while( 1 )
