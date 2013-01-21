@@ -37,6 +37,9 @@
 typedef void ( *URC_CB )( char *s, uint16_t len );
 typedef rt_err_t ( *RESP_FUNC )( char *s, uint16_t len );
 
+
+
+
 #define GSM_PWR_PORT    GPIOD
 #define GSM_PWR_PIN     GPIO_Pin_13
 
@@ -503,287 +506,6 @@ static rt_err_t m66_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 	return RT_EOK;
 }
 
-/*
-   +CREG:0,1
-   +CGREG:0,5
- */
-rt_err_t RespFunc_CGREG( char *p, uint16_t len )
-{
-	uint32_t i, n, code;
-
-	i = sscanf( p, "%*[^:]:%d,%d", &n, &code );
-	if( i != 2 )
-	{
-		return RT_ERROR;
-	}
-	if( ( code != 1 ) && ( code != 5 ) )
-	{
-		return RT_ERROR;
-	}
-	return RT_EOK;
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-rt_err_t RespFunc_COPS( char *p, uint16_t len )
-{
-/*
-   char *oper=(char*)0;
-   oper=strstr(p,"CHN-CUGSM");
-   if(oper){
-   strcpy((char*)sys_param.apn,"UNINET");
-   return AT_RESP_OK;
-   }
-   oper=strstr(p,"CHINAMOBILE");
-   if(oper){
-   strcpy((char*)sys_param.apn,"CMNET");
-   return AT_RESP_OK;
-   }
- */
-	return RT_EOK;
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-rt_err_t RespFunc_CIFSR( char *p, uint16_t len )
-{
-	uint8_t i       = 0;
-	rt_err_t res = RT_ERROR;
-	int32_t PARAM_LocalIP[4];
-	i = sscanf( p, "%u.%d.%d.%d",
-	            &( PARAM_LocalIP[0] ),
-	            &( PARAM_LocalIP[1] ),
-	            &( PARAM_LocalIP[2] ),
-	            &( PARAM_LocalIP[3] ) );
-	if( i == 4 )
-	{
-		res = RT_EOK;
-	}
-	return res;
-}
-
-/*
-   SIM卡的IMSI号码为4600 00783208249，
-      460 00 18 23 20 86 42
-
-   接口号数据字段的内容为IMSI号码的后12位
-   其6个字节的内容为 0x00 0x07 0x83 0x20 0x82 0x49
-
- */
-rt_err_t RespFunc_CIMI( char *p, uint16_t len )
-{
-	char *pimsi, i;
-	rt_kprintf( "cimi len=%d\n", len );
-	if( len < 15 )
-	{
-		return RT_ERROR;
-	}
-	strip_numstring( p );
-	strcpy( gsm_param.imsi, p );
-	return RT_EOK;
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-rt_err_t RespFunc_CGSN( char *p, uint16_t len )
-{
-	char *pimsi, i;
-	if( len < 15 )
-	{
-		return RT_ERROR;
-	}
-	strip_numstring( p );
-	strcpy( gsm_param.imsi, p );
-	return RT_EOK;
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-rt_err_t RespFunc_CPIN( char *p, uint16_t len )
-{
-	char *pstr;
-	pstr = strstr( p, "+CPIN: READY" );
-	if( pstr )
-	{
-		return RT_EOK; /*找到了*/
-	}
-	return RT_ERROR;
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:		+CSQ: 31, 99
-* Return:
-* Others:
-***********************************************************/
-rt_err_t RespFunc_CSQ( char *p, uint16_t len )
-{
-	rt_err_t res = RT_ERROR;
-	uint32_t i, n, code;
-
-	i = sscanf( p, "+CSQ%*[^:]:%d,%d", &n, &code );
-	if( i != 2 )
-	{
-		return RT_ERROR;
-	}
-	gsm_param.csq = n;
-	return RT_EOK;
-}
-
-/*等待固定信息的返回*/
-rt_err_t WaitResp( char *resp, rt_tick_t ticks )
-{
-	rt_tick_t start           = rt_tick_get( );
-	rt_tick_t localticks      = ticks;
-	char            *pstr, *p;
-	rt_err_t ret;
-
-/*等待收到信息*/
-lbl_waitresp_again:
-	ret = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pstr, localticks );
-	if( ret == -RT_ETIMEOUT )
-	{
-		return ret;                                 //超时退出，没有数据或接收数据完毕
-	}
-	strip_string( pstr );
-	p = strstr( pstr, resp );
-	if( p )
-	{
-		rt_free( pstr );
-		return RT_EOK;                              /*找到了*/
-	}
-	/*没找到，继续等，这个信息如何处理?比如来短信的通知等URC*/
-	localticks = start + ticks - rt_tick_get( );    /*计算剩余的时间*/
-	if( localticks > 0 )
-	{
-		goto lbl_waitresp_again;
-	}
-	return RT_ETIMEOUT;
-}
-
-/*
-   检查指定时间内的返回情况
-   并调用专门的函数处理返回结果
- */
-int8_t CheckResp( uint32_t ticks, RESP_FUNC resp_func )
-{
-	rt_tick_t start           = rt_tick_get( );
-	rt_tick_t localticks      = ticks;
-	rt_err_t ret                     = RT_EOK;
-	char            * pstr;
-/*等待收到信息*/
-lbl_checkresp_again:
-	ret = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pstr, localticks );
-	if( ret == -RT_ETIMEOUT )
-	{
-		//rt_free(pstr);		/*没有收到数据，无需释放*/
-		return ret; //超时退出，没有数据或接收数据完毕
-	}
-	/*收到信息，要判断是不是需要的*/
-	ret = resp_func( pstr, strlen( pstr ) );
-	if( ret == RT_EOK )
-	{
-		rt_free( pstr );
-		return RT_EOK;
-	}
-	localticks = start + ticks - rt_tick_get( ); /*计算剩余的时间*/
-	if( localticks > 0 )
-	{
-		goto lbl_checkresp_again;
-	}
-	return RT_ETIMEOUT;
-}
-
-/***********************************************************
-* Function:		SendATCmdWaitRespStr
-* Description:	发送命令，等待返回指定的字符串
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-int8_t SendATCmdWaitRespStr( char *atcmd,
-                             uint32_t ticks,
-                             char * respstring,
-                             uint8_t no_of_attempts )
-{
-	rt_err_t ret_val = RT_ERROR;
-	uint8_t i;
-
-	for( i = 0; i < no_of_attempts; i++ )
-	{
-		rt_kprintf( "gsm_send>%s", atcmd );
-		m66_write( &dev_gsm, 0, atcmd, strlen( atcmd ) );
-		ret_val = WaitResp( respstring, ticks );
-		if( ret_val == RT_EOK )
-		{
-			break;
-		}
-	}
-	return ( ret_val );
-}
-
-/***********************************************************
-* Function:		SendATCmdWaitRespFunc
-* Description:	发送命令，并将返回结果调用指定的处理函数
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-int8_t SendATCmdWaitRespFunc( char *atcmd,
-                              uint32_t ticks,
-                              RESP_FUNC respfunc,
-                              uint8_t no_of_attempts )
-{
-	int8_t ret_val = RT_ERROR;
-	uint8_t i;
-
-	for( i = 0; i < no_of_attempts; i++ )
-	{
-		rt_kprintf( "gsm_send>%s", atcmd );
-		m66_write( &dev_gsm, 0, atcmd, strlen( atcmd ) );
-		ret_val = CheckResp( ticks, respfunc );
-		if( ret_val == RT_EOK )
-		{
-			break;
-		}
-	}
-	return ( ret_val );
-}
 
 /*线程退出的cleanup函数*/
 void cleanup( struct rt_thread *tid )
@@ -791,116 +513,6 @@ void cleanup( struct rt_thread *tid )
 	tid_gsm_subthread = RT_NULL;
 }
 
-/***********************************************************
-* Function:
-* Description:	模块上电并完成AT命令初始化
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void gsm_poweron( void* parameter )
-{
-	rt_err_t res;
-
-/*此处可通过rt_thread_self获取线程信息*/
-lbl_start_pwr_on:
-
-	GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND / 10 );
-	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND );
-	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-/*
-	res = WaitResp( "AT-Command Interpreter ready", RT_TICK_PER_SECOND * 5 );
-	if( res != RT_EOK )
-	{
-		rt_kprintf( "\r\n%d>re gsm pwron\r\n", rt_tick_get( ) );
-		GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-		GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-		rt_thread_delay( RT_TICK_PER_SECOND * 3 );
-		goto lbl_start_pwr_on;
-	}
-*/	
-	res = WaitResp( "OK", RT_TICK_PER_SECOND * 5 );
-	if( res != RT_EOK )
-	{
-		rt_kprintf( "\r\n%d>re gsm pwron\r\n", rt_tick_get( ) );
-		GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-		GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-		rt_thread_delay( RT_TICK_PER_SECOND * 3 );
-		goto lbl_start_pwr_on;
-	}
-
-	res = WaitResp( "OK", RT_TICK_PER_SECOND * 5 );
-	if( res != RT_EOK )
-	{
-		rt_kprintf( "\r\n%d>re gsm pwron\r\n", rt_tick_get( ) );
-		GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-		GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-		rt_thread_delay( RT_TICK_PER_SECOND * 3 );
-		goto lbl_start_pwr_on;
-	}
-
-
-	
-	res = SendATCmdWaitRespStr( "AT\r\n", 3 * RT_TICK_PER_SECOND, "OK", 3 );
-	res = SendATCmdWaitRespStr( "ATE0\r\n", 3 * RT_TICK_PER_SECOND, "OK", 3 );
-	res = SendATCmdWaitRespStr( "ATV1\r\n", 3 * RT_TICK_PER_SECOND, "OK", 3 );
-	res = SendATCmdWaitRespFunc( "AT+CPIN?\r\n", 3 * RT_TICK_PER_SECOND, RespFunc_CPIN, 3 );
-	if( res != RT_EOK )
-	{
-		goto lbl_start_pwr_on;
-	}
-	res                     = SendATCmdWaitRespFunc( "AT+COPS?\r\n", 3 * RT_TICK_PER_SECOND, RespFunc_COPS, 10 );
-	res                     = SendATCmdWaitRespFunc( "AT+CREG?\r\n", 3 * RT_TICK_PER_SECOND, RespFunc_CGREG, 10 );
-	res                     = SendATCmdWaitRespFunc( "AT+CIMI\r\n", 3 * RT_TICK_PER_SECOND, RespFunc_CIMI, 3 );
-	res                     = SendATCmdWaitRespFunc( "AT+CGREG?\r\n", 3 * RT_TICK_PER_SECOND, RespFunc_CGREG, 10 );
-	res                     = SendATCmdWaitRespStr( "AT+CGATT?\r\n", 3 * RT_TICK_PER_SECOND, "+CGATT:1", 10 );
-	gsm_state       = GSM_AT; /*切换到AT状态*/
-}
-
-/***********************************************************
-* Function:	rt_thread_entry_gsm_poweroff
-* Description: 挂断当前链接，并关闭模块
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void gsm_poweroff( void* parameter )
-{
-	rt_err_t res;
-
-/*此处可通过rt_thread_self获取线程信息*/
-
-/*关闭连接*/
-
-/*模块断电*/
-lbl_start_pwr_off:
-
-	rt_kprintf( "\r\n%ld>gsm pwr off start", rt_tick_get( ) );
-	GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND / 10 );
-	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	rt_thread_delay( RT_TICK_PER_SECOND );
-	GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-	//SendATCmdWaitRespStr("AT^SMSO\r\n",RT_TICK_PER_SECOND,"OK",1);
-	rt_kprintf( "\r\n%ld>gsm pwr on end", rt_tick_get( ) );
-
-	res = WaitResp( "^SHUTDOWN", RT_TICK_PER_SECOND * 10 );
-	if( res != RT_EOK )
-	{
-		rt_kprintf( "\r\n%d>re gsm pwron\r\n", rt_tick_get( ) );
-		goto lbl_start_pwr_off;
-	}
-
-	rt_kprintf( "\r\n%ld>gsm pwr off end", rt_tick_get( ) );
-}
 
 /***********************************************************
 * Function:		gsmrx_cb
@@ -922,7 +534,7 @@ static void gsmrx_cb( uint8_t *pInfo, uint16_t len )
 /*网络侧的信息，直接通知上层软件*/
 	if( fgsm_rawdata_out )
 	{
-		rt_kprintf( "\r\ngsm>%s\r\n", pInfo );
+		rt_kprintf( "\r\n%08d gsm_rx>%s\r\n",rt_tick_get(), pInfo );
 	}
 
 	psrc    = RT_NULL;
@@ -986,55 +598,297 @@ int gsm_send( uint8_t *pinfo, uint16_t len )
 	}
 }
 
+
+
+
+
+
+
+
+
+
 /*简单的时间管理机制*/
-struct timer 
-{ 
+struct timer
+{
 	rt_tick_t start;
-	rt_tick_t interval; 
+	rt_tick_t interval;
 };
 
 struct timer timer_gsm_poweron;
 struct timer timer_gsm_poweroff;
+struct timer timer_gsm_tcpip;
 
 
 /*获取当前时刻*/
 static int clock_time(void)
-{ 
-	return rt_tick_get(); 
+{
+	return rt_tick_get();
 }
 
 /*检查是否超时*/
 static int timer_expired(struct timer *t)
-{ 
-	return (int)(clock_time() - t->start) >= (int)t->interval; 
+{
+	return (int)(clock_time() - t->start) >= (int)t->interval;
 }
 
 /*设定一个简单的定时器*/
 static void timer_set(struct timer * t, int interval)
-{ 
-	t->interval = interval; 
-	t->start = clock_time(); 
+{
+	t->interval = interval;
+	t->start = clock_time();
 }
+
+
+
+rt_err_t pt_resp_str_OK(char *p, uint16_t len)
+{
+	char *pfind=RT_NULL;
+	rt_err_t ret;
+	pfind = strstr( p, "OK" );
+	if( pfind )
+	{
+		return RT_EOK;                              /*找到了*/
+	}
+}
+
+/*响应CREG或CGREG
+   +CREG:0,1
+   +CGREG:0,5
+
+ */
+rt_err_t pt_resp_CGREG(char *p, uint16_t len)
+{
+	uint32_t i, n, code;
+	i = sscanf( p, "%*[^:]:%d,%d", &n, &code );
+	if( i != 2 )
+	{
+		return RT_ERROR;
+	}
+	if( ( code != 1 ) && ( code != 5 ) )
+	{
+		return RT_ERROR;
+	}
+	return RT_EOK;
+}
+
+rt_err_t  pt_resp_COPS(char *p, uint16_t len )
+{
+/*
+   char *oper=(char*)0;
+   oper=strstr(p,"CHN-CUGSM");
+   if(oper){
+   strcpy((char*)sys_param.apn,"UNINET");
+   return AT_RESP_OK;
+   }
+   oper=strstr(p,"CHINAMOBILE");
+   if(oper){
+   strcpy((char*)sys_param.apn,"CMNET");
+   return AT_RESP_OK;
+   }
+ */
+	return RT_EOK;
+}
+
+/*响应CIFSR*/
+rt_err_t  pt_resp_CIFSR( char *p, uint16_t len )
+{
+	uint8_t i       = 0;
+	rt_err_t res = RT_ERROR;
+	int32_t PARAM_LocalIP[4];
+	i = sscanf( p, "%u.%d.%d.%d",
+	            &( PARAM_LocalIP[0] ),
+	            &( PARAM_LocalIP[1] ),
+	            &( PARAM_LocalIP[2] ),
+	            &( PARAM_LocalIP[3] ) );
+	if( i == 4 )
+	{
+		res = RT_EOK;
+	}
+	return res;
+}
+
+/*
+   SIM卡的IMSI号码为4600 00783208249，
+      460 00 18 23 20 86 42
+
+   接口号数据字段的内容为IMSI号码的后12位
+   其6个字节的内容为 0x00 0x07 0x83 0x20 0x82 0x49
+
+ */
+rt_err_t pt_resp_CIMI(char *p, uint16_t len )
+{
+	char *pimsi, i;
+
+	rt_kprintf( "cimi len=%d\n", len );
+	if( len < 15 )
+	{
+		return RT_ERROR;
+	}
+	strip_numstring( p );
+	strcpy( gsm_param.imsi, p );
+	return RT_EOK;
+}
+
+/*响应CGSN**/
+rt_err_t pt_resp_CGSN( char *p, uint16_t len )
+{
+	char *pimsi, i;
+	char *pstr;
+	if( len < 15 )
+	{
+		return RT_ERROR;
+	}
+	strip_numstring( p );
+	strcpy( gsm_param.imsi, p );
+	return RT_EOK;
+}
+
+/*响应CPIN*/
+rt_err_t pt_resp_CPIN( char *p, uint16_t len)
+{
+	char *pstr;
+	pstr = strstr( p, "+CPIN: READY" );  //+CPIN: READY
+	if( pstr )
+	{
+		return RT_EOK; /*找到了*/
+	}
+	return RT_ERROR;
+}
+
+/* +CSQ: 31, 99 */
+rt_err_t pt_resp_CSQ( char *p, uint16_t len )
+{
+	rt_err_t res = RT_ERROR;
+	uint32_t i, n, code;
+	i = sscanf( p, "+CSQ%*[^:]:%d,%d", &n, &code );
+	if( i != 2 )
+	{
+		return RT_ERROR;
+	}
+	gsm_param.csq = n;
+	return RT_EOK;
+}
+
+/*+CGATT:1*/
+rt_err_t pt_resp_CGATT( char *p, uint16_t len )
+{
+	rt_err_t res = RT_ERROR;
+	uint32_t i, n, code;
+	i = sscanf( p, "+CSQ%*[^:]:%d,%d", &n, &code );
+	if( i != 2 )
+	{
+		return RT_ERROR;
+	}
+	gsm_param.csq = n;
+	return RT_EOK;
+}
+
+static uint8_t at_init_index=0;
+
+/*通用检查函数，看是否收到数据，如果有数据后再判断*/
+rt_err_t pt_resp(RESP_FUNC func)
+{
+	char *pstr;
+	uint16_t len;
+	rt_err_t ret;
+	ret = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pstr, 0 );
+	if( ret == -RT_ETIMEOUT )
+	{
+		return ret;
+	}
+/*有应答，执行相应的函数*/
+	len=((*pstr)<<8)|(*(pstr+1));
+	func(pstr+2,len);
+
+	rt_free(pstr);
+
+}
+
+
+typedef rt_err_t ( *AT_RESP )(char *p, uint16_t len);
+typedef struct
+{
+	char *atcmd;
+	AT_RESP resp;
+	uint16_t timeout;
+	uint16_t retry;
+}AT_CMD_RESP;
+
+static AT_CMD_RESP at_init[]=
+{
+	//{RT_NULL,pt_resp_str_OK,RT_TICK_PER_SECOND*10,1},
+	//{RT_NULL,pt_resp_str_OK,RT_TICK_PER_SECOND*10,1},
+	{"AT\r\n",pt_resp_str_OK,RT_TICK_PER_SECOND*3,1},
+	{"ATE0\r\n",pt_resp_str_OK,RT_TICK_PER_SECOND*3,1},
+	{"ATV1\r\n",pt_resp_str_OK,RT_TICK_PER_SECOND*3,1},
+	{"AT+CPIN?\r\n",pt_resp_CPIN,RT_TICK_PER_SECOND*3,10},
+	{"AT+COPS?\r\n",pt_resp_COPS,RT_TICK_PER_SECOND*3,10},
+	{"AT+CREG?\r\n",pt_resp_CGREG,RT_TICK_PER_SECOND*3,10},
+	{"AT+CIMI\r\n",pt_resp_CIMI,RT_TICK_PER_SECOND*3,1},
+	{"AT+CGREG?\r\n",pt_resp_CGREG,RT_TICK_PER_SECOND*3,10},
+	{"AT+CGATT?\r\n",pt_resp_CGATT,RT_TICK_PER_SECOND*3,1},
+};
+
+
+
 
 /*上电的处理纤程*/
 static int protothread_gsm_poweron(struct pt *pt)
 {
 	PT_BEGIN(pt);
+
+#if 1
 	if(gsm_state==GSM_POWERON)
 	{
+		GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
+		timer_set(&timer_gsm_poweron,500);
+		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron));
 		GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-		timer_set(&timer_gsm_poweron,RT_TICK_PER_SECOND*5);
-		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron)||rx_ok);
-		if(!timer_expired(&timer_gsm_poweron)) /*超时*/
-		{
-			rt_kprintf("not receive ok\r\n");
-			PT_EXIT(pt);
-      	} 
-		
-	
-	}
-	PT_END(pt);
+		GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
+		timer_set(&timer_gsm_poweron,10);
+		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron));
+		GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
+		timer_set(&timer_gsm_poweron,100);
+		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron));
+		GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
 
+		for(at_init_index=0; at_init_index<6; at_init_index++)
+		{
+			if(at_init[at_init_index].atcmd!=RT_NULL)
+			{
+				rt_kprintf( "%08d gsm_send>%s",rt_tick_get(),at_init[at_init_index].atcmd );
+				m66_write( &dev_gsm, 0, at_init[at_init_index].atcmd, strlen( at_init[at_init_index].atcmd ) );
+			}
+			timer_set(&timer_gsm_poweron,at_init[at_init_index].timeout);
+			PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron)||(RT_EOK==pt_resp(at_init[at_init_index].resp)));
+			if(!timer_expired(&timer_gsm_poweron)) /*超时*/
+			{
+				rt_kprintf("not receive ok\r\n");
+				PT_EXIT(pt);
+			}
+		}
+	}
+	else
+		{
+		PT_EXIT(pt);
+		}
+#else
+	while(1)
+	{
+		if(gsm_state==GSM_POWERON)
+		{
+			rt_kprintf("at_index=%d \r\n",at_init_index++);
+			timer_set(&timer_gsm_poweron,100);
+			PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron));
+		}
+		else
+		{
+			PT_EXIT(pt);
+		}
+	}
+#endif	
+	PT_END(pt);
+	gsm_state       = GSM_AT; /*切换到AT状态*/
 }
 
 /*关机的处理纤程*/
@@ -1045,49 +899,43 @@ static int protothread_gsm_poweroff(struct pt *pt)
 	PT_END(pt);
 }
 
-
-ALIGN( RT_ALIGN_SIZE )
-static char thread_socket_stack[512];
-struct rt_thread thread_socket;
-
-
-/***********************************************************
-* Function:
-* Description: socket链接处理
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void rt_thread_entry_socket( void* parameter )
+/*线程状态处理,可以yield*/
+char dialstr[64];
+static AT_CMD_RESP at_tcpip[]=
 {
-	int i;
-	rt_err_t res;
-	char dialstr[128];
-/*查询gsm状态,是否初始化内部tcpip*/
+	{dialstr,pt_resp_str_OK,RT_TICK_PER_SECOND*5,1},
+	{"AT%ETCPIP\r\n",pt_resp_str_OK,RT_TICK_PER_SECOND*3,1},
+	{"AT%IOMODE=1,2,1\r\n",pt_resp_str_OK,RT_TICK_PER_SECOND*3,1},
+};
+static uint8_t at_tcpip_index=0;
+
+static int protothread_gsm_socket(struct pt *pt)
+{
+
+	PT_BEGIN(pt);
 	if( ( gsm_state == GSM_AT ) && ( socket_state == SOCKET_TCPIP_INIT ) )
 	{
-		sprintf(dialstr,"AT+CGDCONT=1,\"IP\",\"%s\"\r\n",jt808_param.apn);
-		res=SendATCmdWaitRespStr(dialstr,3*RT_TICK_PER_SECOND,"OK",1);
-		if(res!=RT_EOK)
+		for(at_tcpip_index=0; at_tcpip_index<6; at_tcpip_index++)
 		{
-			gsm_state=GSM_POWERON;
-		}
-		res=SendATCmdWaitRespStr("AT%ETCPIP\r\n",10*RT_TICK_PER_SECOND,"OK",1);
-		if(res!=RT_EOK)
-		{
-			gsm_state=GSM_POWERON;
-		}
-		res=SendATCmdWaitRespStr("AT%IOMODE=1,2,1\r\n",5*RT_TICK_PER_SECOND,"OK",1);
-		if(res!=RT_EOK)
-		{
-			gsm_state=GSM_POWERON;
-		}
-		socket_state=SOCKET_READY;
-	}
+			if(at_tcpip[at_tcpip_index].atcmd!=RT_NULL)
+			{
+				rt_kprintf( "gsm_send>%s", at_tcpip[at_tcpip_index].atcmd );
+				m66_write( &dev_gsm, 0, at_tcpip[at_tcpip_index].atcmd, strlen( at_tcpip[at_tcpip_index].atcmd ) );
+			}
+			timer_set(&timer_gsm_tcpip,at_tcpip[at_tcpip_index].timeout);
+			PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_tcpip)||(RT_EOK==pt_resp(at_init[at_init_index].resp)));
+			if(!timer_expired(&timer_gsm_tcpip)) /*超时*/
+			{
+				rt_kprintf("not receive ok\r\n");
+				PT_EXIT(pt);
+			}
 
-/*查询链接状态*/
+
+		}
+
+	}
+#if 0
+	/*查询链接状态*/
 	if( socket_state == SOCKET_READY )
 	{
 		for( i = 0; i < MAX_SOCKET_NUM; i++ )
@@ -1097,10 +945,15 @@ static void rt_thread_entry_socket( void* parameter )
 			}
 		}
 	}
+#endif
+	/*确认dns结果*/
+//	rt_thread_delay( RT_TICK_PER_SECOND / 10 );
 
-/*确认dns结果*/
-	rt_thread_delay( RT_TICK_PER_SECOND / 10 );
+	PT_END(pt);
 }
+
+
+
 
 ALIGN( RT_ALIGN_SIZE )
 static char thread_gsm_stack[512];
@@ -1129,44 +982,7 @@ static void rt_thread_entry_gsm( void* parameter )
 	while(1)
 	{
 		protothread_gsm_poweron(&pt_gsm_poweron);
-		protothread_gsm_poweron(&pt_gsm_poweron);
-	}
-	
-
-/*gsm的状态切换*/
-	while( 1 )
-	{
-		curr_ticks = rt_tick_get( );
-		switch( gsm_state )
-		{
-		case GSM_IDLE:
-			break;
-		case GSM_POWERON:         /*上电过程中，控制IO的操作放在此处，如何保证时间的可靠*/
-			if( tid_gsm_subthread == RT_NULL )
-			{
-				tid_gsm_subthread = rt_thread_create( "pwron", gsm_poweron, (void*)1, 512, 25, 5 );
-				rt_kprintf( "\r\ntid_gsm_subthread=%p\r\n", tid_gsm_subthread );
-				if( tid_gsm_subthread != RT_NULL )
-				{
-					tid_gsm_subthread->cleanup = cleanup;
-					rt_thread_startup( tid_gsm_subthread );
-				}
-			}
-			break;
-		case GSM_POWEROFF:         /*断电电过程中，控制IO的操作放在此处，如何保证时间的可靠*/
-			if( tid_gsm_subthread == RT_NULL )
-			{
-				tid_gsm_subthread = rt_thread_create( "pwroff", gsm_poweroff, (void*)1, 512, 25, 5 );
-				if( tid_gsm_subthread != RT_NULL )
-				{
-					rt_thread_startup( tid_gsm_subthread );
-				}
-			}
-			break;
-		case GSM_AT:
-			break;
-		}
-
+		//protothread_gsm_poweroff(&pt_gsm_poweroff);
 /*接收超时判断*/
 		while( rt_ringbuffer_getchar( &rb_uart4_rx, &ch ) == 1 ) /*有数据时，保存数据*/
 		{
@@ -1185,7 +1001,7 @@ static void rt_thread_entry_gsm( void* parameter )
 				gsm_rx_wr = 0;
 			}
 		}
-		rt_thread_delay( RT_TICK_PER_SECOND / 50 );                 /*延时20ms*/
+		rt_thread_delay(RT_TICK_PER_SECOND/20);
 	}
 }
 
@@ -1214,15 +1030,6 @@ void gsm_init( void )
 	                &thread_gsm_stack[0],
 	                sizeof( thread_gsm_stack ), 7, 5 );
 	rt_thread_startup( &thread_gsm );
-
-/*创建socket管理线程*/
-	rt_thread_init( &thread_socket,
-	                "socket",
-	                rt_thread_entry_socket,
-	                RT_NULL,
-	                &thread_socket_stack[0],
-	                sizeof( thread_socket_stack ), 8, 5 );
-	rt_thread_startup( &thread_socket );
 
 	dev_gsm.type    = RT_Device_Class_Char;
 	dev_gsm.init    = m66_init;
