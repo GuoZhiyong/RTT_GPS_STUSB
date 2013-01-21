@@ -370,24 +370,24 @@ static rt_err_t m66_init( rt_device_t dev )
 	GPIO_InitStructure.GPIO_PuPd    = GPIO_PuPd_UP;
 	GPIO_InitStructure.GPIO_Mode    = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_Speed   = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin             = GSM_TX_PIN | GSM_RX_PIN;
+	GPIO_InitStructure.GPIO_Pin     = GSM_TX_PIN | GSM_RX_PIN;
 	GPIO_Init( GSM_GPIO, &GPIO_InitStructure );
 
 	GPIO_PinAFConfig( GSM_GPIO, GSM_TX_PIN_SOURCE, GPIO_AF_UART4 );
 	GPIO_PinAFConfig( GSM_GPIO, GSM_RX_PIN_SOURCE, GPIO_AF_UART4 );
 
-	NVIC_InitStructure.NVIC_IRQChannel                                              = UART4_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannel                      = UART4_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority    = 1;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority                   = 1;
-	NVIC_InitStructure.NVIC_IRQChannelCmd                                   = ENABLE;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority           = 1;
+	NVIC_InitStructure.NVIC_IRQChannelCmd                   = ENABLE;
 	NVIC_Init( &NVIC_InitStructure );
 
-	USART_InitStructure.USART_BaudRate                              = 57600;
-	USART_InitStructure.USART_WordLength                    = USART_WordLength_8b;
-	USART_InitStructure.USART_StopBits                              = USART_StopBits_1;
-	USART_InitStructure.USART_Parity                                = USART_Parity_No;
+	USART_InitStructure.USART_BaudRate              = 57600;
+	USART_InitStructure.USART_WordLength            = USART_WordLength_8b;
+	USART_InitStructure.USART_StopBits              = USART_StopBits_1;
+	USART_InitStructure.USART_Parity                = USART_Parity_No;
 	USART_InitStructure.USART_HardwareFlowControl   = USART_HardwareFlowControl_None;
-	USART_InitStructure.USART_Mode                                  = USART_Mode_Rx | USART_Mode_Tx;
+	USART_InitStructure.USART_Mode                  = USART_Mode_Rx | USART_Mode_Tx;
 	USART_Init( UART4, &USART_InitStructure );
 	/* Enable USART */
 	USART_Cmd( UART4, ENABLE );
@@ -447,7 +447,7 @@ static rt_size_t m66_read( rt_device_t dev, rt_off_t pos, void* buff, rt_size_t 
 static void uart4_putc( const char c )
 {
 	USART_SendData( UART4, c );
-	while( !( UART4->SR & USART_FLAG_TXE ) )
+	while( !( UART4->SR & USART_FLAG_TC ) )
 	{
 		;
 	}
@@ -818,7 +818,7 @@ static AT_CMD_RESP at_init[]=
 {
 	//{RT_NULL,pt_resp_str_OK,RT_TICK_PER_SECOND*10,1},
 	//{RT_NULL,pt_resp_str_OK,RT_TICK_PER_SECOND*10,1},
-	{"AT\r\n",pt_resp_str_OK,RT_TICK_PER_SECOND*3,1},
+	{"AT\r\n",pt_resp_str_OK,RT_TICK_PER_SECOND*5,1},
 	{"ATE0\r\n",pt_resp_str_OK,RT_TICK_PER_SECOND*3,1},
 	{"ATV1\r\n",pt_resp_str_OK,RT_TICK_PER_SECOND*3,1},
 	{"AT+CPIN?\r\n",pt_resp_CPIN,RT_TICK_PER_SECOND*3,10},
@@ -840,17 +840,26 @@ static int protothread_gsm_poweron(struct pt *pt)
 #if 1
 	if(gsm_state==GSM_POWERON)
 	{
+
 		GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
+		GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
 		timer_set(&timer_gsm_poweron,500);
 		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron));
+		
 		GPIO_SetBits( GSM_PWR_PORT, GSM_PWR_PIN );
 		GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-		timer_set(&timer_gsm_poweron,10);
-		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron));
-		GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
 		timer_set(&timer_gsm_poweron,100);
 		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron));
+
+		GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
+		timer_set(&timer_gsm_poweron,20);
+		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron));
+
 		GPIO_SetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
+		timer_set(&timer_gsm_poweron,1000);
+		PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron));
+
+
 
 		for(at_init_index=0; at_init_index<6; at_init_index++)
 		{
@@ -861,7 +870,7 @@ static int protothread_gsm_poweron(struct pt *pt)
 			}
 			timer_set(&timer_gsm_poweron,at_init[at_init_index].timeout);
 			PT_WAIT_UNTIL(pt,timer_expired(&timer_gsm_poweron)||(RT_EOK==pt_resp(at_init[at_init_index].resp)));
-			if(!timer_expired(&timer_gsm_poweron)) /*超时*/
+			if(timer_expired(&timer_gsm_poweron)) /*超时*/
 			{
 				rt_kprintf("not receive ok\r\n");
 				PT_EXIT(pt);
@@ -869,9 +878,9 @@ static int protothread_gsm_poweron(struct pt *pt)
 		}
 	}
 	else
-		{
+	{
 		PT_EXIT(pt);
-		}
+	}
 #else
 	while(1)
 	{
@@ -886,7 +895,7 @@ static int protothread_gsm_poweron(struct pt *pt)
 			PT_EXIT(pt);
 		}
 	}
-#endif	
+#endif
 	PT_END(pt);
 	gsm_state       = GSM_AT; /*切换到AT状态*/
 }
@@ -976,7 +985,7 @@ static void rt_thread_entry_gsm( void* parameter )
 	unsigned char ch;
 
 	PT_INIT(&pt_gsm_poweron);
-	PT_INIT(&pt_gsm_poweroff);
+	//PT_INIT(&pt_gsm_poweroff);
 
 
 	while(1)
@@ -984,6 +993,7 @@ static void rt_thread_entry_gsm( void* parameter )
 		protothread_gsm_poweron(&pt_gsm_poweron);
 		//protothread_gsm_poweroff(&pt_gsm_poweroff);
 /*接收超时判断*/
+		
 		while( rt_ringbuffer_getchar( &rb_uart4_rx, &ch ) == 1 ) /*有数据时，保存数据*/
 		{
 			gsm_rx[gsm_rx_wr++] = ch;

@@ -296,7 +296,7 @@
               </OCR_RVCT3>
               <OCR_RVCT4>
                 <Type>1</Type>
-                <StartAddress>0x8004000</StartAddress>
+                <StartAddress>0x8000000</StartAddress>
                 <Size>0x100000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
@@ -450,11 +450,6 @@
               <FileName>printer.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\printer.c</FilePath>
-            </File>
-            <File>
-              <FileName>mg323.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\mg323.c</FilePath>
             </File>
             <File>
               <FileName>ringbuffer.c</FileName>
