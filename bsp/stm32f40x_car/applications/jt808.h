@@ -176,6 +176,9 @@ typedef struct
 	uint32_t ver;	/*版本信息四个字节yy_mm_dd_build,比较大小*/
 /*网络有关*/
 	char	apn[32];
+	char	user[32];
+	char	psw[32];
+
 
 
 	

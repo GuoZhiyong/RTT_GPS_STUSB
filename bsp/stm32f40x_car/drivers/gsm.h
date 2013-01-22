@@ -32,44 +32,6 @@
 
 
 
-
-typedef struct 
-{
-	char	*cmd;		//命令
-	char	*resp;		//响应
-	char	isok;		//是否返回OK	
-	int		timeout;	//等待超时时间
-}T_GSM_AT_CMD;
-
-
-
-/*
-网络参数
-
-	MG323的Profile
-
-*/
-
-typedef struct 
-{
-	char	*apn;		//apn
-	char	*user;		//用户名
-	char	*password;	//密码
-}T_GSM_APN;
-
-
-typedef struct 
-{
-	char	active;			/*是否激活*/
-	char	status;			/*当前状态*/
-	char	op;				//操作
-	char	type;			//scoket类型 UDPorTCP
-	char	*ip;			//ip地址
-	unsigned short	*port;	//端口
-}T_GSM_SOCKET;
-
-
-
 /*
 GSM支持操作功能的列表
 不同的模块支持的命令不同，比如录音命令 TTS命令
@@ -106,12 +68,13 @@ typedef enum
 typedef enum
 {
 	SOCKET_IDLE=0,	/*无需启动*/
-	SOCKET_TCPIP_INIT,	/*tcpip初始化*/
+	SOCKET_INIT,	/*tcpip初始化*/
+	SOCKET_DNS,	/*DNS查询*/
 	SOCKET_READY,	/*已完成，可以建立链接*/
 }T_SOCKET_STATE;
 
-extern void gsm_init(void);
-extern int gsm_send(uint8_t *pinfo,uint16_t len);
+void gsm_init(void);
+int gsm_send(uint8_t *pinfo,uint16_t len);
 
 
 #endif
