@@ -531,10 +531,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>56</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <TopLine>846</TopLine>
+      <CurrentLine>856</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\drivers\m66.c</PathWithFileName>
       <FilenameWithoutPath>m66.c</FilenameWithoutPath>
@@ -555,10 +555,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>22</ColumnNumber>
+      <ColumnNumber>37</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>139</TopLine>
-      <CurrentLine>156</CurrentLine>
+      <TopLine>130</TopLine>
+      <CurrentLine>23</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>STM32F4xx_Libraries\CMSIS\ST\STM32F4xx\Source\Templates\system_stm32f4xx.c</PathWithFileName>
       <FilenameWithoutPath>system_stm32f4xx.c</FilenameWithoutPath>
