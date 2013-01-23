@@ -173,7 +173,26 @@ extern u8          avgspd_Mint_Wr;       // 填写每分钟平均速度记录下标
 
 typedef struct
 {
+	int id;
+	short attr;
+	int latitute;	/*以度位单位的纬度值乘以10的6次方，精确到百万分之一度*/
+	int longitute;
+	int radius;/*单位为米m，路段为该拐点到下一拐点*/
+	char start[6];
+	char end[6];
+	short speed;
+	char interval; /*持续时间,秒*/
+}GPS_AREA_CIRCLE;
+
+
+
+
+typedef struct
+{
 	uint32_t ver;	/*版本信息四个字节yy_mm_dd_build,比较大小*/
+/*车辆信息*/
+
+	
 /*网络有关*/
 	char	apn[32];
 	char	user[32];

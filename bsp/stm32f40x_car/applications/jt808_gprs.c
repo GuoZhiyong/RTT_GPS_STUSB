@@ -174,8 +174,6 @@ uint16_t jt808_analy( uint8_t * pinfo )
 	switch( header_id )
 	{
 		case 0x8001:            /*平台通用应答*/
-
-
 			/* 若没有分包处理的话  消息头长12  从0开始计算第12个字节是消息体得主体
 			   13 14	对应的终端消息流水号
 			   15 16	对应终端的消息
@@ -230,7 +228,7 @@ uint16_t jt808_analy( uint8_t * pinfo )
 			break;
 		case 0x8400:    //  电话回拨
 			break;
-		case 0x8401:    //   设置电话本
+		case 0x8401:    //  设置电话本
 			break;
 		case 0x8500:    //  车辆控制
 			break;

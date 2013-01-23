@@ -58,7 +58,7 @@ typedef enum
 
 typedef enum
 {
-	GSM_IDLE=0,			//空闲
+	GSM_IDLE=1,			//空闲
 	GSM_POWERON,		//上电过程并完成模块的AT命令初始化过程
 	GSM_POWEROFF,		//挂断链接，断电过程中
 	GSM_AT,				//处于AT命令收发状态,设置socket参数，收发短信
@@ -67,7 +67,7 @@ typedef enum
 
 typedef enum
 {
-	SOCKET_IDLE=0,	/*无需启动*/
+	SOCKET_IDLE=1,	/*无需启动*/
 	SOCKET_INIT,	/*tcpip初始化*/
 	SOCKET_DNS,	/*DNS查询*/
 	SOCKET_READY,	/*已完成，可以建立链接*/
