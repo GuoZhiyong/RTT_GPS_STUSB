@@ -15,7 +15,12 @@
 #include <board.h>
 #include <rtthread.h>
 #include "stm32f4xx.h"
+#include "gsm.h"
 #include "jt808.h"
+#include "dlist.h"
+
+
+#define MULTI_PROCESS
 
 
 static struct rt_mailbox	mb_gprsdata;
@@ -26,13 +31,6 @@ static struct rt_mailbox	mb_gpsdata;
 #define MB_GPSDATA_POOL_SIZE 32
 static uint8_t				mb_gpsdata_pool[MB_GPSDATA_POOL_SIZE];
 
-
-typedef struct 
-{
-	uint16_t id;
-	uint16_t len;
-	uint8_t *pbody;
-}TSendMsg;
 
 
 uint32_t jt808_alarm=0x0;
@@ -97,8 +95,65 @@ u8	Duomeiti_sdFlag;
 
 
 
+static rt_device_t pdev_gsm=RT_NULL;
+
+
 JT808_PARAM jt808_param;
 
+/*发送命令列表*/
+DList* jt808_msg_list;
+
+
+/*
+处理每个要发送信息的状态
+现在允许并行处理吗?
+*/
+static DListRet jt808_msg_tx_proc(void* ctx, void* data)
+{
+	JT808_MSG_NODE * pdata=(JT808_MSG_NODE *)data;
+	uint32_t *res=ctx;
+
+	if(pdata->state==IDLE) /*空闲，发送信息或超时后没有数据*/
+	{
+		if(pdata->retry==pdata->max_retry)	/*已经达到重试次数*/
+		{
+			*res=1;	/*表示发送失败*/
+		}
+		else
+		{
+			pdata->retry++;
+			rt_device_write(pdev_gsm,0,pdata->pmsg,pdata->msg_len);
+			pdata->tick=rt_tick_get();
+			pdata->timeout=pdata->max_retry*pdata->timeout;
+			pdata->state=WAIT_ACK;
+			rt_kprintf("send retry=%d,timeout=%d\r\n",pdata->retry,pdata->timeout);
+			*res=0;	
+		}	
+		return DLIST_RET_OK;
+	}
+	
+	if(pdata->state==WAIT_ACK)
+	{
+		if(rt_tick_get()-pdata->tick>pdata->timeout)
+		{
+			pdata->state=IDLE;
+		}
+		*res=0;	
+	}
+	return DLIST_RET_OK;
+}
+
+/*
+中心接收到消息的处理，主要是应答的处理
+*ctx:传递进来收到的信息
+*/
+static DListRet jt808_msg_rx_proc(void* ctx, void* data)
+{
+	JT808_MSG_NODE * pdata=(JT808_MSG_NODE *)data;
+	
+
+	return DLIST_RET_OK;
+}
 
 
 
@@ -125,6 +180,14 @@ static void rt_thread_entry_jt808( void* parameter )
 {
 	rt_err_t	ret;
 	uint8_t		*pstr;
+	uint32_t	gsm_status;
+	DListNode* iter;
+
+	jt808_msg_list=dlist_create();
+	pdev_gsm=rt_device_find("gsm");  /*没有出错处理,未找到怎么办*/
+	iter=jt808_msg_list->first;
+
+/*读取参数，并配置*/	
 
 	while( 1 )
 	{
@@ -143,12 +206,21 @@ static void rt_thread_entry_jt808( void* parameter )
 			rt_free(pstr);
 		}
 /*维护链路*/
+		rt_device_control(pdev_gsm,CTL_STATUS,&gsm_status);
+	
 
-/*是否有消息要发送*/
-
-
+#ifdef MULTI_PROCESS
+/*多处理*/		
+		dlist_foreach(jt808_msg_list,jt808_msg_tx_proc,RT_NULL);
+/*逐条处理*/
+#else
+		jt808_msg_tx_proc(RT_NULL,jt808_msg_list->first->data);
+	
+#endif		
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
+
+	dlist_destroy(jt808_msg_list);
 }
 
 /***********************************************************
@@ -197,15 +269,16 @@ void gps_rx(uint8_t *pinfo,uint16_t length)
 * Return:
 * Others:
 ***********************************************************/
-void gprs_rx( uint8_t * pinfo, uint16_t length )
+void gprs_rx( uint8_t linkno,uint8_t * pinfo, uint16_t length )
 {
 	uint8_t *pmsg;
-	pmsg = rt_malloc( length + 2 );      /*包含长度信息*/
+	pmsg = rt_malloc( length + 3 );      /*包含长度信息*/
 	if( pmsg != RT_NULL )
 	{
-		pmsg[0] = length >> 8;
-		pmsg[1] = length & 0xff;
-		memcpy( pmsg + 2, pinfo, length );
+		pmsg[0] = linkno;
+		pmsg[1] = length >> 8;
+		pmsg[2] = length & 0xff;
+		memcpy( pmsg + 3, pinfo, length );
 		rt_mb_send( &mb_gprsdata, (rt_uint32_t)pmsg );
 	}
 }
