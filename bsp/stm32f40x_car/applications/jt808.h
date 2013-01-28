@@ -186,34 +186,53 @@ typedef struct
 	char	user[32];
 	char	psw[32];
 /*传输相关*/
-	uint32_t timeout_udp;    /*udp传输超时时间*/
-	uint32_t retry_udp;      /*udp传输重传次数*/
-	uint32_t timeout_tcp;    /*udp传输超时时间*/
-	uint32_t retry_tcp;      /*udp传输重传次数*/
+	uint32_t	timeout_udp;    /*udp传输超时时间*/
+	uint32_t	retry_udp;      /*udp传输重传次数*/
+	uint32_t	timeout_tcp;    /*udp传输超时时间*/
+	uint32_t	retry_tcp;      /*udp传输重传次数*/
 }JT808_PARAM;
 
 typedef uint8_t ( *RESPFUNC )( uint8_t *pInfo, uint16_t len );
 typedef enum
 {
-	IDLE=1, /*空闲等待发送*/
-	WAIT_ACK,/*等待ACK中*/
-	
+	IDLE = 1,                   /*空闲等待发送*/
+	WAIT_ACK,                   /*等待ACK中*/
 } JT808_MSG_STATE;
 
-typedef struct _jt808_msg_node
+typedef struct
 {
 	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
 	JT808_MSG_STATE state;      /*发送状态*/
 	uint32_t		retry;      /*重传次数,递增，递减找不到*/
 	uint32_t		max_retry;  /*最大重传次数*/
-	uint32_t		timeout;	/*超时时间*/
+	uint32_t		timeout;    /*超时时间*/
 	uint32_t		tick;       /*发送时间*/
 	uint16_t		msg_len;    /*消息长度*/
 	uint8_t			*pmsg;      /*发送消息体*/
 	uint16_t		msg_id;     /*消息ID*/
 	uint16_t		msg_sn;     /*消息流水号*/
 	RESPFUNC		handle_rx;  /*消息处理*/
-}JT808_MSG_NODE;
+}JT808_TX_MSG_NODEDATA;
+
+typedef __packed struct
+{
+	uint32_t	tick;			/*收到的时刻,多包接收的超时判断*/
+	uint8_t		linkno;         /*使用的linkno*/
+	uint16_t	id;             /*消息ID*/
+	uint16_t	attr;           /*消息体属性*/
+	uint8_t		mobileno[6];    /*终端手机号*/
+	uint16_t	seq;            /*消息流水号*/
+	uint16_t	packetcount;    /*多包的总包数，如果有*/
+	uint16_t	packetno;       /*当前包序号，从1开始，如果有*/
+	uint16_t	msg_len;        /*消息长度*/
+	uint8_t		*pmsg;          /*收到消息体*/
+}JT808_RX_MSG_NODEDATA;
+
+typedef struct
+{
+	uint16_t id;
+	int ( *func )( uint8_t* pinfo, uint16_t len );
+}HANDLE_JT808_RX_MSG;
 
 extern JT808_PARAM jt808_param;
 

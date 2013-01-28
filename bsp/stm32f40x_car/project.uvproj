@@ -117,7 +117,7 @@
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
           <Simulator>
-            <UseSimulator>0</UseSimulator>
+            <UseSimulator>1</UseSimulator>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -128,7 +128,7 @@
             <LimitSpeedToRealTime>0</LimitSpeedToRealTime>
           </Simulator>
           <Target>
-            <UseTarget>1</UseTarget>
+            <UseTarget>0</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -139,7 +139,7 @@
             <RestoreTracepoints>0</RestoreTracepoints>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>7</TargetSelection>
+          <TargetSelection>5</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -420,6 +420,11 @@
               <FileName>jt808_gps.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_gps.c</FilePath>
+            </File>
+            <File>
+              <FileName>dlist.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\dlist.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -927,11 +932,6 @@
               <FilePath>.\applications\lcd\bmp.c</FilePath>
             </File>
             <File>
-              <FileName>SED1520.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\SED1520.c</FilePath>
-            </File>
-            <File>
               <FileName>lcd.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\lcd.c</FilePath>
@@ -940,6 +940,11 @@
               <FileName>Menu_Include.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\Menu_Include.c</FilePath>
+            </File>
+            <File>
+              <FileName>SED1520.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\SED1520.c</FilePath>
             </File>
             <File>
               <FileName>menu_1_bdupgrad.c</FileName>
