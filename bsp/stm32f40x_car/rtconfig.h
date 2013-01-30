@@ -17,7 +17,7 @@
 /* SECTION: RT_DEBUG */
 /* Thread Debug */
 #define RT_DEBUG
-#define RT_DEBUG_MEM                   0
+#define RT_DEBUG_MEM                   1
 #define RT_DEBUG_MEMHEAP               0
 #define RT_DEBUG_MODULE                0
 #define RT_DEBUG_SCHEDULER             0

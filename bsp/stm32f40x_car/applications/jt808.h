@@ -15,7 +15,7 @@
 #define _H_JT808_H_
 
 #include <stm32f4xx.h>
-
+#include <rtthread.h>
 #define   MsgQ_Timeout 3
 
 /*字节顺序的定义网络顺序*/
@@ -197,21 +197,32 @@ typedef enum
 {
 	IDLE = 1,                   /*空闲等待发送*/
 	WAIT_ACK,                   /*等待ACK中*/
+	ACK_OK,						/*已收到ACK应答*/
 } JT808_MSG_STATE;
 
-typedef struct
+typedef enum
+{
+	TERMINAL_CMD=1,
+	TERMINAL_ACK,
+	CENTER_CMD,
+	CENTER_ACK
+}JT808_MSG_TYPE;
+
+
+typedef __packed struct
 {
 	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
+	JT808_MSG_TYPE	type;
 	JT808_MSG_STATE state;      /*发送状态*/
 	uint32_t		retry;      /*重传次数,递增，递减找不到*/
 	uint32_t		max_retry;  /*最大重传次数*/
 	uint32_t		timeout;    /*超时时间*/
 	uint32_t		tick;       /*发送时间*/
-	uint16_t		msg_len;    /*消息长度*/
-	uint8_t			*pmsg;      /*发送消息体*/
 	uint16_t		msg_id;     /*消息ID*/
 	uint16_t		msg_sn;     /*消息流水号*/
-	RESPFUNC		handle_rx;  /*消息处理*/
+	uint16_t		msg_len;    /*消息长度*/
+	uint8_t			*pmsg;      /*发送消息体*/
+	RESPFUNC		handle_rx;  /*消息处理，主要是中心ACK的处理*/
 }JT808_TX_MSG_NODEDATA;
 
 typedef __packed struct
@@ -228,18 +239,14 @@ typedef __packed struct
 	uint8_t		*pmsg;          /*收到消息体*/
 }JT808_RX_MSG_NODEDATA;
 
-typedef struct
-{
-	uint16_t id;
-	int ( *func )( uint8_t* pinfo, uint16_t len );
-}HANDLE_JT808_RX_MSG;
+
+
+
+
 
 extern JT808_PARAM jt808_param;
-
 void gps_rx( uint8_t *pinfo, uint16_t length );
-
-
-void gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
+rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 
 
 #endif
