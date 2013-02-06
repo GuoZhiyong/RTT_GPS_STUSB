@@ -176,15 +176,52 @@ typedef struct
 	char	interval;   /*持续时间,秒*/
 }GPS_AREA_CIRCLE;
 
+
+typedef enum
+{
+	T_NODEF=1,
+	T_BYTE,
+	T_WORD,
+	T_DWORD,
+	T_STRING,
+}PARAM_TYPE;
+
+
+/*终端参数类型*/
+typedef  struct
+{
+	uint8_t id;
+	PARAM_TYPE type;
+	void* pvalue;
+}PARAM;
+
+/*终端参数类型*/
+typedef __packed struct
+{
+	PARAM_TYPE type;
+	void* pvalue;
+}PARAM_BODY;
+
+
+
+
 typedef struct
 {
 	uint32_t ver;       /*版本信息四个字节yy_mm_dd_build,比较大小*/
-/*车辆信息*/
+/*车辆注册信息*/
+	uint16_t id0100_1_w;
+	uint16_t id0100_2_w;
+	uint8_t id0100_3_s[5];
+	uint8_t id0100_4_s[8];
+	uint8_t id0100_5_s[7];
+	uint8_t id0100_6_b;
+	uint8_t	id0100_7_s[12];
 
 /*网络有关*/
 	char	apn[32];
 	char	user[32];
 	char	psw[32];
+	char	mobile[6];
 /*传输相关*/
 	uint32_t	timeout_udp;    /*udp传输超时时间*/
 	uint32_t	retry_udp;      /*udp传输重传次数*/
@@ -192,7 +229,7 @@ typedef struct
 	uint32_t	retry_tcp;      /*udp传输重传次数*/
 }JT808_PARAM;
 
-typedef uint8_t ( *RESPFUNC )( uint8_t *pInfo, uint16_t len );
+
 typedef enum
 {
 	IDLE = 1,                   /*空闲等待发送*/
@@ -209,21 +246,17 @@ typedef enum
 }JT808_MSG_TYPE;
 
 
+
 typedef __packed struct
 {
-	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
-	JT808_MSG_TYPE	type;
-	JT808_MSG_STATE state;      /*发送状态*/
-	uint32_t		retry;      /*重传次数,递增，递减找不到*/
-	uint32_t		max_retry;  /*最大重传次数*/
-	uint32_t		timeout;    /*超时时间*/
-	uint32_t		tick;       /*发送时间*/
-	uint16_t		msg_id;     /*消息ID*/
-	uint16_t		msg_sn;     /*消息流水号*/
-	uint16_t		msg_len;    /*消息长度*/
-	uint8_t			*pmsg;      /*发送消息体*/
-	RESPFUNC		handle_rx;  /*消息处理，主要是中心ACK的处理*/
-}JT808_TX_MSG_NODEDATA;
+	uint16_t id;
+	uint16_t attr;
+	uint8_t mobile[6];
+	uint16_t seq;
+}JT808_MSG_HEAD;
+
+
+
 
 typedef __packed struct
 {
@@ -239,6 +272,26 @@ typedef __packed struct
 	uint8_t		*pmsg;          /*收到消息体*/
 }JT808_RX_MSG_NODEDATA;
 
+
+typedef __packed struct _jt808_tx_msg_nodedata
+{
+/*发送机制相关*/
+	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
+	JT808_MSG_TYPE	type;
+	JT808_MSG_STATE state;      /*发送状态*/
+	uint32_t		retry;      /*重传次数,递增，递减找不到*/
+	uint32_t		max_retry;  /*最大重传次数*/
+	uint32_t		timeout;    /*超时时间*/
+	uint32_t		tick;       /*发送时间*/
+/*接收的处理判断相关*/	
+	void			(*cb_tx_timeout)(struct _jt808_tx_msg_nodedata *pnodedata);
+	void			(*cb_tx_response)(JT808_RX_MSG_NODEDATA* pnodedata);
+	uint16_t		head_id;     /*消息ID*/
+	uint16_t		head_sn;     /*消息流水号*/
+/*真实的发送数据*/	
+	uint16_t		msg_len;    /*消息长度*/
+	uint8_t			*pmsg;      /*发送消息体,真实的要发送的数据格式，经过转义和FCS后的<7e>为标志*/
+}JT808_TX_MSG_NODEDATA;
 
 
 
