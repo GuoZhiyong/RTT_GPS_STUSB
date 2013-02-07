@@ -117,7 +117,7 @@
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
           <Simulator>
-            <UseSimulator>0</UseSimulator>
+            <UseSimulator>1</UseSimulator>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -128,7 +128,7 @@
             <LimitSpeedToRealTime>1</LimitSpeedToRealTime>
           </Simulator>
           <Target>
-            <UseTarget>1</UseTarget>
+            <UseTarget>0</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -139,7 +139,7 @@
             <RestoreTracepoints>0</RestoreTracepoints>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>7</TargetSelection>
+          <TargetSelection>5</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -421,6 +421,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_sprintf.c</FilePath>
             </File>
+            <File>
+              <FileName>jt808_param.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_param.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -485,6 +490,11 @@
               <FileName>m66.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\m66.c</FilePath>
+            </File>
+            <File>
+              <FileName>sst25.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\sst25.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -18,6 +18,15 @@
 #include <rtthread.h>
 #define   MsgQ_Timeout 3
 
+/*
+存储区域分配,采用绝对地址,以4K(0x1000)为一个扇区
+*/
+
+#define ADDR_PARAM	0x000000000
+
+
+
+
 /*字节顺序的定义网络顺序*/
 typedef struct
 {
@@ -176,46 +185,42 @@ typedef struct
 	char	interval;   /*持续时间,秒*/
 }GPS_AREA_CIRCLE;
 
-
 typedef enum
 {
-	T_NODEF=1,
+	T_NODEF = 1,
 	T_BYTE,
 	T_WORD,
 	T_DWORD,
 	T_STRING,
 }PARAM_TYPE;
 
-
 /*终端参数类型*/
 typedef  struct
 {
-	uint8_t id;
-	PARAM_TYPE type;
-	void* pvalue;
+	uint8_t		id;
+	PARAM_TYPE	type;
+	void		* pvalue;
 }PARAM;
 
 /*终端参数类型*/
 typedef __packed struct
 {
-	PARAM_TYPE type;
-	void* pvalue;
+	PARAM_TYPE	type;
+	void		* pvalue;
 }PARAM_BODY;
 
-
-
-
+#if 0
 typedef struct
 {
-	uint32_t ver;       /*版本信息四个字节yy_mm_dd_build,比较大小*/
+	uint32_t ver;    /*版本信息四个字节yy_mm_dd_build,比较大小*/
 /*车辆注册信息*/
-	uint16_t id0100_1_w;
-	uint16_t id0100_2_w;
-	uint8_t id0100_3_s[5];
-	uint8_t id0100_4_s[8];
-	uint8_t id0100_5_s[7];
-	uint8_t id0100_6_b;
-	uint8_t	id0100_7_s[12];
+	uint16_t	id0100_1_w;
+	uint16_t	id0100_2_w;
+	uint8_t		id0100_3_s[5];
+	uint8_t		id0100_4_s[8];
+	uint8_t		id0100_5_s[7];
+	uint8_t		id0100_6_b;
+	uint8_t		id0100_7_s[12];
 
 /*网络有关*/
 	char	apn[32];
@@ -229,38 +234,109 @@ typedef struct
 	uint32_t	retry_tcp;      /*udp传输重传次数*/
 }JT808_PARAM;
 
+#endif
+
+
+typedef struct _jt808_param
+	{
+		uint32_t	id_0x0000;			  /*0x0000 版本*/
+		uint32_t	id_0x0001;		/*0x0001 心跳发送间隔*/
+		uint32_t	id_0x0002;		/*0x0002 TCP应答超时时间*/
+		uint32_t	id_0x0003;		/*0x0003 TCP超时重传次数*/
+		uint32_t	id_0x0004;		/*0x0004 UDP应答超时时间*/
+		uint32_t	id_0x0005;		/*0x0005 UDP超时重传次数*/
+		uint32_t	id_0x0006;		/*0x0006 SMS消息应答超时时间*/
+		uint32_t	id_0x0007;		/*0x0007 SMS消息重传次数*/
+		char		id_0x0010[16];	/*0x0010 主服务器APN*/
+		char		id_0x0011[16];	/*0x0011 用户名*/
+		char		id_0x0012[16];	/*0x0012 密码*/
+		char		id_0x0013[16];	/*0x0013 主服务器地址*/
+		char		id_0x0014[16];	/*0x0014 备份APN*/
+		char		id_0x0015[16];	/*0x0015 备份用户名*/
+		char		id_0x0016[16];	/*0x0016 备份密码*/
+		char		id_0x0017[16];	/*0x0017 备份服务器地址，ip或域名*/
+		uint32_t	id_0x0018;		/*0x0018 TCP端口*/
+		uint32_t	id_0x0019;		/*0x0019 UDP端口*/
+		uint32_t	id_0x0020;		/*0x0020 位置汇报策略*/
+		uint32_t	id_0x0021;		/*0x0021 位置汇报方案*/
+		uint32_t	id_0x0022;		/*0x0022 驾驶员未登录汇报时间间隔*/
+		uint32_t	id_0x0027;		/*0x0027 休眠时汇报时间间隔*/
+		uint32_t	id_0x0028;		/*0x0028 紧急报警时汇报时间间隔*/
+		uint32_t	id_0x0029;		/*0x0029 缺省时间汇报间隔*/
+		uint32_t	id_0x002C;		/*0x002c 缺省距离汇报间隔*/
+		uint32_t	id_0x002D;		/*0x002d 驾驶员未登录汇报距离间隔*/
+		uint32_t	id_0x002E;		/*0x002e 休眠时距离汇报间隔*/
+		uint32_t	id_0x002F;		/*0x002f 紧急时距离汇报间隔*/
+		uint32_t	id_0x0030;		/*0x0030 拐点补传角度*/
+		char		id_0x0040[16];	/*0x0040 监控平台电话号码*/
+		char		id_0x0041[16];	/*0x0041 复位电话号码*/
+		char		id_0x0042[16];	/*0x0042 恢复出厂设置电话号码*/
+		char		id_0x0043[16];	/*0x0043 监控平台SMS号码*/
+		char		id_0x0044[16];	/*0x0044 接收终端SMS文本报警号码*/
+		uint32_t	id_0x0045;		/*0x0045 终端接听电话策略*/
+		uint32_t	id_0x0046;		/*0x0046 每次通话时长*/
+		uint32_t	id_0x0047;		/*0x0047 当月通话时长*/
+		char		id_0x0048[16];	/*0x0048 监听电话号码*/
+		char		id_0x0049[16];	/*0x0049 监管平台特权短信号码*/
+		uint32_t	id_0x0050;		/*0x0050 报警屏蔽字*/
+		uint32_t	id_0x0051;		/*0x0051 报警发送文本SMS开关*/
+		uint32_t	id_0x0052;		/*0x0052 报警拍照开关*/
+		uint32_t	id_0x0053;		/*0x0053 报警拍摄存储标志*/
+		uint32_t	id_0x0054;		/*0x0054 关键标志*/
+		uint32_t	id_0x0055;		/*0x0055 最高速度kmh*/
+		uint32_t	id_0x0056;		/*0x0056 超速持续时间*/
+		uint32_t	id_0x0057;		/*0x0057 连续驾驶时间门限*/
+		uint32_t	id_0x0058;		/*0x0058 当天累计驾驶时间门限*/
+		uint32_t	id_0x0059;		/*0x0059 最小休息时间*/
+		uint32_t	id_0x005A;		/*0x005A 最长停车时间*/
+		uint32_t	id_0x0070;		/*0x0070 图像视频质量(1-10)*/
+		uint32_t	id_0x0071;		/*0x0071 亮度*/
+		uint32_t	id_0x0072;		/*0x0072 对比度*/
+		uint32_t	id_0x0073;		/*0x0073 饱和度*/
+		uint32_t	id_0x0074;		/*0x0074 色度*/
+		uint32_t	id_0x0080;		/*0x0080 车辆里程表读数0.1km*/
+		uint32_t	id_0x0081;		/*0x0081 省域ID*/
+		uint32_t	id_0x0082;		/*0x0082 市域ID*/
+		char		id_0x0083[16];	/*0x0083 机动车号牌*/
+		uint32_t	id_0x0084;		/*0x0084 车牌颜色*/
+}JT808_PARAM;
+
+
+typedef struct
+{
+	char mobile[6];		/*终端号码*/
+
+
+}TERM_PARAM;
+
+
 
 typedef enum
 {
 	IDLE = 1,                   /*空闲等待发送*/
 	WAIT_ACK,                   /*等待ACK中*/
-	ACK_OK,						/*已收到ACK应答*/
+	ACK_OK,                     /*已收到ACK应答*/
 } JT808_MSG_STATE;
 
 typedef enum
 {
-	TERMINAL_CMD=1,
+	TERMINAL_CMD = 1,
 	TERMINAL_ACK,
 	CENTER_CMD,
 	CENTER_ACK
 }JT808_MSG_TYPE;
 
-
-
 typedef __packed struct
 {
-	uint16_t id;
-	uint16_t attr;
-	uint8_t mobile[6];
-	uint16_t seq;
+	uint16_t	id;
+	uint16_t	attr;
+	uint8_t		mobile[6];
+	uint16_t	seq;
 }JT808_MSG_HEAD;
 
-
-
-
 typedef __packed struct
 {
-	uint32_t	tick;			/*收到的时刻,多包接收的超时判断*/
+	uint32_t	tick;           /*收到的时刻,多包接收的超时判断*/
 	uint8_t		linkno;         /*使用的linkno*/
 	uint16_t	id;             /*消息ID*/
 	uint16_t	attr;           /*消息体属性*/
@@ -272,7 +348,6 @@ typedef __packed struct
 	uint8_t		*pmsg;          /*收到消息体*/
 }JT808_RX_MSG_NODEDATA;
 
-
 typedef __packed struct _jt808_tx_msg_nodedata
 {
 /*发送机制相关*/
@@ -283,22 +358,25 @@ typedef __packed struct _jt808_tx_msg_nodedata
 	uint32_t		max_retry;  /*最大重传次数*/
 	uint32_t		timeout;    /*超时时间*/
 	uint32_t		tick;       /*发送时间*/
-/*接收的处理判断相关*/	
-	void			(*cb_tx_timeout)(struct _jt808_tx_msg_nodedata *pnodedata);
-	void			(*cb_tx_response)(JT808_RX_MSG_NODEDATA* pnodedata);
-	uint16_t		head_id;     /*消息ID*/
-	uint16_t		head_sn;     /*消息流水号*/
-/*真实的发送数据*/	
-	uint16_t		msg_len;    /*消息长度*/
-	uint8_t			*pmsg;      /*发送消息体,真实的要发送的数据格式，经过转义和FCS后的<7e>为标志*/
+/*接收的处理判断相关*/
+	void ( *cb_tx_timeout )( struct _jt808_tx_msg_nodedata *pnodedata );
+	void ( *cb_tx_response )( JT808_RX_MSG_NODEDATA* pnodedata );
+	uint16_t	head_id;        /*消息ID*/
+	uint16_t	head_sn;        /*消息流水号*/
+/*真实的发送数据*/
+	uint16_t	msg_len;        /*消息长度*/
+	uint8_t		*pmsg;          /*发送消息体,真实的要发送的数据格式，经过转义和FCS后的<7e>为标志*/
 }JT808_TX_MSG_NODEDATA;
 
 
 
-
-
 extern JT808_PARAM jt808_param;
+
+
+
 void gps_rx( uint8_t *pinfo, uint16_t length );
+
+
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 
 

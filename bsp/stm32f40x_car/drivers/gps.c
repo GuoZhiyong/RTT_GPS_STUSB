@@ -380,7 +380,7 @@ static rt_err_t dev_gps_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 }
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_gps_stack[512];
+static char thread_gps_stack[1024];
 struct rt_thread thread_gps;
 
 

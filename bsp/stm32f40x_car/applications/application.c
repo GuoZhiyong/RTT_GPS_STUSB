@@ -31,7 +31,7 @@ void rt_init_thread_entry(void* parameter)
 	printer_driver_init();  
   	usbh_init();
   	spi_sd_init();
-	mma8451_driver_init();
+//	mma8451_driver_init();
 
 
 

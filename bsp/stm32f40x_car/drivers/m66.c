@@ -888,8 +888,8 @@ static int protothread_gsm_power( struct pt *pt )
 	static uint8_t		at_init_retry	= 0;
 	rt_err_t			ret;
 
-	sprintf( str_CGDCONT, "AT+CGDCONT=1,\"IP\",\"%s\"\r\n", jt808_param.apn );
-	sprintf( str_ETCPIP, "AT%%ETCPIP=1,\"%s\",\"%s\"\r\n", jt808_param.user, jt808_param.psw );
+	sprintf( str_CGDCONT, "AT+CGDCONT=1,\"IP\",\"%s\"\r\n", jt808_param.id_0x0011 );
+	sprintf( str_ETCPIP, "AT%%ETCPIP=1,\"%s\",\"%s\"\r\n", jt808_param.id_0x0012, jt808_param.id_0x0013 );
 
 	PT_BEGIN( pt );
 	if( gsm_state == GSM_POWERON )
@@ -1052,10 +1052,8 @@ static void rt_thread_entry_gsm( void* parameter )
 		}
 		protothread_gsm_power( &pt_gsm_power );
 		protothread_gsm_socket( &pt_gsm_socket );
-/*接收超时判断*/
-
-
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
+
 	}
 }
 
@@ -1118,9 +1116,9 @@ FINSH_FUNCTION_EXPORT( gsmstate, control gsm state );
 /*apn信息设置*/
 rt_err_t apn_config( char *apn, char *user, char *psw )
 {
-	strcpy( jt808_param.apn, apn );
-	strcpy( jt808_param.user, user );
-	strcpy( jt808_param.psw, psw );
+	strcpy( jt808_param.id_0x0011, apn );
+	strcpy( jt808_param.id_0x0012, user );
+	strcpy( jt808_param.id_0x0013, psw );
 	return RT_EOK;
 }
 
