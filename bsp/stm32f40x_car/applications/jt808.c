@@ -24,6 +24,8 @@
 #include "jt808_sprintf.h"
 #include "sst25.h"
 
+#include "pt.h"
+
 #define MULTI_PROCESS
 
 #define ByteSwap2( val )    \
@@ -57,13 +59,13 @@ static uint16_t				tx_seq = 0; /*发送序号*/
 
 static rt_device_t			pdev_gsm = RT_NULL;
 
-
+static struct pt	pt_jt808_socket;
 
 /*发送信息列表*/
 MsgList* list_jt808_tx;
 
 /*接收信息列表*/
-MsgList		* list_jt808_rx;
+MsgList* list_jt808_rx;
 
 T_GPSINFO	gpsinfo;
 
@@ -144,7 +146,7 @@ PARAM param[] =
 
 JT808_PARAM jt808_param =
 {
-	0x13020200,                 /*0x0000 版本*/
+	0x13021600,                 /*0x0000 版本*/
 	5,                          /*0x0001 心跳发送间隔*/
 	3,                          /*0x0002 TCP应答超时时间*/
 	15,                         /*0x0003 TCP超时重传次数*/
@@ -210,6 +212,13 @@ JT808_PARAM jt808_param =
 TERM_PARAM term_param;
 
 
+#define FLAG_DISABLE_REPORT_INVALID	1	/*设备非法*/
+#define FLAG_DISABLE_REPORT_AREA	2	/*区域内禁止上报*/
+
+static uint32_t flag_disable_report=0; /*禁止上报的标志位*/
+
+
+
 /*保存参数到serialflash*/
 void param_save( void )
 {
@@ -231,10 +240,7 @@ void param_load( void )
 		rt_kprintf("%s(%d)\r\n",__func__,__LINE__);
 		param_save();
 	}
-	else
-	{
-		sst25_read(ADDR_PARAM,(uint8_t*)&jt808_param,sizeof(jt808_param));
-	}
+	sst25_read(ADDR_PARAM,(uint8_t*)&jt808_param,sizeof(jt808_param));
 }
 
 
@@ -315,8 +321,8 @@ uint8_t process_rmc( uint8_t *pinfo )
 		return 0;
 	}
 	hour	= ( gps_time[0] - 0x30 ) * 10 + ( gps_time[1] - 0x30 ) + 8;
-	min		= ( gps_time[2] - 0x30 ) * 10 + ( gps_time[3] - 0x30 ) + 8;
-	sec		= ( gps_time[4] - 0x30 ) * 10 + ( gps_time[5] - 0x30 ) + 8;
+	min		= ( gps_time[2] - 0x30 ) * 10 + ( gps_time[3] - 0x30 );
+	sec		= ( gps_time[4] - 0x30 ) * 10 + ( gps_time[5] - 0x30 );
 	if( hour > 23 )
 	{
 		fDateModify = 1;
@@ -533,11 +539,11 @@ void gps_analy( uint8_t * pinfo )
 	uint8_t		*psrc;
 	len		= ( pinfo[0] << 8 ) | pinfo[1];
 	psrc	= pinfo + 2;
-	if( ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) )
+	if( ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) )
 	{
 		process_rmc( psrc );
 	}
-	if( ( strncmp( psrc, "$GPGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$GNGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$BDGGA,", 7 ) == 0 ) )
+	if( ( strncmp( psrc, "$GPGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$BDGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$GNGGA,", 7 ) == 0 ) )
 	{
 		process_gga( psrc );
 	}
@@ -1078,7 +1084,7 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 	nodedata->tick		= rt_tick_get( );           /*收到的时刻*/
 
 /* 单包数据处理,不需要创建MsgNode */
-	if( nodedata->attr & 0x2000 == 0 )
+	if(( nodedata->attr & 0x2000 )== 0 )
 	{
 		nodedata->pmsg = psrc + 15;                 /*消息体开始位置*/
 		for( i = 0; i < sizeof( handle_jt808_rx_msg ) / sizeof( HANDLE_JT808_RX_MSG ); i++ )
@@ -1130,7 +1136,7 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 		}
 	}
 /*不是多包,返回*/
-	if( nodedata->attr & 0x2000 == 0 )
+	if(( nodedata->attr & 0x2000 )== 0 )
 	{
 		return 0;
 	}
@@ -1221,9 +1227,9 @@ static MsgListRet jt808_tx_proc( MsgListNode* node )
 		if( pnodedata->retry == pnodedata->max_retry )  /*已经达到重试次数*/
 		{
 			/*表示发送失败*/
-			pnodedata->cb_tx_timeout( pnodedata );      /*调用发送失败处理函数*/
-			rt_free( pnodedata->pmsg );                 /*删除节点数据*/
-			pnode->prev->next	= pnode->next;          /*删除节点*/
+			pnodedata->cb_tx_timeout( pnodedata );			/*调用发送失败处理函数*/
+			rt_free( pnodedata->pmsg );								 /*删除节点数据*/
+			pnode->prev->next	= pnode->next;					/*删除节点*/
 			pnode->next->prev	= pnode->prev;
 			msglist_node_destroy( pnode );
 			return MSGLIST_RET_DELETE_NODE;
@@ -1259,6 +1265,75 @@ static MsgListRet jt808_tx_proc( MsgListNode* node )
 	return MSGLIST_RET_OK;
 }
 
+
+
+/*jt808的socket管理
+
+维护链路。会有不同的原因
+上报状态的维护
+1.尚未登网
+2.中心连接，DNS,超时不应答
+3.禁止上报，关闭模块的区域
+4.当前正在进行空中更新，多媒体上报等不需要打断的工作
+
+*/
+static int protothread_jt808_socket( struct pt *pt )
+{
+	static uint32_t	gsmstate,sockstate;
+	static uint8_t		sock_connect=0;
+	static uint8_t		apn_connect=0;
+
+	if(!flag_disable_report) /*允许上报*/
+	{
+		if(apn_connect==0)
+		{
+			config_apn(jt808_param.id_0x0010,jt808_param.id_0x0011,jt808_param.id_0x0012);
+		}
+		else if(apn_connect==1)
+		{
+			config_apn(jt808_param.id_0x0014,jt808_param.id_0x0015,jt808_param.id_0x0016);
+		}else		/*主备都连不上,怎么办? 重启*/
+		{
+	
+		}
+		
+		gsmstate=config_gsmstate(0);
+		if(gsmstate==GSM_IDLE)
+		{
+			config_gsmstate(GSM_POWERON);
+			sock_connect=0;
+		}	
+		if(gsmstate==GSM_AT)
+		{
+			sockstate=config_sockstate(0,0);
+			if(sockstate==SOCKET_IDLE)
+			{
+				if(sock_connect%2)
+					config_sock(0,'t',jt808_param.id_0x0013,jt808_param.id_0x0018);
+				else
+					config_sock(0,'t',jt808_param.id_0x0017,jt808_param.id_0x0018);
+				config_sockstate(0,SOCKET_INIT);
+			}
+			if((sockstate==SOCKET_CONNECT_ERR)||(sockstate==SOCKET_DNS_ERR))
+			{
+				sock_connect++;
+				if(sock_connect>6)/*记录连接的次数*/
+				{
+	
+				}
+			}
+		}	
+	}else{
+		config_gsmstate(GSM_POWEROFF);
+	
+	
+	}
+	
+
+
+}
+
+
 /*
    连接状态维护
    jt808协议处理
@@ -1273,7 +1348,7 @@ static void rt_thread_entry_jt808( void* parameter )
 {
 	rt_err_t	ret;
 	uint8_t		*pstr;
-	uint32_t	gsm_status;
+
 
 	MsgListNode * iter;
 	MsgListNode * iter_next;
@@ -1298,8 +1373,14 @@ static void rt_thread_entry_jt808( void* parameter )
 //	rt_kprintf( "param_0x0000=%x", param_0x0000 );
 //	SET_PARAM_DWORD( 0x0000, 0x1234 );
 #endif
+
+	PT_INIT( &pt_jt808_socket );
+
 /*读取参数，并配置*/
 	param_load();
+
+	config_apn(jt808_param.id_0x0010,jt808_param.id_0x0011,jt808_param.id_0x0012);
+
 	param_print();
 
 	list_jt808_tx	= msglist_create( );
@@ -1324,9 +1405,8 @@ static void rt_thread_entry_jt808( void* parameter )
 		{
 			jt808_rx_proc( pstr );
 		}
-/*维护链路*/
-		rt_device_control( pdev_gsm, CTL_STATUS, &gsm_status );
-
+/*jt808 socket处理*/
+		protothread_jt808_socket( &pt_jt808_socket );
 #ifdef MULTI_PROCESS                                                /*多处理*/
 		iter = list_jt808_tx->first;
 		while( iter != RT_NULL )

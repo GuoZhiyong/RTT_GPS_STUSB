@@ -16,8 +16,6 @@
 */
 
 
-#define TEST_GSM
-
 #define GSM_UART_NAME	"uart4"
 
 //#define MAX_SOCKETS	6	//EM310定义3  MG323定义6

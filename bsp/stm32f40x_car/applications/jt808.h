@@ -239,7 +239,7 @@ typedef struct
 
 typedef struct _jt808_param
 	{
-		uint32_t	id_0x0000;			  /*0x0000 版本*/
+		uint32_t	id_0x0000;		/*0x0000 版本*/
 		uint32_t	id_0x0001;		/*0x0001 心跳发送间隔*/
 		uint32_t	id_0x0002;		/*0x0002 TCP应答超时时间*/
 		uint32_t	id_0x0003;		/*0x0003 TCP超时重传次数*/
@@ -247,14 +247,14 @@ typedef struct _jt808_param
 		uint32_t	id_0x0005;		/*0x0005 UDP超时重传次数*/
 		uint32_t	id_0x0006;		/*0x0006 SMS消息应答超时时间*/
 		uint32_t	id_0x0007;		/*0x0007 SMS消息重传次数*/
-		char		id_0x0010[16];	/*0x0010 主服务器APN*/
-		char		id_0x0011[16];	/*0x0011 用户名*/
-		char		id_0x0012[16];	/*0x0012 密码*/
-		char		id_0x0013[16];	/*0x0013 主服务器地址*/
-		char		id_0x0014[16];	/*0x0014 备份APN*/
-		char		id_0x0015[16];	/*0x0015 备份用户名*/
-		char		id_0x0016[16];	/*0x0016 备份密码*/
-		char		id_0x0017[16];	/*0x0017 备份服务器地址，ip或域名*/
+		char		id_0x0010[32];	/*0x0010 主服务器APN*/
+		char		id_0x0011[32];	/*0x0011 用户名*/
+		char		id_0x0012[32];	/*0x0012 密码*/
+		char		id_0x0013[32];	/*0x0013 主服务器地址*/
+		char		id_0x0014[32];	/*0x0014 备份APN*/
+		char		id_0x0015[32];	/*0x0015 备份用户名*/
+		char		id_0x0016[32];	/*0x0016 备份密码*/
+		char		id_0x0017[32];	/*0x0017 备份服务器地址，ip或域名*/
 		uint32_t	id_0x0018;		/*0x0018 TCP端口*/
 		uint32_t	id_0x0019;		/*0x0019 UDP端口*/
 		uint32_t	id_0x0020;		/*0x0020 位置汇报策略*/

@@ -41,6 +41,9 @@
 
 
 
+#define STORAGE_PARAM_ADDR		0x00000000
+#define STORAGE_PARAM_SIZE		0x00001000	//(4K)
+
 
 
 /* board configuration */
