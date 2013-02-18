@@ -16,8 +16,6 @@
 */
 
 
-#define TEST_GSM
-
 #define GSM_UART_NAME	"uart4"
 
 //#define MAX_SOCKETS	6	//EM310定义3  MG323定义6
@@ -68,7 +66,7 @@ typedef enum
 typedef enum
 {
 	SOCKET_IDLE=1,	/*无需启动*/
-	SOCKET_INIT,
+//	SOCKET_INIT,
 	SOCKET_DNS,	/*DNS查询中*/
 	SOCKET_DNS_ERR,
 	SOCKET_CONNECT, /*连接中*/

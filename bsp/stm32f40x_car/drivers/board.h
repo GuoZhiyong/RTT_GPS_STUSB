@@ -18,8 +18,6 @@
 
 #include <stm32f4xx.h>
 
-
-
 /*
 ×Ö¿â¶¨Òå
 */
@@ -40,6 +38,9 @@
 #define FONT_HZ2424_ADDR	(FONT_BASE_ADDR+FONT_ASC0612_SIZE+FONT_HZ1212_SIZE+FONT_ASC1224_SIZE)
 
 
+
+#define STORAGE_PARAM_ADDR		0x00000000
+#define STORAGE_PARAM_SIZE		0x00001000	//(4K)
 
 
 
@@ -90,6 +91,13 @@ void rt_hw_usart_init(void);
 
 /* SD Card init function */
 void rt_hw_msd_init(void);
+
+
+
+
+
+
+
 
 #endif
 
