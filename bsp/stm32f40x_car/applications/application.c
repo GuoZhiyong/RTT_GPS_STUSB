@@ -28,16 +28,12 @@
 */
 void rt_init_thread_entry(void* parameter)
 {
+	mma8451_driver_init();
 	printer_driver_init();  
   	usbh_init();
   	spi_sd_init();
-//	mma8451_driver_init();
-
-
-
-
-
 	
+
 #if 0	
 
   GPIO_InitTypeDef GPIO_InitStructure;

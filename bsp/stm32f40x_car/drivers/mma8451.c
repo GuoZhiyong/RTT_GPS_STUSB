@@ -610,6 +610,7 @@ uint8_t				PL_P_L_THS_REG_vlaue	= 0xcf;
 void EXTI9_5_IRQHandler( void )
 {
 	uint8_t ret,value1,value2,value3;
+	rt_interrupt_enter( );
 	if( EXTI_GetITStatus( EXTI_Line5 ) != RESET )
 	{
 		ret=IIC_RegRead( MMA845X_ADDR, INT_SOURCE_REG, &value1 );
@@ -618,6 +619,7 @@ void EXTI9_5_IRQHandler( void )
 		rt_kprintf("\nINT=%02x %02x %02x\n",value1,value2,value3);
 		EXTI_ClearITPendingBit( EXTI_Line5 );
 	}
+	rt_interrupt_leave( );
 }
 
 /*
@@ -962,27 +964,6 @@ FINSH_FUNCTION_EXPORT(mma8451_config ,setup sensor);
 static uint8_t sensor_info[2] = { 0 };
 
 
-/***********************************************************
-* Function:       // 函数名称
-* Description:    // 函数功能、性能等的描述
-* Input:          // 1.输入参数1，说明，包括每个参数的作用、取值说明及参数间关系
-* Input:          // 2.输入参数2，说明，包括每个参数的作用、取值说明及参数间关系
-* Output:         // 1.输出参数1，说明
-* Return:         // 函数返回值的说明
-* Others:         // 其它说明
-***********************************************************/
-int mma8451_rx( unsigned char *pdata, unsigned int len )
-{
-	if( pdata[0] == 1 )
-	{
-		param_mma8451_word1 = ( pdata[1] << 8 ) | pdata[2];
-		param_mma8451_word2 = ( pdata[3] << 8 ) | pdata[4];
-//		EE_WriteVariable( VirtAddVarTab[12], param_mma8451_word1 );
-//		EE_WriteVariable( VirtAddVarTab[13], param_mma8451_word2 );
-		mma8451_config( param_mma8451_word1, param_mma8451_word2 );
-	}
-	return 0;
-}
 
 /***********************************************************
 * Function:
@@ -1004,7 +985,7 @@ static rt_err_t mma8451_init( rt_device_t dev )
 	/*去掉JTAG功能*/
 	GPIO_PinAFConfig( GPIOB, GPIO_Pin_4, 1 );
 
-	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_2MHz;
+	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_25MHz;
 	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType	= GPIO_OType_OD;
 	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;

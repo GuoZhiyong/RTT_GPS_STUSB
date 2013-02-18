@@ -1300,7 +1300,7 @@ static void rt_thread_entry_jt808( void* parameter )
 #endif
 /*读取参数，并配置*/
 	param_load();
-	param_print();
+	//param_print();
 
 	list_jt808_tx	= msglist_create( );
 	list_jt808_rx	= msglist_create( );
