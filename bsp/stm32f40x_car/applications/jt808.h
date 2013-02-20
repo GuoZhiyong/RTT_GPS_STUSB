@@ -298,15 +298,16 @@ typedef struct _jt808_param
 		uint32_t	id_0x0081;		/*0x0081 省域ID*/
 		uint32_t	id_0x0082;		/*0x0082 市域ID*/
 		char		id_0x0083[16];	/*0x0083 机动车号牌*/
-		uint32_t	id_0x0084;		/*0x0084 车牌颜色*/
+		uint32_t	id_0x0084;		/*0x0084 车牌颜色  1蓝色 2黄色 3黑色 4白色 9其他*/
 }JT808_PARAM;
 
 
 typedef struct
 {
 	char mobile[6];		/*终端号码*/
-
-
+	uint8_t producer_id[5];
+	uint8_t model[8];
+	uint8_t terminal_id[7];
 }TERM_PARAM;
 
 
@@ -351,7 +352,7 @@ typedef __packed struct
 typedef __packed struct _jt808_tx_msg_nodedata
 {
 /*发送机制相关*/
-	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
+//	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
 	JT808_MSG_TYPE	type;
 	JT808_MSG_STATE state;      /*发送状态*/
 	uint32_t		retry;      /*重传次数,递增，递减找不到*/
@@ -370,13 +371,40 @@ typedef __packed struct _jt808_tx_msg_nodedata
 
 
 
+typedef enum
+{
+	SOCKET_IDLE=1,	/*无需启动*/
+//	SOCKET_INIT,
+	SOCKET_DNS,	/*DNS查询中*/
+	SOCKET_DNS_ERR,
+	SOCKET_CONNECT, /*连接中*/
+	SOCKET_CONNECT_ERR, /*连接错误，对方不应答*/
+	SOCKET_READY,	/*已完成，可以建立链接*/
+}T_SOCKET_STATE;
+
+
+/*最大支持4个链接*/
+#define MAX_GSM_SOCKET 4
+
+typedef struct 
+{
+	T_SOCKET_STATE	state; 		     /*连接状态*/
+	char			type;			/*连接类型 'u':udp client 't':TCP client  'U' udp server*/
+	char*			apn;
+	char*			user;
+	char*			psw;
+	char*			ip_domain;    /*域名*/
+	char			ip_str[16];         /*dns后的IP xxx.xxx.xxx.xxx*/
+	uint16_t		port;           /*端口*/
+}GSM_SOCKET;
+
+
+
 extern JT808_PARAM jt808_param;
 
-
+extern GSM_SOCKET curr_gsm_socket;
 
 void gps_rx( uint8_t *pinfo, uint16_t length );
-
-
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 
 

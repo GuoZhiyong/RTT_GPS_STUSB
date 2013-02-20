@@ -254,6 +254,7 @@ static int packchar(char **str, int c)
 
 /*
 封装字符串或数组
+如果string 长度不足width 如何办? 补足0还是 0x20(空格)
 */
 static int pack_buf(char **out, const char *string, int width)
 {

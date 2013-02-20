@@ -26,7 +26,7 @@
 
 #include "pt.h"
 
-#define MULTI_PROCESS
+//#define MULTI_PROCESS
 
 #define ByteSwap2( val )    \
     ( ( ( val & 0xff ) << 8 ) |   \
@@ -68,6 +68,13 @@ MsgList* list_jt808_tx;
 MsgList* list_jt808_rx;
 
 T_GPSINFO	gpsinfo;
+
+
+GSM_SOCKET gsm_socket[MAX_GSM_SOCKET];
+
+GSM_SOCKET curr_gsm_socket;
+
+
 
 #define DECL_PARAM_DWORD( id, value )	{ id, T_DWORD, (void*)value }
 //#define DECL_PARAM_STRING( id )			{ id, T_STRING, NULL }
@@ -148,8 +155,8 @@ JT808_PARAM jt808_param =
 {
 	0x13021600,                 /*0x0000 版本*/
 	5,                          /*0x0001 心跳发送间隔*/
-	3,                          /*0x0002 TCP应答超时时间*/
-	15,                         /*0x0003 TCP超时重传次数*/
+	5,                          /*0x0002 TCP应答超时时间*/
+	3,                         /*0x0003 TCP超时重传次数*/
 	3,                          /*0x0004 UDP应答超时时间*/
 	5,                          /*0x0005 UDP超时重传次数*/
 	3,                          /*0x0006 SMS消息应答超时时间*/
@@ -162,7 +169,7 @@ JT808_PARAM jt808_param =
 	"",                         /*0x0015 备份用户名*/
 	"",                         /*0x0016 备份密码*/
 	"www.google.com",           /*0x0017 备份服务器地址，ip或域名*/
-	1234,                       /*0x0018 TCP端口*/
+	9131,                       /*0x0018 TCP端口*/
 	5678,                       /*0x0019 UDP端口*/
 	0,                          /*0x0020 位置汇报策略*/
 	1,                          /*0x0021 位置汇报方案*/
@@ -205,11 +212,17 @@ JT808_PARAM jt808_param =
 	3,                          /*0x0081 省域ID*/
 	5,                          /*0x0082 市域ID*/
 	"津O-00001",                /*0x0083 机动车号牌*/
-	5,                          /*0x0084 车牌颜色*/
+	1,                          /*0x0084 车牌颜色*/
 };
 
 
-TERM_PARAM term_param;
+TERM_PARAM term_param=
+{
+	{0x01,0x23,0x45,0x67,0x89,0xab},
+	{'7','0','4','2','0'},
+	{'T','W','7','0','1','-','B','D'},
+	{0x00,0x99,0xaa,0xbb,0xcc,0xdd,0xee},
+};
 
 
 #define FLAG_DISABLE_REPORT_INVALID	1	/*设备非法*/
@@ -777,7 +790,7 @@ static int handle_jt808_rx_0x8001( JT808_RX_MSG_NODEDATA* nodedata )
 	/*逐条处理*/
 #else
 	iter = list_jt808_tx->first;
-	if( ( iterdata->msg_id == id ) && ( iterdata->msg_sn == seq ) )
+	if( ( iterdata->head_id == id ) && ( iterdata->head_sn == seq ) )
 	{
 		iterdata->cb_tx_response( nodedata );
 		iterdata->state = ACK_OK;
@@ -1213,34 +1226,35 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
    处理每个要发送信息的状态
    现在允许并行处理吗?
  */
+
 static MsgListRet jt808_tx_proc( MsgListNode* node )
 {
 	MsgListNode				* pnode		= (MsgListNode*)node;
 	JT808_TX_MSG_NODEDATA	* pnodedata = (JT808_TX_MSG_NODEDATA*)( pnode->data );
+	int i;
+		 
 
-	if( node == NULL )
-	{
-		return MSGLIST_RET_OK;
-	}
+	if( node == RT_NULL ) return MSGLIST_RET_OK;
+	
 	if( pnodedata->state == IDLE )                      /*空闲，发送信息或超时后没有数据*/
 	{
-		if( pnodedata->retry == pnodedata->max_retry )  /*已经达到重试次数*/
+		if( pnodedata->retry >= jt808_param.id_0x0003 )  /*已经达到重试次数*/
 		{
 			/*表示发送失败*/
 			pnodedata->cb_tx_timeout( pnodedata );			/*调用发送失败处理函数*/
-			rt_free( pnodedata->pmsg );								 /*删除节点数据*/
-			pnode->prev->next	= pnode->next;					/*删除节点*/
-			pnode->next->prev	= pnode->prev;
-			msglist_node_destroy( pnode );
 			return MSGLIST_RET_DELETE_NODE;
-		}else
+		}
+		else
 		{
-			pnodedata->retry++;
-			rt_device_write( pdev_gsm, 0, pnodedata->pmsg, pnodedata->msg_len );
+			
+			//rt_device_write( pdev_gsm, 0, pnodedata->pmsg, pnodedata->msg_len );
+			gsm_ipsend(pnodedata->pmsg, pnodedata->msg_len );
 			pnodedata->tick		= rt_tick_get( );
-			pnodedata->timeout	= pnodedata->max_retry * pnodedata->timeout;
+			pnodedata->retry++;
+			pnodedata->timeout	= pnodedata->retry * jt808_param.id_0x0002*RT_TICK_PER_SECOND;
 			pnodedata->state	= WAIT_ACK;
-			rt_kprintf( "send retry=%d,timeout=%d\r\n", pnodedata->retry, pnodedata->timeout );
+			rt_kprintf( "send retry=%d,timeout=%d\r\n", pnodedata->retry, pnodedata->timeout*10 );			
+			
 		}
 		return MSGLIST_RET_OK;
 	}
@@ -1255,15 +1269,14 @@ static MsgListRet jt808_tx_proc( MsgListNode* node )
 
 	if( pnodedata->state == ACK_OK )        /*收到ACK，在接收中置位*/
 	{
-		rt_free( pnodedata->pmsg );         /*删除节点数据*/
-		pnode->prev->next	= pnode->next;  /*删除节点*/
-		pnode->next->prev	= pnode->prev;
-		msglist_node_destroy( pnode );
+		//pnodedata->cb_tx_response( pnodedata );
 		return MSGLIST_RET_DELETE_NODE;
 	}
 
 	return MSGLIST_RET_OK;
 }
+
+
 
 
 
@@ -1304,6 +1317,11 @@ static void jt808_socket_proc( void )
 	volatile uint32_t state;
 	static rt_tick_t lasttick;
 	static uint8_t		flag_connect=0;
+
+	MsgListNode * iter;
+	MsgListNode * iter_next;
+	JT808_TX_MSG_NODEDATA* pnodedata;
+
 	
 
 	if(flag_disable_report) return;
@@ -1313,14 +1331,31 @@ static void jt808_socket_proc( void )
 	{
 		if(flag_connect==0) /*连接主server*/
 		{
-			config_apn(jt808_param.id_0x0010,jt808_param.id_0x0011,jt808_param.id_0x0012);
-			config_sock(0,'t',jt808_param.id_0x0013,jt808_param.id_0x0018);
+			curr_gsm_socket.apn=jt808_param.id_0x0010;
+			curr_gsm_socket.user=jt808_param.id_0x0011;
+			curr_gsm_socket.psw=jt808_param.id_0x0012;
+			curr_gsm_socket.type='t';
+			if(is_ipstr(jt808_param.id_0x0013))
+				strcpy(curr_gsm_socket.ip_str,jt808_param.id_0x0013);
+			else
+				curr_gsm_socket.ip_domain=jt808_param.id_0x0013;
+			curr_gsm_socket.port=jt808_param.id_0x0018;
+			rt_kprintf("\r\napn=%s\r\n",curr_gsm_socket.apn);
 		}
 		else
 		{
-			config_apn(jt808_param.id_0x0014,jt808_param.id_0x0015,jt808_param.id_0x0016);
-			config_sock(0,'t',jt808_param.id_0x0017,jt808_param.id_0x0018);
+			curr_gsm_socket.apn=jt808_param.id_0x0014;
+			curr_gsm_socket.user=jt808_param.id_0x0015;
+			curr_gsm_socket.psw=jt808_param.id_0x0016;
+			curr_gsm_socket.type='t';
+			if(is_ipstr(jt808_param.id_0x0017))
+				strcpy(curr_gsm_socket.ip_str,jt808_param.id_0x0017);
+			else
+				curr_gsm_socket.ip_domain=jt808_param.id_0x0017;
+
+			curr_gsm_socket.port=jt808_param.id_0x0018;
 		}
+		curr_gsm_socket.state=SOCKET_IDLE;
 		config_gsmstate(GSM_POWERON);
 		return;
 	}
@@ -1332,23 +1367,22 @@ static void jt808_socket_proc( void )
 
 
 /*检查socket状态,判断用不用DNS*/	
-	state=sockstate(0,0);
-	switch(state)
+	switch(curr_gsm_socket.state)
 	{
 		case SOCKET_IDLE:
 			if(flag_connect==0)
 			{
 				if(is_ipstr(jt808_param.id_0x0013)) 
-					sockstate(0,SOCKET_CONNECT);
+					curr_gsm_socket.state=SOCKET_CONNECT;
 				else
-					sockstate(0,SOCKET_DNS);
+					curr_gsm_socket.state=SOCKET_DNS;
 			}	
 			else
 			{
 				if(is_ipstr(jt808_param.id_0x0017)) 
-					sockstate(0,SOCKET_CONNECT);
+					curr_gsm_socket.state=SOCKET_CONNECT;
 				else
-					sockstate(0,SOCKET_DNS);
+					curr_gsm_socket.state=SOCKET_DNS;
 			}
 			break;
 		case SOCKET_CONNECT_ERR:
@@ -1365,10 +1399,43 @@ static void jt808_socket_proc( void )
 	if(state!=SOCKET_READY) return;
 /*是否发送数据*/	
 
-
-
-
-
+#ifdef MULTI_PROCESS                                                /*多处理*/
+	iter = list_jt808_tx->first;
+	while( iter != RT_NULL )
+	{
+		iter_next = iter->next; 								/*先备份,以防节点被删除*/
+		if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
+		{
+			pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
+			rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
+			rt_free(pnodedata); 							/*删除节点数据*/
+			if(iter->next==RT_NULL) 	/*已到list尾*/
+			{
+				(MsgListNode*)(iter->prev)->next=RT_NULL;
+				rt_free( iter );
+				//msglist_node_destroy(iter);
+				iter=RT_NULL;
+			}
+			else
+			{
+				iter->prev->next	= iter->next;				/*删除节点*/
+				iter->next->prev	= iter->prev;
+				rt_free( iter );
+				iter = iter_next;
+			}	
+		}
+	}
+#else  /*逐条处理*/
+	iter = list_jt808_tx->first;
+	if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
+	{
+		pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
+		rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
+		rt_free(pnodedata); 							/*删除节点数据*/
+		list_jt808_tx->first=iter->next;				/*指向下一个*/
+		rt_free( iter );
+	}
+#endif
 
 }
 
@@ -1388,31 +1455,6 @@ static void rt_thread_entry_jt808( void* parameter )
 {
 	rt_err_t	ret;
 	uint8_t		*pstr;
-
-
-	MsgListNode * iter;
-	MsgListNode * iter_next;
-#if 1
-	int16_t		i = 0, len = 1024;
-
-	uint8_t		buf[512];
-	uint16_t	id			= 0x8001;
-	uint16_t	attr		= 0x05;
-	uint8_t		mobile[6]	= { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc };
-
-	rt_kprintf( "\r\n--------------------------\r\n" );
-	//len=jt808_sprintf(buf,"x80\x01\x00\x05\x01\x39\x20\x61\x41\x00\x00\x01\x00\x01\x80\x20\x00");
-	len = jt808_pack( buf, "%w%w%6s\x7d\x7e", id, attr, &mobile[0] );
-	for( i = 0; i < len; i++ )
-	{
-		rt_kprintf( "%02x ", buf[i] );
-	}
-	rt_kprintf( "\r\n--------------------------\r\n" );
-
-	//handle_jt808_tx_0x0002(1,1,1);
-//	rt_kprintf( "param_0x0000=%x", param_0x0000 );
-//	SET_PARAM_DWORD( 0x0000, 0x1234 );
-#endif
 
 	PT_INIT( &pt_jt808_socket );
 
@@ -1445,20 +1487,6 @@ static void rt_thread_entry_jt808( void* parameter )
 		}
 /*jt808 socket处理*/
 		jt808_socket_proc();
-#ifdef MULTI_PROCESS                                                /*多处理*/
-		iter = list_jt808_tx->first;
-		while( iter != RT_NULL )
-		{
-			iter_next = iter->next;                                 /*先备份,以防节点被删除*/
-			if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )  /*该节点已被删除*/
-			{
-				iter = iter_next;
-			}
-		}
-#else  /*逐条处理*/
-		jt808_tx_proc( list_jt808_tx->first );
-
-#endif
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
 
@@ -1547,6 +1575,197 @@ rt_err_t gprs_tx( uint8_t linkno, uint8_t * pinfo, uint16_t length )
 }
 
 FINSH_FUNCTION_EXPORT( gprs_tx, simlute gprs tx );
+
+
+
+
+rt_err_t server(uint8_t cmd,char* apn,char* name,char* psw)
+{
+	if(cmd==0) /*打印参数*/
+	{
+		rt_kprintf("\r\napn=%s user=%s psw=%s ip_domain=%s tcp_port=%d udp_port=%d",
+					jt808_param.id_0x0010,
+					jt808_param.id_0x0011,
+					jt808_param.id_0x0012,
+					jt808_param.id_0x0013,
+					jt808_param.id_0x0018,
+					jt808_param.id_0x0019
+					);
+		rt_kprintf("\r\napn=%s user=%s psw=%s ip_domain=%s tcp_port=%d udp_port=%d\r\n",
+					jt808_param.id_0x0014,
+					jt808_param.id_0x0015,
+					jt808_param.id_0x0016,
+					jt808_param.id_0x0017,
+					jt808_param.id_0x0018,
+					jt808_param.id_0x0019
+					);
+
+		
+	}
+	if(cmd==1) /*设置主server*/
+	{
+
+
+	}
+	if(cmd==2) /*设置备份server*/
+	{
+
+
+	}
+	return RT_EOK;
+}
+
+FINSH_FUNCTION_EXPORT( server, config server );
+
+
+
+static uint16_t jt808_pack_byte(uint8_t *buf,uint8_t *fcs,uint8_t data)
+{
+	uint8_t *p=buf;
+	*fcs^=data;
+	if((data==0x7d)||(data==0x7e))
+	{
+		*p++ = 0x7d;
+		*p = (data-0x7c);
+		return 2;
+	}
+	else
+	{
+		*p = data;
+		return 1;
+	}	
+}
+
+/*
+static uint16_t jt808_pack_word(uint8_t *buf,uint8_t *fcs,uint16_t data)
+{
+	uint16_t count=0;
+	count+=jt808_pack_byte(buf+count,fcs,(data>>8));
+	count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+	return count;
+}
+
+static uint16_t jt808_pack_dword(uint8_t *buf,uint8_t *fcs,uint32_t data)
+{
+	uint16_t count=0;
+	count+=jt808_pack_byte(buf+count,fcs,(data>>24));
+	count+=jt808_pack_byte(buf+count,fcs,(data>>16));
+	count+=jt808_pack_byte(buf+count,fcs,(data>>8));
+	count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+	return count;
+}
+*/
+
+/*传递进长度，便于计算*/
+static uint16_t jt808_pack_int(uint8_t *buf,uint8_t *fcs,uint32_t data,uint8_t width )
+{
+	uint16_t count=0;
+	switch(width)
+	{
+		case 1:
+			count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+			break;
+		case 2:
+			count+=jt808_pack_byte(buf+count,fcs,(data>>8));
+			count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+			break;
+		case 4:
+			count+=jt808_pack_byte(buf+count,fcs,(data>>24));	
+			count+=jt808_pack_byte(buf+count,fcs,(data>>16));
+			count+=jt808_pack_byte(buf+count,fcs,(data>>8));
+			count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+			break;
+	}
+	return count;
+}
+
+
+
+
+
+
+static uint16_t jt808_pack_string(uint8_t *buf,uint8_t *fcs,char *str)
+{
+	uint16_t count=0;
+	char *p=str;
+	while(*p)
+	{ 
+		count+=jt808_pack_byte(buf+count,fcs,*p++);
+	}
+	return count;
+}
+
+static uint16_t jt808_pack_array(uint8_t *buf,uint8_t *fcs,uint8_t *src,uint16_t len)
+{
+	uint16_t count=0;
+	int i;
+	char *p=src;
+	for(i=0;i<len;i++)
+	{ 
+		count+=jt808_pack_byte(buf+count,fcs,*p++);
+	}
+	return count;
+}
+
+static rt_err_t jt808_tx( void )
+{
+	uint8_t					*pdata;
+	JT808_TX_MSG_NODEDATA	*pnodedata;
+	uint8_t					buf[256];
+	uint8_t					*p;
+	uint16_t				len;
+	uint8_t fcs=0;
+	int i;
+
+	pnodedata = rt_malloc( sizeof( JT808_TX_MSG_NODEDATA ) );
+	if( pnodedata == NULL )
+	{
+		return -1;
+	}
+	pnodedata->type		= TERMINAL_CMD; /*发送即删除，其他不用配置*/
+	pnodedata->state	= IDLE;
+	pnodedata->retry=0;
+	pnodedata->cb_tx_timeout=jt808_tx_timeout;
+	pnodedata->cb_tx_response=jt808_tx_response;
+
+	len=1;
+	len+=jt808_pack_int(buf+len,&fcs,0x0100,2);
+	len+=jt808_pack_int(buf+len,&fcs,25+strlen(jt808_param.id_0x0083),2);
+	len+=jt808_pack_array(buf+len,&fcs,term_param.mobile,6);
+	len+=jt808_pack_int(buf+len,&fcs,tx_seq,2);
+	
+	len+=jt808_pack_int(buf+len,&fcs,jt808_param.id_0x0081,2);
+	len+=jt808_pack_int(buf+len,&fcs,jt808_param.id_0x0082,2);
+	len+=jt808_pack_array(buf+len,&fcs,term_param.producer_id,5);
+	len+=jt808_pack_array(buf+len,&fcs,term_param.model,8);
+	len+=jt808_pack_array(buf+len,&fcs,term_param.terminal_id,7);
+	len+=jt808_pack_int(buf+len,&fcs,jt808_param.id_0x0084,1);
+	len+=jt808_pack_string(buf+len,&fcs,jt808_param.id_0x0083);
+	len+=jt808_pack_byte(buf+len,&fcs,fcs);
+	buf[0]=0x7e;
+	buf[len]=0x7e;
+	pdata	= rt_malloc( len+1 );
+	if( pdata == NULL )
+	{
+		rt_free( pnodedata );
+		return;
+	}
+	rt_kprintf("\r\n--------------------\r\n");
+	for(i=0;i<len+1;i++) rt_kprintf("%02x ",buf[i]);
+	rt_kprintf("\r\n--------------------\r\n");
+	memcpy( pdata, buf, len+1 );
+	pnodedata->msg_len	= len+1;
+	pnodedata->pmsg		= pdata;
+	msglist_append( list_jt808_tx, pnodedata );
+	tx_seq++;
+}
+
+FINSH_FUNCTION_EXPORT( jt808_tx, jt808_tx test );
+
+
+
+
+
 
 /************************************** The End Of File **************************************/
 

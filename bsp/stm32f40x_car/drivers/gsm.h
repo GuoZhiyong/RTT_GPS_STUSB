@@ -63,16 +63,6 @@ typedef enum
 }T_GSM_STATE;
 
 
-typedef enum
-{
-	SOCKET_IDLE=1,	/*无需启动*/
-//	SOCKET_INIT,
-	SOCKET_DNS,	/*DNS查询中*/
-	SOCKET_DNS_ERR,
-	SOCKET_CONNECT, /*连接中*/
-	SOCKET_CONNECT_ERR, /*连接错误，对方不应答*/
-	SOCKET_READY,	/*已完成，可以建立链接*/
-}T_SOCKET_STATE;
 
 void gsm_init(void);
 int gsm_send(uint8_t *pinfo,uint16_t len);

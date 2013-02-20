@@ -2,20 +2,21 @@
 消息格式，包括收发的统一
  */
 #include <stdlib.h>
+#include <rtthread.h>
 #include "msglist.h"
 
 
 
 MsgListNode* msglist_node_create(void* data)
 {
-	MsgListNode* node = malloc(sizeof(MsgListNode));
+	MsgListNode* node = rt_malloc(sizeof(MsgListNode));
 
-	if(node != NULL)
+	if(node != RT_NULL)
 	{
-		node->prev = NULL;
-		node->next = NULL;
-		node->sibling_dn=NULL;
-		node->sibling_up=NULL;
+		node->prev = RT_NULL;
+		node->next = RT_NULL;
+		node->sibling_dn=RT_NULL;
+		node->sibling_up=RT_NULL;
 		node->data = data;
 	}
 
@@ -24,13 +25,13 @@ MsgListNode* msglist_node_create(void* data)
 
 void msglist_node_destroy(MsgListNode* node)
 {
-	if(node != NULL)
+	if(node != RT_NULL)
 	{
-		node->next = NULL;
-		node->prev = NULL;
-		node->sibling_dn=NULL;
-		node->sibling_up=NULL;
-		free(node);
+		node->next = RT_NULL;
+		node->prev = RT_NULL;
+		node->sibling_dn=RT_NULL;
+		node->sibling_up=RT_NULL;
+		rt_free(node);
 	}
 
 	return;
@@ -38,11 +39,11 @@ void msglist_node_destroy(MsgListNode* node)
 
 MsgList* msglist_create(void)
 {
-	MsgList* thiz = malloc(sizeof(MsgList));
+	MsgList* thiz = rt_malloc(sizeof(MsgList));
 
-	if(thiz != NULL)
+	if(thiz != RT_NULL)
 	{
-		thiz->first = NULL;
+		thiz->first = RT_NULL;
 	}
 
 	return thiz;
@@ -50,22 +51,22 @@ MsgList* msglist_create(void)
 
 MsgListRet msglist_prepend(MsgList* thiz, void* data)
 {
-	MsgListNode* node = NULL;
-	MsgListNode* iter=NULL;
+	MsgListNode* node = RT_NULL;
+	MsgListNode* iter=RT_NULL;
 
-	if((node = msglist_node_create(data)) == NULL)
+	if((node = msglist_node_create(data)) == RT_NULL)
 	{
 		return MSGLIST_RET_OOM; 
 	}
 
-	if(thiz->first == NULL)
+	if(thiz->first == RT_NULL)
 	{
 		thiz->first = node;
 		return MSGLIST_RET_OK;
 	}
 	
 	iter= thiz->first;
-	while(iter->prev != NULL)
+	while(iter->prev != RT_NULL)
 	{
 		iter = iter->prev;
 	}
@@ -79,22 +80,22 @@ MsgListRet msglist_prepend(MsgList* thiz, void* data)
 
 MsgListRet msglist_append(MsgList* thiz, void* data)
 {
-	MsgListNode* node = NULL;
-	MsgListNode* iter=NULL;
+	MsgListNode* node = RT_NULL;
+	MsgListNode* iter=RT_NULL;
 
-	if((node = msglist_node_create(data)) == NULL)
+	if((node = msglist_node_create(data)) == RT_NULL)
 	{
 		return MSGLIST_RET_OOM; 
 	}
 
-	if(thiz->first == NULL)
+	if(thiz->first == RT_NULL)
 	{
 		thiz->first = node;
 		return MSGLIST_RET_OK;
 	}
 	
 	iter= thiz->first;
-	while(iter->next != NULL)
+	while(iter->next != RT_NULL)
 	{
 		iter = iter->next;
 	}
@@ -112,7 +113,7 @@ size_t   msglist_length(MsgList* thiz)
 	size_t length = 0;
 	MsgListNode* iter = thiz->first;
 
-	while(iter != NULL)
+	while(iter != RT_NULL)
 	{
 		length++;
 		iter = iter->next;
@@ -126,7 +127,7 @@ MsgListRet msglist_foreach(MsgList* thiz, MsgListDataVisitFunc visit, void* ctx)
 	MsgListRet ret = MSGLIST_RET_OK;
 	MsgListNode* iter = thiz->first;
 
-	while(iter != NULL && ret != MSGLIST_RET_STOP)
+	while(iter != RT_NULL && ret != MSGLIST_RET_STOP)
 	{
 		ret = visit(ctx, iter);
 		iter = iter->next;
@@ -140,7 +141,7 @@ int      msglist_find(MsgList* thiz, MsgListDataCompareFunc cmp, void* ctx)
 	int i = 0;
 	MsgListNode* iter = thiz->first;
 
-	while(iter != NULL)
+	while(iter != RT_NULL)
 	{
 		if(cmp(ctx, iter) == 0)
 		{
@@ -156,17 +157,17 @@ int      msglist_find(MsgList* thiz, MsgListDataCompareFunc cmp, void* ctx)
 void msglist_destroy(MsgList* thiz)
 {
 	MsgListNode* iter = thiz->first;
-	MsgListNode* next = NULL;
+	MsgListNode* next = RT_NULL;
 
-	while(iter != NULL)
+	while(iter != RT_NULL)
 	{
 		next = iter->next;
 		msglist_node_destroy(iter);
 		iter = next;
 	}
 
-	thiz->first = NULL;
-	free(thiz);
+	thiz->first = RT_NULL;
+	rt_free(thiz);
 
 	return;
 }
