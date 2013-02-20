@@ -394,8 +394,10 @@ typedef struct
 	char*			user;
 	char*			psw;
 	char*			ip_domain;    /*域名*/
-	char			ip_str[16];         /*dns后的IP xxx.xxx.xxx.xxx*/
+	char			ip_str[16];     /*dns后的IP xxx.xxx.xxx.xxx*/
 	uint16_t		port;           /*端口*/
+//	MsgList*		msglist_tx;
+//	MsgList*		msglist_rx;
 }GSM_SOCKET;
 
 

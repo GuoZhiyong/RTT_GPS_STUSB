@@ -801,6 +801,7 @@ static int handle_jt808_rx_0x8001( JT808_RX_MSG_NODEDATA* nodedata )
 /* 监控中心对终端注册消息的应答*/
 static int handle_jt808_rx_0x8100( JT808_RX_MSG_NODEDATA* nodedata )
 {
+	rt_kprintf("rx>0x8100\r\n");
 	return 1;
 }
 
@@ -1530,19 +1531,13 @@ void gps_rx( uint8_t *pinfo, uint16_t length )
 rt_err_t gprs_rx( uint8_t linkno, uint8_t * pinfo, uint16_t length )
 {
 	uint8_t *pmsg;
-	pmsg = rt_malloc( 20 + 3 ); /*包含长度信息*/
-	//pmsg = rt_malloc( length + 3 ); /*包含长度信息*/
+	pmsg = rt_malloc( length + 3 ); /*包含长度信息*/
 	if( pmsg != RT_NULL )
 	{
-		//pmsg[0] = linkno;
-		//pmsg[1] = length >> 8;
-		//pmsg[2] = length & 0xff;
-		//memcpy( pmsg + 3, pinfo, length );
-
-		pmsg[0] = 0;
-		pmsg[1] = 0;
-		pmsg[2] = 20;
-		memcpy( pmsg + 3, "\x7e\x80\x01\x00\x05\x01\x39\x20\x61\x41\x00\x00\x01\x00\x01\x80\x20\x00\x1c\x7e", 20 );
+		pmsg[0] = linkno;
+		pmsg[1] = length >> 8;
+		pmsg[2] = length & 0xff;
+		memcpy( pmsg + 3, pinfo, length );
 		rt_mb_send( &mb_gprsdata, (rt_uint32_t)pmsg );
 		return 0;
 	}
