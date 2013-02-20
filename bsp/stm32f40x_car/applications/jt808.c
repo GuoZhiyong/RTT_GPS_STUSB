@@ -597,14 +597,7 @@ static uint16_t jt808_decode_fcs( uint8_t *pinfo, uint16_t length )
 	{
 		if( fstuff )
 		{
-			if( *psrc == 0x02 )
-			{
-				*pdst = 0x7e;
-			}
-			if( *psrc == 0x01 )
-			{
-				*pdst = 0x7d;
-			}
+			*pdst=*psrc+0x7c;
 			fstuff = 0;
 			count++;
 			fcs ^= *pdst;
@@ -808,6 +801,7 @@ static int handle_jt808_rx_0x8100( JT808_RX_MSG_NODEDATA* nodedata )
 /*设置终端参数*/
 static int handle_jt808_rx_0x8103( JT808_RX_MSG_NODEDATA* nodedata )
 {
+	rt_kprintf("rx>0x8103\r\n");
 	return 1;
 }
 
@@ -1061,6 +1055,7 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 	uint8_t					flag_find = 0;
 
 	uint16_t				ret;
+	uint16_t				attr;
 
 	MsgListNode				* node;
 	JT808_RX_MSG_NODEDATA	* nodedata;
@@ -1073,29 +1068,37 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 
 	linkno	= pinfo[0];
 	len		= ( pinfo[1] << 8 ) | pinfo[2];
-
+	rt_kprintf(">dump start\r\n");
+	psrc=pinfo+3;
+	for(i=0;i<len;i++)	rt_kprintf("%02x ",*psrc++);
+	rt_kprintf(">dump end\r\n");
+	
 	len = jt808_decode_fcs( pinfo + 3, len );
 	if( len == 0 )                                  /*格式不正确*/
 	{
+		rt_kprintf(">len=0\r\n");
 		rt_free( pinfo );
 		return 1;
 	}
 
+/*对收到的信息进行解析*/
+
 	nodedata = rt_malloc( sizeof( JT808_RX_MSG_NODEDATA ) );
-	if( nodedata == RT_NULL )                       /*无法处理此信息*/
+	if( nodedata == RT_NULL )						/*无法处理此信息*/
 	{
 		rt_free( pinfo );
 		return 1;
 	}
 
-	psrc				= pinfo;                    /*注意开始的linkno len*/
+	psrc				= pinfo;					/*注意开始的linkno len*/
 	nodedata->linkno	= psrc[0];
 	nodedata->id		= ( *( psrc + 3 ) << 8 ) | *( psrc + 4 );
 	nodedata->attr		= ( *( psrc + 5 ) << 8 ) | *( psrc + 6 );
 	memcpy( nodedata->mobileno, psrc + 7, 6 );
 	nodedata->seq		= ( *( psrc + 13 ) << 8 ) | *( psrc + 14 );
-	nodedata->msg_len	= nodedata->attr & 0x3ff;   /*有效的信息长度在attr字段指示*/
-	nodedata->tick		= rt_tick_get( );           /*收到的时刻*/
+	nodedata->msg_len	= nodedata->attr & 0x3ff;	/*有效的信息长度在attr字段指示*/
+	nodedata->tick		= rt_tick_get( );			/*收到的时刻*/
+
 
 /* 单包数据处理,不需要创建MsgNode */
 	if(( nodedata->attr & 0x2000 )== 0 )
@@ -1116,7 +1119,11 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 		rt_free( pinfo );
 		rt_free( nodedata );
 	}
-/*检查是否有超时没有处理的信息，主要是多包信息*/
+
+
+/*检查是否有超时没有处理的信息，主要是多包信息
+收到消息才会处理，如果长时间没有收到，占用内存
+*/
 
 	iter		= list_jt808_rx->first;
 	flag_find	= 0;
@@ -1154,6 +1161,9 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 	{
 		return 0;
 	}
+
+
+	
 
 /*分包处理,创建新的节点*/
 	node = msglist_node_create( (void*)nodedata );
@@ -1417,10 +1427,6 @@ static void rt_thread_entry_jt808( void* parameter )
 	MsgListNode * iter;
 	MsgListNode * iter_next;
 	JT808_TX_MSG_NODEDATA* pnodedata;
-
-
-
-	
 
 	PT_INIT( &pt_jt808_socket );
 
