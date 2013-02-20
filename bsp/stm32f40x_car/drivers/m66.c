@@ -1130,11 +1130,13 @@ rt_size_t gsm_write( char *sinfo )
 FINSH_FUNCTION_EXPORT( gsm_write, write gsm );
 
 
-rt_size_t gsm_ipsend( uint8_t* buff, rt_size_t count )
+rt_size_t gsm_ipsend( uint8_t* buff, rt_size_t count ,rt_int32_t timeout)
 {
 	rt_size_t	len = count;
 	uint8_t		*p	= (uint8_t*)buff;
 	uint8_t		c;
+	char		*pstr;
+	rt_err_t	ret;	
 
 	uint8_t		buf_start[20];
 	uint8_t		buf_end[4]={'"',0x0d,0x0a,0x0};
@@ -1143,6 +1145,7 @@ rt_size_t gsm_ipsend( uint8_t* buff, rt_size_t count )
 
 	sprintf(buf_start,"AT%%IPSENDX=1,\"");
 	m66_write( &dev_gsm,0,buf_start,strlen(buf_start));
+	rt_kprintf("%s",buf_start);
 	while( len )
 	{
 		c=*p++;
@@ -1151,16 +1154,28 @@ rt_size_t gsm_ipsend( uint8_t* buff, rt_size_t count )
 		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
 		{
 		}
-		
+		rt_kprintf("%c",tbl[c>>4]);
 		USART_SendData( UART4, tbl[c&0x0f] );
 		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
 		{
 		}
+		rt_kprintf("%c",tbl[c&0x0f]);
 		len--;
 	}
 	m66_write( &dev_gsm,0,buf_end,3);
+	rt_kprintf("%s",buf_end);
+
+	ret = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pstr, timeout );
+	if( ret == -RT_ETIMEOUT )
+	{
+		return RT_ETIMEOUT;
+	}
+	len = ( ( *pstr ) << 8 ) | ( *( pstr + 1 ) );
+	if(strstr(pstr+2,"OK")) ret=RT_EOK;
+	else ret=RT_ERROR;
+	rt_free( pstr );
 	
-	return RT_EOK;
+	return ret;
 }
 
 

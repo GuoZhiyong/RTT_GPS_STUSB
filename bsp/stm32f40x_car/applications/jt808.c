@@ -218,9 +218,9 @@ JT808_PARAM jt808_param =
 
 TERM_PARAM term_param=
 {
-	{0x01,0x23,0x45,0x67,0x89,0xab},
-	{'7','0','4','2','0'},
-	{'T','W','7','0','1','-','B','D'},
+	{0x11,0x22,0x33,0x44,0x55,0x66},
+	{'T','C','B','B','D'},
+	{'T','W','7','0','1','-','B','D',0,0,0,0,0,0,0,0,0,0,0,0},
 	{0x00,0x99,0xaa,0xbb,0xcc,0xdd,0xee},
 };
 
@@ -1248,7 +1248,7 @@ static MsgListRet jt808_tx_proc( MsgListNode* node )
 		{
 			
 			//rt_device_write( pdev_gsm, 0, pnodedata->pmsg, pnodedata->msg_len );
-			gsm_ipsend(pnodedata->pmsg, pnodedata->msg_len );
+			gsm_ipsend(pnodedata->pmsg, pnodedata->msg_len,jt808_param.id_0x0002*RT_TICK_PER_SECOND);
 			pnodedata->tick		= rt_tick_get( );
 			pnodedata->retry++;
 			pnodedata->timeout	= pnodedata->retry * jt808_param.id_0x0002*RT_TICK_PER_SECOND;
@@ -1317,12 +1317,6 @@ static void jt808_socket_proc( void )
 	volatile uint32_t state;
 	static rt_tick_t lasttick;
 	static uint8_t		flag_connect=0;
-
-	MsgListNode * iter;
-	MsgListNode * iter_next;
-	JT808_TX_MSG_NODEDATA* pnodedata;
-
-	
 
 	if(flag_disable_report) return;
 /*检查GSM状态*/
@@ -1399,43 +1393,6 @@ static void jt808_socket_proc( void )
 	if(state!=SOCKET_READY) return;
 /*是否发送数据*/	
 
-#ifdef MULTI_PROCESS                                                /*多处理*/
-	iter = list_jt808_tx->first;
-	while( iter != RT_NULL )
-	{
-		iter_next = iter->next; 								/*先备份,以防节点被删除*/
-		if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
-		{
-			pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
-			rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
-			rt_free(pnodedata); 							/*删除节点数据*/
-			if(iter->next==RT_NULL) 	/*已到list尾*/
-			{
-				(MsgListNode*)(iter->prev)->next=RT_NULL;
-				rt_free( iter );
-				//msglist_node_destroy(iter);
-				iter=RT_NULL;
-			}
-			else
-			{
-				iter->prev->next	= iter->next;				/*删除节点*/
-				iter->next->prev	= iter->prev;
-				rt_free( iter );
-				iter = iter_next;
-			}	
-		}
-	}
-#else  /*逐条处理*/
-	iter = list_jt808_tx->first;
-	if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
-	{
-		pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
-		rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
-		rt_free(pnodedata); 							/*删除节点数据*/
-		list_jt808_tx->first=iter->next;				/*指向下一个*/
-		rt_free( iter );
-	}
-#endif
 
 }
 
@@ -1455,6 +1412,14 @@ static void rt_thread_entry_jt808( void* parameter )
 {
 	rt_err_t	ret;
 	uint8_t		*pstr;
+
+	MsgListNode * iter;
+	MsgListNode * iter_next;
+	JT808_TX_MSG_NODEDATA* pnodedata;
+
+
+
+	
 
 	PT_INIT( &pt_jt808_socket );
 
@@ -1487,6 +1452,44 @@ static void rt_thread_entry_jt808( void* parameter )
 		}
 /*jt808 socket处理*/
 		jt808_socket_proc();
+#ifdef MULTI_PROCESS                                                /*多处理*/
+			iter = list_jt808_tx->first;
+			while( iter != RT_NULL )
+			{
+				iter_next = iter->next; 								/*先备份,以防节点被删除*/
+				if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
+				{
+					pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
+					rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
+					rt_free(pnodedata); 							/*删除节点数据*/
+					if(iter->next==RT_NULL) 	/*已到list尾*/
+					{
+						(MsgListNode*)(iter->prev)->next=RT_NULL;
+						rt_free( iter );
+						//msglist_node_destroy(iter);
+						iter=RT_NULL;
+					}
+					else
+					{
+						iter->prev->next	= iter->next;				/*删除节点*/
+						iter->next->prev	= iter->prev;
+						rt_free( iter );
+						iter = iter_next;
+					}	
+				}
+			}
+#else  /*逐条处理*/
+			iter = list_jt808_tx->first;
+			if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
+			{
+				pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
+				rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
+				rt_free(pnodedata); 							/*删除节点数据*/
+				list_jt808_tx->first=iter->next;				/*指向下一个*/
+				rt_free( iter );
+			}
+#endif
+
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
 
@@ -1730,14 +1733,14 @@ static rt_err_t jt808_tx( void )
 
 	len=1;
 	len+=jt808_pack_int(buf+len,&fcs,0x0100,2);
-	len+=jt808_pack_int(buf+len,&fcs,25+strlen(jt808_param.id_0x0083),2);
+	len+=jt808_pack_int(buf+len,&fcs,37+strlen(jt808_param.id_0x0083),2);
 	len+=jt808_pack_array(buf+len,&fcs,term_param.mobile,6);
 	len+=jt808_pack_int(buf+len,&fcs,tx_seq,2);
 	
 	len+=jt808_pack_int(buf+len,&fcs,jt808_param.id_0x0081,2);
 	len+=jt808_pack_int(buf+len,&fcs,jt808_param.id_0x0082,2);
 	len+=jt808_pack_array(buf+len,&fcs,term_param.producer_id,5);
-	len+=jt808_pack_array(buf+len,&fcs,term_param.model,8);
+	len+=jt808_pack_array(buf+len,&fcs,term_param.model,20);
 	len+=jt808_pack_array(buf+len,&fcs,term_param.terminal_id,7);
 	len+=jt808_pack_int(buf+len,&fcs,jt808_param.id_0x0084,1);
 	len+=jt808_pack_string(buf+len,&fcs,jt808_param.id_0x0083);

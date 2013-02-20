@@ -306,7 +306,7 @@ typedef struct
 {
 	char mobile[6];		/*ÖÕ¶ËºÅÂë*/
 	uint8_t producer_id[5];
-	uint8_t model[8];
+	uint8_t model[20];
 	uint8_t terminal_id[7];
 }TERM_PARAM;
 
