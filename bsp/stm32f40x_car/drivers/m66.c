@@ -569,32 +569,22 @@ static void gsmrx_cb( uint8_t *pInfo, uint16_t len )
 	
 	if(strncmp(psrc,"%IPDATA:",7)==0)
 	{
-		/*解析出净信息*/
+		/*解析出净信息,编译器会优化掉pdst*/
 		i = sscanf( psrc, "%%IPDATA:%d,%d,%s", &link, &infolen, pdst );
 		if( i != 3 ) return;
 		if( infolen < 11 ) return;
 		if( *pdst != '"' ) return;
+		psrc=pdst;
 		pmsg = pdst+1;	/*指向下一个位置*/
-		while( *pmsg != '"' )
+		for(i=0;i<infolen;i++)
 		{
-			c = tbl[*pmsg - '0'] << 4;
-			pmsg++;
-			c |= tbl[*pmsg - '0'];
-			pmsg++;
+			c = tbl[*pmsg++ - '0'] << 4;
+			c |= tbl[*pmsg++ - '0'];
 			*pdst++ = c;
-			count++;
-			if( count >= infolen )
-			{
-				break;
-			}
 		}
-		gprs_rx(link, pdst, count );
+		gprs_rx(link, psrc, infolen );
 		return;
 	}
-
-
-
-
 
 	/*直接发送到Mailbox中*/
 	pmsg = rt_malloc( len );

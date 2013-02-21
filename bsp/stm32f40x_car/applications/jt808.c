@@ -996,6 +996,7 @@ static int handle_jt808_rx_0x8A00( JT808_RX_MSG_NODEDATA* nodedata )
 ***********************************************************/
 static int handle_jt808_rx_default( JT808_RX_MSG_NODEDATA* nodedata )
 {
+	rt_kprintf("\r\nunknown!\r\n");
 	return 1;
 }
 
@@ -1055,7 +1056,6 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 	uint8_t					flag_find = 0;
 
 	uint16_t				ret;
-	uint16_t				attr;
 
 	MsgListNode				* node;
 	JT808_RX_MSG_NODEDATA	* nodedata;
@@ -1068,10 +1068,10 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 
 	linkno	= pinfo[0];
 	len		= ( pinfo[1] << 8 ) | pinfo[2];
-	rt_kprintf(">dump start\r\n");
+	rt_kprintf(">dump start len=%d\r\n",len);
 	psrc=pinfo+3;
 	for(i=0;i<len;i++)	rt_kprintf("%02x ",*psrc++);
-	rt_kprintf(">dump end\r\n");
+	rt_kprintf("\r\n>dump end\r\n");
 	
 	len = jt808_decode_fcs( pinfo + 3, len );
 	if( len == 0 )                                  /*格式不正确*/
@@ -1081,8 +1081,7 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 		return 1;
 	}
 
-/*对收到的信息进行解析*/
-
+/*对收到的信息进行解析,此时以解码转义到pinfo+3*/
 	nodedata = rt_malloc( sizeof( JT808_RX_MSG_NODEDATA ) );
 	if( nodedata == RT_NULL )						/*无法处理此信息*/
 	{
@@ -1091,7 +1090,7 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 	}
 
 	psrc				= pinfo;					/*注意开始的linkno len*/
-	nodedata->linkno	= psrc[0];
+	nodedata->linkno	= linkno;
 	nodedata->id		= ( *( psrc + 3 ) << 8 ) | *( psrc + 4 );
 	nodedata->attr		= ( *( psrc + 5 ) << 8 ) | *( psrc + 6 );
 	memcpy( nodedata->mobileno, psrc + 7, 6 );
