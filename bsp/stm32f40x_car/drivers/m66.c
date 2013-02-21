@@ -554,7 +554,6 @@ static void gsmrx_cb( uint8_t *pInfo, uint16_t len )
 		rt_kprintf( "\r\n%08d gsm_rx>%s\r\n", rt_tick_get( ), pInfo );
 		fgsm_rawdata_out--;
 	}
-
 /*
 会返回诸如<0d><0a>OK<0d><0a>之类的数据
 去掉前面不必要的0d0a 和空格等不可见字符

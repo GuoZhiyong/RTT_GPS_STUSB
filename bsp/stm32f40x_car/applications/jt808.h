@@ -16,6 +16,9 @@
 
 #include <stm32f4xx.h>
 #include <rtthread.h>
+
+#include "msglist.h"
+
 #define   MsgQ_Timeout 3
 
 /*
@@ -308,6 +311,7 @@ typedef struct
 	uint8_t producer_id[5];
 	uint8_t model[20];
 	uint8_t terminal_id[7];
+	uint8_t register_code[16];
 }TERM_PARAM;
 
 
@@ -396,8 +400,7 @@ typedef struct
 	char*			ip_domain;    /*域名*/
 	char			ip_str[16];     /*dns后的IP xxx.xxx.xxx.xxx*/
 	uint16_t		port;           /*端口*/
-//	MsgList*		msglist_tx;
-//	MsgList*		msglist_rx;
+	MsgList*		msglist_tx;
 }GSM_SOCKET;
 
 

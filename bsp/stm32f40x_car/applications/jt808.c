@@ -26,7 +26,7 @@
 
 #include "pt.h"
 
-//#define MULTI_PROCESS
+#include "tree_config.h"
 
 #define ByteSwap2( val )    \
     ( ( ( val & 0xff ) << 8 ) |   \
@@ -229,6 +229,67 @@ TERM_PARAM term_param=
 #define FLAG_DISABLE_REPORT_AREA	2	/*区域内禁止上报*/
 
 static uint32_t flag_disable_report=0; /*禁止上报的标志位*/
+
+
+
+
+
+/*初始化一个参数表*/
+static void config_init(void)
+{
+	struct tree_config *root_cfg;
+	struct tree_config *cfg;
+	char *key,*val;
+	int indent,last_indent;
+	int i;
+
+	char *param[]=
+	{
+		"\tversion=13022200",
+		"\tterminal=",
+		"\t\tmobileno=1234567890"
+		"\tid_0001=30",
+		"\tid_0002=5",
+		"\tid_0003=3",
+		
+
+
+	};
+	char buf[128];
+	
+	
+	root_cfg=rt_calloc(1,sizeof(struct config *));
+	if(!root_cfg)
+	{
+		rt_kprintf("\rroot_cfg err\r\n");
+		return;
+	}
+	root_cfg->key = rt_malloc(strlen("root")+1);
+	strcpy(root_cfg->key,"root");
+	root_cfg->val = malloc(strlen("") + 1);	
+	RT_ASSERT(root_cfg->val);	
+	strcpy(root_cfg->val, "");
+	cfg=root_cfg;
+	last_indent = 0;
+/*依次写入各配置数据*/
+	strcpy(buf,"\tversion=13022100");
+	indent=0;
+	key=buf;
+}
+
+static rt_err_t config_load(void)
+{
+
+
+}
+
+
+static rt_err_t config_save(void)
+{
+
+
+}
+
 
 
 
@@ -675,6 +736,7 @@ void jt808_tx_response( JT808_RX_MSG_NODEDATA* nodedata )
 			rt_kprintf( "\r\n	电子运单上报---中心应答!  \r\n");
 			break;
 		default:
+			rt_kprintf("\r\nunknown id=%04x\r\n",id);
 			break;
 	}
 }
@@ -768,40 +830,83 @@ static int handle_jt808_rx_0x8001( JT808_RX_MSG_NODEDATA* nodedata )
 	id	= ( *( msg + 2 ) << 8 ) | *( msg + 3 );
 	res = *( msg + 4 );
 
-#ifdef MULTI_PROCESS
-	iter = list_jt808_tx->first;
-	while( iter != RT_NULL )
-	{
-		iterdata = iter->data;
-
-		if( ( iterdata->head_id == id ) && ( iterdata->head_sn == seq ) )
-		{
-			iterdata->cb_tx_response( nodedata );
-			iterdata->state = ACK_OK;
-		}
-	}
 	/*逐条处理*/
-#else
 	iter = list_jt808_tx->first;
 	if( ( iterdata->head_id == id ) && ( iterdata->head_sn == seq ) )
 	{
 		iterdata->cb_tx_response( nodedata );
 		iterdata->state = ACK_OK;
 	}
-#endif
 }
 
 /* 监控中心对终端注册消息的应答*/
 static int handle_jt808_rx_0x8100( JT808_RX_MSG_NODEDATA* nodedata )
 {
-	rt_kprintf("rx>0x8100\r\n");
+	MsgListNode 			* iter;
+	JT808_TX_MSG_NODEDATA	*iterdata;
+	
+	uint16_t	ack_seq;
+	uint8_t 	res;
+	uint8_t*	msg;
+	
+	msg=nodedata->pmsg;
+	ack_seq = ( *msg << 8 ) | *( msg + 1 );
+	res = *( msg + 2 );
+
+	iter = list_jt808_tx->first;
+	iterdata = iter->data;
+	if( ( iterdata->head_id == 0x0100 ) && ( iterdata->head_sn == ack_seq ) )
+	{
+		rt_kprintf("\r\n%s(%d)>res=%d\r\n",__func__,__LINE__,res);
+		if(res==0)
+		{
+			strncpy(term_param.register_code,msg+3,nodedata->msg_len);
+			iterdata->state = ACK_OK;
+		}	
+	}
 	return 1;
 }
 
 /*设置终端参数*/
 static int handle_jt808_rx_0x8103( JT808_RX_MSG_NODEDATA* nodedata )
 {
-	rt_kprintf("rx>0x8103\r\n");
+	uint8_t* msg;
+	uint8_t* p;
+	
+	uint8_t param_count;
+	
+	uint16_t msg_len,count=0;
+
+	uint32_t id;
+	uint8_t  len;
+	
+	msg=nodedata->pmsg;
+	msg_len=nodedata->msg_len-1; 
+	param_count=*msg;
+	p=msg+1;
+/*使用数据长度,判断数据是否结束，没有使用参数总数*/	
+	while(count<msg_len)
+	{
+		id=((*p++)<<24)|((*p++)<<16)|((*p++)<<8)|(*p++);
+		len=*p++;
+		count+=(5+len);
+		switch(id)
+		{
+			case 0x0001:
+				jt808_param.id_0x0001=((*p++)<<24)|((*p++)<<16)|((*p++)<<8)|(*p++);
+				break;
+			case 0x0002:
+			case 0x0003:
+			case 0x0004:
+			case 0x0005:
+			case 0x0006:
+			case 0x0007:
+				break;
+
+
+		}
+
+	}
 	return 1;
 }
 
@@ -1421,11 +1526,18 @@ struct rt_thread thread_jt808;
 static void rt_thread_entry_jt808( void* parameter )
 {
 	rt_err_t	ret;
+	int 		i;
 	uint8_t		*pstr;
+	
 
 	MsgListNode * iter;
 	MsgListNode * iter_next;
 	JT808_TX_MSG_NODEDATA* pnodedata;
+
+//	for(i=0;i<MAX_GSM_SOCKET;i++) gsm_socket[i].msglist_tx = msglist_create();
+
+	config_init();
+	
 
 	PT_INIT( &pt_jt808_socket );
 
@@ -1458,43 +1570,17 @@ static void rt_thread_entry_jt808( void* parameter )
 		}
 /*jt808 socket处理*/
 		jt808_socket_proc();
-#ifdef MULTI_PROCESS                                                /*多处理*/
-			iter = list_jt808_tx->first;
-			while( iter != RT_NULL )
-			{
-				iter_next = iter->next; 								/*先备份,以防节点被删除*/
-				if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
-				{
-					pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
-					rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
-					rt_free(pnodedata); 							/*删除节点数据*/
-					if(iter->next==RT_NULL) 	/*已到list尾*/
-					{
-						(MsgListNode*)(iter->prev)->next=RT_NULL;
-						rt_free( iter );
-						//msglist_node_destroy(iter);
-						iter=RT_NULL;
-					}
-					else
-					{
-						iter->prev->next	= iter->next;				/*删除节点*/
-						iter->next->prev	= iter->prev;
-						rt_free( iter );
-						iter = iter_next;
-					}	
-				}
-			}
-#else  /*逐条处理*/
-			iter = list_jt808_tx->first;
-			if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
-			{
-				pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
-				rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
-				rt_free(pnodedata); 							/*删除节点数据*/
-				list_jt808_tx->first=iter->next;				/*指向下一个*/
-				rt_free( iter );
-			}
-#endif
+/*逐条处理*/
+		iter = list_jt808_tx->first;
+		if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
+		{
+			pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
+			rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
+			rt_free(pnodedata); 							/*删除节点数据*/
+			list_jt808_tx->first=iter->next;				/*指向下一个*/
+			rt_free( iter );
+		}
+
 
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
@@ -1532,7 +1618,7 @@ void gps_rx( uint8_t *pinfo, uint16_t length )
 	}
 }
 
-/*gprs接收处理*/
+/*gprs接收处理,收到数据要尽快处理*/
 rt_err_t gprs_rx( uint8_t linkno, uint8_t * pinfo, uint16_t length )
 {
 	uint8_t *pmsg;
@@ -1759,6 +1845,8 @@ static rt_err_t jt808_tx( void )
 	memcpy( pdata, buf, len+1 );
 	pnodedata->msg_len	= len+1;
 	pnodedata->pmsg		= pdata;
+	pnodedata->head_sn=tx_seq;
+	pnodedata->head_id= 0x0100;
 	msglist_append( list_jt808_tx, pnodedata );
 	tx_seq++;
 }
