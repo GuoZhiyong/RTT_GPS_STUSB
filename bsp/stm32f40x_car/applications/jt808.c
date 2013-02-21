@@ -867,6 +867,348 @@ static int handle_jt808_rx_0x8100( JT808_RX_MSG_NODEDATA* nodedata )
 	return 1;
 }
 
+/*建立对应的查找函数表
+占用空间 0x120*2=288*2=576字节
+
+其中为最高位置为1
+bit 15 14 13..0
+     0  0 xxxx     DWORD             
+     0  1 xxxx     BYTE
+     1  0 xxxx     WORD
+     1  1 xxxx     STRING
+*/
+
+const uint16_t tbl_id_index[]=
+{
+/*-索引      0        1       2        3       4       5       6       7        8       9       a       b       c       d       e       f   */
+/*0x0000*/0x0000,0x0001,0x0002,0x0003,0x0004,0x0005,0x0006,0x0007,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x0010*/0xC008,0xC009,0xC00A,0xC00B,0xC00C,0xC00D,0xC00E,0xC00F,0x0010,0x0011,0xC012,0x0013,0x0014,0xC015,0xDEAD,0xDEAD,
+/*0x0020*/0x0016,0x0017,0x0018,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0x0019,0x001A,0x001B,0xDEAD,0xDEAD,0x001C,0x001D,0x001E,0x001F,
+/*0x0030*/0x0020,0x8021,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x0040*/0xC022,0xC023,0xC024,0xC025,0xC026,0x0027,0x0028,0x0029,0xC02A,0xC02B,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x0050*/0x002C,0x002D,0x002E,0x002F,0x0030,0x0031,0x0032,0x0033,0x0034,0x0035,0x0036,0x8037,0x8038,0x8039,0x803A,0xDEAD,
+/*0x0060*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0x003B,0x003C,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x0070*/0x003D,0x003E,0x003F,0x0040,0x0041,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x0080*/0x0042,0x8043,0x8044,0xC045,0x4046,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x0090*/0x4047,0x4048,0x4049,0x404A,0x404B,0x404C,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x00a0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x00b0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x00c0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x00d0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x00e0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x00f0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x0100*/0x004D,0x804E,0x004F,0xC050,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
+/*0x0110*/0x0051,0x0052,0x0053,0x0054,0x0055,0x0056,0x0057,0x0058,0x0059,0x005A,0x005B,0x005C,0x005D,0x005E,0x005F,0x0060,
+};
+
+/*根据id返回在索引中的位置*/
+static uint16_t param_id_to_index(uint16_t id)
+{
+	return tbl_id_index[id]&0x7FF;
+}
+
+
+static void jt808_param_save_int(uint16_t id,uint32_t val)
+{
+
+
+}
+
+
+
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#define container_of(ptr, type, member) ({                      \
+        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+        (type *)( (char *)__mptr - offsetof(type,member) );})
+#define container(ptr, type, member) (type *)( (char *)ptr - offsetof(type,member) )
+
+
+#define decel(type,name) struct{
+
+__packed struct _test
+{
+	char *name;
+};
+
+
+
+
+
+__packed struct _param_block_0x0001
+{
+	uint32_t heartbeat;
+	uint32_t tcp_ack_timeout;
+	uint32_t tcp_retry;
+	uint32_t udp_ack_timeout;
+	uint32_t udp_retry;
+	uint32_t sms_ack_timeout;
+	uint32_t sms_retry;
+}param_block_1={30,5,3,15,3,30,3};
+
+uint32_t param_block_1_get_int(uint16_t id)
+{
+	switch(id)
+	{
+		case 0:return param_block_1.heartbeat;
+		case 1:return param_block_1.tcp_ack_timeout;
+		case 2:return param_block_1.tcp_retry;
+		case 3:return param_block_1.udp_ack_timeout;
+		case 4:return param_block_1.udp_retry;
+		case 5:return param_block_1.sms_ack_timeout;
+		case 6:return param_block_1.sms_retry;
+		default:
+			return 0;
+	}	
+}
+
+void param_block_1_put_int(uint16_t id,uint32_t val)
+{
+	switch(id)
+	{
+		case 0: param_block_1.heartbeat=val; break;
+		case 1: param_block_1.tcp_ack_timeout=val; break;
+		case 2: param_block_1.tcp_retry=val; break;
+		case 3: param_block_1.udp_ack_timeout=val; break;
+		case 4: param_block_1.udp_retry=val; break;
+		case 5: param_block_1.sms_ack_timeout=val; break;
+		case 6: param_block_1.sms_retry=val; break;
+		default: break;
+	}	
+}
+
+
+
+
+
+__packed struct _param_block_0x0010
+{
+	char *main_apn;
+	char *main_user;
+	char *main_psw;
+	char *main_ip_domain;
+	char *backup_apn;
+	char *backup_user;
+	char *backup_psw;
+	char *backup_ip_domain;
+	uint32_t tcp_port;
+	uint32_t udp_port;
+	char *ic_ip_domain;
+	uint32_t ic_tcp_port;
+	uint32_t ic_udp_port;
+	char *ic_backup_ip_domain;
+}param_block_2=
+{
+	"CMNET","","","60.28.50.210",
+	"CMNET","","","www.google.com",
+	9131,5678,
+	"60.28.50.210",9131,5678,"www.ic.ip"
+};
+
+
+__packed struct _param_block_0x0020
+{
+	uint32_t report_strategy;
+	uint32_t report_scheme;
+	uint32_t report_intervel_logout;
+	uint32_t reserved_0x0023;
+	uint32_t reserved_0x0024;
+	uint32_t reserved_0x0025;
+	uint32_t reserved_0x0026;
+	uint32_t report_intervel_sleep;
+	uint32_t report_intervel_emergency;
+	uint32_t report_intervel_default;
+	uint32_t reserved_0x002A;
+	uint32_t reserved_0x002B;
+	uint32_t report_distance_default;
+	uint32_t report_distance_logout;
+	uint32_t report_distance_sleep;
+	uint32_t report_distance_emergency;
+	uint32_t knee_point_angle;
+	uint16_t elect_rail_radius;
+}param_block_3=
+{
+	0,0,
+	30,
+	0xdead,0xdead,0xdead,0xdead,
+	180,5,30,
+	0xdead,0xdead,
+	100,200,1000,100,
+	270,
+	100,
+};
+
+__packed struct _param_block_0x0040
+{
+	char *telnumber_monitor;
+	char *telnumber_reset;
+	char *telnumber_restore;
+	char *telnumber_monitor_sms;
+	char *telnumber_receiver_sms;
+	uint32_t dialin_strategy;
+	uint32_t call_duration;
+	uint32_t month_call_duration;
+	char *telnumber_admin;
+	char *smsnumber_admin;
+}param_block_4=
+{
+	"10086",
+	"10086",
+	"10086",
+	"10086",
+	"10086",
+	0,300,6000,
+	"10086",
+	"10086",
+};
+
+__packed struct _param_block_0x0050
+{
+	uint32_t alarm_mask;
+	uint32_t alarm_sms_mask;
+	uint32_t alarm_cam_mask;
+	uint32_t alarm_storage_mask;
+	uint32_t alarm_key_mask;
+	uint32_t speed_limit_high;
+	uint32_t speed_duration;
+	uint32_t continue_drive_limit;
+	uint32_t day_drive_limit;
+	uint32_t rest_duration_min;
+	uint32_t park_duration_max;
+	uint16_t overspeed;
+	uint16_t tired_drive;
+	uint16_t collision_param;
+	uint16_t tilt_param;
+	uint32_t reserved_0x005F;
+	uint32_t reserved_0x0060;
+	uint32_t reserved_0x0061;
+	uint32_t reserved_0x0062;
+	uint32_t reserved_0x0063;
+	__packed union{
+		uint32_t data32;
+		__packed struct bit_def{
+			char cam1_photo:1;
+			char cam2_photo:1;
+			char cam3_photo:1;
+			char cam4_photo:1;
+			char cam5_photo:1;
+			char reserved1:3;
+			char cam1_save:1;
+			char cam2_save:1;
+			char cam3_save:1;
+			char cam4_save:1;
+			char cam5_save:1;
+			char reserved2:3;
+			char time_unit:1;
+			uint16_t time_interval:15;
+		}bit;	
+	}camera_time_control;
+	uint32_t camera_distance_control;
+	uint32_t reserved_0x0066;
+	uint32_t reserved_0x0067;
+	uint32_t reserved_0x0068;
+	uint32_t reserved_0x0069;
+	uint32_t reserved_0x006A;
+	uint32_t reserved_0x006B;
+	uint32_t reserved_0x006C;
+	uint32_t reserved_0x006D;	
+	uint32_t reserved_0x006E;
+	uint32_t reserved_0x006F;
+	uint32_t camera_quality;
+	uint32_t camera_brightness;
+	uint32_t camera_contrast;
+	uint32_t camera_saturation;
+	uint32_t camera_colourity;	
+}param_block_5=
+{
+	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
+	90,120,4*60*60,12*60*60,20*60,4*60*60,
+	50,30,
+	0x2040,15,
+	0xdead,0xdead,0xdead,0xdead,0xdead,
+	0x0,0x0,
+	0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,
+	5,128,64,64,128
+};
+
+
+__packed struct _param_block_0x0080
+{
+	uint32_t odometer;
+	uint16_t id_province;
+	uint16_t id_city;
+	char*	 vehicle_number;
+	uint8_t  vehicle_color;
+}param_block_6=
+{
+	0,0x02,0x03,"津O-00001",0
+};
+
+__packed struct _param_block_0x0090
+{
+	uint8_t  gnss_mode;
+	uint8_t  gnss_baud;
+	uint8_t  gnss_freq_out;
+	uint32_t  gnss_freq_sampler;
+	uint8_t  gnss_detail_report_mode;
+	uint32_t  gnss_detail_report_unit;
+}param_block_7=
+{
+	0x0f,0x01,0x01,1,0x01,30
+};
+
+__packed struct _param_block_0x0100
+{
+	uint32_t  can_1_sample_interval;
+	uint16_t  can_1_report_interval;
+	uint32_t  can_2_sample_interval;
+	uint16_t  can_2_report_interval;
+	uint32_t reserved_0x0104;  
+	uint32_t reserved_0x0105;  
+	uint32_t reserved_0x0106;  
+	uint32_t reserved_0x0107;  
+	uint32_t reserved_0x0108;  
+	uint32_t reserved_0x0109;  
+	uint32_t reserved_0x010A;  
+	uint32_t reserved_0x010B;  
+	uint32_t reserved_0x010C;  
+	uint32_t reserved_0x010D;  
+	uint32_t reserved_0x010E;  
+	uint32_t reserved_0x010F;
+	uint8_t can_id_setup[128*8];  
+}param_block_8=
+{
+	200,10,200,10
+};
+
+
+
+uint32_t param_get_int(uint16_t id)
+{
+
+
+}
+
+char* param_get_string(uint16_t id)
+{
+
+
+}
+
+rt_err_t param_get_array(uint16_t id,uint8_t buf,uint8_t count)
+{
+
+
+}
+
+
+
+
+
+
+
+
+
+
 /*设置终端参数*/
 static int handle_jt808_rx_0x8103( JT808_RX_MSG_NODEDATA* nodedata )
 {
@@ -890,21 +1232,19 @@ static int handle_jt808_rx_0x8103( JT808_RX_MSG_NODEDATA* nodedata )
 		id=((*p++)<<24)|((*p++)<<16)|((*p++)<<8)|(*p++);
 		len=*p++;
 		count+=(5+len);
-		switch(id)
+		if(id>0 && id<8)
 		{
-			case 0x0001:
-				jt808_param.id_0x0001=((*p++)<<24)|((*p++)<<16)|((*p++)<<8)|(*p++);
-				break;
-			case 0x0002:
-			case 0x0003:
-			case 0x0004:
-			case 0x0005:
-			case 0x0006:
-			case 0x0007:
-				break;
+			
 
 
 		}
+		else if(id>0x0f && id<0x1e)
+		{
+
+
+		}
+		
+
 
 	}
 	return 1;
