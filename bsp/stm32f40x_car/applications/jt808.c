@@ -59,24 +59,21 @@ static uint16_t				tx_seq = 0; /*发送序号*/
 
 static rt_device_t			pdev_gsm = RT_NULL;
 
-static struct pt	pt_jt808_socket;
+static struct pt			pt_jt808_socket;
 
 /*发送信息列表*/
 MsgList* list_jt808_tx;
 
 /*接收信息列表*/
-MsgList* list_jt808_rx;
+MsgList		* list_jt808_rx;
 
 T_GPSINFO	gpsinfo;
 
+GSM_SOCKET	gsm_socket[MAX_GSM_SOCKET];
 
-GSM_SOCKET gsm_socket[MAX_GSM_SOCKET];
+GSM_SOCKET	curr_gsm_socket;
 
-GSM_SOCKET curr_gsm_socket;
-
-
-
-#define DECL_PARAM_DWORD( id, value )	{ id, T_DWORD, (void*)value }
+#define DECL_PARAM_DWORD( id, value ) { id, T_DWORD, (void*)value }
 //#define DECL_PARAM_STRING( id )			{ id, T_STRING, NULL }
 //#define DECL_PARAM_STRING( id )			{ id, T_NODEF }
 //#define SET_PARAM_DWORD( id, value )	int parma_ ## id	= value
@@ -148,206 +145,143 @@ PARAM param[] =
 
 #endif
 
-
-
-
 JT808_PARAM jt808_param =
 {
-	0x13021600,                 /*0x0000 版本*/
-	5,                          /*0x0001 心跳发送间隔*/
-	5,                          /*0x0002 TCP应答超时时间*/
-	3,                         /*0x0003 TCP超时重传次数*/
-	3,                          /*0x0004 UDP应答超时时间*/
-	5,                          /*0x0005 UDP超时重传次数*/
-	3,                          /*0x0006 SMS消息应答超时时间*/
-	5,                          /*0x0007 SMS消息重传次数*/
-	"CMNET",                    /*0x0010 主服务器APN*/
-	"",                         /*0x0011 用户名*/
-	"",                         /*0x0012 密码*/
-	"60.28.50.210",             /*0x0013 主服务器地址*/
-	"CMNET",                    /*0x0014 备份APN*/
-	"",                         /*0x0015 备份用户名*/
-	"",                         /*0x0016 备份密码*/
-	"www.google.com",           /*0x0017 备份服务器地址，ip或域名*/
-	9131,                       /*0x0018 TCP端口*/
-	5678,                       /*0x0019 UDP端口*/
-	0,                          /*0x0020 位置汇报策略*/
-	1,                          /*0x0021 位置汇报方案*/
-	30,                         /*0x0022 驾驶员未登录汇报时间间隔*/
-	120,                        /*0x0027 休眠时汇报时间间隔*/
-	5,                          /*0x0028 紧急报警时汇报时间间隔*/
-	30,                         /*0x0029 缺省时间汇报间隔*/
-	500,                        /*0x002c 缺省距离汇报间隔*/
-	1000,                       /*0x002d 驾驶员未登录汇报距离间隔*/
-	1000,                       /*0x002e 休眠时距离汇报间隔*/
-	100,                        /*0x002f 紧急时距离汇报间隔*/
-	5,                          /*0x0030 拐点补传角度*/
-	"1008611",                  /*0x0040 监控平台电话号码*/
-	"",                         /*0x0041 复位电话号码*/
-	"",                         /*0x0042 恢复出厂设置电话号码*/
-	"",                         /*0x0043 监控平台SMS号码*/
-	"",                         /*0x0044 接收终端SMS文本报警号码*/
-	5,                          /*0x0045 终端接听电话策略*/
-	3,                          /*0x0046 每次通话时长*/
-	3,                          /*0x0047 当月通话时长*/
-	"",                         /*0x0048 监听电话号码*/
-	"",                         /*0x0049 监管平台特权短信号码*/
-	5,                          /*0x0050 报警屏蔽字*/
-	3,                          /*0x0051 报警发送文本SMS开关*/
-	5,                          /*0x0052 报警拍照开关*/
-	3,                          /*0x0053 报警拍摄存储标志*/
-	5,                          /*0x0054 关键标志*/
-	3,                          /*0x0055 最高速度kmh*/
-	5,                          /*0x0056 超速持续时间*/
-	3,                          /*0x0057 连续驾驶时间门限*/
-	5,                          /*0x0058 当天累计驾驶时间门限*/
-	3,                          /*0x0059 最小休息时间*/
-	5,                          /*0x005A 最长停车时间*/
-	3,                          /*0x0070 图像视频质量(1-10)*/
-	5,                          /*0x0071 亮度*/
-	3,                          /*0x0072 对比度*/
-	5,                          /*0x0073 饱和度*/
-	3,                          /*0x0074 色度*/
-	5,                          /*0x0080 车辆里程表读数0.1km*/
-	3,                          /*0x0081 省域ID*/
-	5,                          /*0x0082 市域ID*/
-	"津O-00001",                /*0x0083 机动车号牌*/
-	1,                          /*0x0084 车牌颜色*/
+	0x13021600,                                 /*0x0000 版本*/
+	5,                                          /*0x0001 心跳发送间隔*/
+	5,                                          /*0x0002 TCP应答超时时间*/
+	3,                                          /*0x0003 TCP超时重传次数*/
+	3,                                          /*0x0004 UDP应答超时时间*/
+	5,                                          /*0x0005 UDP超时重传次数*/
+	3,                                          /*0x0006 SMS消息应答超时时间*/
+	5,                                          /*0x0007 SMS消息重传次数*/
+	"CMNET",                                    /*0x0010 主服务器APN*/
+	"",                                         /*0x0011 用户名*/
+	"",                                         /*0x0012 密码*/
+	"60.28.50.210",                             /*0x0013 主服务器地址*/
+	"CMNET",                                    /*0x0014 备份APN*/
+	"",                                         /*0x0015 备份用户名*/
+	"",                                         /*0x0016 备份密码*/
+	"www.google.com",                           /*0x0017 备份服务器地址，ip或域名*/
+	9131,                                       /*0x0018 TCP端口*/
+	5678,                                       /*0x0019 UDP端口*/
+	0,                                          /*0x0020 位置汇报策略*/
+	1,                                          /*0x0021 位置汇报方案*/
+	30,                                         /*0x0022 驾驶员未登录汇报时间间隔*/
+	120,                                        /*0x0027 休眠时汇报时间间隔*/
+	5,                                          /*0x0028 紧急报警时汇报时间间隔*/
+	30,                                         /*0x0029 缺省时间汇报间隔*/
+	500,                                        /*0x002c 缺省距离汇报间隔*/
+	1000,                                       /*0x002d 驾驶员未登录汇报距离间隔*/
+	1000,                                       /*0x002e 休眠时距离汇报间隔*/
+	100,                                        /*0x002f 紧急时距离汇报间隔*/
+	5,                                          /*0x0030 拐点补传角度*/
+	"1008611",                                  /*0x0040 监控平台电话号码*/
+	"",                                         /*0x0041 复位电话号码*/
+	"",                                         /*0x0042 恢复出厂设置电话号码*/
+	"",                                         /*0x0043 监控平台SMS号码*/
+	"",                                         /*0x0044 接收终端SMS文本报警号码*/
+	5,                                          /*0x0045 终端接听电话策略*/
+	3,                                          /*0x0046 每次通话时长*/
+	3,                                          /*0x0047 当月通话时长*/
+	"",                                         /*0x0048 监听电话号码*/
+	"",                                         /*0x0049 监管平台特权短信号码*/
+	5,                                          /*0x0050 报警屏蔽字*/
+	3,                                          /*0x0051 报警发送文本SMS开关*/
+	5,                                          /*0x0052 报警拍照开关*/
+	3,                                          /*0x0053 报警拍摄存储标志*/
+	5,                                          /*0x0054 关键标志*/
+	3,                                          /*0x0055 最高速度kmh*/
+	5,                                          /*0x0056 超速持续时间*/
+	3,                                          /*0x0057 连续驾驶时间门限*/
+	5,                                          /*0x0058 当天累计驾驶时间门限*/
+	3,                                          /*0x0059 最小休息时间*/
+	5,                                          /*0x005A 最长停车时间*/
+	3,                                          /*0x0070 图像视频质量(1-10)*/
+	5,                                          /*0x0071 亮度*/
+	3,                                          /*0x0072 对比度*/
+	5,                                          /*0x0073 饱和度*/
+	3,                                          /*0x0074 色度*/
+	5,                                          /*0x0080 车辆里程表读数0.1km*/
+	3,                                          /*0x0081 省域ID*/
+	5,                                          /*0x0082 市域ID*/
+	"津O-00001",                                /*0x0083 机动车号牌*/
+	1,                                          /*0x0084 车牌颜色*/
 };
 
-
-TERM_PARAM term_param=
+TERM_PARAM term_param =
 {
-	{0x11,0x22,0x33,0x44,0x55,0x66},
-	{'T','C','B','B','D'},
-	{'T','W','7','0','1','-','B','D',0,0,0,0,0,0,0,0,0,0,0,0},
-	{0x00,0x99,0xaa,0xbb,0xcc,0xdd,0xee},
+	{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 },
+	{ 'T',	'C',  'B',	'B',  'D' },
+	{ 'T',	'W',  '7',	'0',  '1',	'-', 'B', 'D', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{ 0x00, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee},
 };
 
+#define FLAG_DISABLE_REPORT_INVALID 1       /*设备非法*/
+#define FLAG_DISABLE_REPORT_AREA	2       /*区域内禁止上报*/
 
-#define FLAG_DISABLE_REPORT_INVALID	1	/*设备非法*/
-#define FLAG_DISABLE_REPORT_AREA	2	/*区域内禁止上报*/
-
-static uint32_t flag_disable_report=0; /*禁止上报的标志位*/
-
-
-
-
-
-/*初始化一个参数表*/
-static void config_init(void)
-{
-	struct tree_config *root_cfg;
-	struct tree_config *cfg;
-	char *key,*val;
-	int indent,last_indent;
-	int i;
-
-	char *param[]=
-	{
-		"\tversion=13022200",
-		"\tterminal=",
-		"\t\tmobileno=1234567890"
-		"\tid_0001=30",
-		"\tid_0002=5",
-		"\tid_0003=3",
-		
-
-
-	};
-	char buf[128];
-	
-	
-	root_cfg=rt_calloc(1,sizeof(struct config *));
-	if(!root_cfg)
-	{
-		rt_kprintf("\rroot_cfg err\r\n");
-		return;
-	}
-	root_cfg->key = rt_malloc(strlen("root")+1);
-	strcpy(root_cfg->key,"root");
-	root_cfg->val = malloc(strlen("") + 1);	
-	RT_ASSERT(root_cfg->val);	
-	strcpy(root_cfg->val, "");
-	cfg=root_cfg;
-	last_indent = 0;
-/*依次写入各配置数据*/
-	strcpy(buf,"\tversion=13022100");
-	indent=0;
-	key=buf;
-}
-
-static rt_err_t config_load(void)
-{
-
-
-}
-
-
-static rt_err_t config_save(void)
-{
-
-
-}
-
-
-
+static uint32_t flag_disable_report = 0;    /*禁止上报的标志位*/
 
 /*保存参数到serialflash*/
 void param_save( void )
 {
-	rt_kprintf("parma_save size=%d\r\n",sizeof(jt808_param));
-	sst25_write_back(ADDR_PARAM,(uint8_t*)&jt808_param,sizeof(jt808_param));
+	rt_kprintf( "parma_save size=%d\r\n", sizeof( jt808_param ) );
+	sst25_write_back( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
 }
 
 /*加载参数从serialflash*/
 void param_load( void )
 {
 	/*预读一部分数据*/
-	uint8_t	ver8[4];
-	uint32_t ver32;
-	sst25_read(ADDR_PARAM,ver8,4);
-	ver32=(ver8[0]<<24)|(ver8[1]<<16)|(ver8[2]<<8)|(ver8[3]);
-	rt_kprintf("param_load ver=%08x\r\n",ver32);
-	if(jt808_param.id_0x0000!=ver32)  /*不管是不是未初始化*/
+	uint8_t		ver8[4];
+	uint32_t	ver32;
+	sst25_read( ADDR_PARAM, ver8, 4 );
+	ver32 = ( ver8[0] << 24 ) | ( ver8[1] << 16 ) | ( ver8[2] << 8 ) | ( ver8[3] );
+	rt_kprintf( "param_load ver=%08x\r\n", ver32 );
+	if( jt808_param.id_0x0000 != ver32 ) /*不管是不是未初始化*/
 	{
-		rt_kprintf("%s(%d)\r\n",__func__,__LINE__);
-		param_save();
+		rt_kprintf( "%s(%d)\r\n", __func__, __LINE__ );
+		param_save( );
 	}
-	sst25_read(ADDR_PARAM,(uint8_t*)&jt808_param,sizeof(jt808_param));
+	sst25_read( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
 }
-
-
 
 /*打印参数信息*/
-void param_print(void)
+void param_print( void )
 {
-	uint8_t tbl[16]={'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-	int i,count=0;
+	uint8_t tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	int		i, count = 0;
 	uint8_t c;
-	uint8_t *p=(uint8_t*)&jt808_param;
+	uint8_t *p = (uint8_t*)&jt808_param;
 	uint8_t printbuf[70];
-	int32_t len=sizeof(jt808_param);
+	int32_t len = sizeof( jt808_param );
 
-	while(len>0)
+	while( len > 0 )
 	{
-		count=(len<16)?len:16;
-		memset(printbuf,0x20,70);
-		for(i=0;i<count;i++) 
+		count = ( len < 16 ) ? len : 16;
+		memset( printbuf, 0x20, 70 );
+		for( i = 0; i < count; i++ )
 		{
-			c=*p;
-			printbuf[i*3]=tbl[c>>4];
-			printbuf[i*3+1]=tbl[c&0x0f];
-			if(c<0x20) c='.';
-			if(c>0x7f) c='.';
-			printbuf[50+i]=c;
+			c					= *p;
+			printbuf[i * 3]		= tbl[c >> 4];
+			printbuf[i * 3 + 1] = tbl[c & 0x0f];
+			if( c < 0x20 )
+			{
+				c = '.';
+			}
+			if( c > 0x7f )
+			{
+				c = '.';
+			}
+			printbuf[50 + i] = c;
 			p++;
 		}
-		printbuf[69]=0;
-		rt_kprintf("%s\r\n",printbuf);
-		len-=count;
+		printbuf[69] = 0;
+		rt_kprintf( "%s\r\n", printbuf );
+		len -= count;
 	}
 }
+
 FINSH_FUNCTION_EXPORT( param_print, print param );
 
 
@@ -658,8 +592,8 @@ static uint16_t jt808_decode_fcs( uint8_t *pinfo, uint16_t length )
 	{
 		if( fstuff )
 		{
-			*pdst=*psrc+0x7c;
-			fstuff = 0;
+			*pdst	= *psrc + 0x7c;
+			fstuff	= 0;
 			count++;
 			fcs ^= *pdst;
 		}else
@@ -736,7 +670,7 @@ void jt808_tx_response( JT808_RX_MSG_NODEDATA* nodedata )
 			rt_kprintf( "\r\n	电子运单上报---中心应答!  \r\n");
 			break;
 		default:
-			rt_kprintf("\r\nunknown id=%04x\r\n",id);
+			rt_kprintf( "\r\nunknown id=%04x\r\n", id );
 			break;
 	}
 }
@@ -812,8 +746,6 @@ static void handle_jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res )
 	tx_seq++;
 }
 
-
-
 /*平台通用应答,收到信息，停止发送*/
 static int handle_jt808_rx_0x8001( JT808_RX_MSG_NODEDATA* nodedata )
 {
@@ -842,410 +774,616 @@ static int handle_jt808_rx_0x8001( JT808_RX_MSG_NODEDATA* nodedata )
 /* 监控中心对终端注册消息的应答*/
 static int handle_jt808_rx_0x8100( JT808_RX_MSG_NODEDATA* nodedata )
 {
-	MsgListNode 			* iter;
+	MsgListNode				* iter;
 	JT808_TX_MSG_NODEDATA	*iterdata;
-	
-	uint16_t	ack_seq;
-	uint8_t 	res;
-	uint8_t*	msg;
-	
-	msg=nodedata->pmsg;
-	ack_seq = ( *msg << 8 ) | *( msg + 1 );
-	res = *( msg + 2 );
 
-	iter = list_jt808_tx->first;
-	iterdata = iter->data;
+	uint16_t				ack_seq;
+	uint8_t					res;
+	uint8_t					* msg;
+
+	msg		= nodedata->pmsg;
+	ack_seq = ( *msg << 8 ) | *( msg + 1 );
+	res		= *( msg + 2 );
+
+	iter		= list_jt808_tx->first;
+	iterdata	= iter->data;
 	if( ( iterdata->head_id == 0x0100 ) && ( iterdata->head_sn == ack_seq ) )
 	{
-		rt_kprintf("\r\n%s(%d)>res=%d\r\n",__func__,__LINE__,res);
-		if(res==0)
+		rt_kprintf( "\r\n%s(%d)>res=%d\r\n", __func__, __LINE__, res );
+		if( res == 0 )
 		{
-			strncpy(term_param.register_code,msg+3,nodedata->msg_len);
+			strncpy( term_param.register_code, msg + 3, nodedata->msg_len );
 			iterdata->state = ACK_OK;
-		}	
+		}
 	}
 	return 1;
 }
 
-/*建立对应的查找函数表
-占用空间 0x120*2=288*2=576字节
+#if 0
 
-其中为最高位置为1
-bit 15 14 13..0
-     0  0 xxxx     DWORD             
+
+/*建立对应的查找函数表
+   占用空间 0x120*2=288*2=576字节
+
+   其中为最高位置为1
+   bit 15 14 13..0
+     0  0 xxxx     DWORD
      0  1 xxxx     BYTE
      1  0 xxxx     WORD
      1  1 xxxx     STRING
-*/
+ */
 
-const uint16_t tbl_id_index[]=
+const uint16_t tbl_id_index[] =
 {
 /*-索引      0        1       2        3       4       5       6       7        8       9       a       b       c       d       e       f   */
-/*0x0000*/0x0000,0x0001,0x0002,0x0003,0x0004,0x0005,0x0006,0x0007,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x0010*/0xC008,0xC009,0xC00A,0xC00B,0xC00C,0xC00D,0xC00E,0xC00F,0x0010,0x0011,0xC012,0x0013,0x0014,0xC015,0xDEAD,0xDEAD,
-/*0x0020*/0x0016,0x0017,0x0018,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0x0019,0x001A,0x001B,0xDEAD,0xDEAD,0x001C,0x001D,0x001E,0x001F,
-/*0x0030*/0x0020,0x8021,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x0040*/0xC022,0xC023,0xC024,0xC025,0xC026,0x0027,0x0028,0x0029,0xC02A,0xC02B,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x0050*/0x002C,0x002D,0x002E,0x002F,0x0030,0x0031,0x0032,0x0033,0x0034,0x0035,0x0036,0x8037,0x8038,0x8039,0x803A,0xDEAD,
-/*0x0060*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0x003B,0x003C,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x0070*/0x003D,0x003E,0x003F,0x0040,0x0041,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x0080*/0x0042,0x8043,0x8044,0xC045,0x4046,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x0090*/0x4047,0x4048,0x4049,0x404A,0x404B,0x404C,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x00a0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x00b0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x00c0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x00d0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x00e0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x00f0*/0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x0100*/0x004D,0x804E,0x004F,0xC050,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,0xDEAD,
-/*0x0110*/0x0051,0x0052,0x0053,0x0054,0x0055,0x0056,0x0057,0x0058,0x0059,0x005A,0x005B,0x005C,0x005D,0x005E,0x005F,0x0060,
+/*0x0000*/ 0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x0010*/ 0xC008, 0xC009, 0xC00A, 0xC00B, 0xC00C, 0xC00D, 0xC00E, 0xC00F, 0x0010, 0x0011, 0xC012, 0x0013, 0x0014, 0xC015, 0xDEAD, 0xDEAD,
+/*0x0020*/ 0x0016, 0x0017, 0x0018, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0x0019, 0x001A, 0x001B, 0xDEAD, 0xDEAD, 0x001C, 0x001D, 0x001E, 0x001F,
+/*0x0030*/ 0x0020, 0x8021, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x0040*/ 0xC022, 0xC023, 0xC024, 0xC025, 0xC026, 0x0027, 0x0028, 0x0029, 0xC02A, 0xC02B, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x0050*/ 0x002C, 0x002D, 0x002E, 0x002F, 0x0030, 0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x8037, 0x8038, 0x8039, 0x803A, 0xDEAD,
+/*0x0060*/ 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0x003B, 0x003C, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x0070*/ 0x003D, 0x003E, 0x003F, 0x0040, 0x0041, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x0080*/ 0x0042, 0x8043, 0x8044, 0xC045, 0x4046, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x0090*/ 0x4047, 0x4048, 0x4049, 0x404A, 0x404B, 0x404C, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x00a0*/ 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x00b0*/ 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x00c0*/ 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x00d0*/ 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x00e0*/ 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x00f0*/ 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x0100*/ 0x004D, 0x804E, 0x004F, 0xC050, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD,
+/*0x0110*/ 0x0051, 0x0052, 0x0053, 0x0054, 0x0055, 0x0056, 0x0057, 0x0058, 0x0059, 0x005A, 0x005B, 0x005C, 0x005D, 0x005E, 0x005F, 0x0060,
 };
 
 /*根据id返回在索引中的位置*/
-static uint16_t param_id_to_index(uint16_t id)
+static uint16_t param_id_to_index( uint16_t id )
 {
-	return tbl_id_index[id]&0x7FF;
+	return tbl_id_index[id] & 0x7FF;
 }
 
+#endif
 
-static void jt808_param_save_int(uint16_t id,uint32_t val)
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void jt808_param_save_int( uint16_t id, uint32_t val )
 {
-
-
 }
 
-
-
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-#define container_of(ptr, type, member) ({                      \
+/*
+   #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+   #define container_of(ptr, type, member) ({                      \
         const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
         (type *)( (char *)__mptr - offsetof(type,member) );})
-#define container(ptr, type, member) (type *)( (char *)ptr - offsetof(type,member) )
+   #define container(ptr, type, member) (type *)( (char *)ptr - offsetof(type,member) )
+ */
 
+__packed struct _param {
+/*0x0000*/
+	uint32_t	ver;
+	uint32_t	heartbeat;                  /*0x0001 心跳发送间隔*/
+	uint32_t	tcp_ack_timeout;            /*0x0002 TCP应答超时时间*/
+	uint32_t	tcp_retry;                  /*0x0003 TCP超时重传次数*/
+	uint32_t	udp_ack_timeout;            /*0x0004  UDP应答超时时间*/
+	uint32_t	udp_retry;                  /*0x0005 UDP超时重传次数*/
+	uint32_t	sms_ack_timeout;            /*0x0006 SMS消息应答超时时间*/
+	uint32_t	sms_retry;                  /*0x0007 SMS消息重传次数*/
+/*0x0010*/	
+	char		main_apn[32];               /*0x0010 主服务器APN*/
+	char		main_user[32];              /*0x0011 用户名*/
+	char		main_psw[32];               /*0x0012 密码*/
+	char		main_ip_domain[32];         /*0x0013 主服务器地址*/
+	char		backup_apn[32];             /*0x0014 备份APN*/
+	char		backup_user[32];            /*0x0015 备份用户名*/
+	char		backup_psw[32];             /*0x0016 备份密码*/
+	char		backup_ip_domain[32];       /*0x0017 备份服务器地址，ip或域名*/
+	uint32_t	tcp_port;                   /*0x0018 TCP端口*/
+	uint32_t	udp_port;                   /*0x0019 UDP端口*/
+	char		ic_ip_domain[32];
+	uint32_t	ic_tcp_port;
+	uint32_t	ic_udp_port;
+	char		ic_backup_ip_domain[32];
+/*0x0020*/	
+	uint32_t	report_strategy;            /*0x0020 位置汇报策略*/
+	uint32_t	report_scheme;              /*0x0021 位置汇报方案*/
+	uint32_t	report_intervel_logout;     /*0x0022 驾驶员未登录汇报时间间隔*/
+	uint32_t	report_intervel_sleep;      /*0x0027 休眠时汇报时间间隔*/
+	uint32_t	report_intervel_emergency;  /*0x0028 紧急报警时汇报时间间隔*/
+	uint32_t	report_intervel_default;    /*0x0029 缺省时间汇报间隔*/
+	uint32_t	report_distance_default;    /*0x002c 缺省距离汇报间隔*/
+	uint32_t	report_distance_logout;     /*0x002d 驾驶员未登录汇报距离间隔*/
+	uint32_t	report_distance_sleep;      /*0x002e 休眠时距离汇报间隔*/
+	uint32_t	report_distance_emergency;  /*0x002f 紧急时距离汇报间隔*/
+	uint32_t	knee_point_angle;           /*0x0030 拐点补传角度*/
+	uint16_t	elect_rail_radius;
+/*0x0040*/	
+	char		*telnumber_monitor;         /*0x0040 监控平台电话号码*/
+	char		*telnumber_reset;           /*0x0041 复位电话号码*/
+	char		*telnumber_restore;         /*0x0042 恢复出厂设置电话号码*/
+	char		*telnumber_monitor_sms;     /*0x0043 监控平台SMS号码*/
+	char		*telnumber_receiver_sms;    /*0x0044 接收终端SMS文本报警号码*/
+	uint32_t	dialin_strategy;            /*0x0045 终端接听电话策略*/
+	uint32_t	call_duration;              /*0x0046 每次通话时长*/
+	uint32_t	month_call_duration;        /*0x0047 当月通话时长*/
+	char		*telnumber_admin;           /*0x0048 监听电话号码*/
+	char		*smsnumber_admin;           /*0x0049 监管平台特权短信号码*/
+/*0x0050*/
+	uint32_t	alarm_mask;                 /*0x0050 报警屏蔽字*/
+	uint32_t	alarm_sms_mask;             /*0x0051 报警发送文本SMS开关*/
+	uint32_t	alarm_cam_mask;             /*0x0052 报警拍照开关*/
+	uint32_t	alarm_storage_mask;         /*0x0053 报警拍摄存储标志*/
+	uint32_t	alarm_key_mask;             /*0x0054 关键标志*/
+	uint32_t	speed_limit_high;           /*0x0055 最高速度kmh*/
+	uint32_t	speed_duration;             /*0x0056 超速持续时间*/
+	uint32_t	continue_drive_limit;       /*0x0057 连续驾驶时间门限*/
+	uint32_t	day_drive_limit;            /*0x0058 当天累计驾驶时间门限*/
+	uint32_t	rest_duration_min;          /*0x0059 最小休息时间*/
+	uint32_t	park_duration_max;          /*0x005A 最长停车时间*/
+	uint16_t	overspeed;
+	uint16_t	tired_drive;
+	uint16_t	collision_param;
+	uint16_t	tilt_param;
+	__packed union {
+		uint32_t data32;
+		__packed struct bit_def {
+			char		cam1_photo : 1;
+			char		cam2_photo : 1;
+			char		cam3_photo : 1;
+			char		cam4_photo : 1;
+			char		cam5_photo : 1;
+			char		reserved1 : 3;
+			char		cam1_save : 1;
+			char		cam2_save : 1;
+			char		cam3_save : 1;
+			char		cam4_save : 1;
+			char		cam5_save : 1;
+			char		reserved2 : 3;
+			char		time_unit : 1;
+			uint16_t	time_interval : 15;
+		} bit;
+	}			camera_time_control;
+	uint32_t	camera_distance_control;
+/*0x0070*/	
+	uint32_t	camera_quality;     /*0x0070 图像视频质量(1-10)*/
+	uint32_t	camera_brightness;  /*0x0071 亮度*/
+	uint32_t	camera_contrast;    /*0x0072 对比度*/
+	uint32_t	camera_saturation;  /*0x0073 饱和度*/
+	uint32_t	camera_colourity;   /*0x0074 色度*/
+/*0x0080*/	
+	uint32_t	odometer;           /*0x0080 车辆里程表读数0.1km*/
+	uint16_t	id_province;        /*0x0081 省域ID*/
+	uint16_t	id_city;            /*0x0082 市域ID*/
+	char		* vehicle_number;   /*0x0083 机动车号牌*/
+	uint8_t		vehicle_color;      /*0x0084 车牌颜色*/
+/*0x0090*/	
+	uint8_t		gnss_mode;
+	uint8_t		gnss_baud;
+	uint8_t		gnss_freq_out;
+	uint32_t	gnss_freq_sampler;
+	uint8_t		gnss_detail_report_mode;
+	uint32_t	gnss_detail_report_unit;
+/*0x0100*/
+	uint32_t	can_1_sample_interval;
+	uint16_t	can_1_report_interval;
+	uint32_t	can_2_sample_interval;
+	uint16_t	can_2_report_interval;
+/*0x0110*/
+	uint8_t		can_id_setup[128 * 8];
+} param = {
+/*0x0000*/
+	0x13022200,30, 5, 3, 15, 3, 30, 3,
+/*0x0010*/	
+	"CMNET",		"",	  "",	"60.28.50.210",
+	"CMNET",		"",	  "",	"www.google.com",
+	9131,			5678,
+	"60.28.50.210", 9131, 5678, "www.ic.ip",
+/*0x0020*/	
+	0,		0, 30,
+	180,	5,	   30,
+	100,	200,   1000,	100,
+	270,	100,
+/*0x0040*/
+	"10086","10086","10086","10086","10086",
+	0,300,6000,
+	"10086","10086",
+/*0x0050*/	
+	0xffffffff, 0xffffffff, 0xffffffff,	 0xffffffff,   0xffffffff,
+	90,			120,		4 * 60 * 60, 12 * 60 * 60, 20 * 60,	  4 * 60 * 60,
+	50,			30,	
+	0x2040,		15,
+	0x0,		0x0,
+/*0x0070*/
+	5,			128,		64,			 64,		   128,
+/*0x0080*/	
+	0, 0x02, 0x03, "津O-00001", 0,
+/*0x0090*/	
+	0x0f, 0x01, 0x01, 1, 0x01, 30,
+/*0x0100*/
+	200, 10, 200, 10
+/*0x0110*/
 
-#define decel(type,name) struct{
-
-__packed struct _test
-{
-	char *name;
 };
 
-
-
-
-
+/*参数块1*/
 __packed struct _param_block_0x0001
 {
-	uint32_t heartbeat;
-	uint32_t tcp_ack_timeout;
-	uint32_t tcp_retry;
-	uint32_t udp_ack_timeout;
-	uint32_t udp_retry;
-	uint32_t sms_ack_timeout;
-	uint32_t sms_retry;
-}param_block_1={30,5,3,15,3,30,3};
+	uint32_t	heartbeat;          /*0x0001 心跳发送间隔*/
+	uint32_t	tcp_ack_timeout;    /*0x0002 TCP应答超时时间*/
+	uint32_t	tcp_retry;          /*0x0003 TCP超时重传次数*/
+	uint32_t	udp_ack_timeout;    /*0x0004  UDP应答超时时间*/
+	uint32_t	udp_retry;          /*0x0005 UDP超时重传次数*/
+	uint32_t	sms_ack_timeout;    /*0x0006 SMS消息应答超时时间*/
+	uint32_t	sms_retry;          /*0x0007 SMS消息重传次数*/
+} param_block_1 = { 30, 5, 3, 15, 3, 30, 3 };
 
-uint32_t param_block_1_get_int(uint16_t id)
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+uint32_t param_block_1_get_int( uint16_t id )
 {
-	switch(id)
+	switch( id )
 	{
-		case 0:return param_block_1.heartbeat;
-		case 1:return param_block_1.tcp_ack_timeout;
-		case 2:return param_block_1.tcp_retry;
-		case 3:return param_block_1.udp_ack_timeout;
-		case 4:return param_block_1.udp_retry;
-		case 5:return param_block_1.sms_ack_timeout;
-		case 6:return param_block_1.sms_retry;
+		case 0: return param_block_1.heartbeat;
+		case 1: return param_block_1.tcp_ack_timeout;
+		case 2: return param_block_1.tcp_retry;
+		case 3: return param_block_1.udp_ack_timeout;
+		case 4: return param_block_1.udp_retry;
+		case 5: return param_block_1.sms_ack_timeout;
+		case 6: return param_block_1.sms_retry;
 		default:
 			return 0;
-	}	
+	}
 }
 
-void param_block_1_put_int(uint16_t id,uint32_t val)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void param_block_1_put_int( uint16_t id, uint32_t val )
 {
-	switch(id)
+	switch( id )
 	{
-		case 0: param_block_1.heartbeat=val; break;
-		case 1: param_block_1.tcp_ack_timeout=val; break;
-		case 2: param_block_1.tcp_retry=val; break;
-		case 3: param_block_1.udp_ack_timeout=val; break;
-		case 4: param_block_1.udp_retry=val; break;
-		case 5: param_block_1.sms_ack_timeout=val; break;
-		case 6: param_block_1.sms_retry=val; break;
+		case 0: param_block_1.heartbeat			= val; break;
+		case 1: param_block_1.tcp_ack_timeout	= val; break;
+		case 2: param_block_1.tcp_retry			= val; break;
+		case 3: param_block_1.udp_ack_timeout	= val; break;
+		case 4: param_block_1.udp_retry			= val; break;
+		case 5: param_block_1.sms_ack_timeout	= val; break;
+		case 6: param_block_1.sms_retry			= val; break;
 		default: break;
-	}	
+	}
 }
-
-
-
-
 
 __packed struct _param_block_0x0010
 {
-	char *main_apn;
-	char *main_user;
-	char *main_psw;
-	char *main_ip_domain;
-	char *backup_apn;
-	char *backup_user;
-	char *backup_psw;
-	char *backup_ip_domain;
-	uint32_t tcp_port;
-	uint32_t udp_port;
-	char *ic_ip_domain;
-	uint32_t ic_tcp_port;
-	uint32_t ic_udp_port;
-	char *ic_backup_ip_domain;
-}param_block_2=
+	char		main_apn[32];           /*0x0010 主服务器APN*/
+	char		main_user[32];          /*0x0011 用户名*/
+	char		main_psw[32];           /*0x0012 密码*/
+	char		main_ip_domain[32];     /*0x0013 主服务器地址*/
+	char		backup_apn[32];         /*0x0014 备份APN*/
+	char		backup_user[32];        /*0x0015 备份用户名*/
+	char		backup_psw[32];         /*0x0016 备份密码*/
+	char		backup_ip_domain[32];   /*0x0017 备份服务器地址，ip或域名*/
+	uint32_t	tcp_port;               /*0x0018 TCP端口*/
+	uint32_t	udp_port;               /*0x0019 UDP端口*/
+	char		ic_ip_domain[32];
+	uint32_t	ic_tcp_port;
+	uint32_t	ic_udp_port;
+	char		ic_backup_ip_domain[32];
+} param_block_2 =
 {
-	"CMNET","","","60.28.50.210",
-	"CMNET","","","www.google.com",
-	9131,5678,
-	"60.28.50.210",9131,5678,"www.ic.ip"
+	"CMNET",		"",	  "",	"60.28.50.210",
+	"CMNET",		"",	  "",	"www.google.com",
+	9131,			5678,
+	"60.28.50.210", 9131, 5678, "www.ic.ip"
 };
 
 
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+uint32_t param_block_2_get_int( uint16_t id )
+{
+	switch( id )
+	{
+		case 0x0018: return param_block_2.tcp_port;
+		case 0x0019: return param_block_2.udp_port;
+		case 0x001b: return param_block_2.ic_tcp_port;
+		case 0x001c: return param_block_2.ic_udp_port;
+		default:
+			return 0;
+	}
+}
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void param_block_2_put_int( uint16_t id, uint32_t val )
+{
+	switch( id )
+	{
+		case 0x0018: param_block_2.tcp_port		= val; break;
+		case 0x0019: param_block_2.udp_port		= val; break;
+		case 0x001b: param_block_2.ic_tcp_port	= val; break;
+		case 0x001c: param_block_2.ic_udp_port	= val; break;
+		default: break;
+	}
+}
+
 __packed struct _param_block_0x0020
 {
-	uint32_t report_strategy;
-	uint32_t report_scheme;
-	uint32_t report_intervel_logout;
-	uint32_t reserved_0x0023;
-	uint32_t reserved_0x0024;
-	uint32_t reserved_0x0025;
-	uint32_t reserved_0x0026;
-	uint32_t report_intervel_sleep;
-	uint32_t report_intervel_emergency;
-	uint32_t report_intervel_default;
-	uint32_t reserved_0x002A;
-	uint32_t reserved_0x002B;
-	uint32_t report_distance_default;
-	uint32_t report_distance_logout;
-	uint32_t report_distance_sleep;
-	uint32_t report_distance_emergency;
-	uint32_t knee_point_angle;
-	uint16_t elect_rail_radius;
-}param_block_3=
+	uint32_t	report_strategy;            /*0x0020 位置汇报策略*/
+	uint32_t	report_scheme;              /*0x0021 位置汇报方案*/
+	uint32_t	report_intervel_logout;     /*0x0022 驾驶员未登录汇报时间间隔*/
+	uint32_t	reserved_0x0023;
+	uint32_t	reserved_0x0024;
+	uint32_t	reserved_0x0025;
+	uint32_t	reserved_0x0026;
+	uint32_t	report_intervel_sleep;      /*0x0027 休眠时汇报时间间隔*/
+	uint32_t	report_intervel_emergency;  /*0x0028 紧急报警时汇报时间间隔*/
+	uint32_t	report_intervel_default;    /*0x0029 缺省时间汇报间隔*/
+	uint32_t	reserved_0x002A;
+	uint32_t	reserved_0x002B;
+	uint32_t	report_distance_default;    /*0x002c 缺省距离汇报间隔*/
+	uint32_t	report_distance_logout;     /*0x002d 驾驶员未登录汇报距离间隔*/
+	uint32_t	report_distance_sleep;      /*0x002e 休眠时距离汇报间隔*/
+	uint32_t	report_distance_emergency;  /*0x002f 紧急时距离汇报间隔*/
+	uint32_t	knee_point_angle;           /*0x0030 拐点补传角度*/
+	uint16_t	elect_rail_radius;
+} param_block_3 =
 {
-	0,0,
+	0,		0,
 	30,
-	0xdead,0xdead,0xdead,0xdead,
-	180,5,30,
-	0xdead,0xdead,
-	100,200,1000,100,
+	0xdead, 0xdead,0xdead,	0xdead,
+	180,	5,	   30,
+	0xdead, 0xdead,
+	100,	200,   1000,	100,
 	270,
 	100,
 };
 
 __packed struct _param_block_0x0040
 {
-	char *telnumber_monitor;
-	char *telnumber_reset;
-	char *telnumber_restore;
-	char *telnumber_monitor_sms;
-	char *telnumber_receiver_sms;
-	uint32_t dialin_strategy;
-	uint32_t call_duration;
-	uint32_t month_call_duration;
-	char *telnumber_admin;
-	char *smsnumber_admin;
-}param_block_4=
+	char		*telnumber_monitor;         /*0x0040 监控平台电话号码*/
+	char		*telnumber_reset;           /*0x0041 复位电话号码*/
+	char		*telnumber_restore;         /*0x0042 恢复出厂设置电话号码*/
+	char		*telnumber_monitor_sms;     /*0x0043 监控平台SMS号码*/
+	char		*telnumber_receiver_sms;    /*0x0044 接收终端SMS文本报警号码*/
+	uint32_t	dialin_strategy;            /*0x0045 终端接听电话策略*/
+	uint32_t	call_duration;              /*0x0046 每次通话时长*/
+	uint32_t	month_call_duration;        /*0x0047 当月通话时长*/
+	char		*telnumber_admin;           /*0x0048 监听电话号码*/
+	char		*smsnumber_admin;           /*0x0049 监管平台特权短信号码*/
+} param_block_4 =
 {
 	"10086",
 	"10086",
 	"10086",
 	"10086",
 	"10086",
-	0,300,6000,
+	0,		300,6000,
 	"10086",
 	"10086",
 };
 
 __packed struct _param_block_0x0050
 {
-	uint32_t alarm_mask;
-	uint32_t alarm_sms_mask;
-	uint32_t alarm_cam_mask;
-	uint32_t alarm_storage_mask;
-	uint32_t alarm_key_mask;
-	uint32_t speed_limit_high;
-	uint32_t speed_duration;
-	uint32_t continue_drive_limit;
-	uint32_t day_drive_limit;
-	uint32_t rest_duration_min;
-	uint32_t park_duration_max;
-	uint16_t overspeed;
-	uint16_t tired_drive;
-	uint16_t collision_param;
-	uint16_t tilt_param;
-	uint32_t reserved_0x005F;
-	uint32_t reserved_0x0060;
-	uint32_t reserved_0x0061;
-	uint32_t reserved_0x0062;
-	uint32_t reserved_0x0063;
-	__packed union{
+	uint32_t	alarm_mask;             /*0x0050 报警屏蔽字*/
+	uint32_t	alarm_sms_mask;         /*0x0051 报警发送文本SMS开关*/
+	uint32_t	alarm_cam_mask;         /*0x0052 报警拍照开关*/
+	uint32_t	alarm_storage_mask;     /*0x0053 报警拍摄存储标志*/
+	uint32_t	alarm_key_mask;         /*0x0054 关键标志*/
+	uint32_t	speed_limit_high;       /*0x0055 最高速度kmh*/
+	uint32_t	speed_duration;         /*0x0056 超速持续时间*/
+	uint32_t	continue_drive_limit;   /*0x0057 连续驾驶时间门限*/
+	uint32_t	day_drive_limit;        /*0x0058 当天累计驾驶时间门限*/
+	uint32_t	rest_duration_min;      /*0x0059 最小休息时间*/
+	uint32_t	park_duration_max;      /*0x005A 最长停车时间*/
+	uint16_t	overspeed;
+	uint16_t	tired_drive;
+	uint16_t	collision_param;
+	uint16_t	tilt_param;
+	uint32_t	reserved_0x005F;
+	uint32_t	reserved_0x0060;
+	uint32_t	reserved_0x0061;
+	uint32_t	reserved_0x0062;
+	uint32_t	reserved_0x0063;
+	__packed union {
 		uint32_t data32;
-		__packed struct bit_def{
-			char cam1_photo:1;
-			char cam2_photo:1;
-			char cam3_photo:1;
-			char cam4_photo:1;
-			char cam5_photo:1;
-			char reserved1:3;
-			char cam1_save:1;
-			char cam2_save:1;
-			char cam3_save:1;
-			char cam4_save:1;
-			char cam5_save:1;
-			char reserved2:3;
-			char time_unit:1;
-			uint16_t time_interval:15;
-		}bit;	
-	}camera_time_control;
-	uint32_t camera_distance_control;
-	uint32_t reserved_0x0066;
-	uint32_t reserved_0x0067;
-	uint32_t reserved_0x0068;
-	uint32_t reserved_0x0069;
-	uint32_t reserved_0x006A;
-	uint32_t reserved_0x006B;
-	uint32_t reserved_0x006C;
-	uint32_t reserved_0x006D;	
-	uint32_t reserved_0x006E;
-	uint32_t reserved_0x006F;
-	uint32_t camera_quality;
-	uint32_t camera_brightness;
-	uint32_t camera_contrast;
-	uint32_t camera_saturation;
-	uint32_t camera_colourity;	
-}param_block_5=
+		__packed struct  {
+			char		cam1_photo : 1;
+			char		cam2_photo : 1;
+			char		cam3_photo : 1;
+			char		cam4_photo : 1;
+			char		cam5_photo : 1;
+			char		reserved1 : 3;
+			char		cam1_save : 1;
+			char		cam2_save : 1;
+			char		cam3_save : 1;
+			char		cam4_save : 1;
+			char		cam5_save : 1;
+			char		reserved2 : 3;
+			char		time_unit : 1;
+			uint16_t	time_interval : 15;
+		} bit;
+	}			camera_time_control;
+	uint32_t	camera_distance_control;
+	uint32_t	reserved_0x0066;
+	uint32_t	reserved_0x0067;
+	uint32_t	reserved_0x0068;
+	uint32_t	reserved_0x0069;
+	uint32_t	reserved_0x006A;
+	uint32_t	reserved_0x006B;
+	uint32_t	reserved_0x006C;
+	uint32_t	reserved_0x006D;
+	uint32_t	reserved_0x006E;
+	uint32_t	reserved_0x006F;
+	uint32_t	camera_quality;     /*0x0070 图像视频质量(1-10)*/
+	uint32_t	camera_brightness;  /*0x0071 亮度*/
+	uint32_t	camera_contrast;    /*0x0072 对比度*/
+	uint32_t	camera_saturation;  /*0x0073 饱和度*/
+	uint32_t	camera_colourity;   /*0x0074 色度*/
+} param_block_5 =
 {
-	0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,
-	90,120,4*60*60,12*60*60,20*60,4*60*60,
-	50,30,
-	0x2040,15,
-	0xdead,0xdead,0xdead,0xdead,0xdead,
-	0x0,0x0,
-	0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,0xdead,
-	5,128,64,64,128
+	0xffffffff, 0xffffffff, 0xffffffff,	 0xffffffff,   0xffffffff,
+	90,			120,		4 * 60 * 60, 12 * 60 * 60, 20 * 60,	  4 * 60 * 60,
+	50,			30,
+	0x2040,		15,
+	0xdead,		0xdead,		0xdead,		 0xdead,	   0xdead,
+	0x0,		0x0,
+	0xdead,		0xdead,		0xdead,		 0xdead,	   0xdead,	  0xdead, 0xdead,0xdead, 0xdead, 0xdead,
+	5,			128,		64,			 64,		   128
 };
-
 
 __packed struct _param_block_0x0080
 {
-	uint32_t odometer;
-	uint16_t id_province;
-	uint16_t id_city;
-	char*	 vehicle_number;
-	uint8_t  vehicle_color;
-}param_block_6=
+	uint32_t	odometer;           /*0x0080 车辆里程表读数0.1km*/
+	uint16_t	id_province;        /*0x0081 省域ID*/
+	uint16_t	id_city;            /*0x0082 市域ID*/
+	char		* vehicle_number;   /*0x0083 机动车号牌*/
+	uint8_t		vehicle_color;      /*0x0084 车牌颜色*/
+} param_block_6 =
 {
-	0,0x02,0x03,"津O-00001",0
+	0, 0x02, 0x03, "津O-00001", 0
 };
 
 __packed struct _param_block_0x0090
 {
-	uint8_t  gnss_mode;
-	uint8_t  gnss_baud;
-	uint8_t  gnss_freq_out;
-	uint32_t  gnss_freq_sampler;
-	uint8_t  gnss_detail_report_mode;
-	uint32_t  gnss_detail_report_unit;
-}param_block_7=
+	uint8_t		gnss_mode;
+	uint8_t		gnss_baud;
+	uint8_t		gnss_freq_out;
+	uint32_t	gnss_freq_sampler;
+	uint8_t		gnss_detail_report_mode;
+	uint32_t	gnss_detail_report_unit;
+} param_block_7 =
 {
-	0x0f,0x01,0x01,1,0x01,30
+	0x0f, 0x01, 0x01, 1, 0x01, 30
 };
 
 __packed struct _param_block_0x0100
 {
-	uint32_t  can_1_sample_interval;
-	uint16_t  can_1_report_interval;
-	uint32_t  can_2_sample_interval;
-	uint16_t  can_2_report_interval;
-	uint32_t reserved_0x0104;  
-	uint32_t reserved_0x0105;  
-	uint32_t reserved_0x0106;  
-	uint32_t reserved_0x0107;  
-	uint32_t reserved_0x0108;  
-	uint32_t reserved_0x0109;  
-	uint32_t reserved_0x010A;  
-	uint32_t reserved_0x010B;  
-	uint32_t reserved_0x010C;  
-	uint32_t reserved_0x010D;  
-	uint32_t reserved_0x010E;  
-	uint32_t reserved_0x010F;
-	uint8_t can_id_setup[128*8];  
-}param_block_8=
+	uint32_t	can_1_sample_interval;
+	uint16_t	can_1_report_interval;
+	uint32_t	can_2_sample_interval;
+	uint16_t	can_2_report_interval;
+	uint32_t	reserved_0x0104;
+	uint32_t	reserved_0x0105;
+	uint32_t	reserved_0x0106;
+	uint32_t	reserved_0x0107;
+	uint32_t	reserved_0x0108;
+	uint32_t	reserved_0x0109;
+	uint32_t	reserved_0x010A;
+	uint32_t	reserved_0x010B;
+	uint32_t	reserved_0x010C;
+	uint32_t	reserved_0x010D;
+	uint32_t	reserved_0x010E;
+	uint32_t	reserved_0x010F;
+	uint8_t		can_id_setup[128 * 8];
+} param_block_8 =
 {
-	200,10,200,10
+	200, 10, 200, 10
 };
 
 
-
-uint32_t param_get_int(uint16_t id)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+uint32_t param_get_int( uint16_t id )
 {
-
-
 }
 
-char* param_get_string(uint16_t id)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+char* param_get_string( uint16_t id )
 {
-
-
 }
 
-rt_err_t param_get_array(uint16_t id,uint8_t buf,uint8_t count)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+rt_err_t param_get_array( uint16_t id, uint8_t buf, uint8_t count )
 {
-
-
 }
-
-
-
-
-
-
-
-
-
 
 /*设置终端参数*/
 static int handle_jt808_rx_0x8103( JT808_RX_MSG_NODEDATA* nodedata )
 {
-	uint8_t* msg;
-	uint8_t* p;
-	
-	uint8_t param_count;
-	
-	uint16_t msg_len,count=0;
+	uint8_t		* msg;
+	uint8_t		* p;
 
-	uint32_t id;
-	uint8_t  len;
-	
-	msg=nodedata->pmsg;
-	msg_len=nodedata->msg_len-1; 
-	param_count=*msg;
-	p=msg+1;
-/*使用数据长度,判断数据是否结束，没有使用参数总数*/	
-	while(count<msg_len)
+	uint8_t		param_count;
+
+	uint16_t	msg_len, count = 0;
+
+	uint32_t	id;
+	uint8_t		len;
+
+	msg			= nodedata->pmsg;
+	msg_len		= nodedata->msg_len - 1;
+	param_count = *msg;
+	p			= msg + 1;
+/*使用数据长度,判断数据是否结束，没有使用参数总数*/
+	while( count < msg_len )
 	{
-		id=((*p++)<<24)|((*p++)<<16)|((*p++)<<8)|(*p++);
-		len=*p++;
-		count+=(5+len);
-		if(id>0 && id<8)
+		id		= ( ( *p++ ) << 24 ) | ( ( *p++ ) << 16 ) | ( ( *p++ ) << 8 ) | ( *p++ );
+		len		= *p++;
+		count	+= ( 5 + len );
+		if( id > 0 && id < 8 )
 		{
-			
-
-
-		}
-		else if(id>0x0f && id<0x1e)
+		}else if( id > 0x0f && id < 0x1e )
 		{
-
-
 		}
-		
-
-
 	}
 	return 1;
 }
@@ -1441,7 +1579,7 @@ static int handle_jt808_rx_0x8A00( JT808_RX_MSG_NODEDATA* nodedata )
 ***********************************************************/
 static int handle_jt808_rx_default( JT808_RX_MSG_NODEDATA* nodedata )
 {
-	rt_kprintf("\r\nunknown!\r\n");
+	rt_kprintf( "\r\nunknown!\r\n" );
 	return 1;
 }
 
@@ -1513,39 +1651,41 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 
 	linkno	= pinfo[0];
 	len		= ( pinfo[1] << 8 ) | pinfo[2];
-	rt_kprintf(">dump start len=%d\r\n",len);
-	psrc=pinfo+3;
-	for(i=0;i<len;i++)	rt_kprintf("%02x ",*psrc++);
-	rt_kprintf("\r\n>dump end\r\n");
-	
-	len = jt808_decode_fcs( pinfo + 3, len );
-	if( len == 0 )                                  /*格式不正确*/
+	rt_kprintf( ">dump start len=%d\r\n", len );
+	psrc = pinfo + 3;
+	for( i = 0; i < len; i++ )
 	{
-		rt_kprintf(">len=0\r\n");
+		rt_kprintf( "%02x ", *psrc++ );
+	}
+	rt_kprintf( "\r\n>dump end\r\n" );
+
+	len = jt808_decode_fcs( pinfo + 3, len );
+	if( len == 0 )                            /*格式不正确*/
+	{
+		rt_kprintf( ">len=0\r\n" );
 		rt_free( pinfo );
 		return 1;
 	}
 
 /*对收到的信息进行解析,此时以解码转义到pinfo+3*/
 	nodedata = rt_malloc( sizeof( JT808_RX_MSG_NODEDATA ) );
-	if( nodedata == RT_NULL )						/*无法处理此信息*/
+	if( nodedata == RT_NULL )                       /*无法处理此信息*/
 	{
 		rt_free( pinfo );
 		return 1;
 	}
 
-	psrc				= pinfo;					/*注意开始的linkno len*/
+	psrc				= pinfo;                    /*注意开始的linkno len*/
 	nodedata->linkno	= linkno;
 	nodedata->id		= ( *( psrc + 3 ) << 8 ) | *( psrc + 4 );
 	nodedata->attr		= ( *( psrc + 5 ) << 8 ) | *( psrc + 6 );
 	memcpy( nodedata->mobileno, psrc + 7, 6 );
 	nodedata->seq		= ( *( psrc + 13 ) << 8 ) | *( psrc + 14 );
-	nodedata->msg_len	= nodedata->attr & 0x3ff;	/*有效的信息长度在attr字段指示*/
-	nodedata->tick		= rt_tick_get( );			/*收到的时刻*/
-
+	nodedata->msg_len	= nodedata->attr & 0x3ff;   /*有效的信息长度在attr字段指示*/
+	nodedata->tick		= rt_tick_get( );           /*收到的时刻*/
 
 /* 单包数据处理,不需要创建MsgNode */
-	if(( nodedata->attr & 0x2000 )== 0 )
+	if( ( nodedata->attr & 0x2000 ) == 0 )
 	{
 		nodedata->pmsg = psrc + 15;                 /*消息体开始位置*/
 		for( i = 0; i < sizeof( handle_jt808_rx_msg ) / sizeof( HANDLE_JT808_RX_MSG ); i++ )
@@ -1566,8 +1706,8 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 
 
 /*检查是否有超时没有处理的信息，主要是多包信息
-收到消息才会处理，如果长时间没有收到，占用内存
-*/
+   收到消息才会处理，如果长时间没有收到，占用内存
+ */
 
 	iter		= list_jt808_rx->first;
 	flag_find	= 0;
@@ -1601,13 +1741,10 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 		}
 	}
 /*不是多包,返回*/
-	if(( nodedata->attr & 0x2000 )== 0 )
+	if( ( nodedata->attr & 0x2000 ) == 0 )
 	{
 		return 0;
 	}
-
-
-	
 
 /*分包处理,创建新的节点*/
 	node = msglist_node_create( (void*)nodedata );
@@ -1686,30 +1823,29 @@ static MsgListRet jt808_tx_proc( MsgListNode* node )
 {
 	MsgListNode				* pnode		= (MsgListNode*)node;
 	JT808_TX_MSG_NODEDATA	* pnodedata = (JT808_TX_MSG_NODEDATA*)( pnode->data );
-	int i;
-		 
+	int						i;
 
-	if( node == RT_NULL ) return MSGLIST_RET_OK;
-	
+	if( node == RT_NULL )
+	{
+		return MSGLIST_RET_OK;
+	}
+
 	if( pnodedata->state == IDLE )                      /*空闲，发送信息或超时后没有数据*/
 	{
-		if( pnodedata->retry >= jt808_param.id_0x0003 )  /*已经达到重试次数*/
+		if( pnodedata->retry >= jt808_param.id_0x0003 ) /*已经达到重试次数*/
 		{
 			/*表示发送失败*/
-			pnodedata->cb_tx_timeout( pnodedata );			/*调用发送失败处理函数*/
+			pnodedata->cb_tx_timeout( pnodedata );      /*调用发送失败处理函数*/
 			return MSGLIST_RET_DELETE_NODE;
-		}
-		else
+		}else
 		{
-			
 			//rt_device_write( pdev_gsm, 0, pnodedata->pmsg, pnodedata->msg_len );
-			gsm_ipsend(pnodedata->pmsg, pnodedata->msg_len,jt808_param.id_0x0002*RT_TICK_PER_SECOND);
-			pnodedata->tick		= rt_tick_get( );
+			gsm_ipsend( pnodedata->pmsg, pnodedata->msg_len, jt808_param.id_0x0002 * RT_TICK_PER_SECOND );
+			pnodedata->tick = rt_tick_get( );
 			pnodedata->retry++;
-			pnodedata->timeout	= pnodedata->retry * jt808_param.id_0x0002*RT_TICK_PER_SECOND;
+			pnodedata->timeout	= pnodedata->retry * jt808_param.id_0x0002 * RT_TICK_PER_SECOND;
 			pnodedata->state	= WAIT_ACK;
-			rt_kprintf( "send retry=%d,timeout=%d\r\n", pnodedata->retry, pnodedata->timeout*10 );			
-			
+			rt_kprintf( "send retry=%d,timeout=%d\r\n", pnodedata->retry, pnodedata->timeout * 10 );
 		}
 		return MSGLIST_RET_OK;
 	}
@@ -1722,7 +1858,7 @@ static MsgListRet jt808_tx_proc( MsgListNode* node )
 		}
 	}
 
-	if( pnodedata->state == ACK_OK )        /*收到ACK，在接收中置位*/
+	if( pnodedata->state == ACK_OK )  /*收到ACK，在接收中置位*/
 	{
 		//pnodedata->cb_tx_response( pnodedata );
 		return MSGLIST_RET_DELETE_NODE;
@@ -1731,126 +1867,156 @@ static MsgListRet jt808_tx_proc( MsgListNode* node )
 	return MSGLIST_RET_OK;
 }
 
-
-
-
-
 /*
-判断一个字符串是不是表示ip的str
-如果由[0..9|.] 组成
+   判断一个字符串是不是表示ip的str
+   如果由[0..9|.] 组成
 
-'.' 0x2e
-'/' 0x2f
-'0' 0x30
-'9' 0x39
-简化一下。不判断 '/'
-*/
-static uint8_t is_ipstr(char * str)
+   '.' 0x2e
+   '/' 0x2f
+   '0' 0x30
+   '9' 0x39
+   简化一下。不判断 '/'
+ */
+static uint8_t is_ipstr( char * str )
 {
-	char *p=str;
-	while(*p!=NULL)
+	char *p = str;
+	while( *p != NULL )
 	{
-		if((*p>'9')||(*p<'.')) return 0;
+		if( ( *p > '9' ) || ( *p < '.' ) )
+		{
+			return 0;
+		}
 		p++;
 	}
 	return 1;
 }
 
-
 /*jt808的socket管理
 
-维护链路。会有不同的原因
-上报状态的维护
-1.尚未登网
-2.中心连接，DNS,超时不应答
-3.禁止上报，关闭模块的区域
-4.当前正在进行空中更新，多媒体上报等不需要打断的工作
+   维护链路。会有不同的原因
+   上报状态的维护
+   1.尚未登网
+   2.中心连接，DNS,超时不应答
+   3.禁止上报，关闭模块的区域
+   4.当前正在进行空中更新，多媒体上报等不需要打断的工作
 
-*/
+ */
 static void jt808_socket_proc( void )
 {
-	volatile uint32_t state;
-	static rt_tick_t lasttick;
-	static uint8_t		flag_connect=0;
+	volatile uint32_t	state;
+	static rt_tick_t	lasttick;
+	static uint8_t		flag_connect = 0;
 
-	if(flag_disable_report) return;
-/*检查GSM状态*/
-	state=config_gsmstate(0);
-	if(state==GSM_IDLE)
+	if( flag_disable_report )
 	{
-		if(flag_connect==0) /*连接主server*/
-		{
-			curr_gsm_socket.apn=jt808_param.id_0x0010;
-			curr_gsm_socket.user=jt808_param.id_0x0011;
-			curr_gsm_socket.psw=jt808_param.id_0x0012;
-			curr_gsm_socket.type='t';
-			if(is_ipstr(jt808_param.id_0x0013))
-				strcpy(curr_gsm_socket.ip_str,jt808_param.id_0x0013);
-			else
-				curr_gsm_socket.ip_domain=jt808_param.id_0x0013;
-			curr_gsm_socket.port=jt808_param.id_0x0018;
-			rt_kprintf("\r\napn=%s\r\n",curr_gsm_socket.apn);
-		}
-		else
-		{
-			curr_gsm_socket.apn=jt808_param.id_0x0014;
-			curr_gsm_socket.user=jt808_param.id_0x0015;
-			curr_gsm_socket.psw=jt808_param.id_0x0016;
-			curr_gsm_socket.type='t';
-			if(is_ipstr(jt808_param.id_0x0017))
-				strcpy(curr_gsm_socket.ip_str,jt808_param.id_0x0017);
-			else
-				curr_gsm_socket.ip_domain=jt808_param.id_0x0017;
-
-			curr_gsm_socket.port=jt808_param.id_0x0018;
-		}
-		curr_gsm_socket.state=SOCKET_IDLE;
-		config_gsmstate(GSM_POWERON);
 		return;
 	}
-	if(state==GSM_POWERON) /*检查超时*/
+/*检查GSM状态*/
+	state = config_gsmstate( 0 );
+	if( state == GSM_IDLE )
 	{
+		if( flag_connect == 0 ) /*连接主server*/
+		{
+			curr_gsm_socket.apn		= jt808_param.id_0x0010;
+			curr_gsm_socket.user	= jt808_param.id_0x0011;
+			curr_gsm_socket.psw		= jt808_param.id_0x0012;
+			curr_gsm_socket.type	= 't';
+			if( is_ipstr( jt808_param.id_0x0013 ) )
+			{
+				strcpy( curr_gsm_socket.ip_str, jt808_param.id_0x0013 );
+			} else
+			{
+				curr_gsm_socket.ip_domain = jt808_param.id_0x0013;
+			}
+			curr_gsm_socket.port = jt808_param.id_0x0018;
+			rt_kprintf( "\r\napn=%s\r\n", curr_gsm_socket.apn );
+		}else
+		{
+			curr_gsm_socket.apn		= jt808_param.id_0x0014;
+			curr_gsm_socket.user	= jt808_param.id_0x0015;
+			curr_gsm_socket.psw		= jt808_param.id_0x0016;
+			curr_gsm_socket.type	= 't';
+			if( is_ipstr( jt808_param.id_0x0017 ) )
+			{
+				strcpy( curr_gsm_socket.ip_str, jt808_param.id_0x0017 );
+			} else
+			{
+				curr_gsm_socket.ip_domain = jt808_param.id_0x0017;
+			}
 
+			curr_gsm_socket.port = jt808_param.id_0x0018;
+		}
+		curr_gsm_socket.state = SOCKET_IDLE;
+		config_gsmstate( GSM_POWERON );
+		return;
 	}
-	if(state!=GSM_AT) return;
+	if( state == GSM_POWERON ) /*检查超时*/
+	{
+	}
+	if( state != GSM_AT )
+	{
+		return;
+	}
 
-
-/*检查socket状态,判断用不用DNS*/	
-	switch(curr_gsm_socket.state)
+/*检查socket状态,判断用不用DNS*/
+	switch( curr_gsm_socket.state )
 	{
 		case SOCKET_IDLE:
-			if(flag_connect==0)
+			if( flag_connect == 0 )
 			{
-				if(is_ipstr(jt808_param.id_0x0013)) 
-					curr_gsm_socket.state=SOCKET_CONNECT;
-				else
-					curr_gsm_socket.state=SOCKET_DNS;
-			}	
-			else
+				if( is_ipstr( jt808_param.id_0x0013 ) )
+				{
+					curr_gsm_socket.state = SOCKET_CONNECT;
+				} else
+				{
+					curr_gsm_socket.state = SOCKET_DNS;
+				}
+			}else
 			{
-				if(is_ipstr(jt808_param.id_0x0017)) 
-					curr_gsm_socket.state=SOCKET_CONNECT;
-				else
-					curr_gsm_socket.state=SOCKET_DNS;
+				if( is_ipstr( jt808_param.id_0x0017 ) )
+				{
+					curr_gsm_socket.state = SOCKET_CONNECT;
+				} else
+				{
+					curr_gsm_socket.state = SOCKET_DNS;
+				}
 			}
 			break;
 		case SOCKET_CONNECT_ERR:
 		case SOCKET_DNS_ERR:
 			flag_connect++;
-			if(flag_connect==2)				/*是否要关闭设备，重新启动链接*/
+			if( flag_connect == 2 )             /*是否要关闭设备，重新启动链接*/
 			{
-				flag_connect=0;
+				flag_connect = 0;
 			}
-			config_gsmstate(GSM_POWEROFF); /*关闭gsm等待重连*/
+			config_gsmstate( GSM_POWEROFF );    /*关闭gsm等待重连*/
 			break;
-
 	}
-	if(state!=SOCKET_READY) return;
-/*是否发送数据*/	
-
-
+	if( state != SOCKET_READY )
+	{
+		return;
+	}
+/*是否发送数据*/
 }
 
+#define offsetof( TYPE, MEMBER ) ( (size_t)&( (TYPE*)0 )->MEMBER )
+
+typedef __packed struct _test
+{
+	uint8_t id_0001[2];
+	uint8_t id_0000[1];
+	uint8_t id_0002[4];
+	char	id_0003[32];
+//	uint8_t id_0004[4];
+//	uint8_t id_0005[2];
+//	uint8_t id_0006[1];
+}STU_TEST;
+
+STU_TEST stu_test = {
+	0x1234, 0, 0x87654321,
+	"test",
+//0x12345678,0x4321,0xff
+};
 
 
 /*
@@ -1865,33 +2031,35 @@ struct rt_thread thread_jt808;
 /***/
 static void rt_thread_entry_jt808( void* parameter )
 {
-	rt_err_t	ret;
-	int 		i;
-	uint8_t		*pstr;
-	
+	rt_err_t				ret;
+	int						i;
+	uint8_t					*pstr;
 
-	MsgListNode * iter;
-	MsgListNode * iter_next;
-	JT808_TX_MSG_NODEDATA* pnodedata;
+	MsgListNode				* iter;
+	MsgListNode				* iter_next;
+	JT808_TX_MSG_NODEDATA	* pnodedata;
 
 //	for(i=0;i<MAX_GSM_SOCKET;i++) gsm_socket[i].msglist_tx = msglist_create();
 
-	config_init();
-	
+	rt_kprintf( "\r\nstu_test.id_0000=%08x", *(char*)( &stu_test + offsetof( STU_TEST, id_0000 ) ) );
+	rt_kprintf( "\r\nstu_test.id_0001=%08x", *(uint16_t*)( &stu_test + offsetof( STU_TEST, id_0001 ) ) );
+	rt_kprintf( "\r\nstu_test.id_0002=%08x", *(uint32_t*)( &stu_test + offsetof( STU_TEST, id_0002 ) ) );
+	rt_kprintf( "\r\nstu_test.id_0003=%s\r\n", (char*)( &stu_test + offsetof( STU_TEST, id_0003 ) ) );
+//	rt_kprintf("\r\nstu_test.id_0004=%08x",stu_test.id_0004);
+//	rt_kprintf("\r\nstu_test.id_0005=%04x",stu_test.id_0005);
+//	rt_kprintf("\r\nstu_test.id_0006=%02x",stu_test.id_0006);
 
 	PT_INIT( &pt_jt808_socket );
 
 /*读取参数，并配置*/
-	param_load();
+	param_load( );
 
-	param_print();
+	param_print( );
 
 	list_jt808_tx	= msglist_create( );
 	list_jt808_rx	= msglist_create( );
 
 	pdev_gsm = rt_device_find( "gsm" ); /*没有出错处理,未找到怎么办*/
-
-
 
 	while( 1 )
 	{
@@ -1909,18 +2077,17 @@ static void rt_thread_entry_jt808( void* parameter )
 			jt808_rx_proc( pstr );
 		}
 /*jt808 socket处理*/
-		jt808_socket_proc();
+		jt808_socket_proc( );
 /*逐条处理*/
 		iter = list_jt808_tx->first;
-		if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )	/*删除该节点*/
+		if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )  /*删除该节点*/
 		{
-			pnodedata=(JT808_TX_MSG_NODEDATA*)(iter->data);
-			rt_free( pnodedata->pmsg ); 					/*删除用户数据*/
-			rt_free(pnodedata); 							/*删除节点数据*/
-			list_jt808_tx->first=iter->next;				/*指向下一个*/
+			pnodedata = (JT808_TX_MSG_NODEDATA*)( iter->data );
+			rt_free( pnodedata->pmsg );                         /*删除用户数据*/
+			rt_free( pnodedata );                               /*删除节点数据*/
+			list_jt808_tx->first = iter->next;                  /*指向下一个*/
 			rt_free( iter );
 		}
-
 
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
@@ -1931,7 +2098,6 @@ static void rt_thread_entry_jt808( void* parameter )
 /*jt808处理线程初始化*/
 void jt808_init( void )
 {
-
 	rt_mb_init( &mb_gprsdata, "gprsdata", &mb_gprsdata_pool, MB_GPRSDATA_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 	rt_mb_init( &mb_gpsdata, "gpsdata", &mb_gpsdata_pool, MB_GPSDATA_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 
@@ -2006,40 +2172,41 @@ rt_err_t gprs_tx( uint8_t linkno, uint8_t * pinfo, uint16_t length )
 FINSH_FUNCTION_EXPORT( gprs_tx, simlute gprs tx );
 
 
-
-
-rt_err_t server(uint8_t cmd,char* apn,char* name,char* psw)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+rt_err_t server( uint8_t cmd, char* apn, char* name, char* psw )
 {
-	if(cmd==0) /*打印参数*/
+	if( cmd == 0 ) /*打印参数*/
 	{
-		rt_kprintf("\r\napn=%s user=%s psw=%s ip_domain=%s tcp_port=%d udp_port=%d",
-					jt808_param.id_0x0010,
-					jt808_param.id_0x0011,
-					jt808_param.id_0x0012,
-					jt808_param.id_0x0013,
-					jt808_param.id_0x0018,
-					jt808_param.id_0x0019
-					);
-		rt_kprintf("\r\napn=%s user=%s psw=%s ip_domain=%s tcp_port=%d udp_port=%d\r\n",
-					jt808_param.id_0x0014,
-					jt808_param.id_0x0015,
-					jt808_param.id_0x0016,
-					jt808_param.id_0x0017,
-					jt808_param.id_0x0018,
-					jt808_param.id_0x0019
-					);
-
-		
+		rt_kprintf( "\r\napn=%s user=%s psw=%s ip_domain=%s tcp_port=%d udp_port=%d",
+		            jt808_param.id_0x0010,
+		            jt808_param.id_0x0011,
+		            jt808_param.id_0x0012,
+		            jt808_param.id_0x0013,
+		            jt808_param.id_0x0018,
+		            jt808_param.id_0x0019
+		            );
+		rt_kprintf( "\r\napn=%s user=%s psw=%s ip_domain=%s tcp_port=%d udp_port=%d\r\n",
+		            jt808_param.id_0x0014,
+		            jt808_param.id_0x0015,
+		            jt808_param.id_0x0016,
+		            jt808_param.id_0x0017,
+		            jt808_param.id_0x0018,
+		            jt808_param.id_0x0019
+		            );
 	}
-	if(cmd==1) /*设置主server*/
+	if( cmd == 1 )  /*设置主server*/
 	{
-
-
 	}
-	if(cmd==2) /*设置备份server*/
+	if( cmd == 2 )  /*设置备份server*/
 	{
-
-
 	}
 	return RT_EOK;
 }
@@ -2047,95 +2214,124 @@ rt_err_t server(uint8_t cmd,char* apn,char* name,char* psw)
 FINSH_FUNCTION_EXPORT( server, config server );
 
 
-
-static uint16_t jt808_pack_byte(uint8_t *buf,uint8_t *fcs,uint8_t data)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static uint16_t jt808_pack_byte( uint8_t *buf, uint8_t *fcs, uint8_t data )
 {
-	uint8_t *p=buf;
-	*fcs^=data;
-	if((data==0x7d)||(data==0x7e))
+	uint8_t *p = buf;
+	*fcs ^= data;
+	if( ( data == 0x7d ) || ( data == 0x7e ) )
 	{
-		*p++ = 0x7d;
-		*p = (data-0x7c);
+		*p++	= 0x7d;
+		*p		= ( data - 0x7c );
 		return 2;
-	}
-	else
+	}else
 	{
 		*p = data;
 		return 1;
-	}	
+	}
 }
 
 /*
-static uint16_t jt808_pack_word(uint8_t *buf,uint8_t *fcs,uint16_t data)
-{
-	uint16_t count=0;
-	count+=jt808_pack_byte(buf+count,fcs,(data>>8));
-	count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
-	return count;
-}
+   static uint16_t jt808_pack_word(uint8_t *buf,uint8_t *fcs,uint16_t data)
+   {
+   uint16_t count=0;
+   count+=jt808_pack_byte(buf+count,fcs,(data>>8));
+   count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+   return count;
+   }
 
-static uint16_t jt808_pack_dword(uint8_t *buf,uint8_t *fcs,uint32_t data)
-{
-	uint16_t count=0;
-	count+=jt808_pack_byte(buf+count,fcs,(data>>24));
-	count+=jt808_pack_byte(buf+count,fcs,(data>>16));
-	count+=jt808_pack_byte(buf+count,fcs,(data>>8));
-	count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
-	return count;
-}
-*/
+   static uint16_t jt808_pack_dword(uint8_t *buf,uint8_t *fcs,uint32_t data)
+   {
+   uint16_t count=0;
+   count+=jt808_pack_byte(buf+count,fcs,(data>>24));
+   count+=jt808_pack_byte(buf+count,fcs,(data>>16));
+   count+=jt808_pack_byte(buf+count,fcs,(data>>8));
+   count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+   return count;
+   }
+ */
 
 /*传递进长度，便于计算*/
-static uint16_t jt808_pack_int(uint8_t *buf,uint8_t *fcs,uint32_t data,uint8_t width )
+static uint16_t jt808_pack_int( uint8_t *buf, uint8_t *fcs, uint32_t data, uint8_t width )
 {
-	uint16_t count=0;
-	switch(width)
+	uint16_t count = 0;
+	switch( width )
 	{
 		case 1:
-			count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+			count += jt808_pack_byte( buf + count, fcs, ( data & 0xff ) );
 			break;
 		case 2:
-			count+=jt808_pack_byte(buf+count,fcs,(data>>8));
-			count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+			count	+= jt808_pack_byte( buf + count, fcs, ( data >> 8 ) );
+			count	+= jt808_pack_byte( buf + count, fcs, ( data & 0xff ) );
 			break;
 		case 4:
-			count+=jt808_pack_byte(buf+count,fcs,(data>>24));	
-			count+=jt808_pack_byte(buf+count,fcs,(data>>16));
-			count+=jt808_pack_byte(buf+count,fcs,(data>>8));
-			count+=jt808_pack_byte(buf+count,fcs,(data&0xff));
+			count	+= jt808_pack_byte( buf + count, fcs, ( data >> 24 ) );
+			count	+= jt808_pack_byte( buf + count, fcs, ( data >> 16 ) );
+			count	+= jt808_pack_byte( buf + count, fcs, ( data >> 8 ) );
+			count	+= jt808_pack_byte( buf + count, fcs, ( data & 0xff ) );
 			break;
 	}
 	return count;
 }
 
-
-
-
-
-
-static uint16_t jt808_pack_string(uint8_t *buf,uint8_t *fcs,char *str)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static uint16_t jt808_pack_string( uint8_t *buf, uint8_t *fcs, char *str )
 {
-	uint16_t count=0;
-	char *p=str;
-	while(*p)
-	{ 
-		count+=jt808_pack_byte(buf+count,fcs,*p++);
+	uint16_t	count	= 0;
+	char		*p		= str;
+	while( *p )
+	{
+		count += jt808_pack_byte( buf + count, fcs, *p++ );
 	}
 	return count;
 }
 
-static uint16_t jt808_pack_array(uint8_t *buf,uint8_t *fcs,uint8_t *src,uint16_t len)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static uint16_t jt808_pack_array( uint8_t *buf, uint8_t *fcs, uint8_t *src, uint16_t len )
 {
-	uint16_t count=0;
-	int i;
-	char *p=src;
-	for(i=0;i<len;i++)
-	{ 
-		count+=jt808_pack_byte(buf+count,fcs,*p++);
+	uint16_t	count = 0;
+	int			i;
+	char		*p = src;
+	for( i = 0; i < len; i++ )
+	{
+		count += jt808_pack_byte( buf + count, fcs, *p++ );
 	}
 	return count;
 }
 
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 static rt_err_t jt808_tx( void )
 {
 	uint8_t					*pdata;
@@ -2143,60 +2339,58 @@ static rt_err_t jt808_tx( void )
 	uint8_t					buf[256];
 	uint8_t					*p;
 	uint16_t				len;
-	uint8_t fcs=0;
-	int i;
+	uint8_t					fcs = 0;
+	int						i;
 
 	pnodedata = rt_malloc( sizeof( JT808_TX_MSG_NODEDATA ) );
 	if( pnodedata == NULL )
 	{
 		return -1;
 	}
-	pnodedata->type		= TERMINAL_CMD; /*发送即删除，其他不用配置*/
-	pnodedata->state	= IDLE;
-	pnodedata->retry=0;
-	pnodedata->cb_tx_timeout=jt808_tx_timeout;
-	pnodedata->cb_tx_response=jt808_tx_response;
+	pnodedata->type				= TERMINAL_CMD; /*发送即删除，其他不用配置*/
+	pnodedata->state			= IDLE;
+	pnodedata->retry			= 0;
+	pnodedata->cb_tx_timeout	= jt808_tx_timeout;
+	pnodedata->cb_tx_response	= jt808_tx_response;
 
-	len=1;
-	len+=jt808_pack_int(buf+len,&fcs,0x0100,2);
-	len+=jt808_pack_int(buf+len,&fcs,37+strlen(jt808_param.id_0x0083),2);
-	len+=jt808_pack_array(buf+len,&fcs,term_param.mobile,6);
-	len+=jt808_pack_int(buf+len,&fcs,tx_seq,2);
-	
-	len+=jt808_pack_int(buf+len,&fcs,jt808_param.id_0x0081,2);
-	len+=jt808_pack_int(buf+len,&fcs,jt808_param.id_0x0082,2);
-	len+=jt808_pack_array(buf+len,&fcs,term_param.producer_id,5);
-	len+=jt808_pack_array(buf+len,&fcs,term_param.model,20);
-	len+=jt808_pack_array(buf+len,&fcs,term_param.terminal_id,7);
-	len+=jt808_pack_int(buf+len,&fcs,jt808_param.id_0x0084,1);
-	len+=jt808_pack_string(buf+len,&fcs,jt808_param.id_0x0083);
-	len+=jt808_pack_byte(buf+len,&fcs,fcs);
-	buf[0]=0x7e;
-	buf[len]=0x7e;
-	pdata	= rt_malloc( len+1 );
+	len = 1;
+	len += jt808_pack_int( buf + len, &fcs, 0x0100, 2 );
+	len += jt808_pack_int( buf + len, &fcs, 37 + strlen( jt808_param.id_0x0083 ), 2 );
+	len += jt808_pack_array( buf + len, &fcs, term_param.mobile, 6 );
+	len += jt808_pack_int( buf + len, &fcs, tx_seq, 2 );
+
+	len			+= jt808_pack_int( buf + len, &fcs, jt808_param.id_0x0081, 2 );
+	len			+= jt808_pack_int( buf + len, &fcs, jt808_param.id_0x0082, 2 );
+	len			+= jt808_pack_array( buf + len, &fcs, term_param.producer_id, 5 );
+	len			+= jt808_pack_array( buf + len, &fcs, term_param.model, 20 );
+	len			+= jt808_pack_array( buf + len, &fcs, term_param.terminal_id, 7 );
+	len			+= jt808_pack_int( buf + len, &fcs, jt808_param.id_0x0084, 1 );
+	len			+= jt808_pack_string( buf + len, &fcs, jt808_param.id_0x0083 );
+	len			+= jt808_pack_byte( buf + len, &fcs, fcs );
+	buf[0]		= 0x7e;
+	buf[len]	= 0x7e;
+	pdata		= rt_malloc( len + 1 );
 	if( pdata == NULL )
 	{
 		rt_free( pnodedata );
 		return;
 	}
-	rt_kprintf("\r\n--------------------\r\n");
-	for(i=0;i<len+1;i++) rt_kprintf("%02x ",buf[i]);
-	rt_kprintf("\r\n--------------------\r\n");
-	memcpy( pdata, buf, len+1 );
-	pnodedata->msg_len	= len+1;
+	rt_kprintf( "\r\n--------------------\r\n" );
+	for( i = 0; i < len + 1; i++ )
+	{
+		rt_kprintf( "%02x ", buf[i] );
+	}
+	rt_kprintf( "\r\n--------------------\r\n" );
+	memcpy( pdata, buf, len + 1 );
+	pnodedata->msg_len	= len + 1;
 	pnodedata->pmsg		= pdata;
-	pnodedata->head_sn=tx_seq;
-	pnodedata->head_id= 0x0100;
+	pnodedata->head_sn	= tx_seq;
+	pnodedata->head_id	= 0x0100;
 	msglist_append( list_jt808_tx, pnodedata );
 	tx_seq++;
 }
 
 FINSH_FUNCTION_EXPORT( jt808_tx, jt808_tx test );
-
-
-
-
-
 
 /************************************** The End Of File **************************************/
 
