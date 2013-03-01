@@ -886,10 +886,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 end_upgrade_usb_2:
 	rt_thread_resume( &thread_gps );
 end_upgrade_usb_1:
-	if( fd >= 0 )
-	{
-		close( fd );
-	}
+	if( fd >= 0 )close( fd );
 end_upgrade_usb_0:
 	rt_free( ptr_mem_packet );
 	ptr_mem_packet = RT_NULL;

@@ -261,34 +261,7 @@ void rt_hw_usart_init()
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 #endif
 
-#ifdef RT_USING_UART2
-	uart_init(USART2,115200);
 
-	/* register uart2 */
-	rt_hw_serial_register(&uart2_device, "uart2",
-		RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
-		&uart2);
-
-	/* Enable USART2 DMA Rx request */
-	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
-#endif
-
-#ifdef RT_USING_UART3
-	uart_init(USART3,115200);
-
-//	uart3_dma_tx.dma_channel= UART3_TX_DMA;
-
-	/* register uart3 */
-	rt_hw_serial_register(&uart3_device, "uart3",
-		RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_DMA_TX,
-		&uart3);
-
-	/* Enable USART3 DMA Tx request */
-	USART_DMACmd(USART3, USART_DMAReq_Tx , ENABLE);
-
-	/* enable interrupt */
-	USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
-#endif
 
 }
 

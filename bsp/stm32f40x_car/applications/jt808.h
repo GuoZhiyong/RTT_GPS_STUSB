@@ -28,16 +28,6 @@
 
 #define ADDR_PARAM 0x000000000
 
-/*字节顺序的定义网络顺序*/
-typedef struct
-{
-	uint32_t	latitude;       /*纬度 1/10000分 */
-	uint32_t	longitude;      /*经度 1/10000分 */
-	uint16_t	altitude;       /*高程 m*/
-	uint16_t	speed;          /*速度 1/10KMH*/
-	uint8_t		direction;      /*方向 0-178 刻度为2度*/
-	uint8_t		datetime[6];    /*YY-MM-DD hh-mm-ss BCD编码*/
-}T_GPSINFO;
 
 //------- 文本信息 --------
 typedef struct _TEXT_INFO
@@ -132,8 +122,6 @@ typedef  struct AvrgMintSpeed
 	uint8_t saveFlag;
 }Avrg_MintSpeed;
 
-extern uint32_t		jt808_alarm;
-extern uint32_t		jt808_status;
 
 extern TEXT_INFO	TextInfo;
 //-------文本信息-------
@@ -313,32 +301,42 @@ typedef struct _jt808_param
 	uint32_t	id_0x0090;      /*0x0090 GNSS 定位模式*/
 	uint32_t	id_0x0091;      /*0x0091 GNSS 波特率*/
 	uint32_t	id_0x0092;      /*0x0092 GNSS 模块详细定位数据输出频率*/
-	uint32_t	id_0x0093;      /*0x0093    GNSS 模块详细定位数据采集频率*/
-	uint32_t	id_0x0094;      /*0x0094    GNSS 模块详细定位数据上传方式*/
+	uint32_t	id_0x0093;      /*0x0093 GNSS 模块详细定位数据采集频率*/
+	uint32_t	id_0x0094;      /*0x0094 GNSS 模块详细定位数据上传方式*/
 	uint32_t	id_0x0095;      /*0x0095 GNSS 模块详细定位数据上传设置*/
 	uint32_t	id_0x0100;      /*0x0100 CAN 总线通道 1 采集时间间隔(ms)，0 表示不采集*/
 	uint32_t	id_0x0101;      /*0x0101 CAN 总线通道 1 上传时间间隔(s)，0 表示不上传*/
 	uint32_t	id_0x0102;      /*0x0102 CAN 总线通道 2 采集时间间隔(ms)，0 表示不采集*/
 	uint32_t	id_0x0103;      /*0x0103 CAN 总线通道 2 上传时间间隔(s)，0 表示不上传*/
-	uint32_t	id_0x0110[2];    /*0x0110 CAN 总线 ID 单独采集设置*/
-	uint32_t	id_0x0111[2];    /*0x0111 其他CAN 总线 ID 单独采集设置*/
-	uint32_t	id_0x0112[2];    /*0x0112 其他CAN 总线 ID 单独采集设置*/
-	uint32_t	id_0x0113[2];    /*0x0113 其他CAN 总线 ID 单独采集设置*/
-	uint32_t	id_0x0114[2];    /*0x0114 其他CAN 总线 ID 单独采集设置*/
-	uint32_t	id_0x0115[2];    /*0x0115 其他CAN 总线 ID 单独采集设置*/
-	uint32_t	id_0x0116[2];    /*0x0116 其他CAN 总线 ID 单独采集设置*/
-	uint32_t	id_0x0117[2];    /*0x0117 其他CAN 总线 ID 单独采集设置*/
-	uint32_t	id_0x0118[2];    /*0x0118 其他CAN 总线 ID 单独采集设置*/
-	uint32_t	id_0x0119[2];    /*0x0119 其他CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0110[8];   /*0x0110 CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0111[8];   /*0x0111 其他CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0112[8];   /*0x0112 其他CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0113[8];   /*0x0113 其他CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0114[8];   /*0x0114 其他CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0115[8];   /*0x0115 其他CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0116[8];   /*0x0116 其他CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0117[8];   /*0x0117 其他CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0118[8];   /*0x0118 其他CAN 总线 ID 单独采集设置*/
+	uint8_t		id_0x0119[8];   /*0x0119 其他CAN 总线 ID 单独采集设置*/
 }JT808_PARAM;
 
 typedef struct
 {
+	uint16_t type; /*终端类型,参见0x0107 终端属性应答*/
 	char	mobile[6];          /*终端号码*/
 	uint8_t producer_id[5];
 	uint8_t model[20];
 	uint8_t terminal_id[7];
 	uint8_t register_code[16];
+	uint8_t sim_iccid[10];
+	uint8_t hw_ver_len;
+	uint8_t hw_ver[32];
+	uint8_t sw_ver_len;
+	uint8_t sw_ver[32];
+	uint8_t gnss_attr;/*gnss属性,参见0x0107 终端属性应答*/
+	uint8_t gsm_attr;/*gnss属性,参见0x0107 终端属性应答*/
+	
+	
 }TERM_PARAM;
 
 typedef enum

@@ -31,6 +31,8 @@
 
 static unsigned char calc_fcs;
 
+#if 0
+
 static int printchar(char **str, int c)
 {
 	extern int putchar(int c);
@@ -89,6 +91,8 @@ static int prints(char **out, const char *string, int width, int pad)
 	return pc;
 }
 
+
+
 /* the following should be enough for 32 bit int */
 #define PRINT_BUF_LEN 12
 
@@ -134,6 +138,7 @@ static int printi(char **out, int i, int b, int sg, int width, int pad, int letb
 
 	return pc + prints (out, s, width, pad);
 }
+
 
 static int print(char **out, const char *format, va_list args )
 {
@@ -202,33 +207,7 @@ static int print(char **out, const char *format, va_list args )
 	return pc;
 }
 
-int jt808_printf(const char *format, ...)
-{
-        va_list args;
-        
-        va_start( args, format );
-        return print( 0, format, args );
-}
-
-int jt808_sprintf(char *out, const char *format, ...)
-{
-        va_list args;
-				char *out_1;
-		int len;
-		calc_fcs=0;
-        va_start( args, format );
-				*out=0x7e;
-				out_1=out+1;
-        len=print( &out_1, format, args );
-				//**(out++)=calc_fcs;
-				//**(out++)=0x7e;
-				*(out+len+1)=calc_fcs;
-				*(out+len+2)=0x7e;
-		return len+3;
-}
-
-
-
+#endif
 
 static int packchar(char **str, int c)
 {
@@ -306,26 +285,22 @@ static int pack_int(char **out, int i, int width)
 	return count;		
 }
 
+/*没有做转义字符的处理*/
 
 static int pack(char **out, const char *format, va_list args )
 {
-	register int width, pad;
+	register int width;
 	register int pc = 0;
+
+	rt_kprintf("\r\npack format>%s\r\n",format);
 
 	for (; *format != 0; ++format) {
 		if (*format == '%') {
 			++format;
-			width = pad = 0;
+			width = 0;
 			if (*format == '\0') break;
 			if (*format == '%') goto out;
-			if (*format == '-') {
-				++format;
-				pad = PAD_RIGHT;
-			}
-			while (*format == '0') {
-				++format;
-				pad |= PAD_ZERO;
-			}
+
 			for ( ; *format >= '0' && *format <= '9'; ++format) {
 				width *= 10;
 				width += *format - '0';
