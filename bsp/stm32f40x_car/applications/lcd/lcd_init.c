@@ -61,14 +61,14 @@
 #define KEY_MENU_PORT	GPIOC
 #define KEY_MENU_PIN	GPIO_Pin_8
 
-#define KEY_OK_PORT		GPIOA
-#define KEY_OK_PIN		GPIO_Pin_8
+#define KEY_UP_PORT		GPIOA
+#define KEY_UP_PIN		GPIO_Pin_8
 
-#define KEY_UP_PORT		GPIOC
-#define KEY_UP_PIN		GPIO_Pin_9
+#define KEY_DOWN_PORT		GPIOC
+#define KEY_DOWN_PIN		GPIO_Pin_9
 
-#define KEY_DOWN_PORT	GPIOD
-#define KEY_DOWN_PIN	GPIO_Pin_3
+#define KEY_OK_PORT	GPIOD
+#define KEY_OK_PIN	GPIO_Pin_3
 
 
 

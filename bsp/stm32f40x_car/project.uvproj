@@ -957,14 +957,14 @@
               <FilePath>.\applications\lcd\Menu_Include.c</FilePath>
             </File>
             <File>
-              <FileName>SED1520.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\SED1520.c</FilePath>
-            </File>
-            <File>
               <FileName>menu_1_bdupgrad.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\menu_1_bdupgrad.c</FilePath>
+            </File>
+            <File>
+              <FileName>str7565r.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\str7565r.c</FilePath>
             </File>
           </Files>
         </Group>
