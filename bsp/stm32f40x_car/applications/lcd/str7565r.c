@@ -12,10 +12,9 @@
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
 #include <stdint.h>
-#include "bmp.h"
 #include "board.h"
 #include "stm32f4xx.h"
-
+#include "menu_include.h"
 #include <rtthread.h>
 
 #define LCD_Y_PAGE	4

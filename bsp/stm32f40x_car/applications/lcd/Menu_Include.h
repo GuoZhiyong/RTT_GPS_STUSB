@@ -7,8 +7,8 @@
 #include <rtdef.h>
 
 #include "jt808.h"
-#include "sed1520.h"
 
+#define LCD_MODE_SET 1
 
 
 #define KeyValueMenu    1
@@ -22,6 +22,16 @@
 #define InforStartPage_Text       6800
 #define InforStartPage_Affair     6900
 #define InforStartPage_Meun       6950
+
+
+
+typedef struct IMG_DEF 
+ { unsigned char width_in_pixels;      /* Image width */
+   unsigned char height_in_pixels;     /* Image height*/
+   const unsigned char *char_table;    /* Image table start address in memory  */
+ } IMG_DEF;
+
+
 
 
 #define DECL_BMP(width,height,imgdata)	struct IMG_DEF BMP_##imgdata={width,height,imgdata}	

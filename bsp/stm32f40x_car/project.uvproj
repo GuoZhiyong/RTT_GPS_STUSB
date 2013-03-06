@@ -942,16 +942,6 @@
           <GroupName>lcd</GroupName>
           <Files>
             <File>
-              <FileName>bmp.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\bmp.c</FilePath>
-            </File>
-            <File>
-              <FileName>lcd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\lcd.c</FilePath>
-            </File>
-            <File>
               <FileName>Menu_Include.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\Menu_Include.c</FilePath>
