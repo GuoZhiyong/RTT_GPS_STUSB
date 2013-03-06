@@ -17,7 +17,7 @@
 #include "stm32f4xx.h"
 #include <board.h>
 #include <rtthread.h>
-#include <lcd\menu_include.h>
+#include <scr\scr.h>
 #include "jt808.h"
 
 /* 消息队列控制块 */
@@ -59,56 +59,68 @@ rt_err_t rt_Rx_hmi2app808_MsgQue(u8 *buffer,u16 rec_len)
 #define KEY_UP_PORT	GPIOD
 #define KEY_UP_PIN	GPIO_Pin_3
 
-/*
-定义按键状态
-bit0
-*/
-static uint32_t keystatus=0;
 
-static int  keycheck(void)
+
+
+static uint32_t keystatus=KEY_NONE;
+
+
+struct _KEY
 {
-if(!GPIO_ReadInputDataBit(KEY_MENU_PORT,KEY_MENU_PIN)
-	{
-	KeyCheck_Flag[0]++;
-	if(KeyCheck_Flag[0]==2)
-		KeyValue=1;
-	}
-else
-	KeyCheck_Flag[0]=0;
+	GPIO_TypeDef *port;
+	uint32_t	pin;
+	uint32_t	tick;
+	uint32_t	status;		/*记录每个按键的状态*/
+}KEY;
 
-if(!GPIO_ReadInputDataBit(GPIOC,GPIO_Pin_9))
-	{
-	KeyCheck_Flag[1]++;
-	if(KeyCheck_Flag[1]==2)
-		KeyValue=2;
-	}
-else
-	KeyCheck_Flag[1]=0;
+static KEY keys[]={
+	{GPIOC,GPIO_Pin_8,0,KEY_NONE},	/*menu*/
+	{GPIOD,GPIO_Pin_3,0,KEY_NONE}, /*up*/
+	{GPIOA,GPIO_Pin_8,0,KEY_NONE}, /*down*/
+	{GPIOC,GPIO_Pin_9,0,KEY_NONE}, /*ok*/
+};
 
-if(!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_8))
-	{
-	KeyCheck_Flag[2]++;
-	if(KeyCheck_Flag[2]==2)
-		KeyValue=3;
-	}
-else
-	KeyCheck_Flag[2]=0;
+/*
+50ms检查一次按键,只是置位对应的键，程序中判断组合键按下
+*/
 
-if(!GPIO_ReadInputDataBit(GPIOC,GPIO_Pin_8))
+static uint32_t  keycheck(void)
+{
+	int i;
+	uint32_t tmp_key=0;
+	for(i=0;i<4;i++)
 	{
-	KeyCheck_Flag[3]++;
-	if(KeyCheck_Flag[3]==2)
-		KeyValue=4;
-	}
-else
-	KeyCheck_Flag[3]=0;
+		if(GPIO_ReadInputDataBit(keys[i].port,keys[i].pin)) /*键抬起*/
+		{
+			if(keys[i].tick>100)&&(keys[i].tick<500) /*短按*/
+			{
+				keys[i].status=(1<<i);
+			}	
+			else
+			{
+				keys[i].status=0; /*清空对应的标志位*/
+			}
+			
+			keys[i].tick=0;
+		}
+		else	/*键按下*/
+		{
+			keys[i].tick+=50;		/*每次增加50ms*/
+			if(keys[i].tick%500==0)
+			{
+				keys[i].status=(1<<i)<<4;
+			}
+		}
+	}	
+	return (keys[0].status|keys[1].status|keys[2].status|keys[3].status);
+
 }
 
 
 static void key_lcd_port_init(void)
 {
 	GPIO_InitTypeDef  GPIO_InitStructure;
-	 
+	 int i;
 	 
 	 RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
 	 RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
@@ -118,18 +130,12 @@ static void key_lcd_port_init(void)
 	
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
 	 GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	
-	 GPIO_InitStructure.GPIO_Pin = KEY_UP_PIN;
-	 GPIO_Init(KEY_UP_PORT, &GPIO_InitStructure);
-	 
-	 GPIO_InitStructure.GPIO_Pin = KEY_DOWN_PIN;
-	 GPIO_Init(KEY_DOWN_PORT, &GPIO_InitStructure);
-	
-	 GPIO_InitStructure.GPIO_Pin = KEY_OK_PIN;
-	 GPIO_Init(KEY_OK_PORT, &GPIO_InitStructure);
-	
-	 GPIO_InitStructure.GPIO_Pin = KEY_MENU_PIN;
-	 GPIO_Init(KEY_MENU_PORT, &GPIO_InitStructure);
+
+	for(i=0;i<4;i++)
+	{
+	 GPIO_InitStructure.GPIO_Pin = keys[i].pin;
+	 GPIO_Init(keys[i].port, &GPIO_InitStructure);
+	} 
 	
 	
 	 //OUT	(/MR  SHCP	 DS   STCP	 STCP)	 
