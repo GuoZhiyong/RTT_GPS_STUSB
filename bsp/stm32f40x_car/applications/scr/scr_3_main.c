@@ -42,12 +42,7 @@
 
 extern SCR scr_3_1_recorderdata;
 
-static struct _subscr
-{
-	char *caption;
-	uint8_t caption_len;
-	PSCR scr;
-}subscr[] =
+static SCR_ITEM scr_item[] =
 {
 	{ "主菜单",			6,	0				 },
 	{ "1.记录仪数据",	12, &scr_3_1_recorderdata },
@@ -71,13 +66,13 @@ static void menudisplay( void )
 	lcd_fill( 0 );
 	if( selectpos & 0x01 )      /*是单数*/
 	{
-		lcd_text12( 0, 0, subscr[selectpos-1].caption, subscr[selectpos-1].caption_len, LCD_MODE_SET );
-		lcd_text12( 0, 16, subscr[selectpos].caption, subscr[selectpos].caption_len, LCD_MODE_INVERT);
+		lcd_text12( 0, 0, scr_item[selectpos-1].text, scr_item[selectpos-1].len, LCD_MODE_SET );
+		lcd_text12( 0, 16, scr_item[selectpos].text, scr_item[selectpos].len, LCD_MODE_INVERT);
 	}
 	else
 	{
-		lcd_text12( 0, 0, subscr[selectpos].caption, subscr[selectpos].caption_len, LCD_MODE_INVERT);
-		lcd_text12( 0, 16, subscr[selectpos+1].caption, subscr[selectpos+1].caption_len, LCD_MODE_SET );
+		lcd_text12( 0, 0, scr_item[selectpos].text, scr_item[selectpos].len, LCD_MODE_INVERT);
+		lcd_text12( 0, 16, scr_item[selectpos+1].text, scr_item[selectpos+1].len, LCD_MODE_SET );
 	}
 	lcd_update_all( );
 	
@@ -101,18 +96,13 @@ static void keypress(void *thiz,unsigned int key )
 			break;
 		case KEY_UP_PRESS:
 			selectpos--;
-			if( selectpos == 0 )
-			{
-				selectpos = 9;
-			}
+			if( selectpos == 0 ) selectpos = 9;
 			menudisplay();
 			break;
 		case KEY_DOWN_PRESS:
 			selectpos++;
-			if( selectpos == 10 )
-			{
-				selectpos = 1;
-			}
+			if( selectpos == 10 )selectpos = 1;
+			
 			menudisplay();
 			break;
 		case KEY_OK_PRESS:

@@ -36,6 +36,17 @@ typedef  struct _scr{
 typedef struct _scr * PSCR; 
 
 
+
+typedef struct 
+{
+	char *text;
+	uint8_t len;
+	PSCR scr;
+}SCR_ITEM;
+
+
+
+
 /*
 ¶¨Òå°´¼ü×´Ì¬
 */
