@@ -19,10 +19,10 @@ typedef struct IMG_DEF
 #define DECL_BMP(width,height,imgdata)	struct IMG_DEF BMP_##imgdata={width,height,imgdata}	
 
 
-typedef void (*SHOW)(unsigned int );
-typedef void (*KEYPRESS)(unsigned int);
-typedef void (*TIMETICK)(unsigned int);
-typedef void (*MSG)(void *p);
+typedef void (*SHOW)(void);  /*上层菜单调用者,无初始化数据(不知道调用者)*/
+typedef void (*KEYPRESS)(void *thiz,unsigned int);
+typedef void (*TIMETICK)(void *thiz,unsigned int);
+typedef void (*MSG)(void *thiz,void *p);
 
 
 typedef  struct _scr{
@@ -55,8 +55,13 @@ typedef struct _scr * PSCR;
 
 
 
-/*定义常用的资源 arrow_up arrow_dn 数字等*/
+#define LCD_MODE_CLEAR     0
+#define LCD_MODE_SET       1
+#define LCD_MODE_XOR       2
+#define LCD_MODE_INVERT		3
 
+
+/*定义常用的资源 arrow_up arrow_dn 数字等*/
 
 
 

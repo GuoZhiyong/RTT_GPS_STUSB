@@ -17,7 +17,7 @@
 #include "stm32f4xx.h"
 #include <board.h>
 #include <rtthread.h>
-#include <scr\scr.h>
+#include "scr\scr.h"
 #include "jt808.h"
 
 /* 消息队列控制块 */
@@ -47,6 +47,7 @@ rt_err_t rt_Rx_hmi2app808_MsgQue(u8 *buffer,u16 rec_len)
 	   return RT_EOK;            
 }
 
+/*
 #define KEY_MENU_PORT	GPIOC
 #define KEY_MENU_PIN	GPIO_Pin_8
 
@@ -58,14 +59,14 @@ rt_err_t rt_Rx_hmi2app808_MsgQue(u8 *buffer,u16 rec_len)
 
 #define KEY_UP_PORT	GPIOD
 #define KEY_UP_PIN	GPIO_Pin_3
-
+*/
 
 
 
 static uint32_t keystatus=KEY_NONE;
 
 
-struct _KEY
+typedef struct _KEY
 {
 	GPIO_TypeDef *port;
 	uint32_t	pin;
@@ -74,10 +75,10 @@ struct _KEY
 }KEY;
 
 static KEY keys[]={
-	{GPIOC,GPIO_Pin_8,0,KEY_NONE},	/*menu*/
-	{GPIOD,GPIO_Pin_3,0,KEY_NONE}, /*up*/
+	{GPIOD,GPIO_Pin_3,0,KEY_NONE},	/*menu*/
+	{GPIOC,GPIO_Pin_9,0,KEY_NONE}, /*up*/
 	{GPIOA,GPIO_Pin_8,0,KEY_NONE}, /*down*/
-	{GPIOC,GPIO_Pin_9,0,KEY_NONE}, /*ok*/
+	{GPIOC,GPIO_Pin_8,0,KEY_NONE}, /*ok*/
 };
 
 /*
@@ -92,7 +93,7 @@ static uint32_t  keycheck(void)
 	{
 		if(GPIO_ReadInputDataBit(keys[i].port,keys[i].pin)) /*键抬起*/
 		{
-			if(keys[i].tick>100)&&(keys[i].tick<500) /*短按*/
+			if((keys[i].tick>50)&&(keys[i].tick<500)) /*短按*/
 			{
 				keys[i].status=(1<<i);
 			}	
@@ -111,8 +112,10 @@ static uint32_t  keycheck(void)
 				keys[i].status=(1<<i)<<4;
 			}
 		}
-	}	
-	return (keys[0].status|keys[1].status|keys[2].status|keys[3].status);
+	}
+	tmp_key=keys[0].status|keys[1].status|keys[2].status|keys[3].status;
+	if(tmp_key) rt_kprintf("%04x\r\n",tmp_key);
+	return (tmp_key);
 
 }
 
@@ -148,7 +151,8 @@ static void key_lcd_port_init(void)
 
 }
 
-
+extern SCR scr_2_idle;
+PSCR pscr;
 
 ALIGN( RT_ALIGN_SIZE )
 static char thread_hmi_stack[2048];
@@ -160,12 +164,12 @@ static void rt_thread_entry_hmi( void* parameter )
 	key_lcd_port_init();
 	lcd_init();
 
-	pMenuItem = &Menu_1_bdupgrade;
-	pMenuItem->show( );
+	pscr = &scr_2_idle;
+	pscr->show();
 	while( 1 )
 	{
-		pMenuItem->timetick( 10 );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
-		pMenuItem->keypress( 10 );  //每个子菜单的 按键检测  时钟源100ms timer
+		pscr->timetick( pscr,rt_tick_get() );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
+		pscr->keypress( pscr,keycheck() );  //每个子菜单的 按键检测  时钟源50ms timer
 		rt_thread_delay( 5 );
 	}
 }
@@ -182,9 +186,6 @@ static void rt_thread_entry_hmi( void* parameter )
 void hmi_init( void )
 {
 	rt_thread_t tid;
-
-
-
 	rt_thread_init( &thread_hmi,
 	                "hmi",
 	                rt_thread_entry_hmi,

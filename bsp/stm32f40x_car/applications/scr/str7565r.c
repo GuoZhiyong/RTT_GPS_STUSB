@@ -271,7 +271,10 @@ void lcd_fill( const unsigned char pattern )
 	st7565_ctl( 0xaf );
 }
 
-
+void lcd_backlight_off(void)
+{
+	ControlBitShift( RST0|CS|EN);
+}
 
 /*
 图片生成模式 PC2LCD2000中
@@ -287,9 +290,9 @@ void lcd_bitmap( const uint8_t left, const uint8_t top, const struct IMG_DEF *im
 	uint8_t bitnum, bitmask;
 	uint8_t page, col, vdata;
 
-	width	= img_ptr->width_in_pixels;
-	heigth	= img_ptr->height_in_pixels;
-	ptable	= (uint8_t*)( img_ptr->char_table );
+	width	= img_ptr->width;
+	heigth	= img_ptr->height;
+	ptable	= (uint8_t*)( img_ptr->pdata );
 
 	mask	= 0x80;
 	pattern = *ptable;
