@@ -75,11 +75,32 @@ typedef struct
 /*定义常用的资源 arrow_up arrow_dn 数字等*/
 
 
-extern const unsigned char asc_0507[][10];
+extern const unsigned char asc_0507[][8];
+
+extern const unsigned char asc_0608[][6];
+
 extern IMG_DEF BMP_res_arrow_dn;
 extern IMG_DEF BMP_res_arrow_up;
 extern IMG_DEF BMP_select_set; 
 extern IMG_DEF BMP_noselect_set; 
+
+
+
+
+
+
+
+
+void lcd_init( void );
+void lcd_fill( unsigned char pattern );
+void lcd_fill_rect( int left, int top, int right, int bottom, unsigned char pattern );
+void lcd_asc0608( char left, char top, char *p, char len, const char mode );
+void lcd_text12( char left, char top, char *p, char len, const char mode );
+void lcd_bitmap( const uint8_t left, const uint8_t top, const IMG_DEF *img_ptr, const uint8_t mode );
+void lcd_update_all( void );
+
+
+
 
 
 #endif

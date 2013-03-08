@@ -14,39 +14,14 @@
 #include "scr.h"
 
 
-/*
-   static PMENUITEM psubmenu[6]=
-   {
-   &Menu_2_2_1_license,//车牌号输入
-   &Menu_2_2_2_CarType,//车辆类型选择
-   &Menu_2_2_3_SpeedSet,//速度设置
-   &Menu_2_2_4_VINset,//VIN设置
-   &Menu_2_2_5_Cancel,//清除违章记录
-   &Menu_1_Idle,//油量标定
-   };
-
-
-
-   static void menuswitch(void)
-   {
-   int i,index;
-   lcd_fill(0);
-   DisAddRead_ZK(0,3,"车辆",2,&test_1_MeunSet,0,0);
-   DisAddRead_ZK(0,17,"设置",2,&test_1_MeunSet,0,0);
-   for(i=0;i<5;i++) lcd_bitmap(35+index*12, 5, &BMP_noselect_set, LCD_MODE_SET);
-   lcd_bitmap(35+index*12, 5, &BMP_select_set, LCD_MODE_SET);
-   DisAddRead_ZK(35,19,(char *)(psubmenu[menu_pos]->caption),4,&test_1_MeunSet,1,0);
-   lcd_update_all();
-   }
- */
-
 extern SCR scr_3_1_recorderdata;
+extern SCR  scr_3_2_signal;
 
 static SCR_ITEM scr_item[] =
 {
 	{ "主菜单",			6,	0				 },
 	{ "1.记录仪数据",	12, &scr_3_1_recorderdata },
-	{ "2.信号采集",		10, &scr_3_1_recorderdata },
+	{ "2.信号采集",		10, &scr_3_2_signal },
 	{ "3.定位信息",		10, &scr_3_1_recorderdata },
 	{ "4.车辆参数设置", 14, &scr_3_1_recorderdata },
 	{ "5.上网参数设置", 14, &scr_3_1_recorderdata },
@@ -67,10 +42,12 @@ static void menudisplay( void )
 	if( selectpos & 0x01 )      /*是单数*/
 	{
 		lcd_text12( 0, 0, scr_item[selectpos-1].text, scr_item[selectpos-1].len, LCD_MODE_SET );
+		lcd_fill_rect(0,16,121,28,LCD_MODE_SET);
 		lcd_text12( 0, 16, scr_item[selectpos].text, scr_item[selectpos].len, LCD_MODE_INVERT);
 	}
 	else
 	{
+		lcd_fill_rect(0,0,121,12,LCD_MODE_SET);
 		lcd_text12( 0, 0, scr_item[selectpos].text, scr_item[selectpos].len, LCD_MODE_INVERT);
 		lcd_text12( 0, 16, scr_item[selectpos+1].text, scr_item[selectpos+1].len, LCD_MODE_SET );
 	}
@@ -91,8 +68,8 @@ static void keypress(void *thiz,unsigned int key )
 	switch( key )
 	{
 		case KEY_MENU_PRESS:
-			//thiz = (void*)&scr_3_1_recorderdata;
-			//thiz->show( thiz, 0 );
+			*((PSCR)thiz)=*((PSCR)thiz->parent);
+			((PSCR)thiz)->show();
 			break;
 		case KEY_UP_PRESS:
 			selectpos--;
@@ -102,10 +79,12 @@ static void keypress(void *thiz,unsigned int key )
 		case KEY_DOWN_PRESS:
 			selectpos++;
 			if( selectpos == 10 )selectpos = 1;
-			
 			menudisplay();
 			break;
 		case KEY_OK_PRESS:
+			scr_item[selectpos].scr->parent=(PSCR)thiz;
+			*((PSCR)thiz)=scr_item[selectpos].scr;
+			((PSCR)thiz)->show();
 			break;
 	}
 }

@@ -1153,21 +1153,6 @@
               <FilePath>.\applications\scr\scr_3_1_recorderdata.c</FilePath>
             </File>
             <File>
-              <FileName>scr_3_2_1_io.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_3_2_1_io.c</FilePath>
-            </File>
-            <File>
-              <FileName>scr_3_2_2_analg.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_3_2_2_analg.c</FilePath>
-            </File>
-            <File>
-              <FileName>scr_3_2_3_power.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_3_2_3_power.c</FilePath>
-            </File>
-            <File>
               <FileName>scr_3_2_signal.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\scr\scr_3_2_signal.c</FilePath>
@@ -1251,6 +1236,16 @@
               <FileName>scr_3_3_geoinfo.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\scr\scr_3_3_geoinfo.c</FilePath>
+            </File>
+            <File>
+              <FileName>scr_9_export_usb.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\scr\scr_9_export_usb.c</FilePath>
+            </File>
+            <File>
+              <FileName>scr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\scr\scr.c</FilePath>
             </File>
           </Files>
         </Group>
