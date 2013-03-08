@@ -34,7 +34,7 @@ typedef struct IMG_DEF
 
 
 
-#define DECL_BMP(width,height,imgdata)	struct IMG_DEF BMP_##imgdata={width,height,imgdata}	
+#define DECL_BMP(width,height,imgdata)	IMG_DEF BMP_##imgdata={width,height,imgdata}	
 
 #define MaxBankIdleTime  1000//60s  LCD任务执行周期60ms,1min没有按键操作推出到idle状态
 

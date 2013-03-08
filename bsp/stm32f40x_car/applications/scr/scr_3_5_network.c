@@ -1,21 +1,6 @@
 #include "scr.h"
 
 
-static unsigned char res_arrow_dn[]={
-                    /* 84218421*/
-0x18,				/*[*****   ]*/	
-0x61,				/*[ ***    ]*/
-0x02,				/*[  *     ]*/
-};
-
-static unsigned char res_arrow_up[]={
-0x02,				/*[  *     ]*/	
-0x61,				/*[ ***    ]*/
-0x18,				/*[*****   ]*/
-};
-
-DECL_BMP(5,3,res_arrow_dn);
-DECL_BMP(5,3,res_arrow_up);
 
 
 static uint8_t pageindex=0;
@@ -101,7 +86,7 @@ static void msg(void *thiz,void *p)
 
 
 
-SCR scr_3_3_geoinfo=
+SCR scr_3_5_network=
 {
 	&show,
 	&keypress,

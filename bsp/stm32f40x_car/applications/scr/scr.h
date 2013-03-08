@@ -7,7 +7,7 @@
 
 
 
-typedef struct IMG_DEF 
+typedef struct _IMG_DEF 
  { unsigned char width;      /* Image width */
    unsigned char height;     /* Image height*/
    const unsigned char *pdata;    /* Image table start address in memory  */
@@ -16,7 +16,7 @@ typedef struct IMG_DEF
 
 
 
-#define DECL_BMP(width,height,imgdata)	struct IMG_DEF BMP_##imgdata={width,height,imgdata}	
+#define DECL_BMP(width,height,imgdata)	IMG_DEF BMP_##imgdata={width,height,imgdata}	
 
 
 typedef void (*SHOW)(void);  /*上层菜单调用者,无初始化数据(不知道调用者)*/
@@ -75,6 +75,11 @@ typedef struct
 /*定义常用的资源 arrow_up arrow_dn 数字等*/
 
 
+extern const unsigned char asc_0507[][10];
+extern IMG_DEF BMP_res_arrow_dn;
+extern IMG_DEF BMP_res_arrow_up;
+extern IMG_DEF BMP_select_set; 
+extern IMG_DEF BMP_noselect_set; 
 
 
 #endif

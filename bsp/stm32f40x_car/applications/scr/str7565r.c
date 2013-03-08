@@ -282,7 +282,7 @@ void lcd_backlight_off(void)
 逐行、顺向、阴码
 
 */
-void lcd_bitmap( const uint8_t left, const uint8_t top, const struct IMG_DEF *img_ptr, const uint8_t mode )
+void lcd_bitmap( const uint8_t left, const uint8_t top, const IMG_DEF *img_ptr, const uint8_t mode )
 {
 	uint8_t width, heigth, h, w, pattern, mask;
 	uint8_t * ptable;
@@ -468,5 +468,71 @@ void lcd_text12( char left, char top, char *p, char len, const char mode )
 		}
 	}
 }
+
+
+/*
+
+
+*/
+void lcd_asc0507( char left, char top, char *p, char len, const char mode )
+{
+	int				charnum = len;
+	int				i;
+	char			msb, lsb;
+
+	int				addr;
+	unsigned char	start_col = left;
+	unsigned int	val_old, val_new, val_mask;
+
+	unsigned int	glyph[12]; /*保存一个字符的点阵信息，以逐列式*/
+
+	while( charnum )
+	{
+		for( i = 0; i < 12; i++ )
+		{
+			glyph[i] = 0;
+		}
+		msb = *p++;
+		charnum--;
+		if( msb <= 0x80 ) //ascii字符0507
+		{
+		/*
+			addr = ( msb - 0x20 ) * 12 + FONT_ASC0612_ADDR;
+			for( i = 0; i < 3; i++ )
+			{
+				val_new				= *(__IO uint32_t*)addr;
+				glyph[i * 2 + 0]	= ( val_new & 0xffff );
+				glyph[i * 2 + 1]	= ( val_new & 0xffff0000 ) >> 16;
+				addr				+= 4;
+			}
+		*/
+			for(i=0;i<8;i++) glyph
+
+			val_mask = ( ( 0xfff ) << top ); /*12bit*/
+
+			/*加上top的偏移*/
+			for( i = 0; i < 6; i++ )
+			{
+				glyph[i] <<= top;
+
+				val_old = l_display_array[0][start_col] | ( l_display_array[1][start_col] << 8 ) | ( l_display_array[2][start_col] << 16 ) | ( l_display_array[3][start_col] << 24 );
+				if( mode == LCD_MODE_SET )
+				{
+					val_new = val_old & ( ~val_mask ) | glyph[i];
+				}else if( mode == LCD_MODE_INVERT )
+				{
+					val_new = ( val_old | val_mask ) & ( ~glyph[i] );
+				}
+				l_display_array[0][start_col]	= val_new & 0xff;
+				l_display_array[1][start_col]	= ( val_new & 0xff00 ) >> 8;
+				l_display_array[2][start_col]	= ( val_new & 0xff0000 ) >> 16;
+				l_display_array[3][start_col]	= ( val_new & 0xff000000 ) >> 24;
+				start_col++;
+			}
+		}
+	}
+}
+
+
 
 /************************************** The End Of File **************************************/
