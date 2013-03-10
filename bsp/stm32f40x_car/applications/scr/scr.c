@@ -156,4 +156,9 @@ const unsigned char select_set[] = { 0x3C, 0x7E, 0xFF, 0xFF, 0xFF, 0xFF, 0x7E, 0
 DECL_BMP( 8, 8, select_set );
 DECL_BMP( 8, 8, noselect_set );
 
+
+
+PSCR pscr;
+
+
 /************************************** The End Of File **************************************/

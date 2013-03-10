@@ -267,10 +267,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>26</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>119</TopLine>
+      <CurrentLine>129</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>applications\startup.c</PathWithFileName>
       <FilenameWithoutPath>startup.c</FilenameWithoutPath>
@@ -285,8 +285,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>933</TopLine>
+      <CurrentLine>935</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808.c</PathWithFileName>
       <FilenameWithoutPath>jt808.c</FilenameWithoutPath>
@@ -581,8 +581,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>24</TopLine>
+      <CurrentLine>25</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\drivers\m66.c</PathWithFileName>
       <FilenameWithoutPath>m66.c</FilenameWithoutPath>
@@ -1989,8 +1989,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>23</TopLine>
-      <CurrentLine>33</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\str7565r.c</PathWithFileName>
       <FilenameWithoutPath>str7565r.c</FilenameWithoutPath>
@@ -2027,10 +2027,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>28</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>1</TopLine>
-      <CurrentLine>19</CurrentLine>
+      <CurrentLine>1</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\scr\scr_2_idle.c</PathWithFileName>
       <FilenameWithoutPath>scr_2_idle.c</FilenameWithoutPath>
@@ -2043,10 +2043,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>30</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>12</TopLine>
+      <CurrentLine>13</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\scr\scr_3_1_recorderdata.c</PathWithFileName>
       <FilenameWithoutPath>scr_3_1_recorderdata.c</FilenameWithoutPath>
@@ -2061,8 +2061,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>53</TopLine>
-      <CurrentLine>68</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>1</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\scr\scr_3_2_signal.c</PathWithFileName>
       <FilenameWithoutPath>scr_3_2_signal.c</FilenameWithoutPath>
@@ -2160,8 +2160,8 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\applications\scr\scr_3_5_5_mobilenumber.c</PathWithFileName>
-      <FilenameWithoutPath>scr_3_5_5_mobilenumber.c</FilenameWithoutPath>
+      <PathWithFileName>.\applications\scr\scr_3_5_6_ppp.c</PathWithFileName>
+      <FilenameWithoutPath>scr_3_5_6_ppp.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -2173,24 +2173,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
-      <bDave2>0</bDave2>
-      <PathWithFileName>.\applications\scr\scr_3_5_6_ppp.c</PathWithFileName>
-      <FilenameWithoutPath>scr_3_5_6_ppp.c</FilenameWithoutPath>
-      <RteFlg>0</RteFlg>
-      <bShared>0</bShared>
-    </File>
-    <File>
-      <GroupNumber>9</GroupNumber>
-      <FileNumber>118</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>102</TopLine>
+      <CurrentLine>109</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\scr\scr_3_5_network.c</PathWithFileName>
       <FilenameWithoutPath>scr_3_5_network.c</FilenameWithoutPath>
@@ -2199,7 +2183,7 @@
     </File>
     <File>
       <GroupNumber>9</GroupNumber>
-      <FileNumber>119</FileNumber>
+      <FileNumber>118</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -2215,14 +2199,14 @@
     </File>
     <File>
       <GroupNumber>9</GroupNumber>
-      <FileNumber>120</FileNumber>
+      <FileNumber>119</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>14</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>36</TopLine>
+      <CurrentLine>39</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\scr\scr_3_7_sms.c</PathWithFileName>
       <FilenameWithoutPath>scr_3_7_sms.c</FilenameWithoutPath>
@@ -2231,7 +2215,7 @@
     </File>
     <File>
       <GroupNumber>9</GroupNumber>
-      <FileNumber>121</FileNumber>
+      <FileNumber>120</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -2247,7 +2231,7 @@
     </File>
     <File>
       <GroupNumber>9</GroupNumber>
-      <FileNumber>122</FileNumber>
+      <FileNumber>121</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
@@ -2263,17 +2247,33 @@
     </File>
     <File>
       <GroupNumber>9</GroupNumber>
+      <FileNumber>122</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <Focus>0</Focus>
+      <ColumnNumber>35</ColumnNumber>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <TopLine>12</TopLine>
+      <CurrentLine>26</CurrentLine>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\applications\scr\scr_3_main.c</PathWithFileName>
+      <FilenameWithoutPath>scr_3_main.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>9</GroupNumber>
       <FileNumber>123</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>73</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <TopLine>10</TopLine>
+      <CurrentLine>13</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\applications\scr\scr_3_main.c</PathWithFileName>
-      <FilenameWithoutPath>scr_3_main.c</FilenameWithoutPath>
+      <PathWithFileName>.\applications\scr\scr_4_selfcheck.c</PathWithFileName>
+      <FilenameWithoutPath>scr_4_selfcheck.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -2285,11 +2285,11 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>37</TopLine>
-      <CurrentLine>59</CurrentLine>
+      <TopLine>296</TopLine>
+      <CurrentLine>297</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\applications\scr\scr_4_selfcheck.c</PathWithFileName>
-      <FilenameWithoutPath>scr_4_selfcheck.c</FilenameWithoutPath>
+      <PathWithFileName>.\applications\scr\str7565r.c</PathWithFileName>
+      <FilenameWithoutPath>str7565r.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -2301,11 +2301,11 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <TopLine>33</TopLine>
+      <CurrentLine>36</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\applications\scr\str7565r.c</PathWithFileName>
-      <FilenameWithoutPath>str7565r.c</FilenameWithoutPath>
+      <PathWithFileName>.\applications\scr\scr_3_3_geoinfo.c</PathWithFileName>
+      <FilenameWithoutPath>scr_3_3_geoinfo.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -2315,13 +2315,13 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>6</ColumnNumber>
+      <ColumnNumber>1</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>63</TopLine>
-      <CurrentLine>78</CurrentLine>
+      <TopLine>11</TopLine>
+      <CurrentLine>14</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\applications\scr\scr_3_3_geoinfo.c</PathWithFileName>
-      <FilenameWithoutPath>scr_3_3_geoinfo.c</FilenameWithoutPath>
+      <PathWithFileName>.\applications\scr\scr_9_export_usb.c</PathWithFileName>
+      <FilenameWithoutPath>scr_9_export_usb.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -2336,8 +2336,8 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\applications\scr\scr_9_export_usb.c</PathWithFileName>
-      <FilenameWithoutPath>scr_9_export_usb.c</FilenameWithoutPath>
+      <PathWithFileName>.\applications\scr\scr.c</PathWithFileName>
+      <FilenameWithoutPath>scr.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
@@ -2347,13 +2347,13 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>41</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>15</TopLine>
+      <CurrentLine>29</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\applications\scr\scr.c</PathWithFileName>
-      <FilenameWithoutPath>scr.c</FilenameWithoutPath>
+      <PathWithFileName>.\applications\scr\scr_3_5_5_phonecall.c</PathWithFileName>
+      <FilenameWithoutPath>scr_3_5_5_phonecall.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

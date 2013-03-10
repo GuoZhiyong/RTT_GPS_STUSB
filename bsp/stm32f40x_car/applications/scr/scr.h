@@ -19,9 +19,9 @@ typedef struct _IMG_DEF
 #define DECL_BMP(width,height,imgdata)	IMG_DEF BMP_##imgdata={width,height,imgdata}	
 
 
-typedef void (*SHOW)(void);  /*上层菜单调用者,无初始化数据(不知道调用者)*/
-typedef void (*KEYPRESS)(void *thiz,unsigned int);
-typedef void (*TIMETICK)(void *thiz,unsigned int);
+typedef void (*SHOW)(void *parent);  /*上层菜单调用者,无初始化数据(不知道调用者)*/
+typedef void (*KEYPRESS)(unsigned int);
+typedef void (*TIMETICK)(unsigned int);
 typedef void (*MSG)(void *thiz,void *p);
 
 
@@ -75,6 +75,9 @@ typedef struct
 /*定义常用的资源 arrow_up arrow_dn 数字等*/
 
 
+
+
+
 extern const unsigned char asc_0507[][8];
 
 extern const unsigned char asc_0608[][6];
@@ -86,11 +89,6 @@ extern IMG_DEF BMP_noselect_set;
 
 
 
-
-
-
-
-
 void lcd_init( void );
 void lcd_fill( unsigned char pattern );
 void lcd_fill_rect( int left, int top, int right, int bottom, unsigned char pattern );
@@ -99,7 +97,28 @@ void lcd_text12( char left, char top, char *p, char len, const char mode );
 void lcd_bitmap( const uint8_t left, const uint8_t top, const IMG_DEF *img_ptr, const uint8_t mode );
 void lcd_update_all( void );
 
+/*用到的scr*/
+extern PSCR pscr;
 
+extern SCR scr_1_login;
+extern SCR scr_2_idle;
+extern SCR scr_3_main;
+
+extern SCR scr_3_1_recorderdata;
+extern SCR scr_3_2_signal;
+extern SCR scr_3_3_geoinfo;
+extern SCR scr_3_4_vehicle;
+
+
+extern SCR scr_3_5_5_phonecall;
+
+extern SCR scr_3_5_network;
+extern SCR scr_3_7_sms;
+extern SCR scr_3_8_callrecord;
+
+extern SCR scr_4_selfcheck;
+
+extern SCR scr_9_export_usb;
 
 
 

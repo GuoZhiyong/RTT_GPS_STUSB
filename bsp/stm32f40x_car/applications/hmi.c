@@ -63,8 +63,6 @@ rt_err_t rt_Rx_hmi2app808_MsgQue(u8 *buffer,u16 rec_len)
 
 
 
-static uint32_t keystatus=KEY_NONE;
-
 
 typedef struct _KEY
 {
@@ -151,8 +149,6 @@ static void key_lcd_port_init(void)
 
 }
 
-extern SCR scr_2_idle;
-PSCR pscr;
 
 ALIGN( RT_ALIGN_SIZE )
 static char thread_hmi_stack[2048];
@@ -165,11 +161,11 @@ static void rt_thread_entry_hmi( void* parameter )
 	lcd_init();
 
 	pscr = &scr_2_idle;
-	pscr->show();
+	pscr->show(NULL);
 	while( 1 )
 	{
-		pscr->timetick( pscr,rt_tick_get() );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
-		pscr->keypress( pscr,keycheck() );  //每个子菜单的 按键检测  时钟源50ms timer
+		pscr->timetick(rt_tick_get() );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
+		pscr->keypress(keycheck() );  //每个子菜单的 按键检测  时钟源50ms timer
 		rt_thread_delay( 5 );
 	}
 }

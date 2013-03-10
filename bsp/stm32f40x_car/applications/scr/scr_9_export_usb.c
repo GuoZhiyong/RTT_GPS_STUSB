@@ -1,11 +1,11 @@
 #include "scr.h"
 
-static void show(void)
+static void show(void *parent)
 {
 	lcd_fill(0);
 	lcd_fill_rect(0,0,121,12,LCD_MODE_SET);
 	lcd_text12(16,0,"正在导出数据...",15,LCD_MODE_INVERT);
-
+	
 	lcd_rect(10,18,80,10,LCD_MODE_SET);
 	lcd_fill_rect(10,18,70,16+10-1,LCD_MODE_SET);
 
@@ -15,18 +15,18 @@ static void show(void)
 
 
 /*按键处理*/
-static void keypress(void *thiz,unsigned int key)
+static void keypress(unsigned int key)
 {
 
 }
 
 /*系统时间*/
-static void timetick(void *thiz,unsigned int systick)
+static void timetick(unsigned int systick)
 {
 
 }
 
-/*处理自检状态的消息*/
+/*todo 处理USB数据导出的信息*/
 static void msg(void *thiz,void *p)
 {
 

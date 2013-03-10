@@ -31,8 +31,9 @@ static void showpage(void)
 	lcd_update_all();
 }
 
-static void show(void)
+static void show(void* parent)
 {
+	scr_3_3_geoinfo.parent=(PSCR)parent;
 	pageindex=0;
 	showpage();
 
@@ -40,7 +41,7 @@ static void show(void)
 
 
 /*按键处理*/
-static void keypress(void *thiz,unsigned int key)
+static void keypress(unsigned int key)
 {
 	switch(key)
 	{
@@ -61,7 +62,7 @@ static void keypress(void *thiz,unsigned int key)
 }
 
 /*系统时间*/
-static void timetick(void *thiz,unsigned int systick)
+static void timetick(unsigned int systick)
 {
 
 }

@@ -1,16 +1,4 @@
-/************************************************************
- * Copyright (C), 2008-2012,
- * FileName:		// 文件名
- * Author:			// 作者
- * Date:			// 日期
- * Description:		// 模块描述
- * Version:			// 版本信息
- * Function List:	// 主要函数及其功能
- *     1. -------
- * History:			// 历史修改记录
- *     <author>  <time>   <version >   <desc>
- *     David    96/10/12     1.0     build this moudle
- ***********************************************************/
+
 #include "scr.h"
 
 
@@ -18,16 +6,12 @@
 
 static SCR_ITEM scr_item[] =
 {
-	{ "主菜单",			6,	0				 },
-	{ "1.记录仪数据",	12, &scr_3_1_recorderdata },
-	{ "2.信号采集",		10, &scr_3_2_signal },
-	{ "3.定位信息",		10, &scr_3_1_recorderdata },
-	{ "4.车辆参数设置", 14, &scr_3_1_recorderdata },
-	{ "5.上网参数设置", 14, &scr_3_1_recorderdata },
-	{ "6.高级属性",		10, &scr_3_1_recorderdata },
-	{ "7.短信息",		8, &scr_3_7_sms },
-	{ "8.电话管理",		10, &scr_3_8_callrecord },
-	{ "9.音视频管理",	12, &scr_3_1_recorderdata },
+	{ "电话",		6,	0				 },
+	{ "1.拨打电话",	12, &scr_3_1_recorderdata },
+	{ "2.电话簿",	8, &scr_3_2_signal },
+	{ "3.未接来电",	10, &scr_3_1_recorderdata },
+	{ "4.已接来电", 10, &scr_3_1_recorderdata },
+	{ "5.已拨电话", 10, &scr_3_1_recorderdata },
 };
 
 
@@ -57,6 +41,7 @@ static void menudisplay( void )
 /***/
 static void show( void* parent )
 {
+	if(parent!=0) scr_3_5_5_phonecall.parent=(PSCR)parent;
 	selectpos = 1;
 	menudisplay( );
 }
@@ -66,9 +51,9 @@ static void keypress(unsigned int key )
 {
 	switch( key )
 	{
-		case KEY_MENU_PRESS:
-			pscr=scr_3_main.parent;
-			pscr->show(&scr_3_main);
+		case KEY_MENU_PRESS: /*返回父菜单*/
+			pscr=scr_3_5_5_phonecall.parent;
+			pscr->show((void*)0);
 			break;
 		case KEY_OK_PRESS:
 			pscr=scr_item[selectpos].scr;
@@ -76,12 +61,12 @@ static void keypress(unsigned int key )
 			break;		
 		case KEY_UP_PRESS:
 			selectpos--;
-			if( selectpos == 0 ) selectpos = 9;
+			if( selectpos == 0 ) selectpos = 5;
 			menudisplay();
 			break;
 		case KEY_DOWN_PRESS:
 			selectpos++;
-			if( selectpos == 10 )selectpos = 1;
+			if( selectpos == 6 )selectpos = 1;
 			menudisplay();
 			break;
 
@@ -98,7 +83,7 @@ static void msg(  void *p )
 {
 }
 
-SCR scr_3_main =
+SCR scr_3_5_5_phonecall =
 {
 	&show,
 	&keypress,
@@ -107,3 +92,4 @@ SCR scr_3_main =
 };
 
 /************************************** The End Of File **************************************/
+

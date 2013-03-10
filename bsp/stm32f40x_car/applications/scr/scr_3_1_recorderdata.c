@@ -10,7 +10,7 @@
 
 
 
-static void show(void)
+static void show(void * parent)
 {
 
 }
@@ -19,13 +19,13 @@ static void show(void)
 
 
 /*按键处理*/
-static void keypress(void *thiz,unsigned int key)
+static void keypress(unsigned int key)
 {
 
 }
 
 /*系统时间*/
-static void timetick(void *thiz,unsigned int systick)
+static void timetick(unsigned int systick)
 {
 
 }

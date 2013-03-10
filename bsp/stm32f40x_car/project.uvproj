@@ -1183,11 +1183,6 @@
               <FilePath>.\applications\scr\scr_3_5_4_authorization.c</FilePath>
             </File>
             <File>
-              <FileName>scr_3_5_5_mobilenumber.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_3_5_5_mobilenumber.c</FilePath>
-            </File>
-            <File>
               <FileName>scr_3_5_6_ppp.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\scr\scr_3_5_6_ppp.c</FilePath>
@@ -1246,6 +1241,11 @@
               <FileName>scr.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\scr\scr.c</FilePath>
+            </File>
+            <File>
+              <FileName>scr_3_5_5_phonecall.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\scr\scr_3_5_5_phonecall.c</FilePath>
             </File>
           </Files>
         </Group>

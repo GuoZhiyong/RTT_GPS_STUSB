@@ -34,6 +34,9 @@ const unsigned char l_mask_array[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40
 
 /* the LCD display image memory */
 /* buffer arranged so page memory is sequential in RAM */
+
+
+/*todo 声明为 unsigned int disp_ram[122] 更好，32行正好为一个int*/
 static unsigned char disp_ram[LCD_Y_PAGE][LCD_X_COL];
 
 /* control-lines hardware-interface (only "write") */
@@ -292,7 +295,7 @@ void lcd_fill_rect( int left, int top, int right, int bottom, unsigned char patt
 {
 	unsigned int	mask;
 	unsigned int	val, val_new;
-	unsigned char	page, col;
+	unsigned char	col;
 
 	//lcd_init( );
 	st7565_ctl( 0xae );
@@ -537,9 +540,9 @@ void lcd_asc0608( char left, char top, char *p, char len, const char mode )
 {
 	int				charnum = len;
 	int				i;
-	char			msb, lsb;
+	char			msb;
 
-	int				addr;
+
 	unsigned char	start_col = left;
 	unsigned int	val, val_old, val_new, val_mask;
 	while( charnum )
@@ -578,7 +581,7 @@ void lcd_asc0608( char left, char top, char *p, char len, const char mode )
 	}
 }
 
-/*****/
+/*todo 以下代码是为了显示进度条而添加，需要优化或简化*/
 void lcd_dot(unsigned char x, unsigned char y, unsigned char mode )
 {
 	unsigned char	bitnum, bitmask, yByte;

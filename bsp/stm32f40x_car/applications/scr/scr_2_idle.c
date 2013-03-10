@@ -12,8 +12,6 @@ const unsigned char res_fs_none[]={
 0x00,					/*[        ]*/
 };
 
-
-
 const unsigned char res_fs_udisk[]={
 0xfe,					/*[******* ]*/	
 0xf2,					/*[****  * ]*/
@@ -24,7 +22,6 @@ const unsigned char res_fs_udisk[]={
 0xfe,					/*[******* ]*/
 0x00,					/*[        ]*/
 };
-
 
 const unsigned char res_fs_sd[]={
 0xfe,					/*[******* ]*/	
@@ -219,48 +216,44 @@ DECL_BMP(37,31,res_compass_0);
 
 
 /*需要获取一些系统状态*/
-static void show(void *thiz,unsigned int param)
+static void show(void *parent)
 {
 	IMG_DEF tmp;
+	scr_2_idle.parent=(PSCR)parent; /*保存调用者指针*/
 
+	/*todo 根据状态选择对应的图标*/
 	lcd_bitmap(0,0,&BMP_res_compass_0,LCD_MODE_SET);
 	lcd_bitmap(44,0,&BMP_res_fs_none,LCD_MODE_SET);
 	lcd_bitmap(52,0,&BMP_res_iccard,LCD_MODE_SET);
 	lcd_bitmap(60,0,&BMP_res_sat,LCD_MODE_INVERT);
 	lcd_asc0608(72,0,"7",1,LCD_MODE_SET);
 	
-	//lcd_text12(80,12,"0km/h",5,LCD_MODE_SET);
 	lcd_bitmap(85,8,&BMP_res_kmh,LCD_MODE_SET);
 
 	lcd_bitmap(80,0,&BMP_res_antena,LCD_MODE_SET);
 	lcd_bitmap(97,0,&BMP_res_bat,LCD_MODE_SET);
 	lcd_bitmap(114,0,&BMP_res_power_ext,LCD_MODE_SET);
 
-	//lcd_rect(40,10,60,10,LCD_MODE_SET);
-	//lcd_fill_rect(40,10,70,18,LCD_MODE_SET);
-
 	lcd_text12(44,20,"CMCC    16:02",13,LCD_MODE_SET);
 	lcd_update_all( );
 }
 
 
-extern SCR scr_9_export_usb;
+
 
 /*按键处理*/
-static void keypress(void *thiz,unsigned int key)
+static void keypress(unsigned int key)
 {
-	extern SCR scr_3_main;
 	switch(key){
 		case KEY_MENU_PRESS:	/*到主菜单界面*/
-			scr_3_main.parent=(PSCR)thiz;
-			*((PSCR)thiz)=scr_3_main;
-			((PSCR)thiz)->show();
+			pscr=&scr_3_main;
+			pscr->show(&scr_2_idle);
 			break;
 		case KEY_MENU_REPEAT:	/*到数据导出界面*/
+			/*todo 在此判断udisk是否存在，并更新idle的显示*/
 			//if(rt_device_find("udisk")==RT_NULL) break;
-			scr_9_export_usb.parent=(PSCR)thiz;
-			*((PSCR)thiz)=scr_9_export_usb;
-			((PSCR)thiz)->show();
+			pscr=&scr_9_export_usb;
+			pscr->show(&scr_2_idle);
 			break;
 		case KEY_UP_PRESS:		/*发送信息*/
 			break;
@@ -280,7 +273,7 @@ static void keypress(void *thiz,unsigned int key)
 }
 
 /*系统时间*/
-static void timetick(void *thiz,unsigned int systick)
+static void timetick(unsigned int systick)
 {
 
 }
