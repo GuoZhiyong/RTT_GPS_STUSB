@@ -35,36 +35,62 @@ static void showpage(void)
 
 			break;
 		case 2:
-			lcd_text12(6,0,"接入点",6,LCD_MODE_INVERT);
+			lcd_text12(0,0," 接入点 ",8,LCD_MODE_INVERT);
 			lcd_text12(80,0,"CMNET",5,LCD_MODE_INVERT);
 			lcd_text12(0,16,"上传间隔",8,LCD_MODE_INVERT);
-			lcd_text12(80,0,"10",2,LCD_MODE_SET);
+			lcd_text12(80,16,"10",2,LCD_MODE_SET);
 			lcd_bitmap(116,28,&BMP_res_arrow_up,LCD_MODE_SET);
 			break;
 		case 3:
+			lcd_text12(0,0,"深度休眠",8,LCD_MODE_INVERT);
+			lcd_text12(121-6*6,0,"未使能",6,LCD_MODE_SET);
+			lcd_text12(0,16,"深度休眠",8,LCD_MODE_INVERT);
+			lcd_text12(121-6*6,16,"未使能",6,LCD_MODE_SET);
+			
+			lcd_bitmap(116,28,&BMP_res_arrow_up,LCD_MODE_SET);
+			break;
+		case 4:
 			lcd_text12(0,0,"本机号码",8,LCD_MODE_INVERT);
 			lcd_text12(40,16,"13606549494",11,LCD_MODE_SET);
 			lcd_bitmap(116,28,&BMP_res_arrow_up,LCD_MODE_SET);
 			break;	
-		case 4:
+		case 5:
+			lcd_text12(0,0,"中心号码",8,LCD_MODE_INVERT);
+			lcd_text12(40,16,"13606549494",11,LCD_MODE_SET);
+			lcd_bitmap(116,28,&BMP_res_arrow_up,LCD_MODE_SET);
+			break;	
+		case 6:
 			lcd_text12(0,0,"鉴权码",6,LCD_MODE_INVERT);
+
+			lcd_bitmap(116,28,&BMP_res_arrow_up,LCD_MODE_SET);
+			break;		
+		case 7:
+			lcd_text12(0,0,"PPP鉴权",6,LCD_MODE_INVERT);
 			lcd_asc0608(0,13,"User",4,LCD_MODE_INVERT);
 			
 			lcd_asc0608(4,22,"Key",4,LCD_MODE_INVERT);
 			lcd_bitmap(116,28,&BMP_res_arrow_up,LCD_MODE_SET);
 			break;		
-		case 5:
-			lcd_text12(0,0,"PPP鉴权",6,LCD_MODE_INVERT);
+		case 8:
+			lcd_text12(0,0,"本月流量",8,LCD_MODE_INVERT);
+			lcd_text12(121-6*5,0,"0B/0B",5,LCD_MODE_SET);
+			lcd_text12(0,16,"上月流量",8,LCD_MODE_INVERT);
+			lcd_text12(121-6*5,16,"0B/0B",5,LCD_MODE_SET);
+			lcd_bitmap(111,28,&BMP_res_arrow_dn,LCD_MODE_SET);
 			lcd_bitmap(116,28,&BMP_res_arrow_up,LCD_MODE_SET);
-			break;			
+			break;
+		case 9:
+			lcd_text12(0,0,"掉线重连",8,LCD_MODE_INVERT);
+			lcd_text12(121-6*4,16,"30秒",4,LCD_MODE_SET);
+			lcd_bitmap(116,28,&BMP_res_arrow_up,LCD_MODE_SET);
+			break;
 	}		
 	lcd_update_all();
 }
 
 static void show(void* parent)
 {
-	 scr_3_5_network.parent=(PSCR)parent;
-	pageindex=0;
+	scr_b_network.parent=(PSCR)parent;
 	showpage();
 
 }
@@ -79,13 +105,13 @@ static void keypress(unsigned int key)
 		case KEY_OK_PRESS:				/*返回上级菜单*/
 			break;
 		case KEY_UP_PRESS:
+			if(pageindex==0) pageindex=10;
 			pageindex--;
-			if(pageindex==0) pageindex=2;
 			showpage();
 			break;	
 		case KEY_DOWN_PRESS:
 			pageindex++;
-			pageindex%=3;
+			pageindex%=9;
 			showpage();
 			break;
 	}
@@ -106,7 +132,7 @@ static void msg(void *thiz,void *p)
 
 
 
-SCR scr_3_5_network=
+SCR scr_b_network=
 {
 	&show,
 	&keypress,

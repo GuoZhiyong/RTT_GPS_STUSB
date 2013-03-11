@@ -35,7 +35,7 @@ static void msg(void *thiz,void *p)
 
 
 
-SCR scr_9_export_usb=
+SCR scr_export_usb=
 {
 	&show,
 	&keypress,

@@ -135,20 +135,31 @@ const unsigned char asc_0608[][6] =
 };
 
 const unsigned char res_arrow_dn[] = {
-	/* 84218421*/
-	0x18,                                                                                   /*[*****   ]*/
-	0x61,                                                                                   /*[ ***    ]*/
-	0x02,                                                                                   /*[  *     ]*/
+			/* 84218421*/
+	0x7e,   /*[ ****** ]*/                                                                                /*[*****   ]*/
+	0x3c,   /*[  ****  ]*/                                                                                   /*[ ***    ]*/
+	0x18,   /*[   **   ]*/                                                                                   /*[  *     ]*/
 };
 
 const unsigned char res_arrow_up[] = {
-	0x02,                                                                                   /*[  *     ]*/
-	0x61,                                                                                   /*[ ***    ]*/
-	0x18,                                                                                   /*[*****   ]*/
+			/* 84218421*/
+	0x18,   /*[   **   ]*/                                                                                /*[*****   ]*/
+	0x3c,   /*[  ****  ]*/                                                                                   /*[ ***    ]*/
+	0x7e,   /*[ ****** ]*/                                                                                   /*[  *     ]*/
 };
 
-DECL_BMP( 5, 3, res_arrow_dn );
-DECL_BMP( 5, 3, res_arrow_up );
+const unsigned char res_arrow_none[] = {
+			/* 84218421*/
+	0x00,   /*[   **   ]*/                                                                                /*[*****   ]*/
+	0x00,   /*[  ****  ]*/                                                                                   /*[ ***    ]*/
+	0x00,   /*[ ****** ]*/                                                                                   /*[  *     ]*/
+};
+
+
+DECL_BMP( 8, 3, res_arrow_dn );
+DECL_BMP( 8, 3, res_arrow_up );
+DECL_BMP( 8, 3, res_arrow_none );
+
 
 const unsigned char noselect_set[] = { 0x3C, 0x7E, 0xC3, 0xC3, 0xC3, 0xC3, 0x7E, 0x3C };    //¿ÕÐÄ
 const unsigned char select_set[] = { 0x3C, 0x7E, 0xFF, 0xFF, 0xFF, 0xFF, 0x7E, 0x3C };      //ÊµÐÄ

@@ -160,7 +160,7 @@ static void rt_thread_entry_hmi( void* parameter )
 	key_lcd_port_init();
 	lcd_init();
 
-	pscr = &scr_2_idle;
+	pscr = &scr_idle;
 	pscr->show(NULL);
 	while( 1 )
 	{

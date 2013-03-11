@@ -14,16 +14,16 @@ static void showpage(void)
 	lcd_fill(0);
 	switch(pageindex){
 		case 0:
-			lcd_text12(0,0,"IO输入",6,LCD_MODE_INVERT);
-			
-			
+			lcd_text12(0,0,"清零里程",8,LCD_MODE_INVERT);
+			lcd_text12(121-6*3,0,"0KM",3,LCD_MODE_INVERT);
+			lcd_text12(0,16,"总里程 ",8,LCD_MODE_INVERT);
+			lcd_text12(121-6*3,16,"0KM",3,LCD_MODE_INVERT);
 			break;
 		case 1:
-			lcd_text12(0,0,"模拟量",6,LCD_MODE_INVERT);
-
-			break;
-		case 2:
-			lcd_text12(0,0,"电源",4,LCD_MODE_INVERT);
+			lcd_text12(0,0,"昨日里程",6,LCD_MODE_INVERT);
+			lcd_text12(121-6*3,0,"0KM",3,LCD_MODE_INVERT);
+			lcd_text12(0,16,"今日里程",6,LCD_MODE_INVERT);
+			lcd_text12(121-6*3,16,"0KM",3,LCD_MODE_INVERT);
 			break;
 	}		
 	lcd_update_all();
@@ -31,8 +31,7 @@ static void showpage(void)
 
 static void show(void *parent)
 {
-	scr_3_2_signal.parent=(PSCR)parent;
-	pageindex=0;
+	scr_7_mileage.parent=(PSCR)parent;
 	showpage();
 
 }
@@ -47,13 +46,13 @@ static void keypress(unsigned int key)
 		case KEY_OK_PRESS:				/*返回上级菜单*/
 			break;
 		case KEY_UP_PRESS:
-			pageindex--;
 			if(pageindex==0) pageindex=2;
+			pageindex--;
 			showpage();
 			break;	
 		case KEY_DOWN_PRESS:
 			pageindex++;
-			pageindex%=3;
+			pageindex%=2;
 			showpage();
 			break;
 	}
@@ -74,13 +73,14 @@ static void msg(void *thiz,void *p)
 
 
 
-SCR scr_3_2_signal=
+SCR scr_7_mileage=
 {
 	&show,
 	&keypress,
 	&timetick,
 	(void*)0
 };
+
 
 
 

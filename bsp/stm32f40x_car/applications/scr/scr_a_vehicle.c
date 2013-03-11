@@ -14,7 +14,7 @@ static SCR_ITEM scr_item[] =
 
 static void show(void* parent)
 {
-	scr_3_4_vehicle.parent=(PSCR)parent;
+	scr_a_vehicle.parent=(PSCR)parent;
 
 }
 
@@ -24,8 +24,9 @@ static void keypress(unsigned int key)
 {
 	switch(key)
 	{
-		case KEY_MENU_PRESS:
-		case KEY_OK_PRESS:				/*返回上级菜单*/
+		case KEY_MENU_PRESS:	/*返回上级菜单*/
+			break;
+		case KEY_OK_PRESS:
 			break;
 		case KEY_UP_PRESS:
 			break;	
@@ -49,7 +50,7 @@ static void msg(void *thiz,void *p)
 
 
 
-SCR scr_3_4_vehicle=
+SCR scr_a_vehicle=
 {
 	&show,
 	&keypress,

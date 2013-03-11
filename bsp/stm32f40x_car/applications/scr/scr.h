@@ -82,6 +82,7 @@ extern const unsigned char asc_0507[][8];
 
 extern const unsigned char asc_0608[][6];
 
+extern IMG_DEF BMP_res_arrow_none;
 extern IMG_DEF BMP_res_arrow_dn;
 extern IMG_DEF BMP_res_arrow_up;
 extern IMG_DEF BMP_select_set; 
@@ -95,30 +96,46 @@ void lcd_fill_rect( int left, int top, int right, int bottom, unsigned char patt
 void lcd_asc0608( char left, char top, char *p, char len, const char mode );
 void lcd_text12( char left, char top, char *p, char len, const char mode );
 void lcd_bitmap( const uint8_t left, const uint8_t top, const IMG_DEF *img_ptr, const uint8_t mode );
+void lcd_update( const unsigned char top, const unsigned char bottom );
 void lcd_update_all( void );
 
 /*ÓÃµ½µÄscr*/
 extern PSCR pscr;
 
-extern SCR scr_1_login;
-extern SCR scr_2_idle;
-extern SCR scr_3_main;
+extern SCR scr_1_signal;
+extern SCR scr_2_driver;
+extern SCR scr_3_geoinfo;
+extern SCR scr_4_sms;
+extern SCR scr_4_1_sms_send;
+extern SCR scr_4_2_sms_inbox;
+extern SCR scr_4_3_sms_outbox;
 
-extern SCR scr_3_1_recorderdata;
-extern SCR scr_3_2_signal;
-extern SCR scr_3_3_geoinfo;
-extern SCR scr_3_4_vehicle;
+extern SCR scr_5_phonecall;
+extern SCR scr_6_advance;
+extern SCR scr_7_mileage;
+extern SCR scr_8_record;
+extern SCR scr_9_tired;
+extern SCR scr_a_vehicle;
+extern SCR scr_b_network;
+extern SCR scr_c_multimedia;
 
 
-extern SCR scr_3_5_5_phonecall;
 
-extern SCR scr_3_5_network;
-extern SCR scr_3_7_sms;
-extern SCR scr_3_8_callrecord;
 
-extern SCR scr_4_selfcheck;
 
-extern SCR scr_9_export_usb;
+
+
+
+
+
+
+
+
+extern SCR scr_login;
+extern SCR scr_idle;
+extern SCR scr_main;
+extern SCR scr_selfcheck;
+extern SCR scr_export_usb;
 
 
 
