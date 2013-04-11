@@ -92,10 +92,10 @@ void rtthread_startup(void)
 	/* init application */
 	sst25_init(); /*在此初始化,gsm才能读取参数，放在app_thread中不会先执行*/
 	rt_application_init();
-	//gps_init();
-	//gsm_init();
+	gps_init();
+	gsm_init();
 	hmi_init();
-	//jt808_init();
+	jt808_init();
  	
 
 #ifdef RT_USING_FINSH

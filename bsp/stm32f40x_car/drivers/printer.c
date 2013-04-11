@@ -338,6 +338,7 @@ void printer_print_glyph( unsigned char len )
    }
  */
 	fprinting = 1;
+
 	GPIO_SetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
 
 	for( row = 0; row < 12; row++ )
@@ -365,6 +366,7 @@ void printer_print_glyph( unsigned char len )
 		//printer_delay_us(5);
 		GPIO_SetBits( LAT_PORT, LAT_PIN );
 
+
 		GPIO_SetBits( STB1_3_PORT, STB1_3_PIN );
 		printer_delay_us( printer_param.heat_delay[printer_param.gray_level] );
 		GPIO_ResetBits( STB1_3_PORT, STB1_3_PIN );
@@ -372,6 +374,7 @@ void printer_print_glyph( unsigned char len )
 		GPIO_SetBits( STB4_6_PORT, STB4_6_PIN );
 		printer_delay_us( printer_param.heat_delay[printer_param.gray_level] );
 		GPIO_ResetBits( STB4_6_PORT, STB4_6_PIN );
+	
 		drivers1( );
 
 		p = print_glyph[row * 2 + 1];
