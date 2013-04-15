@@ -20,7 +20,7 @@
 
 #include "scr.h"
 #include "gsm.h"
-
+#include "sle4442.h"
 
 
 /*
@@ -54,6 +54,11 @@ static KEY keys[]={
 	{GPIOC,GPIO_Pin_9,0,0}, /*up*/
 	{GPIOD,GPIO_Pin_3,0,0}, /*down*/	
 };
+
+
+
+static uint8_t iccard_state=0;  /*卡状态 0未插入 1已插入*/
+static uint32_t iccard_beep_timeout=0;
 
 /*
 50ms检查一次按键,只是置位对应的键，程序中判断组合键按下
@@ -110,11 +115,12 @@ static uint32_t  keycheck(void)
 	{
 		mems_alarm_tick--;
 	}
+	if(iccard_beep_timeout) iccard_beep_timeout--;
 	
 /*合适停止响*/
-	if(tmp_key|j|mems_alarm_tick)
+	if(tmp_key|j|mems_alarm_tick|iccard_beep_timeout)
 	{
-		//GPIO_SetBits(GPIOB,GPIO_Pin_6);
+		GPIO_SetBits(GPIOB,GPIO_Pin_6);
 	}
 	else
 	{
@@ -164,15 +170,18 @@ struct rt_thread thread_hmi;
 /*hmi线程*/
 static void rt_thread_entry_hmi( void* parameter )
 {
+	uint8_t i;
+	LCD_MSG lcdmsg;
 
 	RCC_ClocksTypeDef RCC_Clocks;
 	RCC_GetClocksFreq( &RCC_Clocks );
 	rt_kprintf("\r\nSYSCLK_Frequency=%d",RCC_Clocks.SYSCLK_Frequency);
 	rt_kprintf("\r\nHCLK_Frequency=%d",RCC_Clocks.HCLK_Frequency );
 	rt_kprintf("\r\nPCLK1_Frequency=%d",RCC_Clocks.PCLK1_Frequency);
-	rt_kprintf("\r\nPCLK2_Frequency=%d",RCC_Clocks.PCLK2_Frequency );
+	rt_kprintf("\r\nPCLK2_Frequency=%d\r\n",RCC_Clocks.PCLK2_Frequency );
 
-
+	Init_4442();
+	
 	key_lcd_port_init();
 	lcd_init();
 	gsmstate(GSM_POWERON);
@@ -181,9 +190,21 @@ static void rt_thread_entry_hmi( void* parameter )
 	pscr->show(NULL);
 	while( 1 )
 	{
+	#if 1
+		i=GPIO_ReadInputDataBit( GPIOC, GPIO_Pin_7 );
+		if(i^iccard_state)  /*IC卡插入*/
+		{
+			iccard_state=i;
+			iccard_beep_timeout=20;
+			lcdmsg.id=LCD_MSG_ID_ICCARD;
+			lcdmsg.info.payload[0]=iccard_state; 
+			pscr->msg(&lcdmsg);
+		}
+	#endif
 		pscr->timetick(rt_tick_get() );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
 		pscr->keypress(keycheck() );  //每个子菜单的 按键检测  时钟源50ms timer
 		rt_thread_delay( 5 );
+		
 	}
 }
 

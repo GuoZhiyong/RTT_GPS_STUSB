@@ -15,7 +15,7 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include "stm32f4xx.h"
-
+#include "scr.h"
 #include <finsh.h>
 
 /*声明一个cam设备*/
@@ -289,11 +289,14 @@ static void rt_thread_entry_cam( void* parameter )
 	uint8_t cam_rx_head[5];
 	uint8_t cam_rx_head_wr=0;
 	uint8_t retry=3;  /*老摄像头一次命令不能成功*/
+	LCD_MSG lcd_msg;
 
 	CAM_RX_STATE cam_rx_state=RX_IDLE;
 
-	rt_thread_delay( RT_TICK_PER_SECOND *2 );
+	rt_thread_delay( RT_TICK_PER_SECOND *15 );
 	dev_cam_open(&dev_cam,RT_DEVICE_FLAG_RDWR);
+
+
 
 	while( 1 )
 	{
@@ -380,7 +383,13 @@ static void rt_thread_entry_cam( void* parameter )
 						tick=rt_tick_get();
 					}	
 					else
+					{
+						lcd_msg.id=LCD_MSG_ID_CAM;
+						lcd_msg.info.payload[0]=cam_no;
+						lcd_msg.info.payload[1]=ERROR;
+						pscr->msg(&lcd_msg);
 						cam_state=CAM_END;
+					}	
 				}
 				if(cam_rxed==0) break;  /*没有收到数据，跳出*/
 				cam_rxed=0;	/*收到数据，清除*/
@@ -410,6 +419,10 @@ static void rt_thread_entry_cam( void* parameter )
 				
 				if(cam_last_page)
 				{
+					lcd_msg.id=LCD_MSG_ID_CAM;
+					lcd_msg.info.payload[0]=cam_no;
+					lcd_msg.info.payload[1]=SUCCESS;
+					pscr->msg(&lcd_msg);
 					cam_state=CAM_END;
 					break;
 				}

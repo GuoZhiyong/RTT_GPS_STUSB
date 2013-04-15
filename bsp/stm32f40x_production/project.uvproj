@@ -516,6 +516,11 @@
               <FileType>1</FileType>
               <FilePath>.\drivers\pt_port.c</FilePath>
             </File>
+            <File>
+              <FileName>SLE4442.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\SLE4442.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -83,7 +83,17 @@ unsigned char	printer_data[PRINTER_DATA_SIZE];
 struct rt_ringbuffer		rb_printer_data;
 
 
+typedef enum
+{
+	IDLE=0,
+	GET_DATA,
+	HEAT_1_3,
+	HEAT_2_4,
+	STEP_DOT,
+	STEP_ROW,
+}PRINT_STATE;
 
+PRINT_STATE print_state;
 
 /*
    要打印的图案 24x24dot 24*3=72byte
@@ -305,7 +315,7 @@ static void printer_save_param( void )
    传入字符行的长度，是为了调整加热延时
  */
 
-void printer_print_glyph( unsigned char len )
+void printer_print_glyph(void)
 {
 	unsigned char	*p;
 	unsigned char	b, c, row, col_byte;
@@ -320,6 +330,13 @@ void printer_print_glyph( unsigned char len )
    GPIO_ResetBits( NO_PAPER_OUT_PORT, NO_PAPER_OUT_PIN );
    }
  */
+ 	if( GPIO_ReadInputDataBit( PHE_PORT, PHE_PIN ) )
+	{
+		rt_kprintf( "NO Paper\r\n" );
+		GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );	
+		printer_stop( );
+		return;
+	}
 	fprinting = 1;
 
 	GPIO_SetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
@@ -372,9 +389,7 @@ void printer_print_glyph( unsigned char len )
 		drivers2( );
 	}
 	GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );	
-
 	printer_stop( );
-
 	fprinting = 0;
 }
 
@@ -510,7 +525,7 @@ void printer_get_str_glyph( unsigned char *pstr, unsigned char len )
    }
  */
 	//启动打印
-	printer_print_glyph( len );
+	printer_print_glyph();
 }
 
 /*
@@ -881,7 +896,7 @@ FINSH_FUNCTION_EXPORT( printer, print string test );
 * Return:
 * Others:
 ***********************************************************/
-void step1( const int count, const int delay )
+void step( const int count, const int delay )
 {
 	int i;
 
@@ -916,7 +931,7 @@ void step1( const int count, const int delay )
 	GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
 }
 
-void step( const int count, const int delay )
+void step1( const int count, const int delay )
 {
 	int i;
 
@@ -928,8 +943,8 @@ void step( const int count, const int delay )
 	GPIO_SetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
 	for( i = 0; i < count; i++ )
 	{
-		drivers1();
 		drivers2();
+		drivers1();
 		printer_stop( );
 	}
 	

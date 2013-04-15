@@ -52,7 +52,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 	uint8_t		*psrc = pinfo + 7; //指向开始位置
 
 
-	rt_kprintf("\r\ngps>%s",pinfo);
+	//rt_kprintf("\r\ngps>%s",pinfo);
 
 /*时间处理 $GNRMC,023548.00,V,,,,,,,270313,,,N*6F*/
 	count = 0;

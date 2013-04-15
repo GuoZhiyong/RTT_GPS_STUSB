@@ -613,6 +613,19 @@ rt_err_t pt_resp_STR_OK( char *p, uint16_t len )
 	return RT_ERROR;
 }
 
+
+rt_err_t pt_resp_TTS_OK( char *p, uint16_t len )
+{
+	char *pfind = RT_NULL;
+	pfind = strstr( p, "%TTS:0" );
+	if( pfind )
+	{
+		return RT_EOK; /*找到了*/
+	}
+	return RT_ERROR;
+}
+
+
 /*响应CREG或CGREG
    +CREG:0,1
    +CGREG:0,5
@@ -805,7 +818,7 @@ static int protothread_gsm_power( struct pt *pt )
 		{ RT_NULL,											 pt_resp_STR_OK, RT_TICK_PER_SECOND * 10, 1	 },
 		{ "ATE0\r\n",										 pt_resp_STR_OK, RT_TICK_PER_SECOND * 5,  1	 },
 		{ "ATV1\r\n",										 pt_resp_STR_OK, RT_TICK_PER_SECOND * 5,  1	 },
-		{ "AT%TTS=2,3,5,\"BBB6D3ADCAB9D3C3544342CEC0D0C7B6A8CEBBB3B5D4D8D6D5B6CB\"\r\n",pt_resp_STR_OK, RT_TICK_PER_SECOND * 5,  1	 },
+		{ "AT%TTS=2,3,5,\"BBB6D3ADCAB9D3C3544342CEC0D0C7B6A8CEBBB3B5D4D8D6D5B6CB\"\r\n",pt_resp_TTS_OK, RT_TICK_PER_SECOND * 20,  1	 },
 		{ "AT+CPIN?\r\n",									 pt_resp_CPIN,	 RT_TICK_PER_SECOND * 3,  10 },
 		{ "AT+CREG?\r\n",									 pt_resp_CGREG,	 RT_TICK_PER_SECOND * 3,  10 },
 		{ "AT+CIMI\r\n",									 pt_resp_CIMI,	 RT_TICK_PER_SECOND * 3,  1	 },

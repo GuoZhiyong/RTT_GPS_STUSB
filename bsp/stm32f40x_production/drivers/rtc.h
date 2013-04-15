@@ -15,6 +15,7 @@ void set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second);
 void set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t date);
 #include <time.h>
 
-/*time_t time(time_t* t);
- */
+
+void rtc_init(void);
+
 #endif

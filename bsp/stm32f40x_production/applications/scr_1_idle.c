@@ -40,8 +40,81 @@ const unsigned char res_cross[] = {
 	0x60,                               /*[ **     ]*/
 	0x90,                               /*[*  *    ]*/
 };
-
 DECL_BMP( 4, 4, res_cross );
+
+const uint8_t res_rtc_ok[]={
+	0x00,0x00,
+	0x07,0xE0,
+	0x18,0x18,
+	0x20,0x04,
+	0x40,0x02,
+	0x40,0x06,
+	0x80,0x09,
+	0x80,0x11,
+	0xA0,0x21,
+	0x90,0x41,
+	0x48,0x82,
+	0x45,0x02,
+	0x22,0x04,
+	0x18,0x18,
+	0x07,0xE0,
+	0x00,0x00,
+};
+DECL_BMP(16,16, res_rtc_ok );
+
+
+const uint8_t res_rtc_err[]={
+	0x00,0x00,
+	0x07,0xE0,
+	0x18,0x18,
+	0x20,0x04,
+	0x40,0x02,
+	0x48,0x22,
+	0x84,0x41,
+	0x82,0x81,
+	0x81,0x01,
+	0x82,0x81,
+	0x44,0x42,
+	0x48,0x22,
+	0x20,0x04,
+	0x18,0x18,
+	0x07,0xE0,
+	0x00,0x00
+};
+DECL_BMP(16,16, res_rtc_err );
+
+
+const unsigned char res_iccard_empty[]={
+0x00,0x00,0x00,
+0x08,0x00,0x04,
+0x10,0x00,0x08,
+0x20,0x00,0x10,
+0x40,0x00,0x20,
+0xff,0xff,0xc0,
+0x00,0x00,0x00,
+0x00,0x00,0x00,
+};
+
+DECL_BMP( 24, 8, res_iccard_empty );
+
+
+const unsigned char res_iccard_insert[]={
+0x00,0x00,0x00,
+0x09,0xff,0xe4,
+0x13,0xff,0xc8,
+0x27,0xff,0x90,
+0x40,0x00,0x20,
+0xff,0xff,0xc0,
+0x00,0x00,0x00,
+0x00,0x00,0x00,
+};
+
+DECL_BMP( 24, 8, res_iccard_insert );
+
+
+
+static char cam_ch[4]={0x20,0x20,0x20,0x20};
+
 
 /*AD检测*/
 
@@ -51,6 +124,7 @@ uint16_t ADC_ConValue[3];   //   3  个通道ID    0 : 电池 1: 灰线   2:  绿线
 
 /*首次定位的时刻*/
 static uint32_t fixed_sec = 0;
+static uint8_t card_status=0;
 
 
 /**/
@@ -233,6 +307,17 @@ static void showinfo(void)
 		sprintf( buf, "%02d:%02d", fixed_sec / 60, fixed_sec % 60 );
 		lcd_asc0608( 0, 8, buf, LCD_MODE_SET );
 	}
+
+	
+	if(card_status==0)
+	{
+		lcd_bitmap( 122 - 6*4, 24, &bmp_res_iccard_empty, LCD_MODE_SET );
+	}
+	else
+	{
+		lcd_bitmap( 122 - 6*4, 24, &bmp_res_iccard_insert, LCD_MODE_SET );
+	}
+	
 	lcd_update( 0, 31 );
 }
 
@@ -247,7 +332,7 @@ static void show( void *parent )
 {
 	GPIO_InitTypeDef	GPIO_InitStructure;
 	uint8_t				i;
-	char				buf[32];
+	char				buf[64];
 
 	scr_1_idle.parent = (PSCR)parent;
 
@@ -274,6 +359,8 @@ static void show( void *parent )
 	}
 /*PA0 速度信号*/
 
+	sprintf(buf,"AT%%TTS=2,3,5,\"C5C4D5D5%02xD5FDB3A3\"\r\n",1+0x30);
+	rt_kprintf("\r\nTTS>%s\r\n",buf);
 
 	showinfo();
 
@@ -293,11 +380,11 @@ static void keypress( unsigned int key )
 		case KEY_OK_PRESS:      /*返回上级菜单*/
 			break;
 		case KEY_UP_PRESS:		/*拍照*/
-			for(i=0;i<3;i++) step(100,1000);
+			for(i=0;i<3;i++) step(10,1000);
 			break;
 		case KEY_DOWN_PRESS:    /*打印测试*/
 			GPIO_ResetBits(GPIOB,GPIO_Pin_6);
-			/*
+			
 			printer( "车牌号码:\r\n车牌分类:\r\n车辆VIN:\r\n驾驶员姓名:\r\n驾驶证代码:\r\n" );
 			
 			sprintf( buf, "打印时间:20%02d/%02d/%02d %02d:%02d:%02d\r\n" ,year,month,day,hour,minute,sec );
@@ -318,9 +405,8 @@ static void keypress( unsigned int key )
 				printer(buf);
 			}
 			printer( "最近一次疲劳驾驶记录:\r\n无疲劳驾驶记录\r\n" );
-			*/
-			printer( "最近一次超速驾驶记录:\r\n无超速驾驶记录\r\n" );	
-			step(25,1000);
+			rt_thread_delay(50);
+			step(50,1000);
 			
 			break;
 	}
@@ -361,7 +447,7 @@ static void timetick( unsigned int systick )
 static void msg( void *pmsg )
 {
 	LCD_MSG		* plcd_msg = (LCD_MSG* )pmsg;
-	char		buf[64];
+	char		ch,buf[100];
 	uint32_t	i;
 
 	if( plcd_msg->id == LCD_MSG_ID_GPS )
@@ -399,6 +485,25 @@ static void msg( void *pmsg )
 		sprintf( buf, "%02d:%02d  GPRS",i/60,i%60);
 		lcd_asc0608( 0,16, buf, LCD_MODE_SET );
 
+	}
+	if(plcd_msg->id == LCD_MSG_ID_CAM)
+	{
+		ch=plcd_msg->info.payload[0];
+		if(plcd_msg->info.payload[1]==SUCCESS)
+		{
+			sprintf(buf,"AT%%TTS=2,3,5,\"C5C4D5D5%02xD5FDB3A3\"\r\n",ch+0x30);
+			cam_ch[ch-1]=0x30+ch;
+			lcd_asc0608( 122 - 6*4, 16, cam_ch, LCD_MODE_SET );
+		}
+		else
+		{
+			sprintf(buf,"AT%%TTS=2,3,5,\"C5C4D5D5%02xD2ECB3A3\"\r\n",ch+0x30);
+		}
+		gsm_write(buf);
+	}
+	if(plcd_msg->id == LCD_MSG_ID_ICCARD)
+	{
+		card_status=plcd_msg->info.payload[0];
 	}
 
 	showinfo();
