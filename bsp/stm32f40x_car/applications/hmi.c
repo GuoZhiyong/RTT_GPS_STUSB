@@ -17,7 +17,7 @@
 #include "stm32f4xx.h"
 #include <board.h>
 #include <rtthread.h>
-#include "scr\scr.h"
+#include "lcd\lcd.h"
 #include "jt808.h"
 
 /* 消息队列控制块 */
@@ -62,7 +62,7 @@ rt_err_t rt_Rx_hmi2app808_MsgQue(u8 *buffer,u16 rec_len)
 */
 
 
-
+#define KEY_NONE	0
 
 typedef struct _KEY
 {
@@ -158,14 +158,14 @@ static void rt_thread_entry_hmi( void* parameter )
 {
 
 	key_lcd_port_init();
-	lcd_init();
+//	lcd_init();
 
-	pscr = &scr_idle;
-	pscr->show(NULL);
+//	pscr = &scr_idle;
+//	pscr->show(NULL);
 	while( 1 )
 	{
-		pscr->timetick(rt_tick_get() );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
-		pscr->keypress(keycheck() );  //每个子菜单的 按键检测  时钟源50ms timer
+//		pscr->timetick(rt_tick_get() );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
+//		pscr->keypress(keycheck() );  //每个子菜单的 按键检测  时钟源50ms timer
 		rt_thread_delay( 5 );
 	}
 }

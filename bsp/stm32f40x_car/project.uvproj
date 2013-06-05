@@ -296,7 +296,7 @@
               </OCR_RVCT3>
               <OCR_RVCT4>
                 <Type>1</Type>
-                <StartAddress>0x8004000</StartAddress>
+                <StartAddress>0x8008000</StartAddress>
                 <Size>0x100000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
@@ -505,6 +505,11 @@
               <FileName>sst25.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\sst25.c</FilePath>
+            </File>
+            <File>
+              <FileName>rs485.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\rs485.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -939,117 +944,303 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>scr</GroupName>
+          <GroupName>lcd</GroupName>
+          <GroupOption>
+            <CommonProperty>
+              <UseCPPCompiler>0</UseCPPCompiler>
+              <RVCTCodeConst>0</RVCTCodeConst>
+              <RVCTZI>0</RVCTZI>
+              <RVCTOtherData>0</RVCTOtherData>
+              <ModuleSelection>0</ModuleSelection>
+              <IncludeInBuild>0</IncludeInBuild>
+              <AlwaysBuild>0</AlwaysBuild>
+              <GenerateAssemblyFile>2</GenerateAssemblyFile>
+              <AssembleAssemblyFile>2</AssembleAssemblyFile>
+              <PublicsOnly>2</PublicsOnly>
+              <StopOnExitCode>11</StopOnExitCode>
+              <CustomArgument></CustomArgument>
+              <IncludeLibraryModules></IncludeLibraryModules>
+            </CommonProperty>
+            <GroupArmAds>
+              <Cads>
+                <interw>2</interw>
+                <Optim>0</Optim>
+                <oTime>2</oTime>
+                <SplitLS>2</SplitLS>
+                <OneElfS>2</OneElfS>
+                <Strict>2</Strict>
+                <EnumInt>2</EnumInt>
+                <PlainCh>2</PlainCh>
+                <Ropi>2</Ropi>
+                <Rwpi>2</Rwpi>
+                <wLevel>0</wLevel>
+                <uThumb>2</uThumb>
+                <uSurpInc>2</uSurpInc>
+                <VariousControls>
+                  <MiscControls></MiscControls>
+                  <Define></Define>
+                  <Undefine></Undefine>
+                  <IncludePath></IncludePath>
+                </VariousControls>
+              </Cads>
+              <Aads>
+                <interw>2</interw>
+                <Ropi>2</Ropi>
+                <Rwpi>2</Rwpi>
+                <thumb>2</thumb>
+                <SplitLS>2</SplitLS>
+                <SwStkChk>2</SwStkChk>
+                <NoWarn>2</NoWarn>
+                <uSurpInc>2</uSurpInc>
+                <VariousControls>
+                  <MiscControls></MiscControls>
+                  <Define></Define>
+                  <Undefine></Undefine>
+                  <IncludePath></IncludePath>
+                </VariousControls>
+              </Aads>
+            </GroupArmAds>
+          </GroupOption>
           <Files>
             <File>
-              <FileName>scr.c</FileName>
+              <FileName>bmp.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr.c</FilePath>
+              <FilePath>.\applications\lcd\bmp.c</FilePath>
             </File>
             <File>
-              <FileName>scr_1_signal.c</FileName>
+              <FileName>lcd.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_1_signal.c</FilePath>
+              <FilePath>.\applications\lcd\lcd.c</FilePath>
             </File>
             <File>
-              <FileName>scr_2_driver.c</FileName>
+              <FileName>Menu_0_0_password.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_2_driver.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_0_0_password.c</FilePath>
             </File>
             <File>
-              <FileName>scr_3_geoinfo.c</FileName>
+              <FileName>Menu_0_1_License.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_3_geoinfo.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_0_1_License.c</FilePath>
             </File>
             <File>
-              <FileName>scr_4_sms.c</FileName>
+              <FileName>Menu_0_2_CarType.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_4_sms.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_0_2_CarType.c</FilePath>
             </File>
             <File>
-              <FileName>scr_4_1_sms_send.c</FileName>
+              <FileName>Menu_0_3_Sim.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_4_1_sms_send.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_0_3_Sim.c</FilePath>
             </File>
             <File>
-              <FileName>scr_4_2_sms_inbox.c</FileName>
+              <FileName>Menu_0_4_Colour.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_4_2_sms_inbox.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_0_4_Colour.c</FilePath>
             </File>
             <File>
-              <FileName>scr_4_3_sms_outbox.c</FileName>
+              <FileName>Menu_0_5_speedtype.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_4_3_sms_outbox.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_0_5_speedtype.c</FilePath>
             </File>
             <File>
-              <FileName>scr_5_phonecall.c</FileName>
+              <FileName>Menu_0_loggingin.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_5_phonecall.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_0_loggingin.c</FilePath>
             </File>
             <File>
-              <FileName>scr_6_advance.c</FileName>
+              <FileName>Menu_1_Idle.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_6_advance.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_1_Idle.c</FilePath>
             </File>
             <File>
-              <FileName>scr_7_mileage.c</FileName>
+              <FileName>Menu_2_1_Status8.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_7_mileage.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_2_1_Status8.c</FilePath>
             </File>
             <File>
-              <FileName>scr_8_record.c</FileName>
+              <FileName>Menu_2_2_Speed15.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_8_record.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_2_2_Speed15.c</FilePath>
             </File>
             <File>
-              <FileName>scr_9_tired.c</FileName>
+              <FileName>Menu_2_3_CentreTextStor.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_9_tired.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_2_3_CentreTextStor.c</FilePath>
             </File>
             <File>
-              <FileName>scr_a_vehicle.c</FileName>
+              <FileName>Menu_2_4_CarInfor.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_a_vehicle.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_2_4_CarInfor.c</FilePath>
             </File>
             <File>
-              <FileName>scr_b_network.c</FileName>
+              <FileName>Menu_2_5_DriverInfor.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_b_network.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_2_5_DriverInfor.c</FilePath>
             </File>
             <File>
-              <FileName>scr_c_multimedia.c</FileName>
+              <FileName>Menu_2_6_Mileage.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_c_multimedia.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_2_6_Mileage.c</FilePath>
             </File>
             <File>
-              <FileName>scr_idle.c</FileName>
+              <FileName>Menu_2_7_RequestProgram.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_idle.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_2_7_RequestProgram.c</FilePath>
             </File>
             <File>
-              <FileName>scr_login.c</FileName>
+              <FileName>Menu_2_8_DnsIpDisplay.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_login.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_2_8_DnsIpDisplay.c</FilePath>
             </File>
             <File>
-              <FileName>scr_main.c</FileName>
+              <FileName>Menu_2_InforCheck.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_main.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_2_InforCheck.c</FilePath>
             </File>
             <File>
-              <FileName>scr_selfcheck.c</FileName>
+              <FileName>Menu_3_1_CentreQuesSend.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_selfcheck.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_3_1_CentreQuesSend.c</FilePath>
             </File>
             <File>
-              <FileName>str7565r.c</FileName>
+              <FileName>Menu_3_2_FullorEmpty.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\str7565r.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_3_2_FullorEmpty.c</FilePath>
             </File>
             <File>
-              <FileName>scr_export_usb.c</FileName>
+              <FileName>Menu_3_3_ElectronicInfor.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\scr\scr_export_usb.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_3_3_ElectronicInfor.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_3_4_Multimedia.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_3_4_Multimedia.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_3_5_MultimediaTrans.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_3_5_MultimediaTrans.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_3_6_Record.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_3_6_Record.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_3_7_Affair.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_3_7_Affair.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_3_8_LogOut.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_3_8_LogOut.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_3_InforInteract.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_3_InforInteract.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_4_1_pilao.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_4_1_pilao.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_4_2_chaosu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_4_2_chaosu.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_4_InforTirExspd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_4_InforTirExspd.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_5_1_TelDis.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_5_1_TelDis.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_5_2_TelAtd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_5_2_TelAtd.c</FilePath>
+            </File>
+            <File>
+              <FileName>menu_5_3_bdupgrad.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\menu_5_3_bdupgrad.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_5_4_BDColdBoot.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_5_4_BDColdBoot.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_5_5_Can.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_5_5_Can.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_5_6_Concuss.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_5_6_Concuss.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_5_7_Version.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_5_7_Version.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_5_8_usb.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_5_8_usb.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_5_other.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_5_other.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_6_RemoteUpdata.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_6_RemoteUpdata.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_7_CentreTextDisplay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_7_CentreTextDisplay.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_8_1_updataResult.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_8_1_updataResult.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_8_2_BDbatchTrans.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_8_2_BDbatchTrans.c</FilePath>
+            </File>
+            <File>
+              <FileName>menu_8_3_electronicDisp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\menu_8_3_electronicDisp.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_8_bd808.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_8_bd808.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_Include.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_Include.c</FilePath>
+            </File>
+            <File>
+              <FileName>SED1520.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\SED1520.c</FilePath>
             </File>
           </Files>
         </Group>

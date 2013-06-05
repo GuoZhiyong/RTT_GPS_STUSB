@@ -15,8 +15,6 @@ typedef struct _MsgListNode
 {
 	struct _MsgListNode* prev;
 	struct _MsgListNode* next;
-	struct _MsgListNode* sibling_up; /*多包信息的排序*/
-	struct _MsgListNode* sibling_dn; /*多包信息的排序*/
 	void* data;
 }MsgListNode;
 

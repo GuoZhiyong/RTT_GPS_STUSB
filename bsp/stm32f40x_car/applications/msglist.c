@@ -15,8 +15,6 @@ MsgListNode* msglist_node_create(void* data)
 	{
 		node->prev = RT_NULL;
 		node->next = RT_NULL;
-		node->sibling_dn=RT_NULL;
-		node->sibling_up=RT_NULL;
 		node->data = data;
 	}
 
@@ -29,8 +27,6 @@ void msglist_node_destroy(MsgListNode* node)
 	{
 		node->next = RT_NULL;
 		node->prev = RT_NULL;
-		node->sibling_dn=RT_NULL;
-		node->sibling_up=RT_NULL;
 		rt_free(node);
 	}
 

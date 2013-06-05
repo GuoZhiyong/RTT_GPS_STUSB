@@ -19,13 +19,11 @@
 #include <board.h>
 #include <finsh.h>
 
-#include <gsm.h>
-
 #include "jt808.h"
 
 #include "pt.h"
-
-#ifdef M66
+#include "gsm.h"
+#include "m66.h"
 
 #define GSM_GPIO			GPIOC
 #define GSM_TX_PIN			GPIO_Pin_10
@@ -57,24 +55,28 @@ static struct rt_mailbox	mb_gsmrx;
 #define MB_GSMRX_POOL_SIZE 32
 static uint8_t				mb_gsmrx_pool[MB_GSMRX_POOL_SIZE];
 
-#define GSM_RX_SIZE 2048
-static uint8_t			gsm_rx[GSM_RX_SIZE];
-static uint16_t			gsm_rx_wr = 0;
+/*模块是否忙，在送数、删短信、TTS合成等*/
+static struct rt_semaphore sem_gsmbusy;
 
-static T_GSM_STATE		gsm_state		= GSM_IDLE;
+#define GSM_RX_SIZE 2048
+static uint8_t		gsm_rx[GSM_RX_SIZE];
+static uint16_t		gsm_rx_wr = 0;
+
+static T_GSM_STATE	gsm_state = GSM_IDLE;
 
 /*串口接收缓存区定义*/
 #define UART4_RX_SIZE 256
-static uint8_t			uart4_rxbuf[UART4_RX_SIZE];
-struct rt_ringbuffer	rb_uart4_rx;
+static uint8_t	uart4_rxbuf[UART4_RX_SIZE];
+static uint16_t uart4_rxbuf_wr = 0, uart4_rxbuf_rd = 0;
 
 /*控制输出多少条信息*/
-static uint32_t			fgsm_rawdata_out = 0xfffffff;
+static uint32_t fgsm_rawdata_out = 0xfffffff;
 
 /*最近一次收到串口数据的时刻,不使用sem作为超时判断*/
 static uint32_t last_tick;
 
-
+/*是否在播报中，不能播报下一条*/
+static uint8_t tts_busy = 0;
 
 struct _gsm_param
 {
@@ -82,13 +84,12 @@ struct _gsm_param
 	char	imsi[16];
 	uint8_t csq;
 	char	ip[16];
-} gsm_param;
+}					gsm_param;
 
-
+static uint8_t		socket_linkno = 0;
 
 static struct pt	pt_gsm_power;
 static struct pt	pt_gsm_socket;
-
 
 /*简单的时间管理机制*/
 struct pt_timer
@@ -116,7 +117,6 @@ static void pt_timer_set( struct pt_timer * t, int interval )
 	t->start	= pt_clock_time( );
 }
 
-
 /***********************************************************
 * Function:
 * Description: uart4的中断服务函数
@@ -131,9 +131,9 @@ void UART4_IRQHandler( void )
 	rt_interrupt_enter( );
 	if( USART_GetITStatus( UART4, USART_IT_RXNE ) != RESET )
 	{
-		rt_ringbuffer_putchar( &rb_uart4_rx, USART_ReceiveData( UART4 ) );
+		uart4_rxbuf[uart4_rxbuf_wr++]	= USART_ReceiveData( UART4 );
+		uart4_rxbuf_wr					%= UART4_RX_SIZE;
 		USART_ClearITPendingBit( UART4, USART_IT_RXNE );
-		//rt_sem_release( &sem_uart );
 		last_tick = rt_tick_get( );
 	}
 
@@ -147,8 +147,8 @@ void UART4_IRQHandler( void )
 	rt_interrupt_leave( );
 }
 
-
 #if 0
+
 
 /***********************************************************
 * Function:
@@ -229,7 +229,6 @@ struct
 	{ "CMS ERROR", urc_cb_default },
 	{ "",		   NULL			  }
 };
-
 
 
 /***********************************************************
@@ -519,7 +518,7 @@ static rt_err_t m66_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 	switch( cmd )
 	{
 		case CTL_STATUS:
-			*((int*)arg)=gsm_state;
+			*( (int*)arg ) = gsm_state;
 			break;
 		case CTL_AT_CMD: //发送at命令,结果要返回
 			break;
@@ -540,13 +539,13 @@ static rt_err_t m66_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 * Return:
 * Others:
 ***********************************************************/
-static void gsmrx_cb( uint8_t *pInfo, uint16_t len )
+static void gsmrx_cb( uint8_t *pInfo, uint16_t size )
 {
-	int		i, count,newlen;
+	int		i, count, len = size;
 	uint8_t tbl[24] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf };
 	char	c, *pmsg;
 	uint8_t *psrc, *pdst;
-	int32_t infolen, link;
+	int32_t infolen, linkno;
 
 /*网络侧的信息，直接通知上层软件*/
 	if( fgsm_rawdata_out )
@@ -554,39 +553,49 @@ static void gsmrx_cb( uint8_t *pInfo, uint16_t len )
 		rt_kprintf( "\r\n%08d gsm_rx>%s\r\n", rt_tick_get( ), pInfo );
 		fgsm_rawdata_out--;
 	}
-/*
-会返回诸如<0d><0a>OK<0d><0a>之类的数据
-去掉前面不必要的0d0a 和空格等不可见字符
-*/
-	count=0;
-	while((*(pInfo+count)<0x21)&&(count<len))
-	{
-		count++;
-	}
-	psrc=pInfo+count;
-	newlen=len-count;
-	
-	if(strncmp(psrc,"%IPDATA:",7)==0)
+
+/*判读并处理*/
+	psrc = pInfo;
+	if( strncmp( psrc, "%IPDATA:", 7 ) == 0 )
 	{
 		/*解析出净信息,编译器会优化掉pdst*/
-		i = sscanf( psrc, "%%IPDATA:%d,%d,%s", &link, &infolen, pdst );
-		if( i != 3 ) return;
-		if( infolen < 11 ) return;
-		if( *pdst != '"' ) return;
-		psrc=pdst;
-		pmsg = pdst+1;	/*指向下一个位置*/
-		for(i=0;i<infolen;i++)
+		i = sscanf( psrc, "%%IPDATA:%d,%d,%s", &linkno, &infolen, pdst );
+		if( i != 3 )
 		{
-			c = tbl[*pmsg++ - '0'] << 4;
-			c |= tbl[*pmsg++ - '0'];
+			return;
+		}
+		if( infolen < 11 )
+		{
+			return;
+		}
+		if( *pdst != '"' )
+		{
+			return;
+		}
+		psrc	= pdst;
+		pmsg	= pdst + 1; /*指向下一个位置*/
+		for( i = 0; i < infolen; i++ )
+		{
+			c		= tbl[*pmsg++ - '0'] << 4;
+			c		|= tbl[*pmsg++ - '0'];
 			*pdst++ = c;
 		}
-		gprs_rx(link, psrc, infolen );
+		gprs_rx( linkno, psrc, infolen );
 		return;
 	}
+/*TTS*/
+	if( strncmp( psrc, "%TTS:0", 6 ) == 0 )
+	{
+		tts_busy = 0;
+	}
 
-	/*直接发送到Mailbox中*/
-	pmsg = rt_malloc( len );
+/*短信*/
+	if( strncmp( psrc, "+CMTI:\"SM\",", 11 ) == 0 )
+	{
+	}
+
+	/*直接发送到Mailbox中,内部处理*/
+	pmsg = rt_malloc( len + 2 );
 	if( pmsg != RT_NULL )
 	{
 		*pmsg			= len >> 8;
@@ -596,7 +605,6 @@ static void gsmrx_cb( uint8_t *pInfo, uint16_t len )
 	}
 	return;
 }
-
 
 /*  */
 rt_err_t pt_resp_STR_OK( char *p, uint16_t len )
@@ -640,9 +648,7 @@ rt_err_t pt_resp_CGREG( char *p, uint16_t len )
  */
 rt_err_t pt_resp_CIMI( char *p, uint16_t len )
 {
-	char *pimsi, i;
-
-	rt_kprintf( "cimi len=%d\n", len );
+	rt_kprintf( "cimi len=%d  %02x %02x\n", len, *p, *( p + 1 ) );
 	if( len < 15 )
 	{
 		return RT_ERROR;
@@ -655,8 +661,6 @@ rt_err_t pt_resp_CIMI( char *p, uint16_t len )
 /*响应CGSN**/
 rt_err_t pt_resp_CGSN( char *p, uint16_t len )
 {
-	char	*pimsi, i;
-	char	*pstr;
 	if( len < 15 )
 	{
 		return RT_ERROR;
@@ -743,9 +747,12 @@ rt_err_t pt_resp_ETCPIP( char *p, uint16_t len )
 rt_err_t pt_resp_DNSR( char *p, uint16_t len )
 {
 	uint8_t i, stage = 0;
-	char	*psrc	= p;
+	char	*psrc = p;
 	char	*pdst;
-	if( strstr( p, "%DNSR" ) ==RT_NULL ) return RT_ERROR;
+	if( strstr( p, "%DNSR" ) == RT_NULL )
+	{
+		return RT_ERROR;
+	}
 	while( 1 )
 	{
 		if( stage == 0 )
@@ -754,9 +761,9 @@ rt_err_t pt_resp_DNSR( char *p, uint16_t len )
 			{
 				for( i = 0; i < 4; i++ )
 				{
-					if( curr_gsm_socket.state == SOCKET_DNS )
+					if( psocket->state == SOCKET_DNS )
 					{
-						pdst = curr_gsm_socket.ip_str;
+						pdst = psocket->ip_addr;
 						break;
 					}
 				}
@@ -774,21 +781,30 @@ rt_err_t pt_resp_DNSR( char *p, uint16_t len )
 			psrc++;
 		}
 	}
-	rt_kprintf( "dns ip=%s\r\n", curr_gsm_socket.ip_str );
+	rt_kprintf( "dns ip=%s\r\n", psocket->ip_addr );
 	return RT_EOK;
 }
 
-
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 rt_err_t pt_resp_IPOPENX( char *p, uint16_t len )
 {
-	uint8_t i, stage = 0;
-	char	*psrc	= p;
+	uint8_t i;
+	char	*psrc = p;
 	char	*pdst;
 
-	if( strstr( p, "CONNECT" ) !=RT_NULL ) return RT_EOK;
+	if( strstr( p, "CONNECT" ) != RT_NULL )
+	{
+		return RT_EOK;
+	}
 	return RT_ERROR;
 }
-
 
 /*通用检查函数，看是否收到数据，如果有数据后再判断*/
 rt_err_t pt_resp( RESP_FUNC func )
@@ -809,11 +825,6 @@ rt_err_t pt_resp( RESP_FUNC func )
 	return ret;
 }
 
-
-
-
-
-
 typedef rt_err_t ( *AT_RESP )( char *p, uint16_t len );
 typedef struct
 {
@@ -823,45 +834,55 @@ typedef struct
 	uint16_t	retry;
 }AT_CMD_RESP;
 
+
+/*
+   判断一个字符串是不是表示ip的str
+   如果由[0..9|.] 组成
+   '.' 0x2e   '/' 0x2f   '0' 0x30  '9' 0x39   简化一下。不判断 '/'
+   返回值
+   0:表示域名的地址
+   1:表示是IP地址
+
+ */
+static uint8_t is_ipaddr( char * str )
+{
+	char *p = str;
+	while( *p != NULL )
+	{
+		if( ( *p > '9' ) || ( *p < '.' ) )
+		{
+			return 0;
+		}
+		p++;
+	}
+	return 1;
+}
+
 /*gsm供电的处理纤程*/
-
-
-
 
 /**/
 static int protothread_gsm_power( struct pt *pt )
 {
-	static char	str_CGDCONT[64];
-	static char	str_ETCPIP[32];
-
-	static AT_CMD_RESP	at_init[] =
+	static AT_CMD_RESP		at_init[] =
 	{
-		{ RT_NULL,				 pt_resp_STR_OK, RT_TICK_PER_SECOND * 10, 1	 },
-		{ RT_NULL,				 pt_resp_STR_OK, RT_TICK_PER_SECOND * 10, 1	 },
-		{ "ATE0\r\n",			 pt_resp_STR_OK, RT_TICK_PER_SECOND * 5,  1	 },
-		{ "ATV1\r\n",			 pt_resp_STR_OK, RT_TICK_PER_SECOND * 5,  1	 },
-		{ "AT+CPIN?\r\n",		 pt_resp_CPIN,	 RT_TICK_PER_SECOND * 3,  10 },
-		{ "AT+CREG?\r\n",		 pt_resp_CGREG,	 RT_TICK_PER_SECOND * 3,  10 },
-		{ "AT+CIMI\r\n",		 pt_resp_CIMI,	 RT_TICK_PER_SECOND * 3,  1	 },
-		{ "AT+CGREG?\r\n",		 pt_resp_CGREG,	 RT_TICK_PER_SECOND * 3,  10 },
-		{ "AT+CGATT?\r\n",		 pt_resp_CGATT,	 RT_TICK_PER_SECOND * 3,  10 },
-		{ str_CGDCONT,			 pt_resp_STR_OK, RT_TICK_PER_SECOND * 10, 1	 },
-		{ str_ETCPIP,			 pt_resp_STR_OK, RT_TICK_PER_SECOND * 30, 1	 },
-		{ "AT%ETCPIP?\r\n",		 pt_resp_ETCPIP, RT_TICK_PER_SECOND * 3,  1	 },
-		{ "AT%IOMODE=1,2,1\r\n", pt_resp_STR_OK, RT_TICK_PER_SECOND * 3,  1	 },
+		{ RT_NULL,		   pt_resp_STR_OK, RT_TICK_PER_SECOND * 10, 1  },
+		{ RT_NULL,		   pt_resp_STR_OK, RT_TICK_PER_SECOND * 10, 1  },
+		{ "ATE0\r\n",	   pt_resp_STR_OK, RT_TICK_PER_SECOND * 5,	1  },
+		{ "ATV1\r\n",	   pt_resp_STR_OK, RT_TICK_PER_SECOND * 5,	1  },
+		{ "AT+CPIN?\r\n",  pt_resp_CPIN,   RT_TICK_PER_SECOND * 3,	10 },
+		{ "AT+CREG?\r\n",  pt_resp_CGREG,  RT_TICK_PER_SECOND * 3,	10 },
+		{ "AT+CIMI\r\n",   pt_resp_CIMI,   RT_TICK_PER_SECOND * 3,	1  },
+		{ "AT+CGREG?\r\n", pt_resp_CGREG,  RT_TICK_PER_SECOND * 3,	10 },
+		{ "AT+CGATT?\r\n", pt_resp_CGATT,  RT_TICK_PER_SECOND * 3,	10 },
 	};
-	static struct pt_timer timer_gsm_power;
-	static uint8_t		at_init_index	= 0;
-	static uint8_t		at_init_retry	= 0;
-	rt_err_t			ret;
+	static struct pt_timer	timer_gsm_power;
+	static uint8_t			at_init_index	= 0;
+	static uint8_t			at_init_retry	= 0;
+	rt_err_t				ret;
 
 	PT_BEGIN( pt );
 	if( gsm_state == GSM_POWERON )
 	{
-		
-		sprintf( str_CGDCONT, "AT+CGDCONT=1,\"IP\",\"%s\"\r\n", curr_gsm_socket.apn );
-		sprintf( str_ETCPIP, "AT%%ETCPIP=1,\"%s\",\"%s\"\r\n", curr_gsm_socket.user, curr_gsm_socket.psw );
-
 		GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
 		GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
 		pt_timer_set( &timer_gsm_power, 200 );
@@ -883,146 +904,168 @@ static int protothread_gsm_power( struct pt *pt )
 				if( pt_timer_expired( &timer_gsm_power ) ) /*超时*/
 				{
 					rt_kprintf( "timeout\r\n" );
-					
 				}else
 				{
 					break;
 				}
 			}
-			if( pt_timer_expired( &timer_gsm_power ) ) /*因为超时退出的*/
+			if( pt_timer_expired( &timer_gsm_power ) )  /*因为超时退出的*/
 			{
 				PT_EXIT( pt );
 			}
 		}
-		gsm_state		= GSM_AT;                   /*切换到AT状态*/
+		gsm_state = GSM_AT;                             /*切换到AT状态*/
 	}
 	if( gsm_state == GSM_POWEROFF )
 	{
 		GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
 		GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
-		gsm_state=GSM_IDLE;
+		gsm_state = GSM_IDLE;
 	}
 	PT_END( pt );
 }
 
-
-
 /*关于链路维护,只维护一个，多链路由上层处理*/
-static int gsm_socket_process(struct pt *pt)
+static int gsm_socket_process( struct pt *pt )
 {
-	static char			buf[64];
-	static uint8_t		i,j;
-	static struct pt_timer timer_gsm_socket;
+	uint8_t					buf[64];
+	static struct pt_timer	timer_gsm_socket;
+	static char				str_CGDCONT[64];
+	static char				str_ETCPIP[32];
+	static uint8_t			tcpip_init_index	= 0;
+	static uint8_t			tcpip_init_retry	= 0;
+	static uint8_t			dns_retry			= 0;
 
-	PT_BEGIN(pt);
-	if( gsm_state == GSM_AT )
+	static AT_CMD_RESP		tcpip_init[] = {
+		{ str_CGDCONT,			 pt_resp_STR_OK, RT_TICK_PER_SECOND * 10, 1 },
+		{ str_ETCPIP,			 pt_resp_STR_OK, RT_TICK_PER_SECOND * 30, 1 },
+		{ "AT%ETCPIP?\r\n",		 pt_resp_ETCPIP, RT_TICK_PER_SECOND * 3,  1 },
+		{ "AT%IOMODE=1,2,1\r\n", pt_resp_STR_OK, RT_TICK_PER_SECOND * 3,  1 },
+	};
+
+	if( gsm_state != GSM_AT )
 	{
-		if( curr_gsm_socket.state == SOCKET_DNS )
+		//return PT_ENDED;
+		PT_EXIT( pt );
+	}
+
+	if( psocket == RT_NULL )
+	{
+		//return PT_ENDED;
+		PT_EXIT( pt );
+	}
+
+	PT_BEGIN( pt );
+
+	if( ( psocket->state == SOCKET_INIT ) || ( psocket->state == SOCKET_START ) )
+	{
+		tcpip_init_index = 0;
+
+		if( psocket->state == SOCKET_START )
 		{
-			for(j=0;j<4;j++)
+			tcpip_init_index = 2;
+		}
+
+		sprintf( str_CGDCONT, "AT+CGDCONT=1,\"IP\",\"%s\"\r\n", psocket->apn );
+		sprintf( str_ETCPIP, "AT%%ETCPIP=1,\"%s\",\"%s\"\r\n", psocket->user, psocket->psw );
+
+		for( tcpip_init_index = 0; tcpip_init_index < sizeof( tcpip_init ) / sizeof( AT_CMD_RESP ); tcpip_init_index++ )
+		{
+			for( tcpip_init_retry = 0; tcpip_init_retry < tcpip_init[tcpip_init_index].retry; tcpip_init_retry++ )
 			{
-				sprintf( buf, "AT%%DNSR=\"%s\"\r\n", curr_gsm_socket.ip_domain);
-				rt_kprintf("%08d gsm_send>%s", rt_tick_get( ),buf);
-				m66_write( &dev_gsm, 0, buf, sizeof( buf ) );
-				pt_timer_set( &timer_gsm_socket, RT_TICK_PER_SECOND * 5 );
-				PT_WAIT_UNTIL( pt, pt_timer_expired( &timer_gsm_socket ) || ( RT_EOK == pt_resp( pt_resp_DNSR ) ) );
+				if( tcpip_init[tcpip_init_index].atcmd != RT_NULL )
+				{
+					rt_kprintf( "%08d gsm_send>%s", rt_tick_get( ), tcpip_init[tcpip_init_index].atcmd );
+					m66_write( &dev_gsm, 0, tcpip_init[tcpip_init_index].atcmd, strlen( tcpip_init[tcpip_init_index].atcmd ) );
+				}
+				pt_timer_set( &timer_gsm_socket, tcpip_init[tcpip_init_index].timeout );
+				PT_WAIT_UNTIL( pt, pt_timer_expired( &timer_gsm_socket ) || ( RT_EOK == pt_resp( tcpip_init[tcpip_init_index].resp ) ) );
 				if( pt_timer_expired( &timer_gsm_socket ) ) /*超时*/
 				{
 					rt_kprintf( "timeout\r\n" );
-				}
-				else
+				}else
 				{
-					curr_gsm_socket.state = SOCKET_CONNECT;
 					break;
 				}
 			}
-			if( pt_timer_expired( &timer_gsm_socket ) ) /*超时*/
+			if( pt_timer_expired( &timer_gsm_socket ) ) /*因为超时退出的*/
 			{
-				curr_gsm_socket.state = SOCKET_DNS_ERR;
+				psocket->state = SOCKET_ETCPIP_ERROR;
+				PT_EXIT( pt );
 			}
-				
 		}
-			
-		if(curr_gsm_socket.state == SOCKET_CONNECT)
+		/*AT的初始化完成，判断ip地址类型，域名还是IP*/
+
+		if( is_ipaddr( psocket->ipstr ) ) /*是IP地址*/
 		{
-			if(curr_gsm_socket.type=='u')
-			{
-				sprintf(buf,"AT%%IPOPENX=%d,\"UDP\",\"%s\",%d\r\n",1,curr_gsm_socket.ip_str,curr_gsm_socket.port);
-			}
-			else
-			{
-				sprintf(buf,"AT%%IPOPENX=%d,\"TCP\",\"%s\",%d\r\n",1,curr_gsm_socket.ip_str,curr_gsm_socket.port);
-			}
-			rt_kprintf("%08d gsm_send>%s", rt_tick_get( ),buf);
+			psocket->state = SOCKET_CONNECT;
+		}else
+		{
+			psocket->state = SOCKET_DNS;
+		}
+	}
+
+	if( psocket->state == SOCKET_DNS )
+	{
+		for( dns_retry = 0; dns_retry < 4; dns_retry++ )
+		{
+			sprintf( buf, "AT%%DNSR=\"%s\"\r\n", psocket->ipstr );
+			rt_kprintf( "%08d gsm_send>%s", rt_tick_get( ), buf );
 			m66_write( &dev_gsm, 0, buf, sizeof( buf ) );
-			pt_timer_set( &timer_gsm_socket, RT_TICK_PER_SECOND * 35 );
-			PT_WAIT_UNTIL( pt, pt_timer_expired( &timer_gsm_socket ) || ( RT_EOK == pt_resp( pt_resp_IPOPENX)));
+			pt_timer_set( &timer_gsm_socket, RT_TICK_PER_SECOND * 5 );
+			PT_WAIT_UNTIL( pt, pt_timer_expired( &timer_gsm_socket ) || ( RT_EOK == pt_resp( pt_resp_DNSR ) ) );
 			if( pt_timer_expired( &timer_gsm_socket ) ) /*超时*/
 			{
 				rt_kprintf( "timeout\r\n" );
-				curr_gsm_socket.state = SOCKET_CONNECT_ERR;
-			}
-			else
+			}else
 			{
-				curr_gsm_socket.state = SOCKET_READY;
+				psocket->state = SOCKET_CONNECT;
 				break;
 			}
 		}
+		if( pt_timer_expired( &timer_gsm_socket ) ) /*超时*/
+		{
+			psocket->state = SOCKET_DNS_ERR;
+		}
+	}
+
+	if( psocket->state == SOCKET_CONNECT )
+	{
+		if( psocket->type == 'u' )
+		{
+			sprintf( buf, "AT%%IPOPENX=%d,\"UDP\",\"%s\",%d\r\n", 1, psocket->ip_addr, psocket->port );
+		}else
+		{
+			sprintf( buf, "AT%%IPOPENX=%d,\"TCP\",\"%s\",%d\r\n", 1, psocket->ip_addr, psocket->port );
+		}
+		rt_kprintf( "%08d gsm_send>%s", rt_tick_get( ), buf );
+		m66_write( &dev_gsm, 0, buf, sizeof( buf ) );
+		pt_timer_set( &timer_gsm_socket, RT_TICK_PER_SECOND * 35 );
+		PT_WAIT_UNTIL( pt, pt_timer_expired( &timer_gsm_socket ) || ( RT_EOK == pt_resp( pt_resp_IPOPENX ) ) );
+		if( pt_timer_expired( &timer_gsm_socket ) ) /*超时*/
+		{
+			rt_kprintf( "timeout\r\n" );
+			psocket->state = SOCKET_CONNECT_ERR;
+		}else
+		{
+			psocket->state = SOCKET_READY;
+			break;
+		}
+	}
+
+	/*挂断连接*/
+	if(psocket->state == SOCKET_CLOSE)
+	{
+
 
 	}
+
+
 	PT_END( pt );
 }
 
+#if 0
 
-
-
-ALIGN( RT_ALIGN_SIZE )
-static char thread_gsm_stack[512];
-struct rt_thread thread_gsm;
-
-
-/***********************************************************
-* Function:       rt_thread_entry_gsm
-* Description:    接收处理，状态转换
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void rt_thread_entry_gsm( void* parameter )
-{
-	rt_tick_t		curr_ticks;
-	rt_err_t		res;
-	unsigned char	ch;
-
-	PT_INIT( &pt_gsm_power );
-	PT_INIT( &pt_gsm_socket );
-
-	while( 1 )
-	{
-		while( rt_ringbuffer_getchar( &rb_uart4_rx, &ch ) == 1 ) /*有数据时，保存数据*/
-		{
-			gsm_rx[gsm_rx_wr++] = ch;
-			if( gsm_rx_wr == GSM_RX_SIZE )
-			{
-				gsm_rx_wr = 0;
-			}
-			gsm_rx[gsm_rx_wr] = 0;
-		}
-		if( rt_tick_get( ) - last_tick > RT_TICK_PER_SECOND / 10 )  //等待100ms,实际上就是变长的延时,最迟100ms处理完一个数据包
-		{
-			if( gsm_rx_wr )
-			{
-				gsmrx_cb( gsm_rx, gsm_rx_wr );                      /*接收信息的处理函数*/
-				gsm_rx_wr = 0;
-			}
-		}
-		protothread_gsm_power( &pt_gsm_power );
-		gsm_socket_process(&pt_gsm_socket);
-		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
-	}
-}
 
 /***********************************************************
 * Function:
@@ -1033,14 +1076,244 @@ static void rt_thread_entry_gsm( void* parameter )
 * Return:
 * Others:
 ***********************************************************/
+static int gsm_socket_process_pt( struct pt *pt )
+{
+	static char				buf[64];
+	static char				str_CGDCONT[64];
+	static char				str_ETCPIP[32];
+	static struct pt_timer	timer_gsm_socket;
+	static uint8_t			tcpip_init_index	= 0;
+	static uint8_t			tcpip_init_retry	= 0;
+
+	static AT_CMD_RESP		tcpip_init[] = {
+		{ str_CGDCONT,			 pt_resp_STR_OK, RT_TICK_PER_SECOND * 10, 1 },
+		{ str_ETCPIP,			 pt_resp_STR_OK, RT_TICK_PER_SECOND * 30, 1 },
+		{ "AT%ETCPIP?\r\n",		 pt_resp_ETCPIP, RT_TICK_PER_SECOND * 3,  1 },
+		{ "AT%IOMODE=1,2,1\r\n", pt_resp_STR_OK, RT_TICK_PER_SECOND * 3,  1 },
+	};
+
+	if( gsm_state != GSM_AT )
+	{
+		return; /*模块还未初始化完成，不处理*/
+	}
+
+	PT_BEGIN( pt );
+
+	if( socket_gsm[socket_linkno].state == SOCKET_IDLE )
+	{
+		socket_linkno++;
+		socket_linkno %= MAX_GSM_SOCKET;
+	}
+
+	if( socket_gsm[socket_linkno].state == SOCKET_START ) /*判断要不要DNS*/
+	{
+		sprintf( str_CGDCONT, "AT+CGDCONT=1,\"IP\",\"%s\"\r\n", gsm_param.apn );
+		sprintf( str_ETCPIP, "AT%%ETCPIP=1,\"%s\",\"%s\"\r\n", gsm_param.user, gsm_param.psw );
+
+		for( tcpip_init_index = 0; tcpip_init_index < sizeof( tcpip_init ) / sizeof( AT_CMD_RESP ); tcpip_init_index++ )
+		{
+			for( tcpip_init_retry = 0; tcpip_init_retry < tcpip_init[tcpip_init_index].retry; tcpip_init_retry++ )
+			{
+				if( tcpip_init[tcpip_init_index].atcmd != RT_NULL )
+				{
+					rt_kprintf( "%08d gsm_send>%s", rt_tick_get( ), at_init[at_init_index].atcmd );
+					m66_write( &dev_gsm, 0, at_init[at_init_index].atcmd, strlen( at_init[at_init_index].atcmd ) );
+				}
+				pt_timer_set( &timer_gsm_power, at_init[at_init_index].timeout );
+				PT_WAIT_UNTIL( pt, pt_timer_expired( &timer_gsm_power ) || ( RT_EOK == pt_resp( at_init[at_init_index].resp ) ) );
+				if( pt_timer_expired( &timer_gsm_power ) ) /*超时*/
+				{
+					rt_kprintf( "timeout\r\n" );
+				}else
+				{
+					break;
+				}
+			}
+			if( pt_timer_expired( &timer_gsm_power ) )      /*因为超时退出的*/
+			{
+				PT_EXIT( pt );
+			}
+		}
+		gsm_state = GSM_AT;                                 /*切换到AT状态*/
+	}
+
+	if( is_ipaddr( socket_gsm[socket_linkno].ipstr ) == 1 ) /*是IP地址*/
+	{
+		socket_gsm[socket_linkno].state == SOCKET_CONNECT;
+		strcpy( socket_gsm[socket_linkno].ip_addr, socket_gsm[socket_linkno].ipstr );
+	}else
+	{
+		socket_gsm[socket_linkno].state == SOCKET_DNS;
+	}
+}
+
+if( socket_gsm[socket_linkno].state == SOCKET_DNS )
+{
+	for( j = 0; j < 4; j++ )
+	{
+		sprintf( buf, "AT%%DNSR=\"%s\"\r\n", socket_gsm[socket_linkno].ipstr );
+		rt_kprintf( "%08d gsm_send>%s", rt_tick_get( ), buf );
+		m66_write( &dev_gsm, 0, buf, sizeof( buf ) );
+		pt_timer_set( &timer_gsm_socket, RT_TICK_PER_SECOND * 5 );
+		PT_WAIT_UNTIL( pt, pt_timer_expired( &timer_gsm_socket ) || ( RT_EOK == pt_resp( pt_resp_DNSR ) ) );
+		if( pt_timer_expired( &( socket_gsm[socket_linkno].tmr ) ) ) /*超时*/
+		{
+			rt_kprintf( "timeout\r\n" );
+		}else
+		{
+			socket_gsm[socket_linkno].state = SOCKET_CONNECT;
+			break;
+		}
+	}
+	if( pt_timer_expired( &( socket_gsm[socket_linkno].tmr ) ) ) /*超时*/
+	{
+		socket_gsm[socket_linkno].state = SOCKET_DNS_ERR;
+	}
+}
+
+if( socket_gsm[socket_linkno].state == SOCKET_CONNECT )
+{
+	if( socket_gsm[socket_linkno].type == 'u' )
+	{
+		sprintf( buf, "AT%%IPOPENX=%d,\"UDP\",\"%s\",%d\r\n", 1, socket_gsm[socket_linkno].ip_addr, socket_gsm[socket_linkno].port );
+	}else
+	{
+		sprintf( buf, "AT%%IPOPENX=%d,\"TCP\",\"%s\",%d\r\n", 1, socket_gsm[socket_linkno].ip_addr, socket_gsm[socket_linkno].port );
+	}
+	rt_kprintf( "%08d gsm_send>%s", rt_tick_get( ), buf );
+	m66_write( &dev_gsm, 0, buf, sizeof( buf ) );
+	pt_timer_set( &timer_gsm_socket, RT_TICK_PER_SECOND * 35 );
+	PT_WAIT_UNTIL( pt, pt_timer_expired( &timer_gsm_socket ) || ( RT_EOK == pt_resp( pt_resp_IPOPENX ) ) );
+	if( pt_timer_expired( &( socket_gsm[socket_linkno].tmr ) ) ) /*超时*/
+	{
+		rt_kprintf( "timeout\r\n" );
+		socket_gsm[socket_linkno].state = SOCKET_CONNECT_ERR;
+	}else
+	{
+		socket_gsm[socket_linkno].state = SOCKET_READY;
+		break;
+	}
+}
+PT_END( pt );
+}
+
+#endif
+
+ALIGN( RT_ALIGN_SIZE )
+static char thread_gsm_stack[512];
+struct rt_thread thread_gsm;
+
+
+/***********************************************************
+* Function:       rt_thread_entry_gsm
+* Description:    接收处理，状态转换，同时处理短信、TTS、录音等过程
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void rt_thread_entry_gsm( void* parameter )
+{
+	rt_tick_t curr_ticks;
+	rt_err_t res;
+	unsigned char last_ch, ch;
+
+	PT_INIT( &pt_gsm_power );
+	PT_INIT( &pt_gsm_socket );
+
+	while( 1 )
+	{
+#if 1
+		while( uart4_rxbuf_rd != uart4_rxbuf_wr ) /*有数据时，保存数据*/
+		{
+			ch				= uart4_rxbuf[uart4_rxbuf_rd++];
+			uart4_rxbuf_rd	%= UART4_RX_SIZE;
+			if( ch > 0x1F )
+			{
+				gsm_rx[gsm_rx_wr++] = ch;
+				gsm_rx_wr			%= GSM_RX_SIZE;
+				gsm_rx[gsm_rx_wr]	= 0;
+			}
+			if( ch == 0x0a )
+			{
+				if( gsm_rx_wr )
+				{
+					gsmrx_cb( gsm_rx, gsm_rx_wr );                  /*接收信息的处理函数*/
+				}
+				gsm_rx_wr = 0;
+			}
+		}
+		if( rt_tick_get( ) - last_tick > RT_TICK_PER_SECOND / 10 )  //等待100ms,实际上就是变长的延时,最迟100ms处理完一个数据包
+		{
+			if( gsm_rx_wr )
+			{
+				gsmrx_cb( gsm_rx, gsm_rx_wr );                      /*接收信息的处理函数*/
+				gsm_rx_wr = 0;
+			}
+		}
+
+#else
+
+		while( uart4_rxbuf_rd != uart4_rxbuf_wr )                   /*有数据时，保存数据*/
+		{
+			ch				= uart4_rxbuf[uart4_rxbuf_rd++];
+			uart4_rxbuf_rd	%= UART4_RX_SIZE;
+			if( ch > 0x1F )
+			{
+				gsm_rx[gsm_rx_wr++] = ch;
+				gsm_rx_wr			%= GSM_RX_SIZE;
+				gsm_rx[gsm_rx_wr]	= 0;
+				if( ( ch == 'K' ) && ( last_ch == 'O' ) )
+				{
+					if( gsm_rx_wr > 2 )                     /*如果不只收到OK,则不发送OK*/
+					{
+						gsmrx_cb( gsm_rx, gsm_rx_wr - 2 );  /*接收信息的处理函数*/
+					}else
+					{
+						gsmrx_cb( gsm_rx, gsm_rx_wr );      /*接收信息的处理函数*/
+					}
+					gsm_rx_wr = 0;
+				}
+			}
+			last_ch = ch;
+		}
+
+		if( rt_tick_get( ) - last_tick > RT_TICK_PER_SECOND / 10 )  //等待100ms,实际上就是变长的延时,最迟100ms处理完一个数据包
+		{
+			if( gsm_rx_wr )
+			{
+				gsmrx_cb( gsm_rx, gsm_rx_wr );                      /*接收信息的处理函数*/
+				gsm_rx_wr = 0;
+			}
+		}
+
+#endif
+		protothread_gsm_power( &pt_gsm_power );
+
+		//if( gsm_state != GSM_AT )
+		{
+			gsm_socket_process( &pt_gsm_socket );
+		}
+		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
+	}
+}
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 void gsm_init( void )
 {
 	rt_thread_t tid;
 
-/*初始化串口接收缓冲区*/
-	rt_ringbuffer_init( &rb_uart4_rx, uart4_rxbuf, UART4_RX_SIZE );
+	rt_sem_init( &sem_gsmbusy, "sem_gsm", 0, RT_IPC_FLAG_FIFO );
+	rt_sem_release( &sem_gsmbusy );
 
-	rt_mb_init( &mb_gsmrx, "gsm_rx", &mb_gsmrx_pool, MB_GSMRX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
+	rt_mb_init( &mb_gsmrx, "mb_gsmrx", &mb_gsmrx_pool, MB_GSMRX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 
 	rt_thread_init( &thread_gsm,
 	                "gsm",
@@ -1062,112 +1335,204 @@ void gsm_init( void )
 	rt_device_init( &dev_gsm );
 }
 
-
 /*控制gsm状态 0 查询*/
-rt_err_t config_gsmstate( int cmd )
+rt_err_t gsmstate( int cmd )
 {
-	if(cmd)	gsm_state = cmd;
+	if( cmd )
+	{
+		gsm_state = cmd;
+	}
 	return gsm_state;
 }
 
-FINSH_FUNCTION_EXPORT( config_gsmstate, control gsm state );
-
-
-/*
-判断一个字符串是不是表示ip的str
-如果由[0..9|.] 组成
-
-'.' 0x2e
-'/' 0x2f
-'0' 0x30
-'9' 0x39
-简化一下。不判断 '/'
-*/
-static uint8_t is_ipstr(char * str)
-{
-	char *p=str;
-	while(*p!=NULL)
-	{
-		if((*p>'9')||(*p<'.')) return 0;
-		p++;
-	}
-	return 1;
-
-}
-
+FINSH_FUNCTION_EXPORT( gsmstate, control gsm state );
 
 /*调试信息控制输出*/
-rt_err_t dbgmsg( uint32_t i)
+rt_err_t dbgmsg( uint32_t i )
 {
-	if(i==0) rt_kprintf("debmsg=%d\r\n",fgsm_rawdata_out);
-	else
-		fgsm_rawdata_out=i;
+	if( i == 0 )
+	{
+		rt_kprintf( "debmsg=%d\r\n", fgsm_rawdata_out );
+	} else
+	{
+		fgsm_rawdata_out = i;
+	}
 	return RT_EOK;
 }
 
 FINSH_FUNCTION_EXPORT( dbgmsg, dbgmsg count );
 
-
-
-
 /*发送AT命令*/
-rt_size_t gsm_write( char *sinfo )
+rt_size_t at_write( char *sinfo )
 {
-	return m66_write( &dev_gsm, 0, sinfo, strlen( sinfo ) );
+	rt_err_t ret;
+	ret = rt_sem_take( &sem_gsmbusy, RT_TICK_PER_SECOND );
+	if( ret != RT_EOK )
+	{
+		rt_kprintf( "\r\n%d>%s get sem timeout", rt_tick_get( ), __func__ );
+		return ret;
+	}
+	m66_write( &dev_gsm, 0, sinfo, strlen( sinfo ) );
+	rt_sem_release( &sem_gsmbusy ); /*释放信号量*/
+	return RT_EOK;
 }
 
-FINSH_FUNCTION_EXPORT( gsm_write, write gsm );
+FINSH_FUNCTION_EXPORT( at_write, write gsm );
 
 
-rt_size_t gsm_ipsend( uint8_t* buff, rt_size_t count ,rt_int32_t timeout)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count, rt_int32_t timeout )
 {
-	rt_size_t	len = count;
-	uint8_t		*p	= (uint8_t*)buff;
-	uint8_t		c;
-	char		*pstr;
-	rt_err_t	ret;	
+	rt_size_t len	= count;
+	uint8_t  *p		= (uint8_t*)buff;
+	uint8_t c;
+	char  *pstr;
+	rt_err_t ret;
 
-	uint8_t		buf_start[20];
-	uint8_t		buf_end[4]={'"',0x0d,0x0a,0x0};
-	
-	uint8_t 	tbl[16]={'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+	uint8_t buf_start[20];
+	uint8_t buf_end[4] = { '"', 0x0d, 0x0a, 0x0 };
 
-	sprintf(buf_start,"AT%%IPSENDX=1,\"");
-	m66_write( &dev_gsm,0,buf_start,strlen(buf_start));
-	rt_kprintf("%s",buf_start);
+	uint8_t tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
+	ret = rt_sem_take( &sem_gsmbusy, RT_TICK_PER_SECOND );
+	if( ret != RT_EOK )
+	{
+		rt_kprintf( "\r\n%d>%s get sem timeout", rt_tick_get( ), __func__ );
+		return ret;
+	}
+
+	sprintf( buf_start, "AT%%IPSENDX=%d,\"", linkno );
+	m66_write( &dev_gsm, 0, buf_start, strlen( buf_start ) );
+	rt_kprintf( "%s", buf_start );
 	while( len )
 	{
-		c=*p++;
-		
-		USART_SendData( UART4, tbl[c>>4] );
+		c = *p++;
+
+		USART_SendData( UART4, tbl[c >> 4] );
 		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
 		{
 		}
-		rt_kprintf("%c",tbl[c>>4]);
-		USART_SendData( UART4, tbl[c&0x0f] );
+		rt_kprintf( "%c", tbl[c >> 4] );
+		USART_SendData( UART4, tbl[c & 0x0f] );
 		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
 		{
 		}
-		rt_kprintf("%c",tbl[c&0x0f]);
+		rt_kprintf( "%c", tbl[c & 0x0f] );
 		len--;
 	}
-	m66_write( &dev_gsm,0,buf_end,3);
-	rt_kprintf("%s",buf_end);
+	m66_write( &dev_gsm, 0, buf_end, 3 );
 
+	rt_sem_release( &sem_gsmbusy ); /*释放信号量*/
+
+	rt_kprintf( "%s", buf_end );
+
+/*todo 在此处处理是否为最优*/
 	ret = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pstr, timeout );
 	if( ret == -RT_ETIMEOUT )
 	{
 		return RT_ETIMEOUT;
 	}
 	len = ( ( *pstr ) << 8 ) | ( *( pstr + 1 ) );
-	if(strstr(pstr+2,"OK")) ret=RT_EOK;
-	else ret=RT_ERROR;
+	if( strstr( pstr + 2, "OK" ) )
+	{
+		ret = RT_EOK;
+	} else
+	{
+		ret = RT_ERROR;
+	}
 	rt_free( pstr );
-	
+
 	return ret;
 }
 
+FINSH_FUNCTION_EXPORT( socket_write, write socket );
 
-#endif
+
+/***********************************************************
+* Function: 发送tts信息
+* Description:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+rt_size_t tts_write( uint8_t* info, rt_size_t count )
+{
+	rt_err_t ret;
+	rt_size_t len;
+	uint8_t  *p = (uint8_t*)info;
+	uint8_t c;
+	char  *pstr;
+
+	uint8_t buf[20];
+	uint8_t tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
+	if( tts_busy == 1 )
+	{
+		return 1;
+	}
+	ret = rt_sem_take( &sem_gsmbusy, RT_TICK_PER_SECOND );
+	if( ret != RT_EOK )
+	{
+		rt_kprintf( "\r\n%d>%s get sem timeout", rt_tick_get( ), __func__ );
+		return ret;
+	}
+	sprintf( buf, "AT%%TTS=2,3,5,\"" );
+
+	m66_write( &dev_gsm, 0, buf, strlen( buf ) );
+	rt_kprintf( "%s", buf );
+
+	len = count;
+	while( len )
+	{
+		c = *p++;
+
+		USART_SendData( UART4, tbl[c >> 4] );
+		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		{
+		}
+		rt_kprintf( "%c", tbl[c >> 4] );
+		USART_SendData( UART4, tbl[c & 0x0f] );
+		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		{
+		}
+		rt_kprintf( "%c", tbl[c & 0x0f] );
+		len--;
+	}
+	buf[0]	= '"';
+	buf[1]	= 0x0d;
+	buf[2]	= 0x0a;
+	buf[3]	= 0;
+	m66_write( &dev_gsm, 0, buf, 3 );
+
+	rt_sem_release( &sem_gsmbusy ); /*释放信号量*/
+
+	rt_kprintf( "%s", buf );
+
+	/*todo 在此处处理是否为最优*/
+	ret = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pstr, RT_TICK_PER_SECOND );
+	if( ret == -RT_ETIMEOUT )
+	{
+		return RT_ETIMEOUT;
+	}
+	len = ( ( *pstr ) << 8 ) | ( *( pstr + 1 ) );
+	if( strstr( pstr + 2, "OK" ) )
+	{
+		ret = RT_EOK;
+	} else
+	{
+		ret = RT_ERROR;
+	}
+	rt_free( pstr );
+}
+
+FINSH_FUNCTION_EXPORT( tts_write, tts send );
 
 /************************************** The End Of File **************************************/

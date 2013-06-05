@@ -63,6 +63,36 @@ typedef enum
 }T_GSM_STATE;
 
 
+typedef enum
+{
+	SOCKET_IDLE = 1,            /*无需启动*/
+	SOCKET_INIT,				/*配置登网参数，登网*/
+	SOCKET_START,				/*启动连接远程*/
+	SOCKET_ETCPIP_ERROR,		/*进行ETCPIP错误*/
+	SOCKET_DNS,                 /*DNS查询中*/
+	SOCKET_DNS_ERR,
+	SOCKET_CONNECT,             /*连接中*/
+	SOCKET_CONNECT_ERR,         /*连接错误，对方不应答*/
+	SOCKET_READY,               /*已完成，可以建立链接*/
+	SOCKET_CLOSE,
+}T_SOCKET_STATE;
+
+/*最大支持4个链接*/
+#define MAX_GSM_SOCKET 4
+
+typedef struct
+{
+	T_SOCKET_STATE	state;          /*连接状态*/
+	char			type;           /*连接类型 'u':udp client 't':TCP client  'U' udp server*/
+	char			* apn;
+	char			* user;
+	char			* psw;
+	char			* ipstr;    /*域名或地址*/
+	char			ip_addr[16];     /*dns后的IP xxx.xxx.xxx.xxx*/
+	uint16_t		port;           /*端口*/
+	MsgList			* msglist_tx;
+}GSM_SOCKET;
+
 
 void gsm_init(void);
 int gsm_send(uint8_t *pinfo,uint16_t len);

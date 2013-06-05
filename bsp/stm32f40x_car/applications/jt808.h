@@ -18,6 +18,8 @@
 #include <rtthread.h>
 
 #include "msglist.h"
+#include "gsm.h"
+
 
 #define   MsgQ_Timeout 3
 
@@ -27,7 +29,6 @@
  */
 
 #define ADDR_PARAM 0x000000000
-
 
 //------- 文本信息 --------
 typedef struct _TEXT_INFO
@@ -121,7 +122,6 @@ typedef  struct AvrgMintSpeed
 	uint8_t avgrspd[60];
 	uint8_t saveFlag;
 }Avrg_MintSpeed;
-
 
 extern TEXT_INFO	TextInfo;
 //-------文本信息-------
@@ -322,28 +322,26 @@ typedef struct _jt808_param
 
 typedef struct
 {
-	uint16_t type; /*终端类型,参见0x0107 终端属性应答*/
-	char	mobile[6];          /*终端号码*/
-	uint8_t producer_id[5];
-	uint8_t model[20];
-	uint8_t terminal_id[7];
-	uint8_t register_code[16];
-	uint8_t sim_iccid[10];
-	uint8_t hw_ver_len;
-	uint8_t hw_ver[32];
-	uint8_t sw_ver_len;
-	uint8_t sw_ver[32];
-	uint8_t gnss_attr;/*gnss属性,参见0x0107 终端属性应答*/
-	uint8_t gsm_attr;/*gnss属性,参见0x0107 终端属性应答*/
-	
-	
+	uint16_t	type;           /*终端类型,参见0x0107 终端属性应答*/
+	char		mobile[6];      /*终端号码*/
+	uint8_t		producer_id[5];
+	uint8_t		model[20];
+	uint8_t		terminal_id[7];
+	uint8_t		register_code[16];
+	uint8_t		sim_iccid[10];
+	uint8_t		hw_ver_len;
+	uint8_t		hw_ver[32];
+	uint8_t		sw_ver_len;
+	uint8_t		sw_ver[32];
+	uint8_t		gnss_attr;  /*gnss属性,参见0x0107 终端属性应答*/
+	uint8_t		gsm_attr;   /*gnss属性,参见0x0107 终端属性应答*/
 }TERM_PARAM;
 
 typedef enum
 {
-	IDLE = 1,                   /*空闲等待发送*/
-	WAIT_ACK,                   /*等待ACK中*/
-	ACK_OK,                     /*已收到ACK应答*/
+	IDLE = 1,               /*空闲等待发送*/
+	WAIT_ACK,               /*等待ACK中*/
+	ACK_OK,                 /*已收到ACK应答*/
 } JT808_MSG_STATE;
 
 typedef enum
@@ -362,24 +360,11 @@ typedef __packed struct
 	uint16_t	seq;
 }JT808_MSG_HEAD;
 
-typedef __packed struct
-{
-	uint32_t	tick;           /*收到的时刻,多包接收的超时判断*/
-	uint8_t		linkno;         /*使用的linkno*/
-	uint16_t	id;             /*消息ID*/
-	uint16_t	attr;           /*消息体属性*/
-	uint8_t		mobileno[6];    /*终端手机号*/
-	uint16_t	seq;            /*消息流水号*/
-	uint16_t	packetcount;    /*多包的总包数，如果有*/
-	uint16_t	packetno;       /*当前包序号，从1开始，如果有*/
-	uint16_t	msg_len;        /*消息长度*/
-	uint8_t		*pmsg;          /*收到消息体*/
-}JT808_RX_MSG_NODEDATA;
 
 typedef __packed struct _jt808_tx_msg_nodedata
 {
 /*发送机制相关*/
-//	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
+	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
 	JT808_MSG_TYPE	type;
 	JT808_MSG_STATE state;      /*发送状态*/
 	uint32_t		retry;      /*重传次数,递增，递减找不到*/
@@ -388,7 +373,7 @@ typedef __packed struct _jt808_tx_msg_nodedata
 	uint32_t		tick;       /*发送时间*/
 /*接收的处理判断相关*/
 	void ( *cb_tx_timeout )( struct _jt808_tx_msg_nodedata *pnodedata );
-	void ( *cb_tx_response )( JT808_RX_MSG_NODEDATA* pnodedata );
+	void ( *cb_tx_response )( uint8_t linkno,uint8_t *pmsg);
 	uint16_t	head_id;        /*消息ID*/
 	uint16_t	head_sn;        /*消息流水号*/
 /*真实的发送数据*/
@@ -396,39 +381,16 @@ typedef __packed struct _jt808_tx_msg_nodedata
 	uint8_t		*pmsg;          /*发送消息体,真实的要发送的数据格式，经过转义和FCS后的<7e>为标志*/
 }JT808_TX_MSG_NODEDATA;
 
-typedef enum
-{
-	SOCKET_IDLE = 1,            /*无需启动*/
-//	SOCKET_INIT,
-	SOCKET_DNS,                 /*DNS查询中*/
-	SOCKET_DNS_ERR,
-	SOCKET_CONNECT,             /*连接中*/
-	SOCKET_CONNECT_ERR,         /*连接错误，对方不应答*/
-	SOCKET_READY,               /*已完成，可以建立链接*/
-}T_SOCKET_STATE;
 
-/*最大支持4个链接*/
-#define MAX_GSM_SOCKET 4
 
-typedef struct
-{
-	T_SOCKET_STATE	state;          /*连接状态*/
-	char			type;           /*连接类型 'u':udp client 't':TCP client  'U' udp server*/
-	char			* apn;
-	char			* user;
-	char			* psw;
-	char			* ip_domain;    /*域名*/
-	char			ip_str[16];     /*dns后的IP xxx.xxx.xxx.xxx*/
-	uint16_t		port;           /*端口*/
-	MsgList			* msglist_tx;
-}GSM_SOCKET;
+
 
 extern JT808_PARAM	jt808_param;
+extern GSM_SOCKET*	psocket;
 
-extern GSM_SOCKET	curr_gsm_socket;
+
 
 void gps_rx( uint8_t *pinfo, uint16_t length );
-
 
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 

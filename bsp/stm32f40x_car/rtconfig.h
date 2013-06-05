@@ -3,7 +3,7 @@
 #define __RTTHREAD_CFG_H__
 
 /* RT_NAME_MAX*/
-#define RT_NAME_MAX	   8
+#define RT_NAME_MAX	   16
 
 /* RT_ALIGN_SIZE*/
 #define RT_ALIGN_SIZE	8
@@ -17,7 +17,7 @@
 /* SECTION: RT_DEBUG */
 /* Thread Debug */
 #define RT_DEBUG
-#define RT_DEBUG_MEM                   1
+#define RT_DEBUG_MEM                   0
 #define RT_DEBUG_MEMHEAP               0
 #define RT_DEBUG_MODULE                0
 #define RT_DEBUG_SCHEDULER             0

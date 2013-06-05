@@ -162,21 +162,6 @@ void DebugMon_Handler(void)
 
 
 
-void USART2_IRQHandler(void)
-{
-#ifdef RT_USING_UART2
-    extern struct rt_device uart2_device;
-	extern void rt_hw_serial_isr(struct rt_device *device);
-
-    /* enter interrupt */
-    rt_interrupt_enter();
-
-    rt_hw_serial_isr(&uart2_device);
-
-    /* leave interrupt */
-    rt_interrupt_leave();
-#endif
-}
 
 void USART3_IRQHandler(void)
 {
