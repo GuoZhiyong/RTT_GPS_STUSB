@@ -58,6 +58,7 @@ typedef enum
 {
 	GSM_IDLE=1,			//空闲
 	GSM_POWERON,		//上电过程并完成模块的AT命令初始化过程
+	GSM_POWERONING,
 	GSM_POWEROFF,		//挂断链接，断电过程中
 	GSM_AT,				//处于AT命令收发状态,设置socket参数，收发短信
 }T_GSM_STATE;
