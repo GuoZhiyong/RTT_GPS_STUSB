@@ -840,6 +840,165 @@ typedef struct
 }AT_CMD_RESP;
 
 
+
+/*等待固定字符串的返回*/
+rt_err_t WaitString(char *respstr,uint32_t timeout)
+{
+	rt_err_t	err;
+	
+	char		*pmsg;
+	uint32_t	tick_start, tick_end;
+	uint32_t	tm;	
+	__IO uint8_t flag_wait=1;
+
+
+	tick_start=rt_tick_get();
+	tick_end=tick_start+timeout;
+	tm=timeout;
+	
+	while( flag_wait )
+	{
+		err = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pmsg, tm );
+		if( err != -RT_ETIMEOUT )						/*没有超时,判断信息是否正确*/
+		{
+			if( strstr( pmsg, respstr ) != RT_NULL )	/*找到了*/
+			{
+				rt_free(pmsg);	/*释放*/
+				return RT_EOK;
+			} 
+			rt_free(pmsg);	/*释放*/
+			/*计算剩下的超时时间,由于其他任务执行的延时，会溢出,要判断*/
+			if(rt_tick_get()<tick_end)	/*还没有超时*/
+			{
+				tm = tick_end-rt_tick_get();
+			}
+			else
+			{
+				flag_wait=0;
+			}
+		}else	/*已经超时*/
+		{
+			flag_wait=0;
+		}
+	}
+	return RT_ETIMEOUT;
+
+}
+
+
+
+/*
+   发送AT命令，并等待响应字符串
+   参照 code.google.com/p/gsm-playground的实现
+ */
+rt_err_t SendATCmdWaitRespStr( char *AT_cmd_string,
+                               uint32_t timeout,
+                               char * respstr,
+                               uint8_t no_of_attempts )
+{
+	rt_err_t	err;
+	uint8_t		i;
+	char		*pmsg;
+	uint32_t	tick_start, tick_end;
+	uint32_t	tm;
+	__IO uint8_t flag_wait;
+
+	for( i = 0; i < no_of_attempts; i++ )
+	{
+		tick_start	= rt_tick_get( );
+		tick_end	= tick_start + timeout;
+		tm			= timeout;
+		flag_wait=1;
+		m66_write( &dev_gsm, 0, AT_cmd_string, strlen( AT_cmd_string ) );
+		while( flag_wait )
+		{
+			err = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pmsg, tm );
+			if( err != -RT_ETIMEOUT )                       /*没有超时,判断信息是否正确*/
+			{
+				if( strstr( pmsg, respstr ) != RT_NULL )    /*找到了*/
+				{
+					rt_free(pmsg);	/*释放*/
+					return RT_EOK;
+				} 
+				rt_free(pmsg);	/*释放*/
+				/*计算剩下的超时时间,由于其他任务执行的延时，会溢出,要判断*/
+				if(rt_tick_get()<tick_end)	/*还没有超时*/
+				{
+					tm = tick_end-rt_tick_get();
+				}
+				else
+				{
+					flag_wait=0;
+				}
+			}else	/*已经超时*/
+			{
+				flag_wait=0;
+			}
+		}
+	}
+	return ( RT_ETIMEOUT );
+}
+
+/*
+   发送AT命令，并等待响应函数处理
+   参照 code.google.com/p/gsm-playground的实现
+ */
+
+int8_t SendATCmdWaitRespFunc( char *AT_cmd_string,
+                              uint32_t timeout,
+                              RESP_FUNC respfunc,
+                              uint8_t no_of_attempts )
+{
+	rt_err_t	err;
+	uint8_t		i;
+	char		*pmsg;
+	uint32_t	tick_start, tick_end;
+	uint32_t	tm;
+	__IO uint8_t flag_wait;
+
+	
+	char* pinfo;
+	uint16_t len;
+
+	for( i = 0; i < no_of_attempts; i++ )
+	{
+		tick_start	= rt_tick_get( );
+		tick_end	= tick_start + timeout;
+		tm			= timeout;
+		flag_wait=1;
+		m66_write( &dev_gsm, 0, AT_cmd_string, strlen( AT_cmd_string ) );
+		while( flag_wait )
+		{
+			err = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pmsg, tm );
+			if( err != -RT_ETIMEOUT )                       /*没有超时,判断信息是否正确*/
+			{
+				len=(*pmsg<<8)|(*(pmsg+1));
+				pinfo=pmsg+2;
+				if( respfunc( pinfo, len ) == RT_EOK )    /*找到了*/
+				{
+					rt_free(pmsg);	/*释放*/
+					return RT_EOK;
+				} 
+				rt_free(pmsg);	/*释放*/
+				/*计算剩下的超时时间,由于其他任务执行的延时，会溢出,要判断*/
+				if(rt_tick_get()<tick_end)	/*还没有超时*/
+				{
+					tm = tick_end-rt_tick_get();
+				}
+				else
+				{
+					flag_wait=0;
+				}
+			}else	/*已经超时*/
+			{
+				flag_wait=0;
+			}
+		}
+	}
+	return ( RT_ETIMEOUT );
+
+}
+
 /*
    判断一个字符串是不是表示ip的str
    如果由[0..9|.] 组成
@@ -1067,17 +1226,17 @@ static int gsm_socket_process( struct pt *pt )
 }
 
 /*
-tts语音播报的处理
+   tts语音播报的处理
 
-是通过
-%TTS: 0 判断tts状态(怀疑并不是每次都有输出)
-还是AT%TTS? 查询状态
-*/
+   是通过
+   %TTS: 0 判断tts状态(怀疑并不是每次都有输出)
+   还是AT%TTS? 查询状态
+ */
 void tts_process( void )
 {
 	rt_err_t	ret;
 	rt_size_t	len;
-	uint8_t		*pinfo,*p;
+	uint8_t		*pinfo, *p;
 	uint8_t		c;
 
 	uint8_t		buf[20];
@@ -1088,26 +1247,26 @@ void tts_process( void )
 		return;
 	}
 /*是否有信息要播报*/
-	ret=rt_mb_recv(&mb_tts,(rt_uint32_t*)&pinfo,0);
+	ret = rt_mb_recv( &mb_tts, (rt_uint32_t*)&pinfo, 0 );
 	if( ret == -RT_ETIMEOUT )
 	{
 		return;
 	}
 /*准备发送数据,判断gsm忙*/
-	
+
 	ret = rt_sem_take( &sem_gsmbusy, RT_TICK_PER_SECOND );
 	if( ret != RT_EOK )
 	{
 		rt_kprintf( "\r\n%d>%s get sem timeout", rt_tick_get( ), __func__ );
-		return ;
+		return;
 	}
 	sprintf( buf, "AT%%TTS=2,3,5,\"" );
 
 	m66_write( &dev_gsm, 0, buf, strlen( buf ) );
 	rt_kprintf( "%s", buf );
 
-	len = (*pinfo<<8)|(*(pinfo+1));
-	p=pinfo+2;
+	len = ( *pinfo << 8 ) | ( *( pinfo + 1 ) );
+	p	= pinfo + 2;
 	while( len-- )
 	{
 		c = *p++;
@@ -1143,14 +1302,9 @@ static char thread_gsm_stack[512];
 struct rt_thread thread_gsm;
 
 
-/***********************************************************
-* Function:       rt_thread_entry_gsm
-* Description:    接收处理，状态转换，同时处理短信、TTS、录音等过程
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/*
+   状态转换，同时处理短信、TTS、录音等过程
+ */
 static void rt_thread_entry_gsm( void* parameter )
 {
 	rt_tick_t		curr_ticks;
@@ -1159,6 +1313,34 @@ static void rt_thread_entry_gsm( void* parameter )
 
 	PT_INIT( &pt_gsm_power );
 	PT_INIT( &pt_gsm_socket );
+
+	while( 1 )
+	{
+		protothread_gsm_power( &pt_gsm_power ); /*处理开机*/
+		gsm_socket_process( &pt_gsm_socket );   /*处理登网*/
+		tts_process( );                         /*处理tts信息*/
+		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
+	}
+}
+
+ALIGN( RT_ALIGN_SIZE )
+static char thread_gsm_rx_stack[512];
+struct rt_thread thread_gsm_rx;
+
+
+/***********************************************************
+* Function:       rt_thread_entry_gsm_rx
+* Description:    接收处理
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void rt_thread_entry_gsm_rx( void* parameter )
+{
+	rt_tick_t		curr_ticks;
+	rt_err_t		res;
+	unsigned char	last_ch, ch;
 
 	while( 1 )
 	{
@@ -1189,16 +1371,6 @@ static void rt_thread_entry_gsm( void* parameter )
 				gsm_rx_wr = 0;
 			}
 		}
-
-		protothread_gsm_power( &pt_gsm_power );
-
-		//if( gsm_state != GSM_AT )
-		{
-			gsm_socket_process( &pt_gsm_socket );
-		}
-
-		tts_process( ); /*处理tts信息*/
-
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
 }
@@ -1228,6 +1400,14 @@ void gsm_init( void )
 	                &thread_gsm_stack[0],
 	                sizeof( thread_gsm_stack ), 7, 5 );
 	rt_thread_startup( &thread_gsm );
+
+	rt_thread_init( &thread_gsm_rx,
+	                "gsm_rx",
+	                rt_thread_entry_gsm_rx,
+	                RT_NULL,
+	                &thread_gsm_rx_stack[0],
+	                sizeof( thread_gsm_rx_stack ), 6, 5 );
+	rt_thread_startup( &thread_gsm_rx );
 
 	dev_gsm.type	= RT_Device_Class_Char;
 	dev_gsm.init	= m66_init;
@@ -1368,9 +1548,9 @@ FINSH_FUNCTION_EXPORT( socket_write, write socket );
  */
 rt_size_t tts_write( char* info )
 {
-	uint8_t *pmsg;
-	uint16_t count;
-	count=strlen(info);
+	uint8_t		*pmsg;
+	uint16_t	count;
+	count = strlen( info );
 
 	/*直接发送到Mailbox中,内部处理*/
 	pmsg = rt_malloc( count + 2 );

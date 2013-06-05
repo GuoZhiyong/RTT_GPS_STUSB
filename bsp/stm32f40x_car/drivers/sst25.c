@@ -347,7 +347,8 @@ void sst25_write_back( uint32_t addr, uint8_t *p, uint16_t len )
 	uint16_t	remain = len;
 
 /*找到当前地址对应的4k=0x1000边界*/
-	wr_addr = addr & 0xFFFFE000;            /*对齐到4k边界*/
+	wr_addr = addr & 0xFFFFF000;            /*对齐到4k边界*/
+
 	offset	= addr & 0xfff;                 /*4k内偏移*/
 
 	while( remain )
