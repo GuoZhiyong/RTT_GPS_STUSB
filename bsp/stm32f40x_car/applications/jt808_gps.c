@@ -19,6 +19,8 @@ typedef struct _GPSPoint
 uint32_t	jt808_alarm		= 0x0;
 uint32_t	jt808_status	= 0x0;
 
+
+
 /*
 区域的定义,使用list关联起来，如果node过多的话，
 RAM是否够用
@@ -367,4 +369,8 @@ void gps_analy( uint8_t * pinfo )
 		process_gga( psrc );
 	}
 }
+
+
+
+
 
