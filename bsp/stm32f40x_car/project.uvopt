@@ -579,10 +579,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>21</ColumnNumber>
+      <ColumnNumber>15</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>16</CurrentLine>
+      <TopLine>599</TopLine>
+      <CurrentLine>618</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\drivers\m66.c</PathWithFileName>
       <FilenameWithoutPath>m66.c</FilenameWithoutPath>

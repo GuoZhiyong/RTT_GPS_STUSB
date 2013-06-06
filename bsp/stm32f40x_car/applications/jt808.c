@@ -23,8 +23,6 @@
 #include "jt808_sprintf.h"
 #include "sst25.h"
 
-#include "pt.h"
-
 #include "gsm.h"
 #include "m66.h"
 
@@ -56,7 +54,6 @@ static uint16_t				tx_seq = 0; /*发送序号*/
 
 static rt_device_t			pdev_gsm = RT_NULL;
 
-static struct pt			pt_jt808_socket;
 
 /*发送信息列表*/
 MsgList* list_jt808_tx;
@@ -1539,7 +1536,6 @@ static void rt_thread_entry_jt808( void * parameter )
 	param_put( 0x000, 4, (uint8_t*)&j );
 	rt_kprintf( "\r\nid0=%08x\r\n", param_get_int( 0x0000 ) );
 
-	PT_INIT( &pt_jt808_socket );
 
 /*读取参数，并配置*/
 	param_load( );

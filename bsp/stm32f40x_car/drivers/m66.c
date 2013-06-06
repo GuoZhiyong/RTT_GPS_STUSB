@@ -372,6 +372,11 @@ static rt_err_t m66_init( rt_device_t dev )
 	GPIO_Init( GSM_RST_PORT, &GPIO_InitStructure );
 	GPIO_SetBits( GSM_RST_PORT, GSM_RST_PIN );
 
+
+	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Pin		= GPIO_Pin_9;
+	GPIO_Init( GPIOD, &GPIO_InitStructure );
+
 /*uart4 管脚设置*/
 
 	/* Configure USART Tx as alternate function  */
@@ -536,7 +541,7 @@ static void gsmrx_cb( uint8_t *pInfo, uint16_t size )
 /*网络侧的信息，直接通知上层软件*/
 	if( fgsm_rawdata_out )
 	{
-		rt_kprintf( "\r\n%08d gsm_rx>%s\r\n", rt_tick_get( ), pInfo );
+		rt_kprintf( "\r\n%08d gsm_rx<%s\r\n", rt_tick_get( ), pInfo );
 		fgsm_rawdata_out--;
 	}
 
@@ -569,19 +574,16 @@ static void gsmrx_cb( uint8_t *pInfo, uint16_t size )
 		gprs_rx( linkno, psrc, infolen );
 		return;
 	}
-/*TTS*/
+
+
 
 
 /*
-   if( strncmp( psrc, "%TTS: 0", 7 ) == 0 )
-   {
-   tts_busy = 0;
-   }
- */
-
-/*短信*/
-	if( strncmp( psrc, "+CMTI:\"SM\",", 11 ) == 0 )
+00060726 gsm_rx>+CMTI: "SM",1
+短信,有短息来*/
+	if( strncmp( psrc, "+CMTI: \"SM\",", 11 ) == 0 )
 	{
+	
 	}
 
 	/*直接发送到Mailbox中,内部处理*/
@@ -596,24 +598,31 @@ static void gsmrx_cb( uint8_t *pInfo, uint16_t size )
 	return;
 }
 
-/*响应CREG或CGREG
-   +CREG:0,1
-   +CGREG:0,5
+/*
+响应CREG或CGREG
+ 00017796 gsm_rx<+CREG: 0,3
+
+ 00018596 gsm_rx<+CREG: 0,1
+
+ 用
+ i = sscanf( p, "%*[^:]:%d,%d", &n, &code );
+ 找有问题!(跟代码位置有关?)
 
  */
 rt_err_t resp_CGREG( char *p, uint16_t len )
 {
-	uint32_t i, n, code;
-	i = sscanf( p, "%*[^:]:%d,%d", &n, &code );
-	if( i != 2 )
+	char* pfind;
+	char* psrc;
+	char c;
+
+	psrc=p;
+	pfind=strchr(psrc,',');
+	if(pfind!=RT_NULL)
 	{
-		return RT_ERROR;
+		c=*(pfind+1);
+		if((c=='1')||(c=='5')) return RT_EOK;
 	}
-	if( ( code != 1 ) && ( code != 5 ) )
-	{
-		return RT_ERROR;
-	}
-	return RT_EOK;
+	return RT_ERROR;
 }
 
 /*
@@ -673,17 +682,6 @@ rt_err_t resp_CSQ( char *p, uint16_t len )
 	return RT_EOK;
 }
 
-/*+CGATT:1*/
-rt_err_t resp_CGATT( char *p, uint16_t len )
-{
-	char *pfind = RT_NULL;
-	pfind = strstr( p, "+CGATT: 1" );
-	if( pfind )
-	{
-		return RT_EOK;
-	}
-	return RT_ERROR;
-}
 
 /*%ETCPIP:1,"10.24.44.142","0.0.0.0","0.0.0.0"*/
 rt_err_t resp_ETCPIP( char *p, uint16_t len )
@@ -1027,28 +1025,30 @@ lbl_poweron_start:
 		goto lbl_poweron_start;
 	}
 
-	ret = SendATCmdWaitRespStr( "AT+CPIN?\r\n", RT_TICK_PER_SECOND * 3, "+CPIN: READY", 10 );
-	ret = WaitString( "OK", RT_TICK_PER_SECOND * 5 );
+	ret = SendATCmdWaitRespStr( "AT+CPIN?\r\n", RT_TICK_PER_SECOND*2, "+CPIN: READY", 30 );
+	ret = WaitString( "OK", RT_TICK_PER_SECOND * 2 );
 	if( ret == RT_ETIMEOUT )
 	{
 		goto lbl_poweron_start;
 	}
 
-	ret = SendATCmdWaitRespFunc( "AT+CREG?\r\n", RT_TICK_PER_SECOND * 3, resp_CGREG, 10 );
-	ret = WaitString( "OK", RT_TICK_PER_SECOND * 5 );
+	ret = SendATCmdWaitRespFunc( "AT+CIMI\r\n", RT_TICK_PER_SECOND*2 , resp_CIMI, 10 );
+	ret = WaitString( "OK", RT_TICK_PER_SECOND * 2 );
 	if( ret == RT_ETIMEOUT )
 	{
 		goto lbl_poweron_start;
 	}
 
-	ret = SendATCmdWaitRespFunc( "AT+CIMI\r\n", RT_TICK_PER_SECOND * 3, resp_CIMI, 10 );
+
+	ret = SendATCmdWaitRespFunc( "AT+CREG?\r\n", RT_TICK_PER_SECOND*2, resp_CGREG, 30 );
+	ret = WaitString( "OK", RT_TICK_PER_SECOND * 2 );
 	if( ret == RT_ETIMEOUT )
 	{
 		goto lbl_poweron_start;
 	}
 
-	ret = SendATCmdWaitRespFunc( "AT+CGATT?\r\n", RT_TICK_PER_SECOND * 3, resp_CGATT, 10 );
-	ret = WaitString( "OK", RT_TICK_PER_SECOND * 5 );
+	ret = SendATCmdWaitRespStr( "AT+CGATT?\r\n", RT_TICK_PER_SECOND*2 , "+CGATT: 1", 50 );
+	ret = WaitString( "OK", RT_TICK_PER_SECOND * 2 );
 	if( ret == RT_ETIMEOUT )
 	{
 		goto lbl_poweron_start;
@@ -1178,6 +1178,8 @@ void tts_process( void )
 		return;
 	}
 
+	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
+
 	sprintf( buf, "AT%%TTS=2,3,5,\"" );
 
 	m66_write( &dev_gsm, 0, buf, strlen( buf ) );
@@ -1211,6 +1213,7 @@ void tts_process( void )
 /*不判断，在gsmrx_cb中处理*/
 	rt_free( pinfo );
 	WaitString( "%TTS: 0", RT_TICK_PER_SECOND * 5 );
+	GPIO_SetBits( GPIOD, GPIO_Pin_9 ); /*关功放*/
 	gsmbusy = GSMBUSY_NONE;
 }
 
@@ -1272,7 +1275,7 @@ static void rt_thread_entry_gsm_rx( void* parameter )
 				gsm_rx_wr			%= GSM_RX_SIZE;
 				gsm_rx[gsm_rx_wr]	= 0;
 			}
-			if( ch == 0x0a )
+			if( ch == 0x0d )
 			{
 				if( gsm_rx_wr )
 				{
@@ -1467,5 +1470,27 @@ rt_size_t tts_write( char* info )
 }
 
 FINSH_FUNCTION_EXPORT( tts_write, tts send );
+
+/*拨号连接远程地址*/
+void s_open(char* apn,char* user,char*psw)
+{
+
+
+
+}
+
+/*连接远程地址*/
+void s_connect(char type,char* remoteip,uint16_t remoteport)
+{
+
+
+
+}
+
+
+
+
+
+
 
 /************************************** The End Of File **************************************/
