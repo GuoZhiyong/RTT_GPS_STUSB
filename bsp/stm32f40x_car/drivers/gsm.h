@@ -56,13 +56,16 @@ typedef enum
 
 typedef enum
 {
-	GSM_IDLE=1,			//空闲
-	GSM_POWERON,		//上电过程并完成模块的AT命令初始化过程
-	GSM_POWERONING,
-	GSM_POWEROFFING,	//挂断链接，断电过程中
-	GSM_POWEROFF,		//已经断电
-	GSM_AT,				//处于AT命令收发状态,设置socket参数，收发短信
-	GSM_TCPIP,			//已经登网,还没有建立连接
+	GSM_IDLE=1,			/*空闲*/
+	GSM_POWERON,		/*上电过程并完成模块的AT命令初始化过程*/
+	GSM_POWEROFF,		/*已经断电*/
+	GSM_AT,				/*处于AT命令收发状态,设置socket参数，收发短信*/
+	GSM_GPRS,		/*登录GPRS中*/
+	GSM_TCPIP,			/*已经登网，可以进行socket控制*/
+	GSM_SOCKET_PROC,	/*正在进行socket控制*/
+	GSM_ERR_POWERON,
+	GSM_ERR_GPRS,
+	GSM_ERR_TCPIP,
 }T_GSM_STATE;
 
 
@@ -90,7 +93,7 @@ typedef struct
 	char			ipstr[64];    /*域名或地址*/
 	char			ip_addr[16];     /*dns后的IP xxx.xxx.xxx.xxx*/
 	uint16_t		port;           /*端口*/
-	MsgList			* msglist_tx;
+	//MsgList			* msglist_tx;
 }GSM_SOCKET;
 
 

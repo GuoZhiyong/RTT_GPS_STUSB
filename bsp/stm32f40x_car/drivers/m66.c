@@ -109,6 +109,10 @@ struct _dial_param
 /*当前操作的链接*/
 static GSM_SOCKET curr_socket;
 
+/*全局保留动态创建线程的状态*/
+
+static rt_thread_t tid_gsm_power_on;
+
 
 /***********************************************************
 * Function:
@@ -782,16 +786,16 @@ rt_err_t resp_DNSR( char *p, uint16_t len )
 
 rt_err_t resp_DNSR( char *p, uint16_t len )
 {
-	char	*psrc = p;
-	
+	char *psrc = p;
+
 	if( strstr( psrc, "%DNSR:" ) == RT_NULL )
 	{
 		return RT_ERROR;
 	}
-	psrc=p;
-	memset(curr_socket.ip_addr,0,15);
-	memcpy(curr_socket.ip_addr,psrc+6,len-6);
-	
+	psrc = p;
+	memset( curr_socket.ip_addr, 0, 15 );
+	memcpy( curr_socket.ip_addr, psrc + 6, len - 6 );
+
 	rt_kprintf( "dns ip=%s\r\n", curr_socket.ip_addr );
 	return RT_EOK;
 }
@@ -828,7 +832,6 @@ rt_err_t resp_DEBUG( char *p, uint16_t len )
 	rt_kprintf( "%s", p );
 	return RT_EOK;
 }
-
 
 typedef rt_err_t ( *AT_RESP )( char *p, uint16_t len );
 typedef struct
@@ -1087,6 +1090,7 @@ static void rt_thread_gsm_power_on( void* parameter )
 
 lbl_poweron_start:
 	rt_kprintf( "%08d gsm_power_on>start\r\n", rt_tick_get( ) );
+//	gsm_state = GSM_POWERONING; /*置位上电过程中*/
 
 	GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
@@ -1158,10 +1162,7 @@ static void rt_thread_gsm_socket( void* parameter )
 	char		buf[128];
 	rt_err_t	err;
 
-	if( gsm_state != GSM_TCPIP )
-	{
-		return;
-	}
+
 	/*挂断连接*/
 	if( curr_socket.state == SOCKET_CLOSE )
 	{
@@ -1215,6 +1216,8 @@ static void rt_thread_gsm_socket( void* parameter )
 	}
 	curr_socket.state = SOCKET_READY;
 lbl_gsm_socket_end:
+	gsm_state=GSM_TCPIP;		/*socket过程处理完成，结果在state中*/
+	
 	rt_kprintf( "%08d gsm_socket>end socket.state=%d\r\n", rt_tick_get( ), curr_socket.state );
 }
 
@@ -1226,54 +1229,46 @@ static void rt_thread_gsm_gprs( void* parameter )
 
 /*判断要执行怎样的动作*/
 
-	if( gsm_state == GSM_TCPIP ) /*断网*/
+	if( dial_param.fconnect == 0 ) /*断网*/
 	{
-		if( dial_param.fconnect != 0 )
-		{
-			goto lbl_gsm_gprs_end;
-		}
 		err = SendATCmdWaitRespStr( "AT%IPCLOSE=1\r\n", RT_TICK_PER_SECOND, "OK", 1 );
 		if( err == RT_ETIMEOUT )
 		{
-			goto lbl_gsm_gprs_end;
+			goto lbl_gsm_gprs_end_err;
 		}
 		err = SendATCmdWaitRespStr( "AT%IPCLOSE=2\r\n", RT_TICK_PER_SECOND, "OK", 1 );
 		if( err == RT_ETIMEOUT )
 		{
-			goto lbl_gsm_gprs_end;
+			goto lbl_gsm_gprs_end_err;
 		}
 		err = SendATCmdWaitRespStr( "AT%IPCLOSE=3\r\n", RT_TICK_PER_SECOND, "OK", 1 );
 		if( err == RT_ETIMEOUT )
 		{
-			goto lbl_gsm_gprs_end;
+			goto lbl_gsm_gprs_end_err;
 		}
 		err = SendATCmdWaitRespStr( "AT%IPCLOSE=5\r\n", RT_TICK_PER_SECOND, "OK", 1 );
 		err = WaitString( "%IPCLOSE:5", RT_TICK_PER_SECOND * 30 );
 		if( err == RT_ETIMEOUT )
 		{
-			goto lbl_gsm_gprs_end;
+			goto lbl_gsm_gprs_end_err;
 		}
-
 		gsm_state = GSM_AT;
+		goto lbl_gsm_gprs_end;
 	}
 
-	if( gsm_state == GSM_AT ) /*允许登网*/
+	if( dial_param.fconnect == 1 ) /*允许登网*/
 	{
-		if( dial_param.fconnect != 1 )
-		{
-			goto lbl_gsm_gprs_end;
-		}
 		err = SendATCmdWaitRespStrWithOK( "AT+CGATT?\r\n", RT_TICK_PER_SECOND * 2, "+CGATT: 1", 50 );
 		if( err == RT_ETIMEOUT )
 		{
-			goto lbl_gsm_gprs_end;
+			goto lbl_gsm_gprs_end_err;
 		}
 
 		sprintf( buf, "AT+CGDCONT=1,\"IP\",\"%s\"\r\n", dial_param.apn );
 		err = SendATCmdWaitRespStr( buf, RT_TICK_PER_SECOND * 10, "OK", 1 );
 		if( err != RT_EOK )
 		{
-			goto lbl_gsm_gprs_end;
+			goto lbl_gsm_gprs_end_err;
 		}
 		if( ( strlen( dial_param.user ) == 0 ) && ( strlen( dial_param.user ) == 0 ) )
 		{
@@ -1285,25 +1280,27 @@ static void rt_thread_gsm_gprs( void* parameter )
 		}
 		if( err != RT_EOK )
 		{
-			goto lbl_gsm_gprs_end;
+			goto lbl_gsm_gprs_end_err;
 		}
 
 		err = SendATCmdWaitRespFunc( "AT%ETCPIP?\r\n", RT_TICK_PER_SECOND * 10, resp_ETCPIP, 1 );
 		err = WaitString( "OK", RT_TICK_PER_SECOND * 2 );
 		if( err != RT_EOK )
 		{
-			goto lbl_gsm_gprs_end;
+			goto lbl_gsm_gprs_end_err;
 		}
 
 		err = SendATCmdWaitRespStr( "AT%IOMODE=1,2,1\r\n", RT_TICK_PER_SECOND * 10, "OK", 1 );
 		if( err != RT_EOK )
 		{
-			goto lbl_gsm_gprs_end;
+			goto lbl_gsm_gprs_end_err;
 		}
 
 		gsm_state = GSM_TCPIP;
+		goto lbl_gsm_gprs_end;
 	}
-
+lbl_gsm_gprs_end_err:
+	gsm_state = GSM_ERR_GPRS;
 lbl_gsm_gprs_end:
 	rt_kprintf( "%08d gsm_gprs>end state=%d\r\n", rt_tick_get( ), gsm_state );
 }
@@ -1386,6 +1383,8 @@ ALIGN( RT_ALIGN_SIZE )
 static char thread_gsm_stack[512];
 struct rt_thread thread_gsm;
 
+#if 0
+
 
 /*
    状态转换，同时处理开机、登网、短信、TTS、录音等过程
@@ -1405,8 +1404,44 @@ static void rt_thread_entry_gsm( void* parameter )
 				gsm_state = GSM_POWERONING; /*置位上电过程中*/
 			}
 		}
+		if( gsm_state == GSM_POWEROFF )
+		{
+		}
 
 		tts_process( );                     /*处理tts信息*/
+		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
+	}
+}
+
+#endif
+
+
+/*
+   状态转换，同时处理开机、登网、短信、TTS、录音等过程
+ */
+static void rt_thread_entry_gsm( void* parameter )
+{
+	while( 1 )
+	{
+		if( gsm_state == GSM_POWERON )
+		{
+			rt_thread_gsm_power_on( RT_NULL );
+		}
+
+		if( gsm_state == GSM_GPRS )
+		{
+			rt_thread_gsm_gprs( RT_NULL );
+		}
+
+		if( gsm_state == GSM_SOCKET_PROC)
+		{
+			rt_thread_gsm_socket(RT_NULL);
+		}
+		if( gsm_state == GSM_POWEROFF )
+		{
+		}
+
+		tts_process( );         /*处理tts信息*/
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
 }
@@ -1425,11 +1460,11 @@ static void rt_thread_entry_gsm_rx( void* parameter )
 
 	while( 1 )
 	{
-		while( uart4_rxbuf_rd != uart4_rxbuf_wr ) /*有数据时，保存数据*/
+		while( uart4_rxbuf_rd != uart4_rxbuf_wr )   /*有数据时，保存数据*/
 		{
 			ch				= uart4_rxbuf[uart4_rxbuf_rd++];
 			uart4_rxbuf_rd	%= UART4_RX_SIZE;
-			if( ch > 0x1F ) /*可见字符才保存*/
+			if( ch > 0x1F )                         /*可见字符才保存*/
 			{
 				gsm_rx[gsm_rx_wr++] = ch;
 				gsm_rx_wr			%= GSM_RX_SIZE;
@@ -1648,11 +1683,15 @@ void ctl_gprs( char* apn, char* user, char*psw, uint8_t fdial )
 	dial_param.user		= user;
 	dial_param.psw		= psw;
 	dial_param.fconnect = fdial;
-	tid					= rt_thread_create( "gsm_gprs", rt_thread_gsm_gprs, RT_NULL, 512, 7, 5 );
-	if( tid != RT_NULL )
-	{
-		rt_thread_startup( tid );
-	}
+	gsm_state = GSM_GPRS;
+
+/*
+   tid					= rt_thread_create( "gsm_gprs", rt_thread_gsm_gprs, RT_NULL, 512, 7, 5 );
+   if( tid != RT_NULL )
+   {
+   rt_thread_startup( tid );
+   }
+ */
 }
 
 /*连接远程地址*/
@@ -1672,12 +1711,16 @@ void ctl_socket( uint8_t linkno, char type, char* remoteip, uint16_t remoteport,
 	{
 		curr_socket.state = SOCKET_CLOSE;
 	}
+	gsm_state=GSM_SOCKET_PROC;
 
+	
+/*
 	tid = rt_thread_create( "gsm_socket", rt_thread_gsm_socket, RT_NULL, 512, 7, 5 );
 	if( tid != RT_NULL )
 	{
 		rt_thread_startup( tid );
 	}
+*/	
 }
 
 /************************************** The End Of File **************************************/

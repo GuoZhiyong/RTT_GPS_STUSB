@@ -250,6 +250,10 @@ typedef __packed struct
 }JT808_MSG_HEAD;
 
 
+/*
+存储jt808发送的相关信息
+*/
+
 typedef __packed struct _jt808_tx_msg_nodedata
 {
 /*发送机制相关*/
