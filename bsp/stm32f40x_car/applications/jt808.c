@@ -48,10 +48,6 @@ static struct rt_mailbox	mb_gprsdata;
 #define MB_GPRSDATA_POOL_SIZE 32
 static uint8_t				mb_gprsdata_pool[MB_GPRSDATA_POOL_SIZE];
 
-static struct rt_mailbox	mb_gpsdata;
-#define MB_GPSDATA_POOL_SIZE 32
-static uint8_t				mb_gpsdata_pool[MB_GPSDATA_POOL_SIZE];
-
 static uint16_t				tx_seq = 0; /*发送序号*/
 
 static rt_device_t			pdev_gsm = RT_NULL;
@@ -61,6 +57,34 @@ MsgList* list_jt808_tx;
 
 /*接收信息列表*/
 MsgList * list_jt808_rx;
+
+
+
+typedef enum
+{
+	CONNECT_IDLE = 0,
+	CONNECT_PEER,
+	CONNECTED,
+	CONNECT_ERROR,
+}CONN_STATE;
+
+struct
+{
+	uint32_t	disable_connect; /*禁止链接标志，协议控制 0:允许链接*/
+	CONN_STATE	server_state;
+	uint8_t		server_index;
+	CONN_STATE	auth_state;
+	uint8_t		auth_index;
+} connect_state =
+{ 0, CONNECT_IDLE, 0, CONNECT_IDLE, 0 };
+
+#if 0
+
+T_SOCKET_STATE	socket_jt808_state	= SOCKET_IDLE;
+uint16_t		socket_jt808_index	= 0;
+
+T_SOCKET_STATE	socket_iccard_state = SOCKET_IDLE;
+uint16_t		socket_iccard_index = 0;
 
 
 /*
@@ -73,7 +97,7 @@ MsgList * list_jt808_rx;
 
  */
 GSM_SOCKET gsm_socket[MAX_GSM_SOCKET];
-
+#endif
 
 /*
    jt808格式数据解码判断
@@ -904,30 +928,6 @@ static MsgListRet jt808_tx_proc( MsgListNode * node )
 
  */
 
-typedef enum
-{
-	CONNECT_IDLE = 0,
-	CONNECT_PEER,
-	CONNECTED
-}CONN_STATE;
-
-struct
-{
-	uint8_t		disable_connect; /*禁止链接标志，协议控制 0:允许链接*/
-	CONN_STATE	server_state;
-	uint8_t		server_index;
-	CONN_STATE	auth_state;
-	uint8_t		auth_index;
-} connect_state =
-{ 0, CONNECT_IDLE, 0, CONNECT_IDLE, 0 };
-
-
-T_SOCKET_STATE	socket_jt808_state	= SOCKET_IDLE;
-uint16_t		socket_jt808_index	= 0;
-
-T_SOCKET_STATE	socket_iccard_state = SOCKET_IDLE;
-uint16_t		socket_iccard_index = 0;
-
 
 /*
    这个回调主要是M66的链路关断时的通知，socket不是一个完整的线程
@@ -936,12 +936,12 @@ void cb_socket_state( uint8_t linkno, T_SOCKET_STATE new_state )
 {
 	if( linkno == 1 )
 	{
-		socket_jt808_state = new_state;
+		connect_state.server_state = new_state;
 	}
 
 	if( linkno == 2 )
 	{
-		socket_iccard_state = new_state;
+		connect_state.auth_state = new_state;
 	}
 }
 
@@ -967,13 +967,13 @@ static void jt808_socket_proc( void )
 /*控制登网*/
 	if( state == GSM_AT )               /*这里要判断用那个apn user psw 登网*/
 	{
-		if( socket_jt808_index % 2 )    /*连备用服务器*/
+		if(connect_state.server_index % 2 )    /*用备用服务器*/
 		{
 			ctl_gprs( jt808_param.id_0x0014, \
 			          jt808_param.id_0x0015, \
 			          jt808_param.id_0x0016, \
 			          1 );
-		}else /*连主服务器*/
+		}else /*用主服务器*/
 		{
 			ctl_gprs( jt808_param.id_0x0010, \
 			          jt808_param.id_0x0011, \
@@ -1004,6 +1004,11 @@ static void jt808_socket_proc( void )
 			{
 				connect_state.server_state = CONNECTED;
 			}
+			else		/*没有连接成功,切换服务器*/
+			{
+				connect_state.server_index++;
+				connect_state.server_state=CONNECT_IDLE;
+			}
 		}
 
 		/*808服务器没有连接成功，就不连IC卡服务器*/
@@ -1011,6 +1016,7 @@ static void jt808_socket_proc( void )
 		{
 			return;
 		}
+		
 		/*连接IC卡服务器*/
 
 		if( connect_state.auth_state == CONNECT_IDLE )  /*没有连接*/
@@ -1032,13 +1038,19 @@ static void jt808_socket_proc( void )
 			{
 				connect_state.auth_state = CONNECTED;
 			}
+			else		/*没有连接成功,切换服务器*/
+			{
+				//connect_state.auth_index++;
+				//connect_state.auth_state=CONNECT_IDLE;
+				//if(connect_state.auth_index>6)
+				//{
+
+				//}
+			}
 		}
 
-		if( connect_state.auth_state != CONNECTED )
-		{
-			return;
-		}
 	}
+
 }
 
 /*
@@ -1080,13 +1092,6 @@ static void rt_thread_entry_jt808( void * parameter )
 
 	while( 1 )
 	{
-/*接收gps信息*/
-		ret = rt_mb_recv( &mb_gpsdata, ( rt_uint32_t* )&pstr, 5 );
-		if( ret == RT_EOK )
-		{
-			gps_analy( pstr );
-			rt_free( pstr );
-		}
 /*接收gprs信息*/
 		ret = rt_mb_recv( &mb_gprsdata, ( rt_uint32_t* )&pstr, 5 );
 		if( ret == RT_EOK )
@@ -1117,8 +1122,6 @@ static void rt_thread_entry_jt808( void * parameter )
 /*jt808处理线程初始化*/
 void jt808_init( void )
 {
-	rt_mb_init( &mb_gpsdata, "gpsdata", &mb_gpsdata_pool, MB_GPSDATA_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
-
 	rt_mb_init( &mb_gprsdata, "gprsdata", &mb_gprsdata_pool, MB_GPRSDATA_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 
 	rt_thread_init( &thread_jt808,
@@ -1147,19 +1150,7 @@ rt_err_t gprs_rx( uint8_t linkno, uint8_t * pinfo, uint16_t length )
 	return 1;
 }
 
-/*gps接收处理*/
-void gps_rx( uint8_t * pinfo, uint16_t length )
-{
-	uint8_t * pmsg;
-	pmsg = rt_malloc( length + 2 );
-	if( pmsg != RT_NULL )
-	{
-		pmsg [0]	= length >> 8;
-		pmsg [1]	= length & 0xff;
-		memcpy( pmsg + 2, pinfo, length );
-		rt_mb_send( &mb_gpsdata, ( rt_uint32_t )pmsg );
-	}
-}
+
 
 /***********************************************************
 * Function:

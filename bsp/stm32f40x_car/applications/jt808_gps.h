@@ -7,7 +7,8 @@
 
 
 
-void gps_analy( uint8_t * pinfo );
+void gps_rx( uint8_t * pinfo, uint16_t length );
+
 
 
 

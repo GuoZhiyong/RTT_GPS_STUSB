@@ -1610,8 +1610,6 @@ FINSH_FUNCTION_EXPORT( get_15h, get_15 );
 获得vdr数据
 00-07 单包数据
 08-15 多包数据
-
-
 */
 uint8_t get_vdr( VDRCMD* vdrcmd, uint8_t *pout, uint16_t *len )
 {
