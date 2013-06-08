@@ -185,3 +185,4 @@ pip-log.txt
 *.axf
 *.plg
 *.dep
+/bsp/stm32f40x_car/doc/基本思路.txt

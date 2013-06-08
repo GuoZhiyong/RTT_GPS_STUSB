@@ -168,40 +168,7 @@
           <Name>-U-O206 -O206 -S3 -C0 -N00("ARM CoreSight SW-DP") -D00(2BA01477) -L00(0) -TO18 -TC10000000 -TP21 -TDS8004 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO7 -FD20000000 -FC800 -FN1 -FF0STM32F4xx_1024 -FS08000000 -FL0100000</Name>
         </SetRegEntry>
       </TargetDriverDllRegistry>
-      <Breakpoint>
-        <Bp>
-          <Number>0</Number>
-          <Type>0</Type>
-          <LineNumber>649</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>0</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>0</BreakIfRCount>
-          <Filename>E:\ArmWork\RTT_GPS_STUSB\bsp\stm32f40x_car\drivers\m66.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
-        </Bp>
-        <Bp>
-          <Number>1</Number>
-          <Type>0</Type>
-          <LineNumber>649</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>0</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>0</BreakIfRCount>
-          <Filename>E:\armwork\RTT_GPS_STUSB\bsp\stm32f40x_car\drivers\m66.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
-        </Bp>
-      </Breakpoint>
+      <Breakpoint/>
       <WatchWindow1>
         <Ww>
           <count>0</count>
@@ -299,10 +266,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>2</ColumnNumber>
+      <ColumnNumber>18</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1521</TopLine>
-      <CurrentLine>1541</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>18</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808.c</PathWithFileName>
       <FilenameWithoutPath>jt808.c</FilenameWithoutPath>
@@ -317,8 +284,8 @@
       <Focus>0</Focus>
       <ColumnNumber>35</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>175</TopLine>
-      <CurrentLine>191</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\hmi.c</PathWithFileName>
       <FilenameWithoutPath>hmi.c</FilenameWithoutPath>
@@ -333,8 +300,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>29</TopLine>
-      <CurrentLine>30</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\msglist.c</PathWithFileName>
       <FilenameWithoutPath>msglist.c</FilenameWithoutPath>
@@ -363,10 +330,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>16</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>23</TopLine>
+      <CurrentLine>29</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808_param.c</PathWithFileName>
       <FilenameWithoutPath>jt808_param.c</FilenameWithoutPath>
@@ -395,7 +362,7 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>24</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
@@ -597,8 +564,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <TopLine>1117</TopLine>
+      <CurrentLine>1129</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\drivers\m66.c</PathWithFileName>
       <FilenameWithoutPath>m66.c</FilenameWithoutPath>
@@ -629,8 +596,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\drivers\rs485.c</PathWithFileName>
       <FilenameWithoutPath>rs485.c</FilenameWithoutPath>
@@ -653,8 +620,8 @@
       <Focus>0</Focus>
       <ColumnNumber>20</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>154</TopLine>
-      <CurrentLine>155</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>STM32F4xx_Libraries\CMSIS\ST\STM32F4xx\Source\Templates\system_stm32f4xx.c</PathWithFileName>
       <FilenameWithoutPath>system_stm32f4xx.c</FilenameWithoutPath>
@@ -2357,8 +2324,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>70</TopLine>
-      <CurrentLine>89</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_3_5_MultimediaTrans.c</PathWithFileName>
       <FilenameWithoutPath>Menu_3_5_MultimediaTrans.c</FilenameWithoutPath>
@@ -2613,8 +2580,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>79</TopLine>
-      <CurrentLine>87</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_5_other.c</PathWithFileName>
       <FilenameWithoutPath>Menu_5_other.c</FilenameWithoutPath>
@@ -2725,8 +2692,8 @@
       <Focus>0</Focus>
       <ColumnNumber>18</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>100</TopLine>
-      <CurrentLine>101</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_Include.c</PathWithFileName>
       <FilenameWithoutPath>Menu_Include.c</FilenameWithoutPath>

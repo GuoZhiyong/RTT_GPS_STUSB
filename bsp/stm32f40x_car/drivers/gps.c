@@ -179,22 +179,18 @@ void UART5_IRQHandler( void )
 	if( USART_GetITStatus( UART5, USART_IT_RXNE ) != RESET )
 	{
 		ch = USART_ReceiveData( UART5 );
+		
+		uart5_rxbuf.body[uart5_rxbuf.wr++] = ch;
+		uart5_rxbuf.wr &= (UART5_RX_SIZE-1 );
+		uart5_rxbuf.body[uart5_rxbuf.wr] = 0;
+
 		if( ( ch == 0x0a ) && ( last_ch == 0x0d ) ) /*遇到0d 0a 表明结束*/
 		{
-			uart5_rxbuf.body[uart5_rxbuf.wr++] = ch;
 			if( uart5_rxbuf.wr < 124 )
 			{
 				rt_mq_send( &mq_gps, (void*)&uart5_rxbuf, uart5_rxbuf.wr + 2 );
 			}
 			uart5_rxbuf.wr = 0;
-		}else
-		{
-			uart5_rxbuf.body[uart5_rxbuf.wr++] = ch;
-			if( uart5_rxbuf.wr == UART5_RX_SIZE )
-			{
-				uart5_rxbuf.wr = 0;
-			}
-			uart5_rxbuf.body[uart5_rxbuf.wr] = 0;
 		}
 		last_ch = ch;
 		USART_ClearITPendingBit( UART5, USART_IT_RXNE );
@@ -404,7 +400,7 @@ static void rt_thread_entry_gps( void* parameter )
 		{
 			if( flag_bd_upgrade_uart == 0 )
 			{
-				//gps_rx( buf.body, buf.wr );
+				gps_rx( buf.body, buf.wr );
 			}else
 			{
 				if( buf.body[0] == 0x40 )
@@ -420,7 +416,6 @@ static void rt_thread_entry_gps( void* parameter )
 /*gps设备初始化*/
 void gps_init( void )
 {
-	//rt_sem_init( &sem_gps, "sem_gps", 0, 0 );
 	rt_mq_init( &mq_gps, "mq_gps", &gps_rawinfo[0], 128 - sizeof( void* ), GPS_RAWINFO_SIZE, RT_IPC_FLAG_FIFO );
 
 	rt_thread_init( &thread_gps,

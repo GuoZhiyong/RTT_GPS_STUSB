@@ -56,20 +56,26 @@ typedef enum
 
 typedef enum
 {
-	GSM_IDLE=1,			//空闲
-	GSM_POWERON,		//上电过程并完成模块的AT命令初始化过程
-	GSM_POWERONING,
-	GSM_POWEROFF,		//挂断链接，断电过程中
-	GSM_AT,				//处于AT命令收发状态,设置socket参数，收发短信
+	GSM_STATE=0,		/*查询GSM状态*/
+	GSM_IDLE=1,			/*空闲*/
+	GSM_POWERON,		/*上电过程并完成模块的AT命令初始化过程*/
+	GSM_POWEROFF,		/*已经断电*/
+	GSM_AT,				/*处于AT命令收发状态,设置socket参数，收发短信*/
+	GSM_GPRS,		/*登录GPRS中*/
+	GSM_TCPIP,			/*已经登网，可以进行socket控制*/
+	GSM_SOCKET_PROC,	/*正在进行socket控制*/
+	GSM_ERR_POWERON,
+	GSM_ERR_GPRS,
+	GSM_ERR_TCPIP,
 }T_GSM_STATE;
 
 
 typedef enum
 {
+	SOCKET_STATE=0,		/*查询socket状态*/
 	SOCKET_IDLE = 1,            /*无需启动*/
-	SOCKET_INIT,				/*配置登网参数，登网*/
+	SOCKET_ERR,
 	SOCKET_START,				/*启动连接远程*/
-	SOCKET_ETCPIP_ERROR,		/*进行ETCPIP错误*/
 	SOCKET_DNS,                 /*DNS查询中*/
 	SOCKET_DNS_ERR,
 	SOCKET_CONNECT,             /*连接中*/
@@ -84,19 +90,19 @@ typedef enum
 typedef struct
 {
 	T_SOCKET_STATE	state;          /*连接状态*/
+	uint8_t			linkno;			/*所使用的link号*/
 	char			type;           /*连接类型 'u':udp client 't':TCP client  'U' udp server*/
-	char			* apn;
-	char			* user;
-	char			* psw;
-	char			* ipstr;    /*域名或地址*/
+	char			ipstr[64];    /*域名或地址*/
 	char			ip_addr[16];     /*dns后的IP xxx.xxx.xxx.xxx*/
 	uint16_t		port;           /*端口*/
-	MsgList			* msglist_tx;
+	//MsgList			* msglist_tx;
 }GSM_SOCKET;
 
 
 void gsm_init(void);
-int gsm_send(uint8_t *pinfo,uint16_t len);
 
+void ctl_gprs( char* apn, char* user, char*psw ,uint8_t fdial );
+
+void ctl_socket( uint8_t linkno,char type, char* remoteip, uint16_t remoteport,uint8_t fconnect );
 
 #endif
