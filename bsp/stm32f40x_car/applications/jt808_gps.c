@@ -357,11 +357,9 @@ void process_gga( uint8_t * pinfo )
 void gps_rx( uint8_t * pinfo, uint16_t length )
 
 {
-	uint16_t	len;
 	uint8_t		* psrc;
-	len		= ( pinfo [0] << 8 ) | pinfo [1];
-	psrc	= pinfo + 2;
-	*(psrc+len)=0;
+	psrc	= pinfo;
+	*(psrc+length)=0;
 //	rt_kprintf("%d gps<%s\r\n",rt_tick_get(),psrc);
 	if( ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) )
 	{

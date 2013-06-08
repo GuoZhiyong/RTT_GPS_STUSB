@@ -50,7 +50,7 @@ static uint8_t				mb_gprsdata_pool[MB_GPRSDATA_POOL_SIZE];
 
 static uint16_t				tx_seq = 0; /*发送序号*/
 
-static rt_device_t			pdev_gsm = RT_NULL;
+static uint16_t		total_send_error=0;  /*总的发送出错计数如果达到一定的次数要重启M66*/
 
 /*发送信息列表*/
 MsgList* list_jt808_tx;
@@ -868,8 +868,10 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 /*
    处理每个要发送信息的状态
    现在允许并行处理吗?
- */
 
+   2013.06.08增加多包发送处理
+ */
+#if 0
 static MsgListRet jt808_tx_proc( MsgListNode * node )
 {
 	MsgListNode				* pnode		= ( MsgListNode* )node;
@@ -916,6 +918,77 @@ static MsgListRet jt808_tx_proc( MsgListNode * node )
 
 	return MSGLIST_RET_OK;
 }
+#endif
+
+static MsgListRet jt808_tx_proc( MsgListNode * node )
+{
+	MsgListNode				* pnode		= ( MsgListNode* )node;
+	JT808_TX_MSG_NODEDATA	* pnodedata = ( JT808_TX_MSG_NODEDATA* )( pnode->data );
+	int						i;
+	rt_err_t	ret;
+
+	if( node == RT_NULL )
+	{
+		return MSGLIST_RET_OK;
+	}
+
+	if( pnodedata->state == IDLE )                      /*空闲，发送信息或超时后没有数据*/
+	{
+		if( pnodedata->retry >= jt808_param.id_0x0003 ) /*超过了最大重传次数*/                                                                     /*已经达到重试次数*/
+		{
+			/*表示发送失败*/
+			pnodedata->cb_tx_timeout( pnodedata );      /*调用发送失败处理函数*/
+			return MSGLIST_RET_DELETE_NODE;
+		} else
+		{
+			if(pnodedata->multipacket==0) /*判断是否为多包发送*/
+			{
+				ret=socket_write( pnodedata->linkno, pnodedata->pmsg, pnodedata->msg_len );
+				if(ret==RT_EOK) /*发送成功等待中心应答中*/
+				{
+					pnodedata->tick = rt_tick_get( );
+					pnodedata->retry++;
+					pnodedata->timeout	= pnodedata->retry * jt808_param.id_0x0002 * RT_TICK_PER_SECOND;
+					pnodedata->state	= WAIT_ACK;
+					rt_kprintf( "send retry=%d,timeout=%d\r\n", pnodedata->retry, pnodedata->timeout * 10 );
+				}else   /*发送数据没有等到模块返回的OK，立刻重发，还是等一段时间再发*/
+				{
+					pnodedata->retry++;		/*置位再次发送*/
+					total_send_error++;
+					rt_kprintf("total_send_error=%d\r\n",total_send_error);
+				}
+			}
+			else
+			{
+
+
+
+			}
+
+			
+		}
+		return MSGLIST_RET_OK;
+	}
+
+	if( pnodedata->state == WAIT_ACK )	/*检查中心应答是否超时*/
+	{
+		if( rt_tick_get( ) - pnodedata->tick > pnodedata->timeout )
+		{
+			pnodedata->state = IDLE;
+		}
+		return MSGLIST_RET_OK;
+	}
+
+	if( pnodedata->state == ACK_OK )
+	{
+		return MSGLIST_RET_DELETE_NODE;
+	}
+
+	return MSGLIST_RET_OK;
+}
+
+
+
 
 /*jt808的socket管理
 
@@ -958,7 +1031,7 @@ static void jt808_socket_proc( void )
 	}
 
 /*检查GSM状态*/
-	state = gsmstate( 0 );
+	state = gsmstate( GSM_STATE );
 	if( state == GSM_IDLE )
 	{
 		gsmstate( GSM_POWERON );        /*开机登网*/
@@ -1000,7 +1073,7 @@ static void jt808_socket_proc( void )
 
 		if( connect_state.server_state == CONNECT_PEER ) /*正在连接到服务器*/
 		{
-			if( socketstate( 0 ) == SOCKET_READY )
+			if( socketstate( SOCKET_STATE ) == SOCKET_READY )
 			{
 				connect_state.server_state = CONNECTED;
 			}
@@ -1087,8 +1160,6 @@ static void rt_thread_entry_jt808( void * parameter )
 
 	list_jt808_tx	= msglist_create( );
 	list_jt808_rx	= msglist_create( );
-
-	pdev_gsm = rt_device_find( "gsm" );
 
 	while( 1 )
 	{
