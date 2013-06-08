@@ -59,6 +59,25 @@ MsgList* list_jt808_tx;
 MsgList * list_jt808_rx;
 
 
+enum
+{
+	GSMBUSY_NONE=0x0,
+	GSMBUSY_POWERON,    /*上电的过程中*/
+	GSMBUSY_AT,         /*AT*/
+	GSMBUSY_TTS,        /*TTS指令*/
+	GSMBUSY_VOICE,      /*录音*/
+	GSMBUSY_SOCKET,     /*上报数据*/
+} gsmbusy = GSMBUSY_NONE;
+
+
+/*是否在播报中，不能播报下一条*/
+static uint8_t tts_busy = 0;
+
+/*语音播报使用的mailbox*/
+static struct rt_mailbox	mb_tts;
+#define MB_TTS_POOL_SIZE 32
+static uint8_t				mb_tts_pool[MB_TTS_POOL_SIZE];
+
 
 typedef enum
 {
@@ -871,54 +890,6 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 
    2013.06.08增加多包发送处理
  */
-#if 0
-static MsgListRet jt808_tx_proc( MsgListNode * node )
-{
-	MsgListNode				* pnode		= ( MsgListNode* )node;
-	JT808_TX_MSG_NODEDATA	* pnodedata = ( JT808_TX_MSG_NODEDATA* )( pnode->data );
-	int						i;
-
-	if( node == RT_NULL )
-	{
-		return MSGLIST_RET_OK;
-	}
-
-	if( pnodedata->state == IDLE )                      /*空闲，发送信息或超时后没有数据*/
-	{
-		if( pnodedata->retry >= jt808_param.id_0x0003 ) /*超过了最大重传次数*/                                                                     /*已经达到重试次数*/
-		{
-			/*表示发送失败*/
-			pnodedata->cb_tx_timeout( pnodedata );      /*调用发送失败处理函数*/
-			return MSGLIST_RET_DELETE_NODE;
-		} else
-		{
-			socket_write( pnodedata->linkno, pnodedata->pmsg, pnodedata->msg_len, jt808_param.id_0x0002 * RT_TICK_PER_SECOND );
-			pnodedata->tick = rt_tick_get( );
-			pnodedata->retry++;
-			pnodedata->timeout	= pnodedata->retry * jt808_param.id_0x0002 * RT_TICK_PER_SECOND;
-			pnodedata->state	= WAIT_ACK;
-			rt_kprintf( "send retry=%d,timeout=%d\r\n", pnodedata->retry, pnodedata->timeout * 10 );
-		}
-		return MSGLIST_RET_OK;
-	}
-
-	if( pnodedata->state == WAIT_ACK )
-	{
-		if( rt_tick_get( ) - pnodedata->tick > pnodedata->timeout )
-		{
-			pnodedata->state = IDLE;
-		}
-		return MSGLIST_RET_OK;
-	}
-
-	if( pnodedata->state == ACK_OK )
-	{
-		return MSGLIST_RET_DELETE_NODE;
-	}
-
-	return MSGLIST_RET_OK;
-}
-#endif
 
 static MsgListRet jt808_tx_proc( MsgListNode * node )
 {
@@ -1126,6 +1097,84 @@ static void jt808_socket_proc( void )
 
 }
 
+
+/*
+   tts语音播报的处理
+
+   是通过
+   %TTS: 0 判断tts状态(怀疑并不是每次都有输出)
+   还是AT%TTS? 查询状态
+ */
+void jt808_tts_process( void )
+{
+	rt_err_t	ret;
+	rt_size_t	len;
+	uint8_t		*pinfo, *p;
+	uint8_t		c;
+
+	char		buf[20];
+	char		tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+/*当前正在播报中*/
+	if( tts_busy == 1 )
+	{
+		return;
+	}
+/*gsm在处理其他命令*/
+	if( gsmbusy )
+	{
+		return;
+	}
+	gsmbusy = GSMBUSY_TTS;
+/*是否有信息要播报*/
+	ret = rt_mb_recv( &mb_tts, (rt_uint32_t*)&pinfo, 0 );
+	if( ret == -RT_ETIMEOUT )
+	{
+		gsmbusy = GSMBUSY_NONE;
+		return;
+	}
+
+	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
+#if 0
+	sprintf( buf, "AT%%TTS=2,3,5,\"" );
+
+	m66_write( &dev_gsm, 0, buf, strlen( buf ) );
+	rt_kprintf( "%s", buf );
+
+	len = ( *pinfo << 8 ) | ( *( pinfo + 1 ) );
+	p	= pinfo + 2;
+	while( len-- )
+	{
+		c = *p++;
+
+		USART_SendData( UART4, tbl[c >> 4] );
+		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		{
+		}
+		rt_kprintf( "%c", tbl[c >> 4] );
+		USART_SendData( UART4, tbl[c & 0x0f] );
+		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		{
+		}
+		rt_kprintf( "%c", tbl[c & 0x0f] );
+	}
+	buf[0]	= '"';
+	buf[1]	= 0x0d;
+	buf[2]	= 0x0a;
+	buf[3]	= 0;
+	m66_write( &dev_gsm, 0, buf, 3 );
+
+	rt_kprintf( "%s", buf );
+#endif
+/*不判断，在gsmrx_cb中处理*/
+	rt_free( pinfo );
+	//gsm_wait_str( "%TTS: 0", RT_TICK_PER_SECOND * 5 );
+	GPIO_SetBits( GPIOD, GPIO_Pin_9 ); /*关功放*/
+	gsmbusy = GSMBUSY_NONE;
+}
+
+
+
+
 /*
    连接状态维护
    jt808协议处理
@@ -1172,6 +1221,9 @@ static void rt_thread_entry_jt808( void * parameter )
 		}
 /*jt808 socket处理*/
 		jt808_socket_proc( );
+/*tts处理*/
+		jt808_tts_process( );
+
 
 /*发送信息逐条处理*/
 		iter = list_jt808_tx->first;
@@ -1193,7 +1245,8 @@ static void rt_thread_entry_jt808( void * parameter )
 /*jt808处理线程初始化*/
 void jt808_init( void )
 {
-	rt_mb_init( &mb_gprsdata, "gprsdata", &mb_gprsdata_pool, MB_GPRSDATA_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
+	rt_mb_init( &mb_gprsdata, "mb_gprs", &mb_gprsdata_pool, MB_GPRSDATA_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
+	rt_mb_init( &mb_tts, "mb_tts", &mb_tts_pool, MB_TTS_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 
 	rt_thread_init( &thread_jt808,
 	                "jt808",
@@ -1310,6 +1363,36 @@ static rt_err_t demo_jt808_tx( void )
 }
 
 FINSH_FUNCTION_EXPORT_ALIAS( demo_jt808_tx, jt808_tx, jt808_tx test );
+
+
+
+
+/*
+   收到tts信息并发送
+   返回0:OK
+    1:分配RAM错误
+ */
+rt_size_t tts_write( char* info )
+{
+	uint8_t		*pmsg;
+	uint16_t	count;
+	count = strlen( info );
+
+	/*直接发送到Mailbox中,内部处理*/
+	pmsg = rt_malloc( count + 2 );
+	if( pmsg != RT_NULL )
+	{
+		*pmsg			= count >> 8;
+		*( pmsg + 1 )	= count & 0xff;
+		memcpy( pmsg + 2, info, count );
+		rt_mb_send( &mb_tts, (rt_uint32_t)pmsg );
+		return 0;
+	}
+	return 1;
+}
+
+FINSH_FUNCTION_EXPORT( tts_write, tts send );
+
 
 /************************************** The End Of File **************************************/
 

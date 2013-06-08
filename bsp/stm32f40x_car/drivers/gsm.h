@@ -100,7 +100,6 @@ typedef struct
 
 
 void gsm_init(void);
-int gsm_send(uint8_t *pinfo,uint16_t len);
 
 void ctl_gprs( char* apn, char* user, char*psw ,uint8_t fdial );
 
