@@ -29,6 +29,9 @@ typedef struct _GPSPoint
 	int sec;
 } GPSPoint;
 
+
+
+/*要用union类型保存，位域，访问吗?*/
 uint32_t	jt808_alarm		= 0x0;
 uint32_t	jt808_status	= 0x0;
 
@@ -131,6 +134,8 @@ uint8_t process_rmc( uint8_t * pinfo )
 	uint32_t	degrees, minutes;
 	uint8_t		count;
 
+	uint32		lati,longi;
+	
 	uint8_t		gps_time[10];
 	uint8_t		gps_av	= 0;
 	uint8_t		gps_ns	= 0;
@@ -140,6 +145,8 @@ uint8_t process_rmc( uint8_t * pinfo )
 	uint8_t		gps_speed[8];
 	uint8_t		gps_direct[8];
 	uint8_t		gps_date[8];
+
+	uint8_t 	buf[20];
 
 	uint8_t		*psrc = pinfo + 7;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   //指向开始位置
 /*时间处理 */
@@ -199,6 +206,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 	          ( gps_latitude [7] - 0x30 ) * 100 +
 	          ( gps_latitude [8] - 0x30 ) * 10 +
 	          ( gps_latitude [9] - 0x30 );
+	lati=degrees+minutes/60;
 
 /*N_S处理*/
 	psrc++;
@@ -238,6 +246,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 	          ( gps_latitude [8] - 0x30 ) * 100 +
 	          ( gps_latitude [9] - 0x30 ) * 10 +
 	          ( gps_latitude [10] - 0x30 );
+	longi=degrees+minutes/60;
 /*N_S处理*/
 	psrc++;
 	if( ( *psrc == 'E' ) || ( *psrc == 'W' ) )
@@ -335,6 +344,13 @@ uint8_t process_rmc( uint8_t * pinfo )
 			}
 		}
 	}
+/*都处理完了更新 gps_baseinfo,没有高程信息*/
+	gps_baseinfo.alarm=jt808_alarm;
+	gps_baseinfo.status=jt808_status;
+	gps_baseinfo.latitude=lati;
+	gps_baseinfo.longitude=longi;
+	
+	
 	return 0;
 }
 
