@@ -1571,8 +1571,7 @@ FINSH_FUNCTION_EXPORT( dbgmsg, dbgmsg count );
  */
 rt_size_t at_write( char *sinfo, uint8_t timeout_s )
 {
-	//gsm_send_wait_func( sinfo, RT_TICK_PER_SECOND * timeout_s, resp_DEBUG, 1 );
-	//gsm_wait_str("",RT_TICK_PER_SECOND * timeout_s);
+	gsm_send( sinfo,resp_DEBUG,RT_NULL,RESP_TYPE_STR, RT_TICK_PER_SECOND * timeout_s,1 );
 	return RT_EOK;
 }
 
