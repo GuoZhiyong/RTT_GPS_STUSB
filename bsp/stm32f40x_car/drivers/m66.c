@@ -21,7 +21,6 @@
 
 #include "jt808.h"
 
-#include "gsm.h"
 #include "m66.h"
 
 #define GSM_GPIO			GPIOC
@@ -91,6 +90,7 @@ struct _dial_param
 	char	*psw;
 	uint8_t fconnect;
 } dial_param;
+
 
 /*当前操作的链接*/
 static GSM_SOCKET curr_socket;
@@ -773,13 +773,7 @@ rt_err_t resp_DEBUG( char *p, uint16_t len )
 	return RT_ERROR;
 }
 
-enum RESP_TYPE
-{
-	RESP_TYPE_FUNC			=1,
-	RESP_TYPE_FUNC_WITHOK	=2,
-	RESP_TYPE_STR			=3,
-	RESP_TYPE_STR_WITHOK	=4,
-};
+
 
 typedef rt_err_t ( *AT_RESP )( char *p, uint16_t len );
 typedef struct
@@ -1270,71 +1264,8 @@ lbl_poweron_start:
 	}
 
 	rt_kprintf( "%08d gsm_power_on>end\r\n", rt_tick_get( ) );
-
+	
 	gsm_state = GSM_AT; /*当前出于AT状态,可以拨号，连接*/
-}
-
-/*关于链路维护,只维护一个，多链路由上层处理*/
-static void rt_thread_gsm_socket( void* parameter )
-{
-	char		buf[128];
-	rt_err_t	err;
-	int i;
-	AT_CMD_RESP	at_cmd_resp;
-
-	/*挂断连接*/
-	if( curr_socket.state == SOCKET_CLOSE )
-	{
-		return;
-	}
-
-	/*建立连接*/
-	if( curr_socket.state != SOCKET_START )
-	{
-		return;
-	}
-
-	if( is_ipaddr( curr_socket.ipstr ) ) /*是IP地址*/
-	{
-		strcpy( curr_socket.ip_addr, curr_socket.ipstr );
-		curr_socket.state = SOCKET_CONNECT;
-	}else
-	{
-		curr_socket.state = SOCKET_DNS;
-	}
-
-	if( curr_socket.state == SOCKET_DNS )
-	{
-		sprintf(buf, "AT%%DNSR=\"%s\"\r\n", curr_socket.ipstr );
-		err = gsm_send( buf, resp_DNSR,RT_NULL,RESP_TYPE_FUNC_WITHOK,RT_TICK_PER_SECOND * 10,1 );
-		if( err != RT_EOK )
-		{
-			curr_socket.state = SOCKET_DNS_ERR;
-			goto lbl_gsm_socket_end;
-		}
-		curr_socket.state = SOCKET_CONNECT;
-	}
-
-	if( curr_socket.state == SOCKET_CONNECT )
-	{
-		if( curr_socket.type == 'u' )
-		{
-			sprintf( buf, "AT%%IPOPENX=%d,\"UDP\",\"%s\",%d\r\n", curr_socket.linkno, curr_socket.ip_addr, curr_socket.port );
-		}else
-		{
-			sprintf( buf, "AT%%IPOPENX=%d,\"TCP\",\"%s\",%d\r\n", curr_socket.linkno, curr_socket.ip_addr, curr_socket.port );
-		}
-		err = gsm_send( buf, RT_NULL,"CONNECT",RESP_TYPE_STR,RT_TICK_PER_SECOND * 10,  1 );
-		if( err != RT_EOK )
-		{
-			curr_socket.state = SOCKET_CONNECT_ERR;
-			goto lbl_gsm_socket_end;
-		}
-	}
-	curr_socket.state = SOCKET_READY;
-lbl_gsm_socket_end:
-	gsm_state = GSM_TCPIP; /*socket过程处理完成，结果在state中*/
-	rt_kprintf( "%08d gsm_socket>end socket.state=%d\r\n", rt_tick_get( ), curr_socket.state );
 }
 
 /*控制登网，还是断网*/
@@ -1422,6 +1353,77 @@ lbl_gsm_gprs_end_err:
 lbl_gsm_gprs_end:
 	rt_kprintf( "%08d gsm_gprs>end state=%d\r\n", rt_tick_get( ), gsm_state );
 }
+
+
+
+
+/*关于链路维护,只维护一个，多链路由上层处理*/
+static void rt_thread_gsm_socket( void* parameter )
+{
+	char		buf[128];
+	rt_err_t	err;
+	int i;
+	AT_CMD_RESP	at_cmd_resp;
+
+	/*挂断连接*/
+	if( curr_socket.state == SOCKET_CLOSE )
+	{
+		return;
+	}
+
+	/*建立连接*/
+	if( curr_socket.state != SOCKET_START )
+	{
+		return;
+	}
+
+	if( is_ipaddr( curr_socket.ipstr ) ) /*是IP地址*/
+	{
+		strcpy( curr_socket.ip_addr, curr_socket.ipstr );
+		curr_socket.state = SOCKET_CONNECT;
+	}else
+	{
+		curr_socket.state = SOCKET_DNS;
+	}
+
+	if( curr_socket.state == SOCKET_DNS )
+	{
+		
+		sprintf(buf, "AT%%DNSR=\"%s\"\r\n", curr_socket.ipstr );
+		err = gsm_send( buf, resp_DNSR,RT_NULL,RESP_TYPE_FUNC_WITHOK,RT_TICK_PER_SECOND * 10,1 );
+		if( err != RT_EOK )
+		{
+			curr_socket.state = SOCKET_DNS_ERR;
+			goto lbl_gsm_socket_end;
+		}
+		curr_socket.state = SOCKET_CONNECT;
+	}
+
+	if( curr_socket.state == SOCKET_CONNECT )
+	{
+		if( curr_socket.type == 'u' )
+		{
+			sprintf( buf, "AT%%IPOPENX=%d,\"UDP\",\"%s\",%d\r\n", curr_socket.linkno, curr_socket.ip_addr, curr_socket.port );
+		}else
+		{
+			sprintf( buf, "AT%%IPOPENX=%d,\"TCP\",\"%s\",%d\r\n", curr_socket.linkno, curr_socket.ip_addr, curr_socket.port );
+		}
+		err = gsm_send( buf, RT_NULL,"CONNECT",RESP_TYPE_STR,RT_TICK_PER_SECOND * 10,  1 );
+		if( err != RT_EOK )
+		{
+			curr_socket.state = SOCKET_CONNECT_ERR;
+			goto lbl_gsm_socket_end;
+		}
+	}
+	curr_socket.state = SOCKET_READY;
+lbl_gsm_socket_end:
+	gsm_state = GSM_TCPIP; /*socket过程处理完成，结果在state中*/
+	rt_kprintf( "%08d gsm_socket>end socket.state=%d\r\n", rt_tick_get( ), curr_socket.state );
+}
+
+
+
+
 
 ALIGN( RT_ALIGN_SIZE )
 static char thread_gsm_stack[512];
@@ -1636,10 +1638,9 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 	return ret;
 }
 
-FINSH_FUNCTION_EXPORT( socket_write, write socket );
 
 /*控制gsm状态 0 查询*/
-rt_err_t gsmstate( int cmd )
+T_GSM_STATE gsmstate( int cmd )
 {
 	if( cmd )
 	{

@@ -95,7 +95,9 @@ void rtthread_startup(void)
 	rt_device_init_all();
 
 
+	rt_kprintf("\r\nrcc.csr=%08x",RCC->CSR);
 
+/*
 	sprintf(buf,"%s","%IPDATA:1,3,\"123\"");
 
 	psrc=buf;
@@ -103,7 +105,7 @@ void rtthread_startup(void)
 	rt_kprintf("buf=%s\r\n",psrc);
 	i = sscanf( psrc, "%%IPDATA:%d,%d,%s", &linkno, &infolen, pdst );
 	rt_kprintf("\r\ni=%d,linkno=%d,infolen=%d,pdst=%s\r\n",i,linkno,infolen,pdst);
-	
+*/	
 	/* init application */
 	sst25_init(); /*在此初始化,gsm才能读取参数，放在app_thread中不会先执行*/
 	rt_application_init();
