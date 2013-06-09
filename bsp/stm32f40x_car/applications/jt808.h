@@ -263,7 +263,7 @@ typedef __packed struct _jt808_tx_msg_nodedata_old
 	uint32_t		timeout;                            /*超时时间*/
 	uint32_t		tick;                               /*发送时间*/
 /*接收的处理判断相关*/
-	void ( *cb_tx_timeout )( struct _jt808_tx_msg_nodedata *pnodedata );
+	void ( *cb_tx_timeout )( __packed struct _jt808_tx_msg_nodedata *pnodedata );
 	void ( *cb_tx_response )( uint8_t linkno, uint8_t *pmsg );
 	uint16_t	head_id;                                /*消息ID*/
 	uint16_t	head_sn;                                /*消息流水号*/

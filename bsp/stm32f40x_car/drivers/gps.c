@@ -179,10 +179,10 @@ void UART5_IRQHandler( void )
 	if( USART_GetITStatus( UART5, USART_IT_RXNE ) != RESET )
 	{
 		ch = USART_ReceiveData( UART5 );
-		
-		uart5_rxbuf.body[uart5_rxbuf.wr++] = ch;
-		uart5_rxbuf.wr &= (UART5_RX_SIZE-1 );
-		uart5_rxbuf.body[uart5_rxbuf.wr] = 0;
+
+		uart5_rxbuf.body[uart5_rxbuf.wr++]	= ch;
+		uart5_rxbuf.wr						&= ( UART5_RX_SIZE - 1 );
+		uart5_rxbuf.body[uart5_rxbuf.wr]	= 0;
 
 		if( ( ch == 0x0a ) && ( last_ch == 0x0d ) ) /*遇到0d 0a 表明结束*/
 		{
@@ -601,7 +601,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 
 	msg = parameter;
 
-	ptr_mem_packet = rt_malloc( READ_PACKET_SIZE+20 );
+	ptr_mem_packet = rt_malloc( READ_PACKET_SIZE + 20 );
 	if( ptr_mem_packet == RT_NULL )
 	{
 		msg( "E内存不足" );
@@ -653,23 +653,28 @@ void thread_gps_upgrade_udisk( void* parameter )
 	sprintf( buf, "I版本:%d.%d.%d", ch_h, ch_l, *( pdata + 10 ) );
 	msg( buf );
 /*升级数据长度*/
-	file_datalen =0;
+	file_datalen	= 0;
 	file_datalen	= ( *( pdata + 11 ) ) << 24;
 	file_datalen	|= ( *( pdata + 12 ) ) << 16;
 	file_datalen	|= ( *( pdata + 13 ) ) << 8;
 	file_datalen	|= *( pdata + 14 );
-	rt_kprintf("file_datalen=%x",file_datalen);
+	rt_kprintf( "file_datalen=%x", file_datalen );
 /*文件匹配码在尾部*/
 	count	= 0;
 	ch_h	= 0;
 
-	do{
-		res		= read( fd, ptr_mem_packet,READ_PACKET_SIZE );
-		if(res)	count = res;
-	}while(res>0);
+	do
+	{
+		res = read( fd, ptr_mem_packet, READ_PACKET_SIZE );
+		if( res )
+		{
+			count = res;
+		}
+	}
+	while( res > 0 );
 	//rt_kprintf("res=%02x\r\n",res);
 	//if(res==0) res=READ_PACKET_SIZE;
-	
+
 	if( ( ptr_mem_packet[count - 1] != 0x54 ) || ( ptr_mem_packet[count - 2] != 0x44 ) )
 	{
 		msg( "E文件尾错误" );
@@ -677,10 +682,8 @@ void thread_gps_upgrade_udisk( void* parameter )
 	}
 	file_matchcode[0]	= ptr_mem_packet[count - 6];
 	file_matchcode[1]	= ptr_mem_packet[count - 5];
-	rt_kprintf("file datalen=%x matchcode=%02x%02x",file_datalen,file_matchcode[0],file_matchcode[1]);
+	rt_kprintf( "file datalen=%x matchcode=%02x%02x", file_datalen, file_matchcode[0], file_matchcode[1] );
 	close( fd );
-	
-
 
 	msg( "I配置端口" );
 
@@ -705,9 +708,9 @@ void thread_gps_upgrade_udisk( void* parameter )
 	while( 1 )
 	{
 		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, 124, RT_TICK_PER_SECOND * 5 );
-		if( res == RT_EOK )                                             //收到一包数据
+		if( res == RT_EOK )                                       //收到一包数据
 		{
-			rt_kprintf("\r\n版本查询\r\n");
+			rt_kprintf( "\r\n版本查询\r\n" );
 			for( ch_h = 0; ch_h < uart_buf.wr; ch_h++ )
 			{
 				rt_kprintf( "%02x ", uart_buf.body[ch_h] );
@@ -737,7 +740,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	while( 1 )
 	{
 		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, 124, RT_TICK_PER_SECOND * 5 );
-		if( res == RT_EOK )                         //收到一包数据
+		if( res == RT_EOK )                   //收到一包数据
 		{
 			if( ( uart_buf.wr == 11 ) && ( uart_buf.body[4] == 0x15 ) )
 			{
@@ -769,7 +772,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	while( ch_l )
 	{
 		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, 124, RT_TICK_PER_SECOND * 10 );
-		if( res == RT_EOK )                         //收到一包数据
+		if( res == RT_EOK )                   //收到一包数据
 		{
 			for( ch_h = 0; ch_h < uart_buf.wr; ch_h++ )
 			{
@@ -789,61 +792,63 @@ void thread_gps_upgrade_udisk( void* parameter )
 	}
 
 /*发送数据包*/
-	count		= 0;                    /*计算发送字节数*/
+	count		= 0;            /*计算发送字节数*/
 	packet_num	= 0;
-	read( fd, buf, 15 );                /*跳过文件头*/
-	rt_kprintf("fd=%02x\r\n",fd);
+	read( fd, buf, 15 );        /*跳过文件头*/
+	rt_kprintf( "fd=%02x\r\n", fd );
 	while( 1 )
 	{
-		rt_thread_delay(RT_TICK_PER_SECOND/2);
+		rt_thread_delay( RT_TICK_PER_SECOND / 2 );
 		memcpy( ptr_mem_packet, "\x40\xf2\x00\x00\x03\x01", 6 );
-		res = read( fd, ptr_mem_packet + 6,READ_PACKET_SIZE );
-		if(res<0)
+		res = read( fd, ptr_mem_packet + 6, READ_PACKET_SIZE );
+		if( res < 0 )
 		{
-			msg("E读取文件出错");
+			msg( "E读取文件出错" );
 			goto end_upgrade_usb_2;
 		}
 
 		count += res;
-		if( res == READ_PACKET_SIZE )               /*判断是否为最后一包*/
+		if( res == READ_PACKET_SIZE )           /*判断是否为最后一包*/
 		{
-			if( count == file_datalen ) /*长度正为1012整数倍*/
+			if( count == file_datalen )         /*长度正为1012整数倍*/
 			{
 				ptr_mem_packet[2]	= 0x80 | ( packet_num >> 8 );
 				ptr_mem_packet[3]	= packet_num & 0xff;
-				res=res-6;
+				res					= res - 6;
 			}else
 			{
-				if( count == READ_PACKET_SIZE )                /*第一包*/
+				if( count == READ_PACKET_SIZE ) /*第一包*/
 				{
-					ptr_mem_packet[2]	= 0x40|(packet_num >> 8);
+					ptr_mem_packet[2]	= 0x40 | ( packet_num >> 8 );
 					ptr_mem_packet[3]	= packet_num & 0xff;
-				}
-				else
+				}else
 				{
 					ptr_mem_packet[2]	= packet_num >> 8;
 					ptr_mem_packet[3]	= packet_num & 0xff;
-				}	
+				}
 			}
 		}else
 		{
 			ptr_mem_packet[2]	= 0x80 | ( packet_num >> 8 );
 			ptr_mem_packet[3]	= packet_num & 0xff;
 			/*去掉文件尾部的数据*/
-			res=res-6;
+			res = res - 6;
 		}
 		packet_num++;
-		ptr_mem_packet[res + 6]		= (res+2) >> 8;
-		ptr_mem_packet[res + 7]		= (res+2) & 0xff;
+		ptr_mem_packet[res + 6]		= ( res + 2 ) >> 8;
+		ptr_mem_packet[res + 7]		= ( res + 2 ) & 0xff;
 		crc							= CalcCRC16( ptr_mem_packet, 1, res + 7 );
 		ptr_mem_packet[res + 8]		= ( crc & 0xff00 ) >> 8;
 		ptr_mem_packet[res + 9]		= crc & 0xff;
 		ptr_mem_packet[res + 10]	= 0x0d;
 		ptr_mem_packet[res + 11]	= 0x0a;
 
-		rt_kprintf("\r\nres=%d,%02x%02x,%04x\r\n",res,ptr_mem_packet[2],ptr_mem_packet[3],crc);
-		for(ch_h=0;ch_h<16;ch_h++) rt_kprintf("%02x ",ptr_mem_packet[ch_h]);
-		rt_kprintf( "tx tick=%x\r\n",rt_tick_get());
+		rt_kprintf( "\r\nres=%d,%02x%02x,%04x\r\n", res, ptr_mem_packet[2], ptr_mem_packet[3], crc );
+		for( ch_h = 0; ch_h < 16; ch_h++ )
+		{
+			rt_kprintf( "%02x ", ptr_mem_packet[ch_h] );
+		}
+		rt_kprintf( "tx tick=%x\r\n", rt_tick_get( ) );
 		dev_gps_write( &dev_gps, 0, ptr_mem_packet, res + 12 );
 
 		ch_l = 1;
@@ -856,7 +861,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 				{
 					rt_kprintf( "%02x ", uart_buf.body[ch_h] );
 				}
-				rt_kprintf( "rx tick=%x\r\n",rt_tick_get());
+				rt_kprintf( "rx tick=%x\r\n", rt_tick_get( ) );
 				if( uart_buf.wr == 11 )
 				{
 					if( uart_buf.body[4] == 0x02 )
@@ -869,7 +874,6 @@ void thread_gps_upgrade_udisk( void* parameter )
 					msg( buf );
 					ch_l = 0;
 				}
-				
 			}else /*超时*/
 			{
 				msg( "E升级错误" );
@@ -881,7 +885,10 @@ void thread_gps_upgrade_udisk( void* parameter )
 end_upgrade_usb_2:
 	rt_thread_resume( &thread_gps );
 end_upgrade_usb_1:
-	if( fd >= 0 )close( fd );
+	if( fd >= 0 )
+	{
+		close( fd );
+	}
 end_upgrade_usb_0:
 	rt_free( ptr_mem_packet );
 	ptr_mem_packet = RT_NULL;
@@ -919,21 +926,33 @@ rt_err_t gps_upgrade( char *src )
 FINSH_FUNCTION_EXPORT( gps_upgrade, upgrade bd_gps );
 
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-rt_size_t gps_write( uint8_t *p, uint8_t len )
+/*
+   查询设置bdgps模式
+   0:查询
+
+   const char BD_MODE[]={"$CCSIR,1,0*49\r\n"};
+   const char GPS_MODE[]={"$CCSIR,2,0*4A\r\n"};
+   const char GPSBD_MODE[]={"$CCSIR,3,0*4B\r\n"};
+ */
+rt_size_t gps_mode( uint8_t mode )
 {
-	return dev_gps_write( &dev_gps, 0, p, len );
+	switch( mode )
+	{
+		case 0:
+			break;
+		case 1: /*BD*/
+			dev_gps_write( &dev_gps, 0, "$CCSIR,1,0*49\r\n", 15 );
+			break;
+		case 2: /*GPS*/
+			dev_gps_write( &dev_gps, 0, "$CCSIR,2,0*4A\r\n", 15 );
+			break;
+		case 3: /*BDGPS*/
+			dev_gps_write( &dev_gps, 0, "$CCSIR,3,0*4B\r\n", 15 );
+			break;
+	}
 }
 
-FINSH_FUNCTION_EXPORT( gps_write, write to gps );
+FINSH_FUNCTION_EXPORT( gps_mode, change mode );
 
 /************************************** The End Of File **************************************/
 

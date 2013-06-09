@@ -123,7 +123,12 @@ typedef struct
 extern JT808_PARAM	jt808_param;
 extern TERM_PARAM term_param;
 
+uint8_t param_put( uint16_t id, uint8_t len, uint8_t* value );
 void param_put_int( uint16_t id, uint32_t value );
+
+
+uint8_t param_get( uint16_t id, uint8_t* value );
+uint32_t param_get_int( uint16_t id );
 
 
 #endif

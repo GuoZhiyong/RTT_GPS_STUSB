@@ -1,6 +1,7 @@
 #ifndef _GPS_H_
 #define _GPS_H_
 
+
 #define CTL_GPS_BAUD	0x30
 #define CTL_GPS_OUTMODE	0x31	/*gps信息的输出模式*/
 

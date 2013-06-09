@@ -1,3 +1,16 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #include <stdio.h>
 
 #include <board.h>
@@ -6,103 +19,97 @@
 
 #include "stm32f4xx.h"
 
+#include "jt808_gps.h"
 
 typedef struct _GPSPoint
 {
-   int sign;
-   int deg;
-   int min;
-   int sec;
+	int sign;
+	int deg;
+	int min;
+	int sec;
 } GPSPoint;
-
 
 uint32_t	jt808_alarm		= 0x0;
 uint32_t	jt808_status	= 0x0;
 
 
-
 /*
-区域的定义,使用list关联起来，如果node过多的话，
-RAM是否够用
-使用dataflash存储，以4k作为cache,缓存访问
-每秒的位置信息都要判断
-*/
-struct 
+   区域的定义,使用list关联起来，如果node过多的话，
+   RAM是否够用
+   使用dataflash存储，以4k作为cache,缓存访问
+   每秒的位置信息都要判断
+ */
+struct
 {
-	uint32_t id;			/*区域ID*/
-	uint16_t attr;			/*属性*/
-	uint32_t latitude; 		/*中心纬度*/
-	uint32_t logitude; 		/*中心经度*/
-	uint32_t radius; 		/*半径*/
-	uint8_t datetime_start[6];  /*开始时刻，使用utc是不是更好?*/
-	uint8_t datetime_end[6];
-	uint16_t speed;
-	uint8_t duration;		/*持续时间*/
-}circle;
+	uint32_t	id;                 /*区域ID*/
+	uint16_t	attr;               /*属性*/
+	uint32_t	latitude;           /*中心纬度*/
+	uint32_t	logitude;           /*中心经度*/
+	uint32_t	radius;             /*半径*/
+	uint8_t		datetime_start[6];  /*开始时刻，使用utc是不是更好?*/
+	uint8_t		datetime_end[6];
+	uint16_t	speed;
+	uint8_t		duration;           /*持续时间*/
+} circle;
 
 struct
 {
-	uint32_t id;			/*区域ID*/
-	uint16_t attr;			/*属性*/
-	uint32_t latitude; 		/*中心纬度*/
-	uint32_t logitude; 		/*中心经度*/
-	uint32_t radius; 		/*半径*/
-	uint8_t datetime_start[6];  /*开始时刻，使用utc是不是更好?*/
-	uint8_t datetime_end[6];
-	uint16_t speed;
-	uint8_t duration;		/*持续时间*/
-}rectangle;
+	uint32_t	id;                 /*区域ID*/
+	uint16_t	attr;               /*属性*/
+	uint32_t	latitude;           /*中心纬度*/
+	uint32_t	logitude;           /*中心经度*/
+	uint32_t	radius;             /*半径*/
+	uint8_t		datetime_start[6];  /*开始时刻，使用utc是不是更好?*/
+	uint8_t		datetime_end[6];
+	uint16_t	speed;
+	uint8_t		duration;           /*持续时间*/
+} rectangle;
+
+/*保存gps基本位置信息*/
+GPS_BASEINFO	gps_baseinfo;
+/*gps的状态*/
+GPS_STATUS		gps_status;
 
 
-
-
-
-
-
-
-
-
-
-
-/*基本位置信息,因为字节对齐的方式，还是使用数组方便*/
-__packed struct _gps_baseinfo
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static double gpsToRad( GPSPoint point )
 {
-	uint32_t alarm;
-	uint32_t status;
-	uint32_t latitude; /*纬度*/
-	uint32_t longitude;/*精度*/
-	uint16_t altitude;
-	uint16_t speed;
-	uint16_t direction;
-	uint8_t datetime[6];
-};
-
-
-
-
-static double gpsToRad(GPSPoint point)
-{
-   return point.sign * (point.deg + (point.min + point.sec / 60.0) / 60.0) * 3.141592654 / 180.0;
+	return point.sign * ( point.deg + ( point.min + point.sec / 60.0 ) / 60.0 ) * 3.141592654 / 180.0;
 }
 
-static double getDistance(GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, GPSPoint lngTo)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, GPSPoint lngTo )
 {
-   double latFromRad = gpsToRad(latFrom);
-   double lngFromRad = gpsToRad(lngFrom);
-   double latToRad   = gpsToRad(latTo);
-   double lngToRad   = gpsToRad(lngTo);
-   double lngDiff    = lngToRad-lngFromRad;
-   double part1 = pow( cos(latToRad)*sin(lngDiff) , 2);
-   //double part2 = pow( cos(latFromRad)*sin(latToRad)*cos(lngDiff) , 2);
-   double part2 = pow(cos(latFromRad) * sin(latToRad) - sin(latFromRad)*cos(latToRad)* cos(lngDiff), 2);
+	double	latFromRad	= gpsToRad( latFrom );
+	double	lngFromRad	= gpsToRad( lngFrom );
+	double	latToRad	= gpsToRad( latTo );
+	double	lngToRad	= gpsToRad( lngTo );
+	double	lngDiff		= lngToRad - lngFromRad;
+	double	part1		= pow( cos( latToRad ) * sin( lngDiff ), 2 );
+	//double part2 = pow( cos(latFromRad)*sin(latToRad)*cos(lngDiff) , 2);
+	double	part2 = pow( cos( latFromRad ) * sin( latToRad ) - sin( latFromRad ) * cos( latToRad ) * cos( lngDiff ), 2 );
 
-   double part3 = sin(latFromRad)*sin(latToRad)+cos(latFromRad)*cos(latToRad)*cos(lngDiff);
-   //double centralAngle = atan2( sqrt(part1 + part2) / part3 );
-   double centralAngle = atan( sqrt(part1 + part2) / part3 );
-   return 6371.01 * 1000.0 * centralAngle;  //Return Distance in meter
+	double	part3 = sin( latFromRad ) * sin( latToRad ) + cos( latFromRad ) * cos( latToRad ) * cos( lngDiff );
+	//double centralAngle = atan2( sqrt(part1 + part2) / part3 );
+	double	centralAngle = atan( sqrt( part1 + part2 ) / part3 );
+	return 6371.01 * 1000.0 * centralAngle; //Return Distance in meter
 }
-
-
 
 /*
    $GNRMC,074001.00,A,3905.291037,N,11733.138255,E,0.1,,171212,,,A*655220.9*3F0E
@@ -134,7 +141,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 	uint8_t		gps_direct[8];
 	uint8_t		gps_date[8];
 
-	uint8_t		*psrc = pinfo + 7;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               //指向开始位置
+	uint8_t		*psrc = pinfo + 7;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   //指向开始位置
 /*时间处理 */
 	count = 0;
 	while( ( *psrc != ',' ) && ( count < 10 ) )
@@ -192,7 +199,6 @@ uint8_t process_rmc( uint8_t * pinfo )
 	          ( gps_latitude [7] - 0x30 ) * 100 +
 	          ( gps_latitude [8] - 0x30 ) * 10 +
 	          ( gps_latitude [9] - 0x30 );
-
 
 /*N_S处理*/
 	psrc++;
@@ -357,10 +363,13 @@ void process_gga( uint8_t * pinfo )
 void gps_rx( uint8_t * pinfo, uint16_t length )
 
 {
-	uint8_t		* psrc;
-	psrc	= pinfo;
-	*(psrc+length)=0;
-//	rt_kprintf("%d gps<%s\r\n",rt_tick_get(),psrc);
+	uint8_t * psrc;
+	psrc				= pinfo;
+	*( psrc + length )	= 0;
+	if( gps_status.Raw_Output )
+	{
+		rt_kprintf( "%d gps<%s\r\n", rt_tick_get( ), psrc );
+	}
 	if( ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) )
 	{
 		process_rmc( psrc );
@@ -369,7 +378,35 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	{
 		process_gga( psrc );
 	}
+	/*天线开短路检测 gps<$GNTXT,01,01,01,ANTENNA OK*2B*/
+	if( strncmp( psrc + 3, "TXT", 3 ) == 0 )
+	{
+		if( strstr( psrc + 24, "OK" ) != RT_NULL )
+		{
+			gps_status.Antenna_Flag = 0;
+		}
+		if( strstr( psrc + 24, "OPEN" ) != RT_NULL )
+		{
+			gps_status.Antenna_Flag = 1;
+			jt808_alarm|=(1<<5);		/*bit5 天线开路*/
+		}
+	}
 }
 
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void gps_dump( uint8_t mode )
+{
+	gps_status.Raw_Output = mode;
+}
 
+FINSH_FUNCTION_EXPORT( gps_dump, dump gps raw info );
 
+/************************************** The End Of File **************************************/

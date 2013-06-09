@@ -31,7 +31,7 @@
 #define GSM_RX_PIN_SOURCE	GPIO_PinSource11
 
 typedef void ( *URC_CB )( char *s, uint16_t len );
-typedef rt_err_t ( *RESP_FUNC )( char *s, uint16_t len );
+
 
 #define GSM_PWR_PORT	GPIOD
 #define GSM_PWR_PIN		GPIO_Pin_13
@@ -513,79 +513,6 @@ static rt_err_t m66_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 }
 
 /***********************************************************
-* Function:		gsmrx_cb
-* Description:	gsm收到信息的处理
-* Input:			char *s     信息
-    uint16_t len 长度
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void gsmrx_cb( char *pInfo, uint16_t size )
-{
-	int		i, count, len = size;
-	uint8_t tbl[24] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf };
-	char	c, *pmsg;
-	char	*psrc = RT_NULL, *pdst = RT_NULL;
-	int32_t infolen, linkno;
-
-/*网络侧的信息，直接通知上层软件*/
-	if( fgsm_rawdata_out )
-	{
-		rt_kprintf( "\r\n%08d gsm_rx<%s\r\n", rt_tick_get( ), pInfo );
-		fgsm_rawdata_out--;
-	}
-
-/*判读并处理*/
-	psrc	= pInfo;
-	pdst	= pInfo;
-	if( strncmp( psrc, "%IPDATA:", 7 ) == 0 )
-	{
-		/*解析出净信息,编译器会优化掉pdst*/
-		i = sscanf( psrc, "%%IPDATA:%d,%d,%s", &linkno, &infolen, pdst );
-		if( i != 3 )
-		{
-			return;
-		}
-		if( infolen < 11 )
-		{
-			return;
-		}
-		if( *pdst != '"' )
-		{
-			return;
-		}
-		psrc	= pdst;     /*指向""内容*/
-		pmsg	= pdst + 1; /*指向下一个位置*/
-
-		for( i = 0; i < infolen; i++ )
-		{
-			c		= tbl[*pmsg++ - '0'] << 4;
-			c		|= tbl[*pmsg++ - '0'];
-			*pdst++ = c;
-		}
-		gprs_rx( linkno, psrc, infolen );
-		return;
-	}
-
-	if( SMS_rx_pro( pInfo, size ) )
-	{
-		return;
-	}
-
-	/*直接发送到Mailbox中,内部处理*/
-	pmsg = rt_malloc( len + 2 );
-	if( pmsg != RT_NULL )
-	{
-		*pmsg			= len >> 8;
-		*( pmsg + 1 )	= len;
-		memcpy( pmsg + 2, pInfo, len );
-		rt_mb_send( &mb_gsmrx, (rt_uint32_t)pmsg );
-	}
-	return;
-}
-
-/***********************************************************
 * Function:
 * Description:
 * Input:
@@ -770,6 +697,7 @@ rt_err_t resp_DEBUG( char *p, uint16_t len )
 }
 
 typedef rt_err_t ( *AT_RESP )( char *p, uint16_t len );
+
 typedef struct
 {
 	char			*atcmd;
@@ -1314,11 +1242,13 @@ static void rt_thread_gsm_gprs( void* parameter )
 		}
 
 		sprintf( buf, "AT+CGDCONT=1,\"IP\",\"%s\"\r\n", dial_param.apn );
-		err = gsm_send( "AT+CGATT?\r\n", RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 1 );
+
+		err = gsm_send( buf, RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 2 );
 		if( err != RT_EOK )
 		{
 			goto lbl_gsm_gprs_end_err;
 		}
+		
 		if( ( strlen( dial_param.user ) == 0 ) && ( strlen( dial_param.user ) == 0 ) )
 		{
 			err = gsm_send( "AT%ETCPIP\r\n", RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 151, 1 );
@@ -1415,6 +1345,90 @@ lbl_gsm_socket_end:
 	gsm_state = GSM_TCPIP; /*socket过程处理完成，结果在state中*/
 	rt_kprintf( "%08d gsm_socket>end socket.state=%d\r\n", rt_tick_get( ), curr_socket.state );
 }
+
+
+
+/***********************************************************
+* Function:		gsmrx_cb
+* Description:	gsm收到信息的处理
+* Input:			char *s     信息
+    uint16_t len 长度
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void gsmrx_cb( char *pInfo, uint16_t size )
+{
+	int		i, count, len = size;
+	uint8_t tbl[24] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf };
+	char	c, *pmsg;
+	char	*psrc = RT_NULL, *pdst = RT_NULL;
+	int32_t infolen, linkno;
+
+/*网络侧的信息，直接通知上层软件*/
+	if( fgsm_rawdata_out )
+	{
+		rt_kprintf( "\r\n%08d gsm<%s\r\n", rt_tick_get( ), pInfo );
+		fgsm_rawdata_out--;
+	}
+
+/*判读并处理*/
+	psrc	= pInfo;
+	pdst	= pInfo;
+	if( strncmp( psrc, "%IPDATA:", 7 ) == 0 )
+	{
+		/*解析出净信息,编译器会优化掉pdst*/
+		i = sscanf( psrc, "%%IPDATA:%d,%d,%s", &linkno, &infolen, pdst );
+		if( i != 3 )
+		{
+			return;
+		}
+		if( infolen < 11 )
+		{
+			return;
+		}
+		if( *pdst != '"' )
+		{
+			return;
+		}
+		psrc	= pdst;     /*指向""内容*/
+		pmsg	= pdst + 1; /*指向下一个位置*/
+
+		for( i = 0; i < infolen; i++ )
+		{
+			c		= tbl[*pmsg++ - '0'] << 4;
+			c		|= tbl[*pmsg++ - '0'];
+			*pdst++ = c;
+		}
+		gprs_rx( linkno, psrc, infolen );
+		return;
+	}
+
+	if( strncmp( psrc, "%IPCLOSE:", 9 ) == 0 )
+	{
+		c=*(psrc+9)-0x30;
+		cb_socket_state(c,SOCKET_CLOSE);
+		return;
+	}
+
+	if( SMS_rx_pro( pInfo, size ) )
+	{
+		return;
+	}
+
+	/*直接发送到Mailbox中,内部处理*/
+	pmsg = rt_malloc( len + 2 );
+	if( pmsg != RT_NULL )
+	{
+		*pmsg			= len >> 8;
+		*( pmsg + 1 )	= len;
+		memcpy( pmsg + 2, pInfo, len );
+		rt_mb_send( &mb_gsmrx, (rt_uint32_t)pmsg );
+	}
+	return;
+}
+
+
 
 ALIGN( RT_ALIGN_SIZE )
 static char thread_gsm_stack[512];
@@ -1618,9 +1632,9 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 }
 
 /*控制gsm状态 0 查询*/
-T_GSM_STATE gsmstate( int cmd )
+T_GSM_STATE gsmstate( T_GSM_STATE cmd )
 {
-	if( cmd )
+	if( cmd!=GSM_STATE_GET )
 	{
 		gsm_state = cmd;
 	}
@@ -1630,7 +1644,7 @@ T_GSM_STATE gsmstate( int cmd )
 FINSH_FUNCTION_EXPORT( gsmstate, control gsm state );
 
 /*控制socket状态 0 查询*/
-rt_err_t socketstate( int cmd )
+T_SOCKET_STATE socketstate( T_SOCKET_STATE cmd )
 {
 	if( cmd )
 	{

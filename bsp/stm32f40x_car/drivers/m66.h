@@ -57,7 +57,6 @@ typedef enum
 	GSM_STATE_GET=0,		/*查询GSM状态*/
 	GSM_IDLE=1,			/*空闲*/
 	GSM_POWERON,		/*上电过程并完成模块的AT命令初始化过程*/
-	GSM_POWEROFF,		/*已经断电*/
 	GSM_AT,				/*处于AT命令空闲，可以设置socket参数，收发短信*/
 	GSM_AT_SEND,		/*处于AT收发状态*/
 	GSM_GPRS,		/*登录GPRS中*/
@@ -66,6 +65,7 @@ typedef enum
 	GSM_ERR_POWERON,
 	GSM_ERR_GPRS,
 	GSM_ERR_TCPIP,
+	GSM_POWEROFF,		/*已经断电*/	
 }T_GSM_STATE;
 
 
@@ -108,6 +108,8 @@ typedef struct
 	//MsgList			* msglist_tx;
 }GSM_SOCKET;
 
+typedef rt_err_t ( *RESP_FUNC )( char *s, uint16_t len );
+
 
 void gsm_init(void);
 
@@ -116,6 +118,16 @@ void ctl_gprs( char* apn, char* user, char*psw ,uint8_t fdial );
 void ctl_socket( uint8_t linkno,char type, char* remoteip, uint16_t remoteport,uint8_t fconnect );
 
 rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count );
+
+rt_err_t gsm_send( char *atcmd,
+                   RESP_FUNC respfunc,
+                   char * compare_str,
+                   uint8_t type,
+                   uint32_t timeout,
+                   uint8_t retry );
+
+T_GSM_STATE gsmstate( T_GSM_STATE cmd );
+T_SOCKET_STATE socketstate( T_SOCKET_STATE cmd );
 
 
 #endif

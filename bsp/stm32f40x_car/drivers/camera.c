@@ -21,7 +21,7 @@
 #include "jt808.h"
 #include "camera.h"
 #include <finsh.h>
-
+#include "sst25.h"
 typedef enum 
 {
 	CAM_NONE=0,

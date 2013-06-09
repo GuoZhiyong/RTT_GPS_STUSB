@@ -1269,7 +1269,7 @@ u8 SMS_Tx_Text( char *strDestNum, char *s )
 	strcat( SMS_Service.SMSAtSend, "\"\r\n" );
 
 	rt_kprintf( "\r\n%s", SMS_Service.SMSAtSend );
-	at_write( ( char* )SMS_Service.SMSAtSend );
+	at( ( char* )SMS_Service.SMSAtSend );
 
 	rt_thread_delay( 50 );
 
@@ -1282,7 +1282,7 @@ u8 SMS_Tx_Text( char *strDestNum, char *s )
 	///发送调试信息
 	SMS_SendConsoleStr( pstrTemp );
 	///发送到GSM模块
-	at_write( pstrTemp, len );
+	at( pstrTemp, len );
 	rt_free( pstrTemp );
 	pstrTemp = RT_NULL;
 	return 1;
@@ -1321,7 +1321,7 @@ u8 SMS_Tx_PDU( char *strDestNum, char *s )
 	//////
 	sprintf( ( char* )SMS_Service.SMSAtSend, "AT+CMGS=%d\r\n", ( len - 2 ) / 2 );
 	//rt_kprintf("%s",SMS_Service.SMSAtSend);
-	//at_write( ( char * ) SMS_Service.SMSAtSend );
+	//at( ( char * ) SMS_Service.SMSAtSend );
 
 	if( gsm_send( SMS_Service.SMSAtSend, RT_NULL, ">", RESP_TYPE_STR, RT_TICK_PER_SECOND, 1 ) == RT_EOK )
 	{
@@ -1329,7 +1329,7 @@ u8 SMS_Tx_PDU( char *strDestNum, char *s )
 		//////
 		//SMS_SendConsoleStr( pstrTemp );
 		//rt_hw_console_output(pstrTemp);
-		//at_write(pstrTemp, len);
+		//at(pstrTemp, len);
 
 		gsm_send( pstrTemp, RT_NULL, RT_NULL, RESP_TYPE_STR, RT_TICK_PER_SECOND / 2, 1 );
 	}
@@ -1600,7 +1600,7 @@ void SMS_Process_old( void )
 		memset( SMS_Service.SMSAtSend, 0, sizeof( SMS_Service.SMSAtSend ) );
 		sprintf( SMS_Service.SMSAtSend, "AT+CMGR=%d\r\n", SMS_Service.SMIndex );
 		rt_kprintf( "%s", SMS_Service.SMSAtSend );
-		at_write( ( char* )SMS_Service.SMSAtSend );
+		at( ( char* )SMS_Service.SMSAtSend );
 		SMS_Service.SMS_read--;
 		SMS_Service.SMS_waitCounter = 3;
 	}
@@ -1625,12 +1625,12 @@ void SMS_Process_old( void )
 			//////
 			sprintf( ( char* )SMS_Service.SMSAtSend, "AT+CMGS=%d\r\n", ( ContentLen - 2 ) / 2 );
 			rt_kprintf( "%s", SMS_Service.SMSAtSend );
-			at_write( ( char* )SMS_Service.SMSAtSend );
+			at( ( char* )SMS_Service.SMSAtSend );
 			rt_thread_delay( 50 );
 			//////
 			//rt_kprintf("%s",pstrTemp);
 			SMS_SendConsoleStr( pstrTemp );
-			at_write( ( char* )pstrTemp, ContentLen + 1 );
+			at( ( char* )pstrTemp, ContentLen + 1 );
 			rt_free( pstrTemp );
 			pstrTemp = RT_NULL;
 		}
@@ -1644,13 +1644,13 @@ void SMS_Process_old( void )
 			strcat( SMS_Service.SMSAtSend, "\"\r\n" );
 
 			rt_kprintf( "\r\n%s", SMS_Service.SMSAtSend );
-			at_write( ( char* )SMS_Service.SMSAtSend );
+			at( ( char* )SMS_Service.SMSAtSend );
 
 			rt_thread_delay( 50 );
 			ContentLen								= strlen( SMS_Service.SMS_sd_Content );
 			SMS_Service.SMS_sd_Content [ContentLen] = 0x1A; // message  end
 			rt_kprintf( "%s", SMS_Service.SMS_sd_Content );
-			at_write( ( char* )SMS_Service.SMS_sd_Content, ContentLen + 1 );
+			at( ( char* )SMS_Service.SMS_sd_Content, ContentLen + 1 );
 		}
 		//#endif
 		SMS_Service.SMS_sendFlag	= 0;                    // clear
@@ -1667,7 +1667,7 @@ void SMS_Process_old( void )
 	   sprintf(SMS_Service.SMSAtSend,"AT+CMGD=0,4\r\n",SMS_Service.SMIndex);
 	   rt_kprintf("%s",SMS_Service.SMSAtSend);
 	   ///
-	   at_write( ( char * )SMS_Service.SMSAtSend );
+	   at( ( char * )SMS_Service.SMSAtSend );
 	   SMS_Service.SMS_delALL=0;
 	   SMS_Service.SMS_waitCounter=3;
 	   }
@@ -1789,7 +1789,7 @@ void SMS_Process( void )
 				memset( SMS_Service.SMSAtSend, 0, sizeof( SMS_Service.SMSAtSend ) );
 				sprintf( SMS_Service.SMSAtSend, "AT+CMGR=%d\r\n", SMS_Service.SMIndex );
 				rt_kprintf( "%s", SMS_Service.SMSAtSend );
-				at_write( ( char* )SMS_Service.SMSAtSend );
+				at( ( char* )SMS_Service.SMSAtSend );
 				SMS_Service.rx_retry++;
 				SMS_Service.tx_state	= SMS_RX_WAITACK;               ///判断是否成功读取
 				rx_tick					= rt_tick_get( );
@@ -1864,7 +1864,7 @@ void SMS_Process( void )
 	   sprintf(SMS_Service.SMSAtSend,"AT+CMGD=0,4\r\n",SMS_Service.SMIndex);
 	   rt_kprintf("%s",SMS_Service.SMSAtSend);
 	   ///
-	   at_write( ( char * )SMS_Service.SMSAtSend );
+	   at( ( char * )SMS_Service.SMSAtSend );
 	   SMS_Service.SMS_delALL=0;
 	   SMS_Service.SMS_waitCounter=3;
 	   }
