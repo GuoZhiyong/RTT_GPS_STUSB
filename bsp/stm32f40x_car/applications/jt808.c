@@ -58,16 +58,16 @@ static struct rt_mailbox	mb_at_tx;
 static uint8_t				mb_at_tx_pool[MB_TTS_POOL_SIZE];
 
 static struct rt_mailbox	mb_tts;
-#define MB_TTS_POOL_SIZE 32
-static uint8_t				mb_tts_pool[MB_TTS_POOL_SIZE];
+#define MB_AT_TX_POOL_SIZE 32
+static uint8_t				mb_tts_pool[MB_AT_TX_POOL_SIZE];
 
 static struct rt_mailbox	mb_voice;
-#define MB_TTS_POOL_SIZE 32
-static uint8_t				mb_voice_pool[MB_TTS_POOL_SIZE];
+#define MB_VOICE_POOL_SIZE 32
+static uint8_t				mb_voice_pool[MB_VOICE_POOL_SIZE];
 
 static struct rt_mailbox	mb_sms;
-#define MB_TTS_POOL_SIZE 32
-static uint8_t				mb_sms_pool[MB_TTS_POOL_SIZE];
+#define MB_SMS_POOL_SIZE 32
+static uint8_t				mb_sms_pool[MB_SMS_POOL_SIZE];
 
 static uint16_t				tx_seq = 0;             /*发送序号*/
 
@@ -1102,13 +1102,13 @@ static void jt808_socket_proc( void )
    %TTS: 0 判断tts状态(怀疑并不是每次都有输出)
    还是AT%TTS? 查询状态
  */
-void jt808_tts_process( void )
+void jt808_tts_proc( void )
 {
 	rt_err_t	ret;
 	rt_size_t	len;
 	uint8_t		*pinfo, *p;
 	uint8_t		c;
-	T_GSM_STATE oldstate;
+	static T_GSM_STATE oldstate;
 
 	char		buf[20];
 	char		tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -1116,7 +1116,7 @@ void jt808_tts_process( void )
 	oldstate = gsmstate( GSM_STATE_GET );
 	if( oldstate != GSM_TCPIP )
 	{
-		if( oldstate != GSM_AT_SEND )
+		if( oldstate != GSM_AT)
 		{
 			return;
 		}
@@ -1208,9 +1208,13 @@ static void rt_thread_entry_jt808( void * parameter )
 /*jt808 socket处理*/
 		jt808_socket_proc( );
 /*tts处理*/
-		jt808_tts_process( );
+		jt808_tts_proc( );
 
 /*at命令处理*/
+
+
+/*短信处理*/
+		SMS_Process();
 
 /*发送信息逐条处理*/
 		iter = list_jt808_tx->first;
@@ -1232,9 +1236,16 @@ static void rt_thread_entry_jt808( void * parameter )
 /*jt808处理线程初始化*/
 void jt808_init( void )
 {
+	sms_init();
+
 	dev_gsm = rt_device_find( "gsm" );
 	rt_mb_init( &mb_gprsrx, "mb_gprs", &mb_gprsrx_pool, MB_GPRSDATA_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
+
 	rt_mb_init( &mb_tts, "mb_tts", &mb_tts_pool, MB_TTS_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
+	rt_mb_init( &mb_tts, "mb_at_tx", &mb_at_tx_pool, MB_AT_TX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
+
+	
+
 
 	rt_thread_init( &thread_jt808,
 	                "jt808",
@@ -1376,6 +1387,33 @@ rt_size_t tts_write( char* info )
 }
 
 FINSH_FUNCTION_EXPORT( tts_write, tts send );
+
+/*
+   发送AT命令
+   如何保证不干扰,其他的执行，传入等待的时间
+
+ */
+rt_size_t at_write( char *sinfo, uint8_t timeout_s )
+{
+	uint8_t		*pmsg;
+	uint16_t	count;
+	count = strlen( sinfo );
+
+	/*直接发送到Mailbox中,内部处理*/
+	pmsg = rt_malloc( count + 2 );
+	if( pmsg != RT_NULL )
+	{
+		*pmsg			= count >> 8;
+		*( pmsg + 1 )	= count & 0xff;
+		memcpy( pmsg + 2, sinfo, count );
+		rt_mb_send( &mb_at_tx, (rt_uint32_t)pmsg );
+		return 0;
+	}
+	return 1;
+}
+
+FINSH_FUNCTION_EXPORT( at_write, write gsm );
+
 
 
 /*

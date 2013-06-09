@@ -77,7 +77,7 @@
 /* SECTION: Console options */
 #define RT_USING_CONSOLE
 /* the buffer size of console*/
-#define RT_CONSOLEBUF_SIZE	1024
+#define RT_CONSOLEBUF_SIZE	2048
 
 /* SECTION: finsh, a C-Express shell */
 #define RT_USING_FINSH//
