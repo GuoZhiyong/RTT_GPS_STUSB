@@ -436,6 +436,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_gps.c</FilePath>
             </File>
+            <File>
+              <FileName>jt808_sms.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_sms.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -510,6 +515,11 @@
               <FileName>rs485.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\rs485.c</FilePath>
+            </File>
+            <File>
+              <FileName>camera.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\camera.c</FilePath>
             </File>
           </Files>
         </Group>
