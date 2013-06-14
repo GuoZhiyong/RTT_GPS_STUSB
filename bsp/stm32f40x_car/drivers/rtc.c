@@ -1,420 +1,215 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #include <rtthread.h>
 #include <stm32f4xx.h>
+#include <finsh.h>
 #include "rtc.h"
 
 
-__IO uint32_t AsynchPrediv = 0, SynchPrediv = 0;
-RTC_TimeTypeDef RTC_TimeStructure;
-RTC_InitTypeDef RTC_InitStructure;
-RTC_DateTypeDef RTC_DateStructure;
-static struct rt_device rtc;
+__IO uint32_t			AsynchPrediv = 0, SynchPrediv = 0;
+RTC_TimeTypeDef			RTC_TimeStructure;
+RTC_InitTypeDef			RTC_InitStructure;
+RTC_DateTypeDef			RTC_DateStructure;
 
-static rt_err_t rt_rtc_open(rt_device_t dev, rt_uint16_t oflag)
+
+#define RTC_CONFIGED_FLAG 0x32f2
+
+#define RTC_CLOCK_SOURCE_LSE /* LSE used as RTC source clock */
+
+
+/* #define RTC_CLOCK_SOURCE_LSI */    /* LSI used as RTC source clock. The RTC Clock
+                                         may varies due to LSI frequency dispersion. */
+
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+RTC_TimeTypeDef		RTC_TimeStructure;
+RTC_InitTypeDef		RTC_InitStructure;
+RTC_AlarmTypeDef	RTC_AlarmStructure;
+
+__IO uint32_t		uwAsynchPrediv	= 0;
+__IO uint32_t		uwSynchPrediv	= 0;
+
+/* Private function prototypes -----------------------------------------------*/
+static ErrorStatus RTC_Config( void )
 {
-    if (dev->rx_indicate != RT_NULL)
-    {
-        /* Open Interrupt */
-    }
+	RTC_DateTypeDef RTC_DateStructure;
+	__IO uint32_t	timeout = 0xC0000;
 
-    return RT_EOK;
-}
+	RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
+	PWR_BackupAccessCmd( ENABLE );
 
-static rt_size_t rt_rtc_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_size_t size)
-{
-    return 0;
-}
+	/* Enable the LSE OSC */
+	RCC_LSEConfig( RCC_LSE_ON );
 
-static rt_err_t rt_rtc_control(rt_device_t dev, rt_uint8_t cmd, void *args)
-{
-    //rt_time_t *time;
-    RT_ASSERT(dev != RT_NULL);
+	/* Wait till LSE is ready */
 
-    switch (cmd)
-    {
-    case RT_DEVICE_CTRL_RTC_GET_TIME:
-       // time = (rt_time_t *)args;
-        /* read device */
-        RTC_GetTime(RTC_Format_BIN, &RTC_TimeStructure);
-        break;
-
-    case RT_DEVICE_CTRL_RTC_SET_TIME:
-    {
-//        time = (rt_time_t *)args;
-
-        /* Enable PWR and BKP clocks */
-        //RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
-        RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
-        /* Allow access to BKP Domain */
-        //PWR_BackupAccessCmd(ENABLE);
-        PWR_BackupAccessCmd(ENABLE);
-        /* Wait until last write operation on RTC registers has finished */
-        //RTC_WaitForLastTask();
-			   RTC_SetTime(RTC_Format_BIN, &RTC_TimeStructure);
-        if(RTC_SetTime(RTC_Format_BIN, &RTC_TimeStructure) == ERROR)
-						{
-							rt_kprintf("\n\r>> !! RTC Set Time failed. !! <<\n\r");
-						} 
-			  else
-						{
-							rt_kprintf("\n\r>> !! RTC Set Time success.~^_^~ !! <<\n\r");
-							RTC_TimeShow();
-						}
-			RTC_WaitForSynchro();
-			
-        /* Change the current time */
-        //RTC_SetCounter(*time);
-
-        /* Wait until last write operation on RTC registers has finished */
-        //RTC_WaitForLastTask();
-
-        RTC_WriteBackupRegister(RTC_BKP_DR0, 0x32F2);
-    }
-    break;
-		case RT_DEVICE_CTRL_RTC_SET_DATE:
+	while( RCC_GetFlagStatus( RCC_FLAG_LSERDY ) == RESET )
+	{
+		if( timeout )
 		{
-			RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE); 
-			PWR_BackupAccessCmd(ENABLE);
-			RTC_SetDate(RTC_Format_BIN, &RTC_DateStructure);
-			if(RTC_SetTime(RTC_Format_BIN, &RTC_TimeStructure) == ERROR)
-						{
-							rt_kprintf("\n\r>> !! RTC Set Date failed. !! <<\n\r");
-						} 
-			  else
-						{
-							rt_kprintf("\n\r>> !! RTC Set Date success.~^_^~ !! <<\n\r");
-							RTC_TimeShow();
-						}
-			RTC_WaitForSynchro();
-    }
-		break;
-    }
+			timeout--;
+		}else
+		{
+			rt_kprintf( "\r\n%s(%d) error\r\n", __func__, __LINE__ );
+			return ERROR;
+		}
+	}
 
-    return RT_EOK;
+	/* Select the RTC Clock Source */
+	RCC_RTCCLKConfig( RCC_RTCCLKSource_LSE );
+	/* ck_spre(1Hz) = RTCCLK(LSE) /(uwAsynchPrediv + 1)*(uwSynchPrediv + 1)*/
+	uwSynchPrediv	= 0xFF;
+	uwAsynchPrediv	= 0x7F;
+
+	/* Enable the RTC Clock */
+	RCC_RTCCLKCmd( ENABLE );
+
+	/* Wait for RTC APB registers synchronisation */
+	if( RTC_WaitForSynchro( ) == SUCCESS )
+	{
+		RTC_InitStructure.RTC_AsynchPrediv	= uwAsynchPrediv;
+		RTC_InitStructure.RTC_SynchPrediv	= uwSynchPrediv;
+		RTC_InitStructure.RTC_HourFormat	= RTC_HourFormat_24;
+		RTC_Init( &RTC_InitStructure );
+
+		/* Set the date: Friday January 11th 2013 */
+		RTC_DateStructure.RTC_Year		= 0x13;
+		RTC_DateStructure.RTC_Month		= RTC_Month_January;
+		RTC_DateStructure.RTC_Date		= 0x11;
+		RTC_DateStructure.RTC_WeekDay	= RTC_Weekday_Saturday;
+		RTC_SetDate( RTC_Format_BCD, &RTC_DateStructure );
+
+		/* Set the time to 05h 20mn 00s AM */
+		RTC_TimeStructure.RTC_H12		= RTC_H12_AM;
+		RTC_TimeStructure.RTC_Hours		= 0x05;
+		RTC_TimeStructure.RTC_Minutes	= 0x20;
+		RTC_TimeStructure.RTC_Seconds	= 0x00;
+
+		RTC_SetTime( RTC_Format_BCD, &RTC_TimeStructure );
+
+		/* Indicator for the RTC configuration */
+		RTC_WriteBackupRegister( RTC_BKP_DR0, RTC_CONFIGED_FLAG );
+		return SUCCESS;
+	}else
+	{
+		rt_kprintf( "\r\n%s(%d) error\r\n", __func__, __LINE__ );
+		return ERROR;
+	}
 }
 
-
-/*******************************************************************************
-* Function Name  : RTC_Configuration
-* Description    : Configures the RTC.
-* Input          : None
-* Output         : None
-* Return         : 0 reday,-1 error.
-*******************************************************************************/
-int RTC_Config(void)
+/**
+ * @brief  Display the current time.
+ * @param  None
+ * @retval None
+ */
+void datetime( void )
 {
-    u32 count=0x200000;
-  /* Enable the PWR clock */
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
-
-  /* Allow access to RTC */
-  PWR_BackupAccessCmd(ENABLE);
-    
-  RCC_LSEConfig(RCC_LSE_ON);
-
-  /* Wait till LSE is ready */  
-  while(RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET && (--count) );
-  if ( count == 0 )
-    {
-        return -1;
-    }
-
-  /* Select the RTC Clock Source */
-  RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
-  
-  SynchPrediv = 0xFF;
-  AsynchPrediv = 0x7F;
-  
-  /* Enable the RTC Clock */
-  RCC_RTCCLKCmd(ENABLE);
-
-  /* Wait for RTC APB registers synchronisation */
-  RTC_WaitForSynchro();
-  return 0;
-}
-/***********************************************RTC注册******************************************************/
-void rt_hw_rtc_init(void)
-{
-    rtc.type	= RT_Device_Class_RTC;
-
-    if (RTC_ReadBackupRegister(RTC_BKP_DR0) != 0x32F2)
-			{
-						rt_kprintf("rtc is not configured\n");
-						//rt_kprintf("please configure with set_date and set_time\n");
-		/**************************************************************RTC First	Init****************************/	
-						 RTC_Config();
-					if ( RTC_Config() != 0)
-						{
-								rt_kprintf("rtc configure fail...\r\n");
-								return ;
-						}
-					else
-					{
-						/* Configure the RTC data register and RTC prescaler */
-							RTC_InitStructure.RTC_AsynchPrediv = AsynchPrediv;
-							RTC_InitStructure.RTC_SynchPrediv = SynchPrediv;
-							RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;
-			 
-							/* Check on RTC init */
-							if (RTC_Init(&RTC_InitStructure) == ERROR)
-							{
-								rt_kprintf("\n\r  /!\\***** RTC Prescaler Config failed ********/!\\ \n\r");
-							}			
-					 }
-			rt_kprintf("NOW  set  Arbitrary initial time 11:11:11\n");	
-      RTC_TimeStructure.RTC_Hours = 11;
-      RTC_TimeStructure.RTC_Minutes = 11;
-      RTC_TimeStructure.RTC_Seconds = 11;					 
-			}
-    else
-			{
-					/* Wait for RTC registers synchronization */
-					RTC_WaitForSynchro();
-			}
-
-    /* register rtc device */
-    rtc.init 	= RT_NULL;
-    rtc.open 	= rt_rtc_open;
-    rtc.close	= RT_NULL;
-    rtc.read 	= rt_rtc_read;
-    rtc.write	= RT_NULL;
-    rtc.control = rt_rtc_control;
-
-    /* no private */
-    //rtc.user_data = RT_NULL;
-
-    rt_device_register(&rtc, "rtc", RT_DEVICE_FLAG_RDWR);
-#ifdef RT_USING_FINSH
-	//RTC_TimeShow();
-#endif
-
-    return;
+	/* Get the current Time */
+	RTC_GetTime( RTC_Format_BCD, &RTC_TimeStructure );
+	RTC_GetDate(RTC_Format_BCD,&RTC_DateStructure);
+	/* Display time Format : hh:mm:ss */
+	rt_kprintf( "\r\nRTC=%02d-%02d-%02d %02d:%02d:%02d",\
+		RTC_DateStructure.RTC_Year,\
+		RTC_DateStructure.RTC_Month,\
+		RTC_DateStructure.RTC_Date,\
+		RTC_TimeStructure.RTC_Hours,\
+		RTC_TimeStructure.RTC_Minutes,\
+		RTC_TimeStructure.RTC_Seconds );
 }
 
-void RTC_TimeShow(void)
+FINSH_FUNCTION_EXPORT(datetime,show time);
+
+/*设置时间*/
+void time_set(uint8_t hour,uint8_t min,uint8_t sec)
 {
-  /* Get the current Time */
-	//RTC_GetDate(RTC_Format_BIN, &RTC_DateStructure);
-  RTC_GetTime(RTC_Format_BIN, &RTC_TimeStructure);
-  rt_kprintf("\n\r  The current time is :  %0.2d:%0.2d:%0.2d\n\r", RTC_TimeStructure.RTC_Hours, RTC_TimeStructure.RTC_Minutes, RTC_TimeStructure.RTC_Seconds);
-	RTC_GetDate(RTC_Format_BIN,  &RTC_DateStructure);
-	rt_kprintf("\n\r  The current Date is :  20%0.2d-%0.2d-%0.2d\n\r", RTC_DateStructure.RTC_Year, RTC_DateStructure.RTC_Month, RTC_DateStructure.RTC_Date);
-	//rt_kprintf("xiao,xiao");
-}
-
-/**********************************************************可调用标准函数接口*****************************************/
-
-void set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
-{
-	 rt_device_t device;
-
-    RTC_TimeStructure.RTC_Hours = hour;
-    RTC_TimeStructure.RTC_Minutes 	= minute;
-    RTC_TimeStructure.RTC_Seconds 	= second;
-    
-  
-    device = rt_device_find("rtc");
-    if (device != RT_NULL)
-    {
-        rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_TIME, &RTC_TimeStructure);
-    }
-}
-
-void set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t date)
-{
-	 
-	  rt_device_t device;
-
-    RTC_DateStructure.RTC_Year = year;
-    RTC_DateStructure.RTC_Month 	= month;
-    RTC_DateStructure.RTC_Date 	= date;
-    
-  
-    device = rt_device_find("rtc");
-    if (device != RT_NULL)
-    {
-        rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_DATE, &RTC_TimeStructure);
-    }
+	RTC_TimeStructure.RTC_H12	  = RTC_H12_AM;
+	RTC_TimeStructure.RTC_Hours   = hour;
+	RTC_TimeStructure.RTC_Minutes = min;
+	RTC_TimeStructure.RTC_Seconds = sec; 
 	
+	RTC_SetTime(RTC_Format_BCD, &RTC_TimeStructure);  
+}
+FINSH_FUNCTION_EXPORT(time_set,set time);
+
+
+/*设置日期*/
+void date_set(uint8_t year,uint8_t month,uint8_t day)
+{
+	RTC_DateStructure.RTC_Year   = year;
+	RTC_DateStructure.RTC_Month = month;
+	RTC_DateStructure.RTC_Date = day; 
+	
+	RTC_SetDate(RTC_Format_BCD, &RTC_DateStructure);  
+}
+FINSH_FUNCTION_EXPORT(date_set,set date);
+
+
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+rt_err_t rtc_init(void )
+{
+	if( RTC_ReadBackupRegister( RTC_BKP_DR0 ) != RTC_CONFIGED_FLAG )
+	{
+		rt_kprintf( "\r\n not config 0x32F2\r\n" );
+		/* RTC configuration	*/
+		if( RTC_Config( ) == ERROR )
+		{
+			rt_kprintf( "\r\n%s(%d) RTC error\r\n", __func__, __LINE__ );
+			goto lbl_rtc_err;
+		}
+		/* Display the RTC Time and Alarm */
+		datetime( );
+		rt_kprintf("\r\n RTC OK\r\n");
+		goto lbl_rtc_ok;
+	}else
+	{
+		rt_kprintf( "\r\n wait ForSynchro\r\n" );
+
+		/* Enable the PWR clock */
+		RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
+
+		/* Allow access to RTC */
+		PWR_BackupAccessCmd( ENABLE );
+
+		/* Wait for RTC APB registers synchronisation */
+		if( RTC_WaitForSynchro( ) == SUCCESS )
+		{
+			datetime( );
+			rt_kprintf("\r\n RTC OK\r\n");
+			goto lbl_rtc_ok;
+		}else
+		{
+			rt_kprintf( "\r\n%s(%d) error\r\n", __func__, __LINE__ );
+			goto lbl_rtc_err;
+		}
+	}
+lbl_rtc_err:
+	return 1;
+lbl_rtc_ok:
+	return 0;
 }
 
 
-/*****************************************************串口时间设置****************************************************/
-// void RTC_TimeRegulate(void)
-// {
-//   uint32_t tmp_hh = 0xFF, tmp_mm = 0xFF, tmp_ss = 0xFF;
-//   /*uint32_t tmp_yy=0xFF,  tmp_month = 0xFF, tmp_date = 0xFF;*/
-//   printf("\n\r==============Time Settings=====================================\n\r");
-//   RTC_TimeStructure.RTC_H12     = RTC_H12_AM;
-//   printf("  Please Set Hours:\n\r");
-//   while (tmp_hh == 0xFF)
-//   {
-//     tmp_hh = USART_Scanf(23);
-//     RTC_TimeStructure.RTC_Hours = tmp_hh;
-//   }
-//   printf("  %0.2d\n\r", tmp_hh);
-//   
-//   printf("  Please Set Minutes:\n\r");
-//   while (tmp_mm == 0xFF)
-//   {
-//     tmp_mm = USART_Scanf(59);
-//     RTC_TimeStructure.RTC_Minutes = tmp_mm;
-//   }
-//   printf("  %0.2d\n\r", tmp_mm);
-//   
-//   printf("  Please Set Seconds:\n\r");
-//   while (tmp_ss == 0xFF)
-//   {
-//     tmp_ss = USART_Scanf(59);
-//     RTC_TimeStructure.RTC_Seconds = tmp_ss;
-// 		Temp_second = tmp_ss;
-//   }
-//   printf("  %0.2d\n\r", tmp_ss);
-
-//   /* Configure the RTC time register */
-//   if(RTC_SetTime(RTC_Format_BIN, &RTC_TimeStructure) == ERROR)
-//   {
-//     printf("\n\r>> !! RTC Set Time failed. !! <<\n\r");
-//   } 
-//   else
-//   {
-//     printf("\n\r>> !! RTC Set Time success. !! <<\n\r");
-//     RTC_TimeShow();
-//     /* Indicator for the RTC configuration */
-//     RTC_WriteBackupRegister(RTC_BKP_DR0, 0x32F2);
-//   }
-
-// // 	/***************************************************xiao日期****************************************/
-// // 	  printf("\n\r==============Date Settings=====================================\n\r");
-// //   //RTC_TimeStructure.RTC_H12     = RTC_H12_AM;
-// //   printf("  Please Set yy:\n\r");
-// //   while (tmp_yy == 0xFF)
-// //   {
-// //     tmp_yy = USART_Scanf(99);
-// //     RTC_DateStructure.RTC_Year = tmp_yy;
-// //   }
-// //   printf("  %0.2d\n\r", tmp_yy);
-// //   
-// //   printf("  Please Set Month:\n\r");
-// //   while (tmp_month == 0xFF)
-// //   {
-// //     tmp_month = USART_Scanf(12);
-// //     RTC_DateStructure.RTC_Month = tmp_month;
-// //   }
-// //   printf("  %0.2d\n\r", tmp_month);
-// //   
-// //   printf("  Please Set Date:\n\r");
-// //   while (tmp_date == 0xFF)
-// //   {
-// //     tmp_date = USART_Scanf(31);
-// //     RTC_DateStructure.RTC_Date = tmp_date;
-// // 		//Temp_second = tmp_ss;
-// //   }
-// //   printf("  %0.2d\n\r", tmp_date);
-
-// //   /* Configure the RTC time register */
-// //   if(RTC_SetDate(RTC_Format_BIN, &RTC_DateStructure) == ERROR)
-// //   {
-// //     printf("\n\r>> !! RTC Set Date failed. !! <<\n\r");
-// //   } 
-// //   else
-// //   {
-// //     printf("\n\r>> !! RTC Set Date success. !! <<\n\r");
-// //     RTC_TimeShow();
-// //     /* Indicator for the RTC configuration */
-// //     RTC_WriteBackupRegister(RTC_BKP_DR0, 0x32F2);
-// //   }
-// // /***************************************************xiao日期****************************************/
-
-// }
-// /********************************************rtc显示相关********************************************************************/
-// /* #ifdef RT_USING_FINSH
-// #include <finsh.h>
-// #include <time.h>
-// time_t time(time_t* t)
-// {
-//     rt_device_t device;
-//     time_t time;
-
-//     device = rt_device_find("rtc");
-//     if (device != RT_NULL)
-//     {
-//         rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
-//         if (t != RT_NULL) *t = time;
-//     }
-
-//     return time;
-// }
-
-// void set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day)
-// {
-//     time_t now;
-//     struct tm* ti;
-//     rt_device_t device;
-
-//     ti = RT_NULL;
-//     // get current time 
-//     time(&now);
-
-//     ti = localtime(&now);
-//     if (ti != RT_NULL)
-//     {
-//         ti->tm_year = year - 1900;
-//         ti->tm_mon 	= month - 1; // ti->tm_mon 	= month; 0~11 
-//         ti->tm_mday = day;
-//     }
-
-//     now = mktime(ti);
-
-//     device = rt_device_find("rtc");
-//     if (device != RT_NULL)
-//     {
-//         rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_TIME, &now);
-//     }
-// }
-// FINSH_FUNCTION_EXPORT(set_date, set date. e.g: set_date(2010,2,28))
-
-// void set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
-// {
-//     time_t now;
-//     struct tm* ti;
-//     rt_device_t device;
-
-//     ti = RT_NULL;
-//    
-//     time(&now);
-
-//     ti = localtime(&now);
-//     if (ti != RT_NULL)
-//     {
-//         ti->tm_hour = hour;
-//         ti->tm_min 	= minute;
-//         ti->tm_sec 	= second;
-//     }
-
-//     now = mktime(ti);
-//     device = rt_device_find("rtc");
-//     if (device != RT_NULL)
-//     {
-//         rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_TIME, &now);
-//     }
-// }
-// FINSH_FUNCTION_EXPORT(set_time, set time. e.g: set_time(23,59,59))
-
-// void list_date(void)
-// {
-//     time_t now;
-
-//     time(&now);
-//     rt_kprintf("%s\n", ctime(&now));
-// }
-// FINSH_FUNCTION_EXPORT(list_date, show date and time.)
-// #endif */
 
 
 
-
-
-
-
-
-	
+/************************************** The End Of File **************************************/

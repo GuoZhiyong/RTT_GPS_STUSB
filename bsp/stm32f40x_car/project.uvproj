@@ -343,7 +343,7 @@
             <PlainCh>0</PlainCh>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
-            <wLevel>0</wLevel>
+            <wLevel>2</wLevel>
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <VariousControls>
@@ -436,6 +436,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_gps.c</FilePath>
             </File>
+            <File>
+              <FileName>jt808_sms.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_sms.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -510,6 +515,16 @@
               <FileName>rs485.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\rs485.c</FilePath>
+            </File>
+            <File>
+              <FileName>camera.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\camera.c</FilePath>
+            </File>
+            <File>
+              <FileName>rtc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\rtc.c</FilePath>
             </File>
           </Files>
         </Group>
