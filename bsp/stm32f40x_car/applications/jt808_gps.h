@@ -13,8 +13,8 @@ typedef __packed struct _gps_baseinfo
 	uint32_t latitude; /*纬度*/
 	uint32_t longitude;/*精度*/
 	uint16_t altitude;
-	uint16_t speed;
-	uint16_t direction;
+	uint16_t spd;			/*对地速度*/
+	uint16_t cog;			/*对地角度*/
 	uint8_t datetime[6];
 }GPS_BASEINFO;
 
@@ -33,6 +33,7 @@ typedef  struct  _gps_status
    enum BDGPS_MODE   Position_Moule_Status;  /* 1: BD   2:  GPS   3: BD+GPS    定位模块的状态*/
    uint8_t  Antenna_Flag;//显示提示开路 
    uint8_t  Raw_Output;   //  原始数据输出  
+   uint8_t	NoSV;
 }GPS_STATUS;
 
 extern GPS_STATUS	gps_status;

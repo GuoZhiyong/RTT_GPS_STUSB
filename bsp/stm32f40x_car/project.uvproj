@@ -521,6 +521,11 @@
               <FileType>1</FileType>
               <FilePath>.\drivers\camera.c</FilePath>
             </File>
+            <File>
+              <FileName>rtc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\rtc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

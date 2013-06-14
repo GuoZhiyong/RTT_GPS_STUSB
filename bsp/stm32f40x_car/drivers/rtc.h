@@ -9,12 +9,13 @@
 #include "stm32f4xx_usart.h"
 
 
-void RTC_TimeShow(void);
-void rt_hw_rtc_init(void);
-void set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second);
-void set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t date);
+
 #include <time.h>
 
-/*time_t time(time_t* t);
- */
+
+rt_err_t rtc_init(void);
+void time_set(uint8_t hour,uint8_t min,uint8_t sec);
+void date_set(uint8_t year,uint8_t month,uint8_t day);
+
+
 #endif
