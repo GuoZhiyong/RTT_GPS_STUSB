@@ -1004,6 +1004,9 @@ void cb_socket_state( uint8_t linkno, T_SOCKET_STATE new_state )
 static void jt808_socket_proc( void )
 {
 	T_GSM_STATE state;
+	static rt_tick_t server_heartbeat_tick=0;
+	static rt_tick_t auth_heartbeat_tick=0;
+	
 
 /*检查是否允许gsm工作*/
 	if( connect_state.disable_connect )
@@ -1064,8 +1067,25 @@ static void jt808_socket_proc( void )
 			}
 		}
 
-		/*808服务器没有连接成功，就不连IC卡服务器*/
-		if( connect_state.server_state != CONNECTED )
+		
+		if( connect_state.server_state == CONNECTED )/*链路维护心跳包*/
+		{
+			
+			if(server_heartbeat_tick)
+			{
+				/*要发送心跳包*/
+				if((rt_tick_get()-server_heartbeat_tick)>=(jt808_param.id_0x0001*RT_TICK_PER_SECOND))
+				{
+					
+
+				}
+			}
+			else
+			{
+				server_heartbeat_tick=rt_tick_get();/*首次用保留当前时刻*/
+			}
+		}
+		else	/*808服务器没有连接成功，就不连IC卡服务器*/
 		{
 			return;
 		}
@@ -1290,6 +1310,8 @@ void jt808_init( void )
 	rt_mb_init( &mb_tts, "mb_tts", &mb_tts_pool, MB_TTS_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 
 	rt_mb_init( &mb_at_tx, "mb_at_tx", &mb_at_tx_pool, MB_AT_TX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
+
+	
 
 	rt_thread_init( &thread_jt808,
 	                "jt808",

@@ -23,5 +23,12 @@ typedef struct _vdrcmd
 	uint16_t	blocks;         /*最大单位数据块个数*/
 }VDRCMD;
 
+
+void vdr_rx(void);
+
+
+
+
+
 #endif
 /************************************** The End Of File **************************************/
