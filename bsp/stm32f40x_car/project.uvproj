@@ -446,6 +446,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\vdr.c</FilePath>
             </File>
+            <File>
+              <FileName>jt808_auxio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_auxio.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

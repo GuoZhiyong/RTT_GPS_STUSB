@@ -27,6 +27,8 @@
 
 #include "jt808_param.h"
 #include "jt808_sms.h"
+#include "jt808_gps.h"
+
 #pragma diag_error 223
 
 #define ByteSwap2( val )    \
@@ -309,7 +311,7 @@ void jt808_tx_response( uint8_t linkno, uint8_t *pmsg )
 /*
    消息发送超时
  */
-static rt_err_t jt808_tx_timeout( JT808_TX_MSG_NODEDATA * nodedata )
+static rt_err_t jt808_tx_timeout( JT808_TX_NODEDATA * nodedata )
 {
 	rt_kprintf( "tx timeout\r\n" );
 }
@@ -320,9 +322,9 @@ static rt_err_t jt808_tx_timeout( JT808_TX_MSG_NODEDATA * nodedata )
 static rt_err_t jt808_add_tx_data( uint8_t linkno, JT808_MSG_TYPE type, uint16_t id, uint8_t *pinfo, uint16_t len )
 {
 	uint8_t					* pdata;
-	JT808_TX_MSG_NODEDATA	* pnodedata;
+	JT808_TX_NODEDATA	* pnodedata;
 
-	pnodedata = rt_malloc( sizeof( JT808_TX_MSG_NODEDATA ) );
+	pnodedata = rt_malloc( sizeof( JT808_TX_NODEDATA ) );
 	if( pnodedata == NULL )
 	{
 		return -RT_ERROR;
@@ -348,18 +350,40 @@ static rt_err_t jt808_add_tx_data( uint8_t linkno, JT808_MSG_TYPE type, uint16_t
 	tx_seq++;
 }
 
+/*向808协议添加消息头*/
+rt_err_t jt808_add_msg_head(uint8_t *p,uint16_t id,uint16_t attr)
+{
+	uint8_t *psrc=p;
+	*psrc++=(id>>8);
+	*psrc++=(id&0xff);
+	*psrc++=(attr>>8);
+	*psrc++=(attr&0xff);
+	memcpy(psrc,term_param.mobile,6);
+	psrc+=6;
+	*psrc++=(tx_seq>>8);
+	*psrc++=(tx_seq&0xff);
+}
+
+/*这个没用，纯粹好看*/
+rt_err_t jt808_add_msg_body(uint8_t *pdst,uint8_t *psrc,uint16_t len)
+{
+	memcpy(pdst,psrc,len);
+}
+
+
+
 /*
    终端通用应答
  */
 static rt_err_t jt808_tx_0x0001( uint8_t linkno, uint16_t seq, uint16_t id, uint8_t res )
 {
 	uint8_t					* pdata;
-	JT808_TX_MSG_NODEDATA	* pnodedata;
+	JT808_TX_NODEDATA	* pnodedata;
 	uint8_t					buf [256];
 	uint8_t					* p;
 	uint16_t				len;
 
-	pnodedata = rt_malloc( sizeof( JT808_TX_MSG_NODEDATA ) );
+	pnodedata = rt_malloc( sizeof( JT808_TX_NODEDATA ) );
 	if( pnodedata == NULL )
 	{
 		return -RT_ERROR;
@@ -370,14 +394,21 @@ static rt_err_t jt808_tx_0x0001( uint8_t linkno, uint16_t seq, uint16_t id, uint
 	pnodedata->cb_tx_timeout	= jt808_tx_timeout;
 	pnodedata->cb_tx_response	= jt808_tx_response;
 
-	len		= jt808_pack( buf, "%w%6s%w%w%w%b", 0x0001, term_param.mobile, tx_seq, seq, id, res );
-	pdata	= rt_malloc( len );
+	pdata=rt_malloc(5+12);
 	if( pdata == NULL )
 	{
 		rt_free( pnodedata );
 		return -RT_ERROR;
 	}
-	memcpy( pdata, buf, len );
+	
+	jt808_add_msg_head(pdata,0x0001,0x0005);
+	p=pdata+12;
+	*p++=(seq>>8);
+	*p++=(seq&0xff);
+	*p++=(id>>8);
+	*p++=(id&0xff);
+	*p=res;
+
 	pnodedata->msg_len	= len;
 	pnodedata->pmsg		= pdata;
 	msglist_append( list_jt808_tx, pnodedata );
@@ -390,7 +421,7 @@ static rt_err_t jt808_tx_0x0001( uint8_t linkno, uint16_t seq, uint16_t id, uint
 static int handle_rx_0x8001( uint8_t linkno, uint8_t *pmsg )
 {
 	MsgListNode				* iter;
-	JT808_TX_MSG_NODEDATA	* iterdata;
+	JT808_TX_NODEDATA	* iterdata;
 
 	uint16_t				id;
 	uint16_t				seq;
@@ -402,7 +433,7 @@ static int handle_rx_0x8001( uint8_t linkno, uint8_t *pmsg )
 
 	/*单条处理*/
 	iter		= list_jt808_tx->first;
-	iterdata	= (JT808_TX_MSG_NODEDATA*)iter->data;
+	iterdata	= (JT808_TX_NODEDATA*)iter->data;
 	if( ( iterdata->head_id == id ) && ( iterdata->head_sn == seq ) )
 	{
 		iterdata->cb_tx_response( linkno, pmsg ); /*应答处理函数*/
@@ -419,7 +450,7 @@ static int handle_rx_0x8003( uint8_t linkno, uint8_t *pmsg )
 static int handle_rx_0x8100( uint8_t linkno, uint8_t *pmsg )
 {
 	MsgListNode				* iter;
-	JT808_TX_MSG_NODEDATA	* iterdata;
+	JT808_TX_NODEDATA	* iterdata;
 
 	uint16_t				body_len; /*消息体长度*/
 	uint16_t				ack_seq;
@@ -903,7 +934,7 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 static MsgListRet jt808_tx_proc( MsgListNode * node )
 {
 	MsgListNode				* pnode		= ( MsgListNode* )node;
-	JT808_TX_MSG_NODEDATA	* pnodedata = ( JT808_TX_MSG_NODEDATA* )( pnode->data );
+	JT808_TX_NODEDATA	* pnodedata = ( JT808_TX_NODEDATA* )( pnode->data );
 	int						i;
 	rt_err_t				ret;
 
@@ -1245,10 +1276,12 @@ static void rt_thread_entry_jt808( void * parameter )
 	uint8_t					* pstr;
 
 	MsgListNode				* iter;
-	JT808_TX_MSG_NODEDATA	* pnodedata;
+	JT808_TX_NODEDATA	* pnodedata;
 
 	int						j = 0xaabbccdd;
 
+	jt808_gps_init();
+	
 	rt_kprintf( "\r\n1.id0=%08x\r\n", param_get_int( 0x0000 ) );
 
 	param_put_int( 0x000, j );
@@ -1287,7 +1320,7 @@ static void rt_thread_entry_jt808( void * parameter )
 
 		if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )  /*删除该节点*/
 		{
-			pnodedata = ( JT808_TX_MSG_NODEDATA* )( iter->data );
+			pnodedata = ( JT808_TX_NODEDATA* )( iter->data );
 			rt_free( pnodedata->pmsg );                         /*删除用户数据*/
 			rt_free( pnodedata );                               /*删除节点数据*/
 			list_jt808_tx->first = iter->next;                  /*指向下一个*/
@@ -1351,13 +1384,13 @@ rt_err_t gprs_rx( uint8_t linkno, uint8_t * pinfo, uint16_t length )
 static rt_err_t demo_jt808_tx( void )
 {
 	uint8_t					* pdata;
-	JT808_TX_MSG_NODEDATA	* pnodedata;
+	JT808_TX_NODEDATA	* pnodedata;
 	uint8_t					buf [256];
 	uint16_t				len;
 	uint8_t					fcs = 0;
 	int						i;
 /*准备要发送的数据*/
-	pnodedata = rt_malloc( sizeof( JT808_TX_MSG_NODEDATA ) );
+	pnodedata = rt_malloc( sizeof( JT808_TX_NODEDATA ) );
 	if( pnodedata == NULL )
 	{
 		return -1;

@@ -273,7 +273,7 @@ typedef __packed struct _jt808_tx_msg_nodedata_old
 }JT808_TX_MSG_NODEDATA_OLD;
 #endif
 
-typedef __packed struct _jt808_tx_msg_nodedata
+typedef __packed struct _jt808_tx_nodedata
 {
 /*发送机制相关*/
 	uint8_t			linkno;                                                             /*传输使用的link,包括了协议和远端socket*/
@@ -285,7 +285,7 @@ typedef __packed struct _jt808_tx_msg_nodedata
 	uint32_t		timeout;                                                            /*超时时间*/
 	uint32_t		tick;                                                               /*发送时间*/
 /*接收的处理判断相关*/
-	void ( *cb_tx_timeout )( struct _jt808_tx_msg_nodedata *pnodedata );                /*发送超时的处理函数*/
+	void ( *cb_tx_timeout )( __packed struct _jt808_tx_nodedata * thiz );                /*发送超时的处理函数*/
 	void ( *cb_tx_response )( uint8_t linkno, uint8_t *pmsg );                          /*收到中心应答的处理函数*/
 	uint16_t	head_id;                                                                /*消息ID*/
 	uint16_t	head_sn;                                                                /*消息流水号*/
@@ -295,23 +295,24 @@ typedef __packed struct _jt808_tx_msg_nodedata
 	uint8_t		*pmsg;                                                                  /*原始信息,需要在发送时转义,因为多包发送时得到的是原始信息。
 	                                                                                            ，包括808转义和M66的HEX转义，这样，减少RAM使用*/
 /*多包发送的处理*/
-	uint8_t		stage;                                                                  /*阶段*/
-	uint16_t	packet_num;                                                             /*总包数*/
-	uint16_t	packet_no;                                                              /*当前包数*/
-	uint32_t	size;                                                                   /*总得数据大小*/
+	/*
+	提供一个void * 交由用户自己控制
+	uint8_t		stage;                                                                  //阶段
+	uint16_t	packet_num;                                                             //*总包数
+	uint16_t	packet_no;                                                              //*当前包数
+	uint32_t	size;                                                                   //*总得数据大小
 	uint32_t	media_id;
 	uint16_t	seq;
-	/*
 	提供一个发送列表数组，按序号表示发送的状态，同时便于将来补传
 	packet_num指定数组大小，packet_no指示当前要发送的ID
 	*/
-	void *		user_data;
-	void (*init )( uint8_t id, ... );
-	//int ( *get_data )( uint32_t id, uint32_t seq, uint8_t *pmsgout, uint16_t *len );    /*获取要发送的信息*/
+	void *user_data;
+	int ( *get_data )( __packed struct _jt808_tx_nodedata * thiz);    /*获取要发送的信息*/
 	
-}JT808_TX_MSG_NODEDATA;
+}JT808_TX_NODEDATA;
 
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
+rt_err_t jt808_add_msg_head(uint8_t *p,uint16_t id,uint16_t attr);
 
 
 #endif

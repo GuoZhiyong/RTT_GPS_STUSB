@@ -5,6 +5,17 @@
 #include "stm32f4xx.h"
 
 
+#define BIT_STATUS_ACC	0x01
+#define BIT_STATUS_GPS	0x02
+#define BIT_STATUS_NS	0x04
+#define BIT_STATUS_EW	0x08
+
+
+
+#define BIT_ALARM_EMG	0x01
+
+
+
 /*基本位置信息,因为字节对齐的方式，还是使用数组方便*/
 typedef __packed struct _gps_baseinfo
 {
@@ -37,11 +48,15 @@ typedef  struct  _gps_status
 }GPS_STATUS;
 
 extern GPS_STATUS	gps_status;
+
 extern GPS_BASEINFO gps_baseinfo;
 
-
+/*告警和状态信息*/
+extern uint32_t		jt808_alarm;
+extern uint32_t		jt808_status;
 
 void gps_rx( uint8_t * pinfo, uint16_t length );
+void jt808_gps_init( void );
 
 
 

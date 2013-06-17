@@ -108,6 +108,9 @@ static ErrorStatus RTC_Config( void )
 	}
 }
 
+
+
+
 /**
  * @brief  Display the current time.
  * @param  None
@@ -116,8 +119,8 @@ static ErrorStatus RTC_Config( void )
 void datetime( void )
 {
 	/* Get the current Time */
-	RTC_GetTime( RTC_Format_BCD, &RTC_TimeStructure );
-	RTC_GetDate(RTC_Format_BCD,&RTC_DateStructure);
+	RTC_GetTime( RTC_Format_BIN, &RTC_TimeStructure );
+	RTC_GetDate(RTC_Format_BIN,&RTC_DateStructure);
 	/* Display time Format : hh:mm:ss */
 	rt_kprintf( "\r\nRTC=%02d-%02d-%02d %02d:%02d:%02d",\
 		RTC_DateStructure.RTC_Year,\
@@ -208,8 +211,58 @@ lbl_rtc_ok:
 	return 0;
 }
 
+/*
+返回系统的时间戳
+为了避免频繁计算
+调用间隔小于10s的直接给累加上去
 
 
+*/
+
+
+unsigned long timestamp(void)
+{
+	RTC_TimeTypeDef ts;
+	RTC_DateTypeDef ds;
+	unsigned int year,mon,day;
+	unsigned int hour,min, sec;
+
+	static rt_time_t	last_get_tick=0;
+	static unsigned long last_ts=0;
+
+	__IO int32_t delta;
+	delta=rt_tick_get()-last_get_tick;
+
+	if(delta<RT_TICK_PER_SECOND*10)
+	{
+		return last_ts+delta/RT_TICK_PER_SECOND;
+
+	}
+	
+	RTC_GetTime( RTC_Format_BIN, &ts );
+	RTC_GetDate(RTC_Format_BIN,&ds);
+	year=ds.RTC_Year+2000;
+	mon=ds.RTC_Month;
+	day=ds.RTC_Date;
+	hour=ts.RTC_Hours;
+	min=ts.RTC_Minutes;
+	sec=ts.RTC_Seconds;
+	if( 0 >= (int)( mon-= 2 ) )    /**//* 1..12 -> 11,12,1..10 */
+	{
+		mon		+= 12;              /**//* Puts Feb last since it has leap day */
+		year	-= 1;
+	}
+
+	last_get_tick=rt_tick_get();
+	last_ts= ( ( ( (unsigned long)( year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day ) +
+	               year * 365 - 719499
+	               ) * 24 + hour    /**//* now have hours */
+	           ) * 60 + min         /**//* now have minutes */
+	         ) * 60 + sec;   
+
+	return last_ts;
+}
+FINSH_FUNCTION_EXPORT(timestamp,get timestamp);
 
 
 /************************************** The End Of File **************************************/

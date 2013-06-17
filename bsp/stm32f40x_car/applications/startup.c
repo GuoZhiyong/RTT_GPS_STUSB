@@ -109,6 +109,7 @@ void rtthread_startup(void)
 	/* init application */
 	sst25_init(); /*在此初始化,gsm才能读取参数，放在app_thread中不会先执行*/
 	rtc_init();
+	timestamp();
 	rt_application_init();
 	RS485_init();
 	gps_init();

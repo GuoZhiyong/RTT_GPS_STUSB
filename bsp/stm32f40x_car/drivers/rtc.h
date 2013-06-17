@@ -16,6 +16,8 @@
 rt_err_t rtc_init(void);
 void time_set(uint8_t hour,uint8_t min,uint8_t sec);
 void date_set(uint8_t year,uint8_t month,uint8_t day);
+void datetime( void ); /*返回当前的时间戳*/
+unsigned long timestamp(void);
 
 
 #endif
