@@ -441,6 +441,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_sms.c</FilePath>
             </File>
+            <File>
+              <FileName>vdr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\vdr.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -11,7 +11,7 @@
 
 #include <time.h>
 
-#include "sst25vf.h"
+#include "sst25.h"
 
 #include "vdr.h"
 
@@ -41,8 +41,12 @@ struct _sect_info
 	{ 0x0033E000, 256,	16	},  //block 15          133Bytes	10block		0x1000	4k		0x 1000
 };
 
+#define VDR_08H_09H_START	0x300000
+#define VDR_08H_09H_END		0x32FFFF
+
 #define VDR_08H_START	0x300000
 #define VDR_08H_END		0x32FFFF
+
 
 #define VDR_09H_START	0x300000
 #define VDR_09H_END		0x32FFFF
@@ -111,25 +115,7 @@ static uint8_t		fvdr_debug = 1;
 static uint8_t file_rec[32];
 
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void  SST25V_BufferRead( u8* pBuffer, u32 ReadAddr, u16 NumByteToRead )
-{
-	u32 i = 0;
-	for( i = 0; i < NumByteToRead; i++ )
-	{
-		*pBuffer = SST25V_ByteRead( ( (u32)ReadAddr + i ) );
-		pBuffer++;
-	}
-	DF_delay_ms( 5 );
-}
+
 
 /***********************************************************
 * Function:
@@ -225,7 +211,7 @@ static void decompress_data( uint8_t *src, uint8_t *dst )
 	}
 }
 
-#if 1
+#if 0
 
 
 /***********************************************************
@@ -928,7 +914,7 @@ static uint8_t vdr_get_15h( void )
    接收vdr命令,天津平台看到有粘包的情况
    通过 Recoder_obj 返回
  */
-uint8_t vdr_rx( uint8_t * info, uint16_t count )
+uint8_t vdr_rx1( uint8_t * info, uint16_t count )
 {
 	uint8_t		*p = info;
 	uint8_t		cmd;
@@ -1070,7 +1056,7 @@ end_upgrade_usb_1:
 	}
 }
 
-#endif
+
 
 
 /*
@@ -1151,6 +1137,9 @@ FINSH_FUNCTION_EXPORT( vdr_import, import vdr );
 static uint8_t testbuf[1000];
 #endif
 
+#endif
+
+#if 0
 
 /*
    行驶速度记录,每128byte字节一个记录,有效记录126byte
@@ -1181,7 +1170,7 @@ uint8_t get_08h( uint8_t *pout )
 			addr_08 = VDR_08H_09H_START + 128;
 		}
 
-		SST25V_BufferRead( buf, addr_08, 128 );
+		sst25_read( buf, addr_08, 128 );
 
 		decompress_data( buf, data );
 		buf[0]	= HEX_TO_BCD( 13 );         /*year*/
@@ -1274,7 +1263,7 @@ uint8_t get_09h( uint8_t *pout )
 	for( i = addr_09; i < addr_09 + ( 60 * 128 ); i += 128 )    /*读出60个分钟数据*/
 	{
 		WatchDog_Feed( );
-		SST25V_BufferRead( buf, i, 128 );
+		sst25_read( buf, i, 128 );
 		decompress_data( buf, data );
 		for( j = 0; j < 60; j++ )
 		{
@@ -1651,5 +1640,19 @@ uint8_t get_vdr( VDRCMD* vdrcmd, uint8_t *pout, uint16_t *len )
 			break;
 	}
 }
+#endif
+
+/*
+收到gps数据的处理
+存储位置信息，
+速度判断，校准
+
+*/
+void vdr_rx(void)
+{
+
+
+}
+
 
 /************************************** The End Of File **************************************/

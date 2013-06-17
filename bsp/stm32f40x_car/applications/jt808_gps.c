@@ -20,8 +20,14 @@
 #include "stm32f4xx.h"
 
 #include "jt808_gps.h"
-
+#include "jt808_param.h"
 #include "rtc.h"
+
+#include "vdr.h"
+#include "math.h"
+
+
+#define BIT(n)	(1<<n)
 
 typedef struct _GPSPoint
 {
@@ -33,9 +39,17 @@ typedef struct _GPSPoint
 
 /*要用union类型保存，位域，访问吗?*/
 uint32_t	jt808_alarm		= 0x0;
+uint32_t	jt808_alarm_last=0x0;	/*上一次的上报状态*/
 uint32_t	jt808_status	= 0x0;
+uint32_t	jt808_status_last=0x0;	/*上一次的状态信息*/
+
+static uint32_t	jt808_report_interval=0x0;	/*GPS上报时间间隔，为0:停止上报*/
+static uint32_t	jt808_report_distance=0x0;	/*GPS上报距离间隔,为0 停止上报*/
 
 
+/*超速判断*/
+static uint8_t overspeed_flag=0;  /*是否已超速 0:未超速 1:超速预警 2:已超速*/
+static uint32_t overspeed_timestamp_start;	/*开始时间戳*/
 
 
 /*
@@ -85,6 +99,106 @@ UNIX时间戳：Unix时间戳（英文为Unix time, POSIX time 或 Unix timestamp）
 unsigned long	timestamp_last=0;
 unsigned long	timestamp_now=0;
 
+/*外接车速信号*/
+__IO uint16_t	IC2Value	= 0;
+__IO uint16_t	DutyCycle	= 0;
+__IO uint32_t	Frequency	= 0;
+
+
+
+/*声明一个定时器，用来定时检查AUX*/
+struct rt_timer tmr_gps;
+
+
+/*定时器超时函数*/
+static void cb_tmr_gps(void* parameter)
+{
+    /*检测ACK*/
+	
+
+}
+
+
+
+/*采用PA.0 作为外部脉冲计数*/
+void pulse_init( void )
+{
+	GPIO_InitTypeDef	GPIO_InitStructure;
+	NVIC_InitTypeDef	NVIC_InitStructure;
+	TIM_ICInitTypeDef	TIM_ICInitStructure;
+
+	/* TIM5 clock enable */
+	RCC_APB1PeriphClockCmd( RCC_APB1Periph_TIM5, ENABLE );
+
+	/* GPIOA clock enable */
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA, ENABLE );
+
+	/* TIM5 chennel1 configuration : PA.0 */
+	GPIO_InitStructure.GPIO_Pin		= GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_100MHz;
+	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;
+	GPIO_Init( GPIOA, &GPIO_InitStructure );
+
+	/* Connect TIM pin to AF0 */
+	GPIO_PinAFConfig( GPIOA, GPIO_PinSource0, GPIO_AF_TIM5 );
+
+	/* Enable the TIM5 global Interrupt */
+	NVIC_InitStructure.NVIC_IRQChannel						= TIM5_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority	= 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority			= 1;
+	NVIC_InitStructure.NVIC_IRQChannelCmd					= ENABLE;
+	NVIC_Init( &NVIC_InitStructure );
+
+	TIM_ICInitStructure.TIM_Channel		= TIM_Channel_1;
+	TIM_ICInitStructure.TIM_ICPolarity	= TIM_ICPolarity_Rising;
+	TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
+	TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV1;
+	TIM_ICInitStructure.TIM_ICFilter	= 0x0;
+
+	TIM_PWMIConfig( TIM5, &TIM_ICInitStructure );
+
+	/* Select the TIM5 Input Trigger: TI1FP1 */
+	TIM_SelectInputTrigger( TIM5, TIM_TS_TI1FP1 );
+
+	/* Select the slave Mode: Reset Mode */
+	TIM_SelectSlaveMode( TIM5, TIM_SlaveMode_Reset );
+	TIM_SelectMasterSlaveMode( TIM5, TIM_MasterSlaveMode_Enable );
+
+	/* TIM enable counter */
+	TIM_Cmd( TIM5, ENABLE );
+
+	/* Enable the CC2 Interrupt Request */
+	TIM_ITConfig( TIM5, TIM_IT_CC2, ENABLE );
+}
+
+/*TIM5_CH1*/
+void TIM5_IRQHandler( void )
+{
+	RCC_ClocksTypeDef RCC_Clocks;
+	RCC_GetClocksFreq( &RCC_Clocks );
+
+	TIM_ClearITPendingBit( TIM5, TIM_IT_CC2 );
+
+	/* Get the Input Capture value */
+	IC2Value = TIM_GetCapture2( TIM5 );
+
+	if( IC2Value != 0 )
+	{
+		/* Duty cycle computation */
+		//DutyCycle = ( TIM_GetCapture1( TIM5 ) * 100 ) / IC2Value;
+		/* Frequency computation   TIM4 counter clock = (RCC_Clocks.HCLK_Frequency)/2 */
+		//Frequency = (RCC_Clocks.HCLK_Frequency)/2 / IC2Value;
+/*是不是反向电路?*/
+		DutyCycle	= ( IC2Value * 100 ) / TIM_GetCapture1( TIM5 );
+		Frequency	= ( RCC_Clocks.HCLK_Frequency ) / 2 / TIM_GetCapture1( TIM5 );
+	}else
+	{
+		DutyCycle	= 0;
+		Frequency	= 0;
+	}
+}
 
 
 /*
@@ -150,11 +264,58 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 	return 6371.01 * 1000.0 * centralAngle; //Return Distance in meter
 }
 
-/*处理gps信息*/
+
+/*超速、超速预警判断*/
+void do_overspeed_check(void)
+{
+	if(gps_baseinfo.spd_10x>=jt808_param.id_0x0055) /*超过最高速度*/
+	{
+		if(overspeed_flag==2)	/*已超速*/
+		{
+			if(timestamp_now-overspeed_timestamp_start>=jt808_param.id_0x0056)	/*已经持续超速*/
+			{
+				if((jt808_param.id_0x0050&0x02)==0)  /*报警屏蔽字*/
+				{
+					jt808_alarm|=0x02;
+				}
+			}
+		}
+		else		/*没有超速或超速预警，记录开始超速，*/
+		{
+			overspeed_flag=2;
+			overspeed_timestamp_start=timestamp_now;
+		}
+		
+	}
+	else if(gps_baseinfo.spd_10x>=(jt808_param.id_0x0055-jt808_param.id_0x005B)) /*超速预警*/
+	{
+		if((jt808_param.id_0x0050&(1<<13))==0)  /*报警屏蔽字*/
+		{
+			jt808_alarm|=(1<<13);
+		}
+
+	}
+	else	/*没有超速，也没有预警,清除标志位*/
+	{
+		overspeed_flag=0;
+		jt808_alarm&=~((1<<1)|(1<<13));
+	}
+}
+
+
+
+
+
+/*
+处理gps信息,有多种条件组合
+*/
+
 void process_gps(void)
 {
-	int i;
-/*1.RTC,避免和rtt的set_time,set_date歧义，rtt是一个Driver,此处没有使用*/
+	uint32_t i,tmp;
+	uint8_t flag_send=0;	/*默认不上报*/
+	
+/*RTC,避免和rtt的set_time,set_date歧义，rtt是一个Driver,此处没有使用*/
 	
 	if(gps_baseinfo.datetime[5]==0);
 	{
@@ -167,11 +328,73 @@ void process_gps(void)
 		date_set(gps_baseinfo.datetime[0],gps_baseinfo.datetime[1],gps_baseinfo.datetime[2]);
 	}
 
-/*2.数据上报方式*/
+/*行车记录仪数据处理*/
+
+	vdr_rx();
+
+
+/*数据上报方式,如何组合出各种情况 */
+	tmp=jt808_status^jt808_status_last;
+	if(tmp)	/*状态发生变化，要上报,*/
+	{
+		flag_send=1;
+	}	
+	/*不理解这个登录状态*/
+	if(tmp&0x01) /*ACC变化,修改汇报的间隔或距离*/
+	{
+		jt808_report_distance=0;
+		jt808_report_interval=0;
+		if((jt808_param.id_0x0020&0x01)==0x0)	/*有定时上报*/
+		{
+			if(jt808_status&0x01)	/*当前状态为ACC开*/
+			{
+				jt808_report_interval=jt808_param.id_0x0029;
+			}else
+			{
+				jt808_report_interval=jt808_param.id_0x0027;
+			}
+			
+		}		
+		if(jt808_param.id_0x0020)		/*有定距上报*/
+		{
+			if(jt808_status&0x01)	/*当前状态为ACC开*/
+			{
+				jt808_report_distance=jt808_param.id_0x002C;
+			}else
+			{
+				jt808_report_distance=jt808_param.id_0x002E;
+			}
+		}
+	}
+
+	tmp=(jt808_alarm^jt808_alarm_last);	/*告警位变化*/
+	if(tmp) /*告警发生变化，要上报,*/
+	{
+		flag_send=1;
+	}	
+
+	if(tmp&0x01) /*紧急告警*/
+	{
+		if((jt808_param.id_0x0020&0x01)==0x0)	/*有定时上报*/
+		{
+			jt808_report_interval=jt808_param.id_0x0028;
+		}		
+		if(jt808_param.id_0x0020)		/*有定距上报*/
+		{
+			jt808_report_distance=jt808_param.id_0x002F;
+		}
+	}
 
 
 
+/*疲劳驾驶判断*/
 
+
+
+lbl_report_gps:
+
+
+lbl_report_gps_end:
 
 
 }
@@ -205,7 +428,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 	uint8_t		commacount = 0, count = 0;
 
 	uint32_t	lati, longi;
-	uint16_t	speed_10x;
+	uint32_t	speed_10x;
 	uint16_t	cog;                /*course over ground*/
 	uint8_t		wait_dot_find;      /*确定信息中 dot .的位置*/
 	uint8_t		i;
@@ -231,14 +454,17 @@ uint8_t process_rmc( uint8_t * pinfo )
 				{
 					return 1;
 				}
-				hour	= ( buf[0] - 0x30 ) * 10 + ( buf[1] - 0x30 ) + 8;
-				min		= (( buf[2] - 0x30 )<<4) + ( buf[3] - 0x30 );
-				sec		= ( buf[4] - 0x30 ) * 10 + ( buf[5] - 0x30 );
-				if( hour > 23 )
+
+				i=( buf[0] - 0x30 ) * 10 + ( buf[1] - 0x30 ) + 8;
+				if( i > 23 )
 				{
 					fDateModify = 1;
-					hour		-= 24;
+					i		-= 24;
 				}
+				/*转成BCD*/
+				hour	= ((i/10)<<4)|(i%10);
+				min		= (( buf[2] - 0x30 )<<4) | ( buf[3] - 0x30 );
+				sec		= (( buf[4] - 0x30 )<<4) | ( buf[5] - 0x30 );
 				rt_kprintf("hour=%d,min=%d,sec=%d\r\n",hour,min,sec);
 				break;
 			case 2: /*A_V*/
@@ -295,7 +521,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 				          ( buf [10] - 0x30 );
 				longi = degrees + minutes / 60;
 				break;
-			case 6: /*N_S处理*/
+			case 6: /*E_W处理*/
 				if( buf[0] == 'E' )
 				{
 					jt808_status &= ~0x04;
@@ -307,7 +533,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 					return 6;
 				}
 				break;
-			case 7: /*速度处理*/
+			case 7: /*速度处理 */
 				speed_10x = 0;
 				for( i = 0; i < count; i++ )
 				{
@@ -321,6 +547,11 @@ uint8_t process_rmc( uint8_t * pinfo )
 						speed_10x	= speed_10x * 10;
 					}
 				}
+				/*当前是0.1knot => 0.1Kmh  1海里=1.852Km  1852=1024+512+256+32+16+8+4*/
+				speed_10x*=1.852;
+				//i=speed_10x;
+				//speed_10x=(i<<10)|(i<<9)|(i<<8)|(i<<5)|(i<<4)|(i<<3)|(i<<2);
+				//speed_10x/=1000;
 				break;
 
 			case 8: /*方向处理*/
@@ -336,7 +567,6 @@ uint8_t process_rmc( uint8_t * pinfo )
 						cog += ( buf[i] - 0x30 );
 					}
 				}
-
 				break;
 
 			case 9: /*日期处理*/
@@ -353,7 +583,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 					day++;
 					if( mon == 2 )
 					{
-						if( ( year % 4 ) == 0 )
+						if( ( year % 4 ) == 0 )  /*没有考虑整百时，要被400整除，NM都2100年*/
 						{
 							if( day == 30 )
 							{
@@ -389,16 +619,22 @@ uint8_t process_rmc( uint8_t * pinfo )
 				gps_baseinfo.status		= jt808_status;
 				gps_baseinfo.latitude	= lati;
 				gps_baseinfo.longitude	= longi;
-				gps_baseinfo.spd		= speed_10x;
+				gps_baseinfo.spd_10x	= speed_10x;
 				gps_baseinfo.cog		= cog;
 
+				i=day;
+				year=((i/10)<<4)|(i%10);
+				i=mon;
+				mon=((i/10)<<4)|(i%10);
+				i=day;
+				day=((i/10)<<4)|(i%10);
 				timestamp_now=linux_mktime(year,mon,day,hour,min,sec);
-				gps_baseinfo.datetime[0]=(tbl[year >> 4]<<4)|tbl[year & 0x0f] ;
-				gps_baseinfo.datetime[1]=(tbl[mon >> 4]<<4)|tbl[mon & 0x0f] ;
-				gps_baseinfo.datetime[2]=(tbl[day >> 4]<<4)|tbl[day & 0x0f] ;
-				gps_baseinfo.datetime[3]=(tbl[hour >> 4]<<4)|tbl[hour & 0x0f] ;
-				gps_baseinfo.datetime[4]=(tbl[min>> 4]<<4)|tbl[min & 0x0f] ;
-				gps_baseinfo.datetime[5]=(sec/10) ;
+				gps_baseinfo.datetime[0]=year;
+				gps_baseinfo.datetime[1]=mon;
+				gps_baseinfo.datetime[2]=day;
+				gps_baseinfo.datetime[3]=hour ;
+				gps_baseinfo.datetime[4]=min ;
+				gps_baseinfo.datetime[5]=sec ;
 				return 0;
 				break;
 		}
@@ -558,11 +794,15 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	{
 		process_gga( psrc );
 	}
+
 	
-	if( ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) )
+	//if( ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) )
+	if( strncmp( psrc+3, "RMC,", 4 ) == 0 )
 	{
-		process_rmc( psrc );
-		process_gps();	/*处理GPS信息*/
+		if(process_rmc( psrc )==0)	/*处理正确的RMC信息*/
+		{
+			process_gps();	/*处理GPS信息*/
+		}	
 	}
 	
 	/*天线开短路检测 gps<$GNTXT,01,01,01,ANTENNA OK*2B*/
@@ -585,6 +825,26 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	}
 	
 }
+
+/*初始化jt808 gps相关的处理*/
+void jt808_gps_init(void)
+{
+
+pulse_init();
+rt_timer_init(&tmr_gps, "tmr_gps",  /* 定时器名字是 tmr_gps */
+        cb_tmr_gps, /* 超时时回调的处理函数 */
+        RT_NULL, /* 超时函数的入口参数 */
+        RT_TICK_PER_SECOND/2, /* 定时长度，以OS Tick为单位 */
+        RT_TIMER_FLAG_PERIODIC); /* 周期性定时器 */
+
+rt_timer_start(&tmr_gps);
+
+
+
+}
+
+
+
 
 /***********************************************************
 * Function:
