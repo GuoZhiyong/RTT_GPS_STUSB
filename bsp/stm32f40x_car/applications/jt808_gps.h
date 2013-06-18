@@ -24,7 +24,7 @@ typedef __packed struct _gps_baseinfo
 	uint32_t latitude; /*纬度*/
 	uint32_t longitude;/*精度*/
 	uint16_t altitude;
-	uint16_t spd_10x;		/*对地速度 0.1KMH*/
+	uint16_t speed_10x;		/*对地速度 0.1KMH*/
 	uint16_t cog;			/*对地角度*/
 	uint8_t datetime[6];
 }GPS_BASEINFO;

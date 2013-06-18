@@ -570,13 +570,23 @@ rt_err_t resp_CGREG( char *p, uint16_t len )
  */
 rt_err_t resp_CIMI( char *p, uint16_t len )
 {
+
 	rt_kprintf( "cimi len=%d  %02x %02x\n", len, *p, *( p + 1 ) );
 	if( len < 15 )
 	{
 		return RT_ERROR;
 	}
 	strip_numstring( p );
+	mobile[0]=((*(p+3)-'0')<<4)|(*(p+4)-'0');
+	mobile[1]=((*(p+5)-'0')<<4)|(*(p+6)-'0');
+	mobile[2]=((*(p+7)-'0')<<4)|(*(p+8)-'0');
+	mobile[3]=((*(p+9)-'0')<<4)|(*(p+10)-'0');
+	mobile[4]=((*(p+11)-'0')<<4)|(*(p+12)-'0');
+	mobile[5]=((*(p+13)-'0')<<4)|(*(p+14)-'0');
 	strcpy( gsm_param.imsi, p );
+
+
+	
 	return RT_EOK;
 }
 
@@ -1639,14 +1649,14 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 	{
 	}
 	rt_kprintf( "%c", tbl[fcs & 0x0f] );
+/*ÔÙ·¢ËÍ7EÎ²*/	
 	m66_write( &dev_gsm, 0, "7E", 2 );
 	rt_kprintf( "%s", "7E" );
 
 	m66_write( &dev_gsm, 0, buf_end, 3 );
-
 	rt_kprintf( "%s", buf_end );
 
-	ret = gsm_send( "", RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 1 );
+	ret = gsm_send( "", RT_NULL, "%IPSENDX:", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 1 );
 	return ret;
 }
 

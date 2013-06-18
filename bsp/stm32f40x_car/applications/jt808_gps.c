@@ -31,6 +31,15 @@
 #define BIT( n ) ( 1 << n )
 
 
+#define BYTESWAP2( val )    \
+    ( ( ( val & 0xff ) << 8 ) |   \
+      ( ( val & 0xff00 ) >> 8 ) )
+
+#define BYTESWAP4( val )    \
+    ( ( ( val & 0xff ) << 24 ) |   \
+      ( ( val & 0xff00 ) << 8 ) |  \
+      ( ( val & 0xff0000 ) >> 8 ) |  \
+      ( ( val & 0xff000000 ) >> 24 ) )
 
 
 
@@ -48,6 +57,9 @@ uint32_t		jt808_alarm_last	= 0x0;      /*上一次的上报状态*/
 
 uint32_t		jt808_status		= 0x0;
 uint32_t		jt808_status_last	= 0x0;      /*上一次的状态信息*/
+
+uint16_t		jt808_speed=0;
+
 
 static uint32_t jt808_report_interval	= 0x0;  /*GPS上报时间间隔，为0:停止上报*/
 static uint32_t jt808_report_distance	= 0x0;  /*GPS上报距离间隔,为0 停止上报*/
@@ -259,7 +271,7 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 /*超速、超速预警判断*/
 void do_overspeed_check( void )
 {
-	if( gps_baseinfo.spd_10x >= jt808_param.id_0x0055 )                                 /*超过最高速度*/
+	if( jt808_speed >= jt808_param.id_0x0055 )                                 /*超过最高速度*/
 	{
 		if( overspeed_flag == 2 )                                                       /*已超速*/
 		{
@@ -275,7 +287,7 @@ void do_overspeed_check( void )
 			overspeed_flag				= 2;
 			overspeed_timestamp_start	= timestamp_now;
 		}
-	}else if( gps_baseinfo.spd_10x >= ( jt808_param.id_0x0055 - jt808_param.id_0x005B ) )   /*超速预警*/
+	}else if( jt808_speed >= ( jt808_param.id_0x0055 - jt808_param.id_0x005B ) )   /*超速预警*/
 	{
 		if( ( jt808_param.id_0x0050 & ( 1 << 13 ) ) == 0 )                                  /*报警屏蔽字*/
 		{
@@ -388,7 +400,8 @@ void process_gps( void )
 
 	
 /*生成要上报的数据*/
-	err=jt808_add_tx_data(1,TERMINAL_CMD,0x0200,(uint8_t*)&gps_baseinfo,28);
+	//jt808_add_msg_head(uint8_t * p,uint16_t id,uint16_t attr,uint16_t seq)
+	err=jt808_add_tx_data(1,TERMINAL_CMD,0x0200,28,-1,RT_NULL,RT_NULL,(uint8_t*)&gps_baseinfo);
 	rt_kprintf("%d>add gps report=%d\r\n",rt_tick_get(),err);
 	
 
@@ -537,6 +550,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 				}
 				/*当前是0.1knot => 0.1Kmh  1海里=1.852Km  1852=1024+512+256+32+16+8+4*/
 				speed_10x *= 1.852;
+				jt808_speed=speed_10x/10;
 				//i=speed_10x;
 				//speed_10x=(i<<10)|(i<<9)|(i<<8)|(i<<5)|(i<<4)|(i<<3)|(i<<2);
 				//speed_10x/=1000;
@@ -603,12 +617,12 @@ uint8_t process_rmc( uint8_t * pinfo )
 				}
 
 				/*都处理完了更新 gps_baseinfo,没有高程信息*/
-				gps_baseinfo.alarm		= jt808_alarm;
-				gps_baseinfo.status		= jt808_status;
-				gps_baseinfo.latitude	= lati;
-				gps_baseinfo.longitude	= longi;
-				gps_baseinfo.spd_10x	= speed_10x;
-				gps_baseinfo.cog		= cog;
+				gps_baseinfo.alarm		= BYTESWAP4(jt808_alarm);
+				gps_baseinfo.status		= BYTESWAP4(jt808_status);
+				gps_baseinfo.latitude	= BYTESWAP4(lati);
+				gps_baseinfo.longitude	= BYTESWAP4(longi);
+				gps_baseinfo.speed_10x	= BYTESWAP2(speed_10x);
+				gps_baseinfo.cog		= BYTESWAP2(cog);
 
 				i							= year;
 				year						= ( ( i / 10 ) << 4 ) | ( i % 10 );
