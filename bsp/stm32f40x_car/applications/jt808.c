@@ -319,35 +319,42 @@ static rt_err_t jt808_tx_timeout( JT808_TX_NODEDATA * nodedata )
 /*
    添加一个信息到发送列表中
  */
-static rt_err_t jt808_add_tx_data( uint8_t linkno, JT808_MSG_TYPE type, uint16_t id, uint8_t *pinfo, uint16_t len )
+rt_err_t jt808_add_tx_data( uint8_t linkno, JT808_MSG_TYPE type, uint16_t id, uint8_t *pinfo, uint16_t len )
 {
 	uint8_t					* pdata;
 	JT808_TX_NODEDATA	* pnodedata;
 
 	pnodedata = rt_malloc( sizeof( JT808_TX_NODEDATA ) );
-	if( pnodedata == NULL )
+	if( pnodedata == RT_NULL )
 	{
 		return -RT_ERROR;
 	}
+	pnodedata->linkno			= linkno;
 	pnodedata->type				= type;
 	pnodedata->state			= IDLE;
 	pnodedata->retry			= 0;
+	pnodedata->multipacket		=0;
 	pnodedata->cb_tx_timeout	= jt808_tx_timeout;
 	pnodedata->cb_tx_response	= jt808_tx_response;
 /*在此可以存储在上报*/
-	pdata = rt_malloc( len );
-	if( pdata == NULL )
+
+
+
+/*在这添加上报的记录头*/
+	pdata = rt_malloc( len+sizeof(JT808_MSG_HEAD));
+	if( pdata == RT_NULL )
 	{
 		rt_free( pnodedata );
 		return -RT_ERROR;
 	}
-	memcpy( pdata, pinfo, len );
+	
+	memcpy( pdata+sizeof(JT808_MSG_HEAD), pinfo, len );
 	pnodedata->msg_len	= len;
 	pnodedata->pmsg		= pdata;
 	pnodedata->head_sn	= tx_seq;
 	pnodedata->head_id	= id;
 	msglist_append( list_jt808_tx, pnodedata );
-	tx_seq++;
+	return(tx_seq++);
 }
 
 /*向808协议添加消息头*/
@@ -942,7 +949,7 @@ static MsgListRet jt808_tx_proc( MsgListNode * node )
 	{
 		return MSGLIST_RET_OK;
 	}
-
+	
 	if( pnodedata->state == IDLE )                      /*空闲，发送信息或超时后没有数据*/
 	{
 		if( pnodedata->retry >= jt808_param.id_0x0003 ) /*超过了最大重传次数*/                                                                     /*已经达到重试次数*/
@@ -956,7 +963,7 @@ static MsgListRet jt808_tx_proc( MsgListNode * node )
 		{
 			return MSGLIST_RET_OK;
 		}
-		if( connect_state.server_state != SOCKET_READY )
+		if( connect_state.server_state != CONNECTED)
 		{
 			return MSGLIST_RET_OK;
 		}
@@ -964,7 +971,7 @@ static MsgListRet jt808_tx_proc( MsgListNode * node )
 		if( pnodedata->multipacket == 0 )   /*单包发送*/
 		{
 			/*在这添加消息头?,动态分配如何解决*/
-
+			
 			ret = socket_write( pnodedata->linkno, pnodedata->pmsg, pnodedata->msg_len );
 			if( ret == RT_EOK )             /*发送成功等待中心应答中*/
 			{
@@ -1320,6 +1327,7 @@ static void rt_thread_entry_jt808( void * parameter )
 
 		if( jt808_tx_proc( iter ) == MSGLIST_RET_DELETE_NODE )  /*删除该节点*/
 		{
+			rt_kprintf("%d>%s,%d\r\n",rt_tick_get(),__func__,__LINE__);
 			pnodedata = ( JT808_TX_NODEDATA* )( iter->data );
 			rt_free( pnodedata->pmsg );                         /*删除用户数据*/
 			rt_free( pnodedata );                               /*删除节点数据*/

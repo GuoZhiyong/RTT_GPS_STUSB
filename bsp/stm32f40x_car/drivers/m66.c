@@ -32,7 +32,6 @@
 
 typedef void ( *URC_CB )( char *s, uint16_t len );
 
-
 #define GSM_PWR_PORT	GPIOD
 #define GSM_PWR_PIN		GPIO_Pin_13
 
@@ -1031,7 +1030,7 @@ rt_err_t gsm_send( char *atcmd,
 
 lbl_send_wait_ok:
 	err = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pmsg, tm );
-	if( err == RT_EOK )      /*没有超时,判断信息是否正确*/
+	if( err == RT_EOK )   /*没有超时,判断信息是否正确*/
 	{
 		if( strstr( pmsg + 2, "OK" ) != RT_NULL )
 		{
@@ -1149,22 +1148,20 @@ static void rt_thread_gsm_power_on( void* parameter )
 	int			i;
 	AT_CMD_RESP at_init[] =
 	{
-		{ "",			   RESP_TYPE_STR,		  RT_NULL,	  "OK",			  RT_TICK_PER_SECOND * 5, 1	 },
-		{ "",			   RESP_TYPE_STR,		  RT_NULL,	  "OK",			  RT_TICK_PER_SECOND * 5, 1	 },
-		{ "ATE0\r\n",	   RESP_TYPE_STR,		  RT_NULL,	  "OK",			  RT_TICK_PER_SECOND * 5, 1	 },
-		{ "ATV1\r\n",	   RESP_TYPE_STR,		  RT_NULL,	  "OK",			  RT_TICK_PER_SECOND * 5, 1	 },
-		{ "AT%TSIM\r\n",   RESP_TYPE_STR_WITHOK,  RT_NULL,	  "%TSIM 1",	  RT_TICK_PER_SECOND * 2, 5	 },
+		{ "",				 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 5, 1  },
+		{ "",				 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 5, 1  },
+		{ "ATE0\r\n",		 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 5, 1  },
+		{ "ATV1\r\n",		 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 5, 1  },
+		{ "AT%TSIM\r\n",	 RESP_TYPE_STR_WITHOK,	RT_NULL,	"%TSIM 1",		RT_TICK_PER_SECOND * 2, 5  },
 
+		{ "AT+CMGF=0\r\n",	 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 3, 3  },
+		{ "AT+CNMI=1,2\r\n", RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 3, 3  },
 
-		{ "AT+CMGF=0\r\n", RESP_TYPE_STR,		  RT_NULL,	  "OK",			  RT_TICK_PER_SECOND * 3, 3	 },
-		{ "AT+CNMI=1,2\r\n",RESP_TYPE_STR,		  RT_NULL,	  "OK",			  RT_TICK_PER_SECOND * 3, 3	 },
+		{ "AT+CPIN?\r\n",	 RESP_TYPE_STR_WITHOK,	RT_NULL,	"+CPIN: READY", RT_TICK_PER_SECOND * 2, 30 },
 
-		
-		{ "AT+CPIN?\r\n",  RESP_TYPE_STR_WITHOK,  RT_NULL,	  "+CPIN: READY", RT_TICK_PER_SECOND * 2, 30 },
-		
-		{ "AT+CIMI\r\n",   RESP_TYPE_FUNC_WITHOK, resp_CIMI,  RT_NULL,		  RT_TICK_PER_SECOND * 2, 10 },
-		{ "AT+CLIP=1\r\n", RESP_TYPE_STR,		  RT_NULL,	  "OK",			  RT_TICK_PER_SECOND * 2, 10 },
-		{ "AT+CREG?\r\n",  RESP_TYPE_FUNC_WITHOK, resp_CGREG, RT_NULL,		  RT_TICK_PER_SECOND * 2, 30 },
+		{ "AT+CIMI\r\n",	 RESP_TYPE_FUNC_WITHOK, resp_CIMI,	RT_NULL,		RT_TICK_PER_SECOND * 2, 10 },
+		{ "AT+CLIP=1\r\n",	 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 2, 10 },
+		{ "AT+CREG?\r\n",	 RESP_TYPE_FUNC_WITHOK, resp_CGREG, RT_NULL,		RT_TICK_PER_SECOND * 2, 30 },
 	};
 
 lbl_poweron_start:
@@ -1248,7 +1245,7 @@ static void rt_thread_gsm_gprs( void* parameter )
 		{
 			goto lbl_gsm_gprs_end_err;
 		}
-		
+
 		if( ( strlen( dial_param.user ) == 0 ) && ( strlen( dial_param.user ) == 0 ) )
 		{
 			err = gsm_send( "AT%ETCPIP\r\n", RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 151, 1 );
@@ -1346,8 +1343,6 @@ lbl_gsm_socket_end:
 	rt_kprintf( "%08d gsm_socket>end socket.state=%d\r\n", rt_tick_get( ), curr_socket.state );
 }
 
-
-
 /***********************************************************
 * Function:		gsmrx_cb
 * Description:	gsm收到信息的处理
@@ -1406,8 +1401,8 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 
 	if( strncmp( psrc, "%IPCLOSE:", 9 ) == 0 )
 	{
-		c=*(psrc+9)-0x30;
-		cb_socket_state(c,SOCKET_CLOSE);
+		c = *( psrc + 9 ) - 0x30;
+		cb_socket_state( c, SOCKET_CLOSE );
 		return;
 	}
 
@@ -1427,8 +1422,6 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 	}
 	return;
 }
-
-
 
 ALIGN( RT_ALIGN_SIZE )
 static char thread_gsm_stack[512];
@@ -1569,9 +1562,6 @@ rt_err_t dbgmsg( uint32_t i )
 FINSH_FUNCTION_EXPORT( dbgmsg, dbgmsg count );
 
 
-
-
-
 /***********************************************************
 * Function: 直接发送信息，要做808转义和m66转义
 * Description:
@@ -1588,6 +1578,8 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 	char		*pstr;
 	rt_err_t	ret;
 
+	uint8_t		fcs = 0;
+
 	char		buf_start[20];
 	char		buf_end[4] = { '"', 0x0d, 0x0a, 0x0 };
 
@@ -1596,9 +1588,12 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 	sprintf( buf_start, "AT%%IPSENDX=%d,\"", linkno );
 	m66_write( &dev_gsm, 0, buf_start, strlen( buf_start ) );
 	rt_kprintf( "%s", buf_start );
+	m66_write( &dev_gsm, 0, "7E", 2 );
+	rt_kprintf( "%s", "7E" );
 	while( len )
 	{
-		c = *p++;
+		c	= *p++;
+		fcs ^= c; /*计算fcs*/
 		if( c == 0x7E )
 		{
 			m66_write( &dev_gsm, 0, "7D02", 4 );
@@ -1622,6 +1617,30 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 		rt_kprintf( "%c", tbl[c & 0x0f] );
 		len--;
 	}
+/*再发送fcs*/
+	if( fcs == 0x7E )
+	{
+		m66_write( &dev_gsm, 0, "7D02", 4 );
+		rt_kprintf( "%s", "7D02" );
+	}
+
+	if( fcs == 0x7d )
+	{
+		m66_write( &dev_gsm, 0, "7D01", 4 );
+		rt_kprintf( "%s", "7D01" );
+	}
+	USART_SendData( UART4, tbl[fcs >> 4] );
+	while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+	{
+	}
+	rt_kprintf( "%c", tbl[fcs >> 4] );
+	USART_SendData( UART4, tbl[fcs & 0x0f] );
+	while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+	{
+	}
+	rt_kprintf( "%c", tbl[fcs & 0x0f] );
+	m66_write( &dev_gsm, 0, "7E", 2 );
+	rt_kprintf( "%s", "7E" );
 
 	m66_write( &dev_gsm, 0, buf_end, 3 );
 
@@ -1634,7 +1653,7 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 /*控制gsm状态 0 查询*/
 T_GSM_STATE gsmstate( T_GSM_STATE cmd )
 {
-	if( cmd!=GSM_STATE_GET )
+	if( cmd != GSM_STATE_GET )
 	{
 		gsm_state = cmd;
 	}

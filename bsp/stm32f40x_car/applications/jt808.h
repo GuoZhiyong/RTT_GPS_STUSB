@@ -313,6 +313,7 @@ typedef __packed struct _jt808_tx_nodedata
 
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 rt_err_t jt808_add_msg_head(uint8_t *p,uint16_t id,uint16_t attr);
+rt_err_t jt808_add_tx_data( uint8_t linkno, JT808_MSG_TYPE type, uint16_t id, uint8_t *pinfo, uint16_t len );
 
 
 #endif

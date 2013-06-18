@@ -18,7 +18,7 @@
 #include <finsh.h>
 
 #include "stm32f4xx.h"
-
+#include "jt808.h"
 #include "jt808_gps.h"
 #include "jt808_param.h"
 #include "rtc.h"
@@ -296,22 +296,18 @@ void process_gps( void )
 {
 	uint32_t	i, tmp;
 	uint8_t		flag_send = 0; /*默认不上报*/
-
-	JT808_TX_NODEDATA	*pnodedata;
+	rt_err_t	err;
 	uint8_t *pdata;
 
 /*RTC,避免和rtt的set_time,set_date歧义，rtt是一个Driver,此处没有使用*/
-	/*整小时校准*/
 	if(jt808_status&BIT_STATUS_GPS)
 	{
-		if(( gps_baseinfo.datetime[4] == 0 )&&( gps_baseinfo.datetime[5] == 0 ))
-		
+		if(( gps_baseinfo.datetime[4] == 0 )&&( gps_baseinfo.datetime[5] == 0 ))	/*整小时校准*/
 		{
 			date_set( gps_baseinfo.datetime[0], gps_baseinfo.datetime[1], gps_baseinfo.datetime[2] );
 			time_set( gps_baseinfo.datetime[3], gps_baseinfo.datetime[4], gps_baseinfo.datetime[5] );
 		}
 	}	
-
 /*行车记录仪数据处理*/
 	vdr_rx( );
 /*数据上报方式,如何组合出各种情况 */
@@ -376,6 +372,7 @@ void process_gps( void )
 		if(timestamp_now-timestamp_last>=jt808_report_interval)
 		{
 			flag_send=1;
+			timestamp_last=timestamp_now;
 		}
 	}
 /*计算定距上报*/
@@ -385,17 +382,15 @@ void process_gps( void )
 		distance=0;
 	}
 
-	
+	jt808_status_last=jt808_status;
 
-	if(flag_send==0) return;
-
-	
-	
-
-
+	//if(flag_send==0) return;
 
 	
-
+/*生成要上报的数据*/
+	err=jt808_add_tx_data(1,TERMINAL_CMD,0x0200,(uint8_t*)&gps_baseinfo,28);
+	rt_kprintf("%d>add gps report=%d\r\n",rt_tick_get(),err);
+	
 
 }
 
@@ -463,10 +458,10 @@ uint8_t process_rmc( uint8_t * pinfo )
 			case 2: /*A_V*/
 				if( buf[0] == 'A' )
 				{
-					jt808_status &= ~0x01;
+					jt808_status |= BIT_STATUS_GPS;
 				} else if( buf[0] == 'V' )
 				{
-					jt808_status |= 0x01;
+					jt808_status &= ~BIT_STATUS_GPS;
 				} else
 				{
 					return 2;
@@ -490,10 +485,10 @@ uint8_t process_rmc( uint8_t * pinfo )
 			case 4: /*N_S处理*/
 				if( buf[0] == 'N' )
 				{
-					jt808_status &= ~0x02;
+					jt808_status &= ~BIT_STATUS_NS;
 				} else if( buf[0] == 'S' )
 				{
-					jt808_status |= 0x02;
+					jt808_status |= BIT_STATUS_NS;
 				}else
 				{
 					return 4;
@@ -517,10 +512,10 @@ uint8_t process_rmc( uint8_t * pinfo )
 			case 6: /*E_W处理*/
 				if( buf[0] == 'E' )
 				{
-					jt808_status &= ~0x04;
+					jt808_status &=~BIT_STATUS_EW;
 				} else if( buf[0] == 'W' )
 				{
-					jt808_status |= 0x04;
+					jt808_status |= BIT_STATUS_EW;
 				}else
 				{
 					return 6;
@@ -628,6 +623,15 @@ uint8_t process_rmc( uint8_t * pinfo )
 				gps_baseinfo.datetime[3]	= hour;
 				gps_baseinfo.datetime[4]	= min;
 				gps_baseinfo.datetime[5]	= sec;
+
+				/*首次定位,校时*/
+				if((jt808_status_last&BIT_STATUS_GPS)==0)
+				{
+					date_set( year, mon, day );
+					time_set( hour,min,sec);
+				}	
+
+				
 				return 0;
 				break;
 		}
@@ -846,7 +850,7 @@ void jt808_gps_init( void )
 ***********************************************************/
 void gps_dump( uint8_t mode )
 {
-	gps_status.Raw_Output = mode;
+	gps_status.Raw_Output = ~gps_status.Raw_Output ;
 }
 
 FINSH_FUNCTION_EXPORT( gps_dump, dump gps raw info );
