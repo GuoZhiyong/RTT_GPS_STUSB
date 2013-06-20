@@ -13,6 +13,8 @@
  ***********************************************************/
 #ifndef _H_VDR_
 #define _H_VDR_
+#include "stm32f4xx.h"
+#include <rtthread.h>
 
 typedef struct _vdrcmd
 {
@@ -24,7 +26,8 @@ typedef struct _vdrcmd
 }VDRCMD;
 
 
-void vdr_rx(void);
+rt_err_t vdr_rx(void);
+rt_err_t vdr_init( void );
 
 
 

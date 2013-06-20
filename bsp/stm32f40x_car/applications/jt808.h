@@ -352,6 +352,7 @@ rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 #define jt808_tx(id,info,len) jt808_add_tx_data(1,TERMINAL_CMD,len,-1,RT_NULL,RT_NULL,info)
 #define jt808_tx_ack(id,info,len) jt808_add_tx_data(1,TERMINAL_ACK,len,-1,RT_NULL,RT_NULL,info)
 
+
 rt_err_t jt808_add_tx_data( uint8_t linkno,\
 	JT808_MSG_TYPE type, \
 	uint16_t id, \

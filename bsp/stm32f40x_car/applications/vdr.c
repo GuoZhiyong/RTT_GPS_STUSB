@@ -14,6 +14,7 @@
 #include "sst25.h"
 
 #include "vdr.h"
+#include "jt808_gps.h"
 
 
 /*
@@ -44,10 +45,18 @@ struct _sect_info
 #define VDR_08H_09H_START	0x300000
 #define VDR_08H_09H_END		0x32FFFF
 
+
+#define VDR_BASE		0x300000
+#define VDR_08H_SIZE	(56*60*128)		/*存50小时,每分钟 128byte,要4K对齐*/
+#define VDR_09H_SIZE	(360*60*128) 	/*存360小时*/
+
+
+
 #define VDR_08H_START	0x300000
-#define VDR_08H_END		0x32FFFF
+#define VDR_08H_SIZE	(48*60*128)
+#define VDR_08H_END		(VDR_08H_START+VDR_08H_SIZE)
 
-
+/**/
 #define VDR_09H_START	0x300000
 #define VDR_09H_END		0x32FFFF
 
@@ -115,8 +124,6 @@ static uint8_t		fvdr_debug = 1;
 static uint8_t file_rec[32];
 
 
-
-
 /***********************************************************
 * Function:
 * Description:
@@ -126,7 +133,7 @@ static uint8_t file_rec[32];
 * Return:
 * Others:
 ***********************************************************/
-static unsigned long mymktime( uint32_t year, uint32_t mon, uint32_t day, uint32_t hour, uint32_t min, uint32_t sec )
+static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, uint32_t hour, uint32_t min, uint32_t sec )
 {
 	if( 0 >= (int)( mon -= 2 ) )
 	{
@@ -1056,9 +1063,6 @@ end_upgrade_usb_1:
 	}
 }
 
-
-
-
 /*
    调试vdr
 
@@ -1140,6 +1144,7 @@ static uint8_t testbuf[1000];
 #endif
 
 #if 0
+
 
 /*
    行驶速度记录,每128byte字节一个记录,有效记录126byte
@@ -1595,11 +1600,12 @@ uint8_t get_15h( uint8_t *pout )
 
 FINSH_FUNCTION_EXPORT( get_15h, get_15 );
 
+
 /*
-获得vdr数据
-00-07 单包数据
-08-15 多包数据
-*/
+   获得vdr数据
+   00-07 单包数据
+   08-15 多包数据
+ */
 uint8_t get_vdr( VDRCMD* vdrcmd, uint8_t *pout, uint16_t *len )
 {
 	uint8_t cmd;
@@ -1640,19 +1646,179 @@ uint8_t get_vdr( VDRCMD* vdrcmd, uint8_t *pout, uint16_t *len )
 			break;
 	}
 }
+
 #endif
 
+#define BYTESWAP2( val )    \
+    ( ( ( val & 0xff ) << 8 ) |   \
+      ( ( val & 0xff00 ) >> 8 ) )
+
+#define BYTESWAP4( val )    \
+    ( ( ( val & 0xff ) << 24 ) |   \
+      ( ( val & 0xff00 ) << 8 ) |  \
+      ( ( val & 0xff0000 ) >> 8 ) |  \
+      ( ( val & 0xff000000 ) >> 24 ) )
+
+#define MYDATETIME( year, month, day, hour, minute, sec )	( ( year << 26 ) | ( month << 22 ) | ( day << 17 ) | ( hour << 12 ) | ( minute << 6 ) | sec )
+#define YEAR( datetime )									( ( datetime >> 26 ) & 0x3F )
+#define MONTH( datetime )									( ( datetime >> 22 ) & 0xF )
+#define DAY( datetime )										( ( datetime >> 17 ) & 0x1F )
+#define HOUR( datetime )									( ( datetime >> 12 ) & 0x1F )
+#define MINUTE( datetime )									( ( datetime >> 6 ) & 0x3F )
+#define SEC( datetime )										( datetime & 0x3F )
+
+
 /*
-收到gps数据的处理
-存储位置信息，
-速度判断，校准
+   通过存储时，建立一定的对应关系，达到快速索引的目的
+ */
 
-*/
-void vdr_rx(void)
+
+/*
+   48小时，每分钟平均速度和状态
+   每个记录块 126字节,
+   开始时间（6Byte）+单位分钟内每秒的速度和状态信息（（速度1Byte+状态1Byte）*60）
+ */
+
+static uint8_t	rec_08h_head[128];  /*文件头*/
+static uint8_t	rec_08h_data[128];  /*数据*/
+
+/*获取08数据*/
+static uint8_t get_08h( )
 {
-
-
 }
 
+
+static uint32_t mytime_08_max	= 0, mytime_08_min = 0xFFFFFFFF;
+static uint16_t rec_08_max		= 0, rec_08_min;
+
+
+static uint32_t mytime_09_max	= 0, mytime_09_min = 0xFFFFFFFF;
+static uint16_t rec_09_max		= 0, rec_09_min;
+
+
+
+/*
+   获取08存储的状态 48小时 单位分钟内每秒的速度状态2byte  
+   48*60=2880个(128byte) 占用 90sector
+   多分配一个sector(32分钟的数据)，这样在循环写入时，可以直写，而不用回写。保证数据足够
+   
+ */
+
+static void vdr_init_08h( uint8_t *p )
+{
+	uint8_t		sect, rec, offset;
+	uint8_t		*prec;
+	uint8_t		find;
+	uint32_t	mytime_curr;
+
+	for( sect = 0; sect < 90; sect++ )
+	{
+		sst25_read( VDR_08H_START + sect * 4096, p, 4096 );
+		for( rec = 0; rec < 64; rec++ )
+		{
+			prec = p + rec * 128;
+			if( ( prec[0] == '0' ) && ( prec[1] == '8' ) )                                          /*是有效的数据包*/
+			{
+				mytime_curr = MYDATETIME( prec[2], prec[3], prec[4], prec[5], prec[6], prec[7] );   /*整分钟时刻*/
+				if( mytime_curr > mytime_08_max )
+				{
+					mytime_08_max	= mytime_curr;
+					rec_08_max		= sect * 128 + rec;
+				}
+				if( mytime_curr < mytime_08_min )
+				{
+					mytime_08_min	= mytime_curr;
+					rec_08_min		= sect * 128 + rec;
+				}
+			}
+		}
+	}
+	rt_kprintf( "\r\n%d>08_max(rec_08_max):%d-%d-%d %d:%d:%d", rt_tick_get( ),rec_08_max,YEAR(mytime_08_max),MONTH(mytime_08_max),DAY(mytime_08_max),HOUR(mytime_08_max),MINUTE(mytime_08_max),SEC(mytime_08_max));
+	rt_kprintf( "\r\n%d>08_min(rec_08_min):%d-%d-%d %d:%d:%d\r\n", rt_tick_get( ),rec_08_min,YEAR(mytime_08_min),MONTH(mytime_08_min),DAY(mytime_08_min),HOUR(mytime_08_min),MINUTE(mytime_08_min),SEC(mytime_08_min));
+}
+
+/*
+   获取09存储的状态 360小时每分钟速度状态记录
+   360*666字节
+
+   如果按分钟存储 6+11=17
+
+   48*60=2880个(128byte) 占用 90sector
+ */
+
+static void vdr_init_09h( uint8_t *p )
+{
+	uint8_t		sect, rec, offset;
+	uint8_t		*prec;
+	uint8_t		find;
+	uint32_t	mytime_curr;
+
+	for( sect = 0; sect < 90; sect++ )
+	{
+		sst25_read( VDR_09H_START + sect * 4096, p, 4096 );
+		for( rec = 0; rec < 64; rec++ )
+		{
+			prec = p + rec * 128;
+			if( ( prec[0] == '0' ) && ( prec[1] == '8' ) )                                          /*是有效的数据包*/
+			{
+				mytime_curr = MYDATETIME( prec[2], prec[3], prec[4], prec[5], prec[6], prec[7] );   /*整分钟时刻*/
+				if( mytime_curr > mytime_08_max )
+				{
+					mytime_08_max	= mytime_curr;
+					rec_08_max		= sect * 128 + rec;
+				}
+				if( mytime_curr < mytime_08_min )
+				{
+					mytime_08_min	= mytime_curr;
+					rec_08_min		= sect * 128 + rec;
+				}
+			}
+		}
+	}
+	rt_kprintf( "\r\n%d>08_max(rec_08_max):%d-%d-%d %d:%d:%d", rt_tick_get( ),rec_08_max,YEAR(mytime_08_max),MONTH(mytime_08_max),DAY(mytime_08_max),HOUR(mytime_08_max),MINUTE(mytime_08_max),SEC(mytime_08_max));
+	rt_kprintf( "\r\n%d>08_min(rec_08_min):%d-%d-%d %d:%d:%d\r\n", rt_tick_get( ),rec_08_min,YEAR(mytime_08_min),MONTH(mytime_08_min),DAY(mytime_08_min),HOUR(mytime_08_min),MINUTE(mytime_08_min),SEC(mytime_08_min));
+}
+
+
+
+
+
+/*
+   初始化记录区数据
+   因为是属于固定时间段存储的
+   需要记录开始时刻的sector位置(相对的sector偏移)
+ */
+rt_err_t vdr_init( void )
+{
+	uint8_t* pbuf;
+	pbuf = rt_malloc( 4096 );
+	if( pbuf == RT_NULL )
+	{
+		return -RT_ENOMEM;
+	}
+	vdr_init_08h( pbuf );
+	vdr_init_09h( pbuf );
+
+	rt_free( pbuf );
+	pbuf = RT_NULL;
+}
+
+/*
+   收到gps数据的处理
+   存储位置信息，
+   速度判断，校准
+ */
+
+rt_err_t vdr_rx( void )
+{
+	uint32_t	alarm, status, lati, longi;
+	uint16_t	speed, alt;
+	alarm	= BYTESWAP4( gps_baseinfo.alarm );
+	status	= BYTESWAP4( gps_baseinfo.status );
+	lati	= BYTESWAP4( gps_baseinfo.latitude);
+	longi	= BYTESWAP4( gps_baseinfo.longitude);
+	speed	= BYTESWAP2( gps_baseinfo.speed_10x );
+	alt		= BYTESWAP4( gps_baseinfo.altitude );
+}
 
 /************************************** The End Of File **************************************/

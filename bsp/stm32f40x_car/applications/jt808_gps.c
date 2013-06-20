@@ -485,15 +485,16 @@ uint8_t process_rmc( uint8_t * pinfo )
 				{
 					return 3;
 				}
-				degrees = ( ( buf [0] - 0x30 ) * 10 + ( buf [1] - 0x30 ) ) * 60 * 100000;
+
+				degrees = ( ( buf [0] - 0x30 ) * 10 + ( buf [1] - 0x30 ) ) * 1000000;
 				minutes = ( buf [2] - 0x30 ) * 1000000 +
 				          ( buf [3] - 0x30 ) * 100000 +
 				          ( buf [5] - 0x30 ) * 10000 +
 				          ( buf [6] - 0x30 ) * 1000 +
 				          ( buf [7] - 0x30 ) * 100 +
 				          ( buf [8] - 0x30 ) * 10 +
-				          ( buf [9] - 0x30 );
-				lati = degrees + minutes / 60;
+				          ( buf [9] - 0x30 );			/*多加了一个位，想要保证精度*/
+				lati = degrees + minutes / 6;
 				break;
 			case 4: /*N_S处理*/
 				if( buf[0] == 'N' )
@@ -512,7 +513,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 				{
 					return 5;
 				}
-				degrees = ( ( buf [0] - 0x30 ) * 100 + ( buf [1] - 0x30 ) * 10 + ( buf [2] - 0x30 ) ) * 60 * 100000;
+				degrees = ( ( buf [0] - 0x30 ) * 100 + ( buf [1] - 0x30 ) * 10 + ( buf [2] - 0x30 ) ) * 1000000;
 				minutes = ( buf [3] - 0x30 ) * 1000000 +
 				          ( buf [4] - 0x30 ) * 100000 +
 				          ( buf [6] - 0x30 ) * 10000 +
@@ -520,7 +521,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 				          ( buf [8] - 0x30 ) * 100 +
 				          ( buf [9] - 0x30 ) * 10 +
 				          ( buf [10] - 0x30 );
-				longi = degrees + minutes / 60;
+				longi = degrees + minutes / 6;
 				break;
 			case 6: /*E_W处理*/
 				if( buf[0] == 'E' )

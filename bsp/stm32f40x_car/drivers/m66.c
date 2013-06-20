@@ -1408,11 +1408,12 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 		gprs_rx( linkno, psrc, infolen );
 		return;
 	}
+/*	00002381 gsm<%IPCLOSE:1*/
 
 	if( strncmp( psrc, "%IPCLOSE:", 9 ) == 0 )
 	{
 		c = *( psrc + 9 ) - 0x30;
-		cb_socket_state( c, SOCKET_CLOSE );
+		cb_socket_close( c);
 		return;
 	}
 
