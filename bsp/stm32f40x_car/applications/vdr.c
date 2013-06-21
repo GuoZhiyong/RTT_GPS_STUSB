@@ -1709,7 +1709,7 @@ static uint32_t vdr_15_addr = VDR_15_START; /*当前要写入的地址*/
  */
 
 
-static void vdr_init_08_09_10( uint8_t *p )
+static void vdr_init_08( uint8_t *p )
 {
 	uint8_t		sect, rec, offset;
 	uint8_t		*prec;
@@ -1727,9 +1727,9 @@ static void vdr_init_08_09_10( uint8_t *p )
 			if( prec[0] == '8' )                                                                    /*是有效的数据包*/
 			{
 				mytime_curr = MYDATETIME( prec[1], prec[2], prec[3], prec[4], prec[5], prec[6] );   /*整分钟时刻*/
-				if( mytime_curr > vdr_08_mytime )
+				if( mytime_curr > mytime_vdr )
 				{
-					vdr_08_mytime	= mytime_curr;
+					mytime_vdr	= mytime_curr;
 					addr			= VDR_08_START + sect * 4096 + rec * 128;
 					find			= 1;
 				}
@@ -1744,7 +1744,7 @@ static void vdr_init_08_09_10( uint8_t *p )
 			vdr_08_addr = VDR_08_START;
 		}
 	}
-	rt_kprintf( "\r\n%d>datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), YEAR( vdr_08_mytime ), MONTH( vdr_08_mytime ), DAY( vdr_08_mytime ), HOUR( vdr_08_mytime ), MINUTE( vdr_08_mytime ), SEC( vdr_08_mytime ) );
+	rt_kprintf( "\r\n%d>datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), YEAR( mytime_vdr ), MONTH( mytime_vdr ), DAY( mytime_vdr ), HOUR( mytime_vdr ), MINUTE( mytime_vdr ), SEC( mytime_vdr ) );
 }
 
 /*
@@ -1764,7 +1764,7 @@ static void vdr_init_09( uint8_t *p )
 	uint8_t		*prec;
 	uint8_t		find;
 	uint32_t	mytime_curr;
-	uint32_t	vdr_09_mytime	= 0;
+	uint32_t	mytime_vdr	= 0;
 	uint32_t	addr			= 0;
 
 	for( sect = 0; sect < VDR_09_SECTORS; sect++ )
@@ -1776,9 +1776,9 @@ static void vdr_init_09( uint8_t *p )
 			if( prec[0] == '9' )                                                                    /*是有效的数据包*/
 			{
 				mytime_curr = MYDATETIME( prec[1], prec[2], prec[3], prec[4], prec[5], prec[6] );   /*整分钟时刻*/
-				if( mytime_curr > vdr_09_mytime )
+				if( mytime_curr > mytime_vdr )
 				{
-					vdr_09_mytime	= mytime_curr;
+					mytime_vdr	= mytime_curr;
 					addr			= VDR_09_START + sect * 4096 + rec * 16;
 					find			= 1;
 				}
@@ -1793,7 +1793,7 @@ static void vdr_init_09( uint8_t *p )
 			vdr_09_addr = VDR_09_START;
 		}
 	}
-	rt_kprintf( "\r\n%d>datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), YEAR( vdr_09_mytime ), MONTH( vdr_09_mytime ), DAY( vdr_09_mytime ), HOUR( vdr_09_mytime ), MINUTE( vdr_09_mytime ), SEC( vdr_09_mytime ) );
+	rt_kprintf( "\r\n%d>datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), YEAR( mytime_vdr ), MONTH( mytime_vdr ), DAY( mytime_vdr ), HOUR( mytime_vdr ), MINUTE( mytime_vdr ), SEC( mytime_vdr ) );
 }
 
 /*
@@ -1813,7 +1813,7 @@ static void vdr_init_10( uint8_t *p )
 	uint8_t		*prec;
 	uint8_t		find;
 	uint32_t	mytime_curr;
-	uint32_t	vdr_09_mytime	= 0;
+	uint32_t	mytime_vdr	= 0;
 	uint32_t	addr			= 0;
 
 	for( sect = 0; sect < VDR_09_SECTORS; sect++ )
@@ -1825,9 +1825,9 @@ static void vdr_init_10( uint8_t *p )
 			if( prec[0] == '9' )                                                                    /*是有效的数据包*/
 			{
 				mytime_curr = MYDATETIME( prec[1], prec[2], prec[3], prec[4], prec[5], prec[6] );   /*整分钟时刻*/
-				if( mytime_curr > vdr_09_mytime )
+				if( mytime_curr > mytime_vdr )
 				{
-					vdr_09_mytime	= mytime_curr;
+					mytime_vdr	= mytime_curr;
 					addr			= VDR_09_START + sect * 4096 + rec * 16;
 					find			= 1;
 				}
@@ -1842,7 +1842,7 @@ static void vdr_init_10( uint8_t *p )
 			vdr_09_addr = VDR_09_START;
 		}
 	}
-	rt_kprintf( "\r\n%d>datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), YEAR( vdr_09_mytime ), MONTH( vdr_09_mytime ), DAY( vdr_09_mytime ), HOUR( vdr_09_mytime ), MINUTE( vdr_09_mytime ), SEC( vdr_09_mytime ) );
+	rt_kprintf( "\r\n%d>datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), YEAR( mytime_vdr ), MONTH( mytime_vdr ), DAY( mytime_vdr ), HOUR( mytime_vdr ), MINUTE( mytime_vdr ), SEC( mytime_vdr ) );
 }
 
 /*
@@ -1858,8 +1858,8 @@ rt_err_t vdr_init( void )
 	{
 		return -RT_ENOMEM;
 	}
-	vdr_init_08h( pbuf );
-	vdr_init_09h( pbuf );
+	vdr_init_08( pbuf );
+	vdr_init_09( pbuf );
 
 	rt_free( pbuf );
 	pbuf = RT_NULL;
