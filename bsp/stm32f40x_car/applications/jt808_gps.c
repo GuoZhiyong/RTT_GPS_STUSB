@@ -108,6 +108,16 @@ struct
 	uint8_t		duration;                       /*持续时间*/
 } rectangle;
 
+
+
+uint32_t	gps_lati;
+uint32_t	gps_longi;
+uint16_t	gps_speed;
+uint16_t	gps_cog;				/*course over ground*/
+uint16_t	gps_alti;
+uint8_t		gps_datetime[6];
+
+
 /*保存gps基本位置信息*/
 GPS_BASEINFO	gps_baseinfo;
 /*gps的状态*/
@@ -428,9 +438,11 @@ uint8_t process_rmc( uint8_t * pinfo )
 	uint32_t	degrees, minutes;
 	uint8_t		commacount = 0, count = 0;
 
-	uint32_t	lati, longi;
-	uint32_t	speed_10x;
-	uint16_t	cog;                /*course over ground*/
+	uint32_t	lati,longi;
+	uint16_t	speed_10x;
+	uint16_t	cog;				/*course over ground*/
+
+
 	uint8_t		wait_dot_find;      /*确定信息中 dot .的位置*/
 	uint8_t		i;
 	uint8_t		buf[20];
@@ -618,6 +630,17 @@ uint8_t process_rmc( uint8_t * pinfo )
 				}
 
 				/*都处理完了更新 gps_baseinfo,没有高程信息*/
+				gps_lati=lati;
+				gps_longi=longi;
+				gps_speed=speed_10x/10;
+				gps_cog=cog;
+				gps_datetime[0]=year;
+				gps_datetime[1]=mon;
+				gps_datetime[2]=day;
+				gps_datetime[3]=hour;
+				gps_datetime[4]=minutes;
+				gps_datetime[5]=sec;
+				
 				gps_baseinfo.alarm		= BYTESWAP4(jt808_alarm);
 				gps_baseinfo.status		= BYTESWAP4(jt808_status);
 				gps_baseinfo.latitude	= BYTESWAP4(lati);
@@ -700,15 +723,6 @@ uint8_t process_gga( uint8_t * pinfo )
 				{
 					return 2;
 				}
-				degrees = ( ( buf [0] - 0x30 ) * 10 + ( buf [1] - 0x30 ) ) * 60 * 100000;
-				minutes = ( buf [2] - 0x30 ) * 1000000 +
-				          ( buf [3] - 0x30 ) * 100000 +
-				          ( buf [5] - 0x30 ) * 10000 +
-				          ( buf [6] - 0x30 ) * 1000 +
-				          ( buf [7] - 0x30 ) * 100 +
-				          ( buf [8] - 0x30 ) * 10 +
-				          ( buf [9] - 0x30 );
-				lati = degrees + minutes / 60;
 				break;
 
 			case 3: /*N_S处理*/
@@ -729,15 +743,6 @@ uint8_t process_gga( uint8_t * pinfo )
 				{
 					return 4;
 				}
-				degrees = ( ( buf [0] - 0x30 ) * 100 + ( buf [1] - 0x30 ) * 10 + ( buf [2] - 0x30 ) ) * 60 * 100000;
-				minutes = ( buf [3] - 0x30 ) * 1000000 +
-				          ( buf [4] - 0x30 ) * 100000 +
-				          ( buf [6] - 0x30 ) * 10000 +
-				          ( buf [7] - 0x30 ) * 1000 +
-				          ( buf [8] - 0x30 ) * 100 +
-				          ( buf [9] - 0x30 ) * 10 +
-				          ( buf [10] - 0x30 );
-				longi = degrees + minutes / 60;
 				break;
 			case 5: /*E_W处理*/
 				if( buf[0] == 'E' )
@@ -777,6 +782,7 @@ uint8_t process_gga( uint8_t * pinfo )
 					altitute	+= ( buf[i] - '0' );
 				}
 				gps_baseinfo.altitude = altitute;
+				gps_alti=altitute;
 				return 0;
 				break;
 		}

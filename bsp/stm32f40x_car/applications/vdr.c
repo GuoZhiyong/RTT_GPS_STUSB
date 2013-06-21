@@ -26,57 +26,52 @@
 
 static rt_thread_t tid_usb_vdr = RT_NULL;
 
-struct _sect_info
-{
-	uint32_t	addr;           //开始的地址
-	uint16_t	bytes_per_block;
-	uint8_t		blocks;
-} sect_info[7] =
-{
-	{ 0x00300000, 8192, 24	},  //block_08h_09h		8*1024Bytes	24Block		0x30000	192k	0x30000
-	{ 0x00330000, 256,	128 },  //block_10h         234Bytes	100Block	0x8000	32k		0x 8000
-	{ 0x00338000, 64,	128 },  //block 11          50Bytes		100Block	0x2000	8k		0x 2000
-	{ 0x0033A000, 32,	256 },  //block 12          25Bytes		200block	0x2000	8k		0x 2000
-	{ 0x0033C000, 8,	128 },  //block 13          7Bytes		100block	0x400	1k		0x 1000
-	{ 0x0033D000, 8,	128 },  //block 14          7Bytes		100block	0x400	1k		0x 1000
-	{ 0x0033E000, 256,	16	},  //block 15          133Bytes	10block		0x1000	4k		0x 1000
-};
-
 #define VDR_08H_09H_START	0x300000
 #define VDR_08H_09H_END		0x32FFFF
 
+#define VDR_BASE 0x300000
 
-#define VDR_BASE		0x300000
-#define VDR_08H_SIZE	(56*60*128)		/*存50小时,每分钟 128byte,要4K对齐*/
-#define VDR_09H_SIZE	(360*60*128) 	/*存360小时*/
+#define VDR_08_START	VDR_BASE
+#define VDR_08_SECTORS	92  /*48小时 单位分钟内的速度 48*60*128/4096=90 ，防止删除整个4K时数据不足，要多预留一些*/
 
+#define VDR_09_START	( VDR_08_START + VDR_08_SECTORS * 4096 )
+#define VDR_09_SECTORS	86  /*360小时 每分钟位置速度 360*60*16*/
 
+#define VDR_10_START	( VDR_09_START + VDR_09_SECTORS * 4096 )
+#define VDR_10_SECTORS	8   /*100条事故疑点 100*234  实际 128*256 */
 
-#define VDR_08H_START	0x300000
-#define VDR_08H_SIZE	(48*60*128)
-#define VDR_08H_END		(VDR_08H_START+VDR_08H_SIZE)
+#define VDR_11_START	( VDR_10_START + VDR_10_SECTORS * 4096 )
+#define VDR_11_SECTORS	3   /*100条超时驾驶记录 100*50 实际 128*64,保留一个扇区，删除时仍有数据*/
 
-/**/
-#define VDR_09H_START	0x300000
-#define VDR_09H_END		0x32FFFF
+#define VDR_12_START	( VDR_11_START + VDR_11_SECTORS * 4096 )
+#define VDR_12_SECTORS	3   /*200条驾驶人身份记录 200*25 实际200*32 */
 
-#define VDR_10H_START	0x330000    /*256*100= 0x6400*/
-#define VDR_10H_END		0x3363FF
+#define VDR_13_START	( VDR_12_START + VDR_12_SECTORS * 4096 )
+#define VDR_13_SECTORS	2   /*100条 外部供电记录100*7 实际 100*8*/
 
-#define VDR_11H_START	0x338000
-#define VDR_11H_END		0x3398FF    /*64*100=0x1900*/
+#define VDR_14_START	( VDR_13_START + VDR_13_SECTORS * 4096 )
+#define VDR_14_SECTORS	2   /*100条 参数修改记录 100*7 实际100*8*/
 
-#define VDR_12H_START	0x33A000
-#define VDR_12H_END		0x33B8FF    /*32*200=*/
+#define VDR_15_START	( VDR_14_START + VDR_14_SECTORS * 4096 )
+#define VDR_15_SECTORS	2   /*10条速度状态日志 10*133 实际 10*256*/
 
-#define VDR_13H_START	0x33C000
-#define VDR_13H_END		0x33C31F    /*128*100*/
-
-#define VDR_14H_START	0x33D000
-#define VDR_14H_END		0x33D31F
-
-#define VDR_15H_START	0x33E000
-#define VDR_15H_END		0x33E98F
+struct _sect_info
+{
+	uint8_t		flag;       /*标志*/
+	uint32_t	addr;       //开始的地址
+	uint16_t	rec_size;
+	uint8_t		sectors;
+} sect_info[8] =
+{
+	{ '8', VDR_08_START, 128, 92 },
+	{ '9', VDR_09_START, 16,  86 },
+	{ 'A', VDR_10_START, 256, 8	 },
+	{ 'B', VDR_11_START, 64,  3	 },
+	{ 'C', VDR_12_START, 32,  3	 },
+	{ 'D', VDR_13_START, 8,	  2	 },
+	{ 'E', VDR_14_START, 8,	  2	 },
+	{ 'F', VDR_15_START, 256, 2	 },
+};
 
 
 /*基于小时的时间戳,主要是为了比较大小使用
@@ -1668,120 +1663,187 @@ uint8_t get_vdr( VDRCMD* vdrcmd, uint8_t *pout, uint16_t *len )
 #define SEC( datetime )										( datetime & 0x3F )
 
 
-/*
-   通过存储时，建立一定的对应关系，达到快速索引的目的
- */
+
+static uint8_t	rec_08h_head[128];          /*文件头*/
+static uint8_t	rec_08h_data[128];          /*数据*/
+
+static uint32_t vdr_08_addr = VDR_08_START; /*当前要写入的地址*/
+static uint32_t vdr_09_addr = VDR_09_START; /*当前要写入的地址*/
+static uint32_t vdr_10_addr = VDR_10_START; /*当前要写入的地址*/
+static uint32_t vdr_11_addr = VDR_11_START; /*当前要写入的地址*/
+static uint32_t vdr_12_addr = VDR_12_START; /*当前要写入的地址*/
+static uint32_t vdr_13_addr = VDR_13_START; /*当前要写入的地址*/
+static uint32_t vdr_14_addr = VDR_14_START; /*当前要写入的地址*/
+static uint32_t vdr_15_addr = VDR_15_START; /*当前要写入的地址*/
 
 
 /*
-   48小时，每分钟平均速度和状态
-   每个记录块 126字节,
-   开始时间（6Byte）+单位分钟内每秒的速度和状态信息（（速度1Byte+状态1Byte）*60）
+   获取08存储的状态 48小时 单位分钟内每秒的速度状态2byte
+   48*60*128=2880*128=368640 (bytes)
+   368640/4096=90(sectors)
+
+   格式:
+   <'8'><mydatetime(4bytes><60秒的速度状态120bytes>
+   循环递增
+ */
+/*
+	   获取09存储的状态 360小时每分钟位置速度状态记录
+	   360*60*11
+	
+	   每分钟记录占用16byte;
+	   总共需要 360*60*16=345600bytes
+	   345600/4096=84.375 =>85Sector
+	   格式:
+	   <'9'><mydatatime 4byte><分钟位置速度11byte>
  */
 
-static uint8_t	rec_08h_head[128];  /*文件头*/
-static uint8_t	rec_08h_data[128];  /*数据*/
+/*
+   获取09存储的状态 360小时每分钟位置速度状态记录
+   360*60*11
 
-/*获取08数据*/
-static uint8_t get_08h( )
+   每分钟记录占用16byte;
+   总共需要 360*60*16=345600bytes
+   345600/4096=84.375 =>85Sector
+   格式:
+   <'9'><mydatatime 4byte><分钟位置速度11byte>
+ */
+
+
+static void vdr_init_08_09_10( uint8_t *p )
 {
+	uint8_t		sect, rec, offset;
+	uint8_t		*prec;
+	uint8_t		find		= 0;
+	uint32_t	mytime_curr = 0;
+	uint32_t	mytime_vdr	= 0;
+	uint32_t	addr		= 0;
+
+	for( sect = 0; sect < VDR_08_SECTORS; sect++ )
+	{
+		sst25_read( VDR_08_START + sect * 4096, p, 4096 );
+		for( rec = 0; rec < 64; rec++ )
+		{
+			prec = p + rec * 128;
+			if( prec[0] == '8' )                                                                    /*是有效的数据包*/
+			{
+				mytime_curr = MYDATETIME( prec[1], prec[2], prec[3], prec[4], prec[5], prec[6] );   /*整分钟时刻*/
+				if( mytime_curr > vdr_08_mytime )
+				{
+					vdr_08_mytime	= mytime_curr;
+					addr			= VDR_08_START + sect * 4096 + rec * 128;
+					find			= 1;
+				}
+			}
+		}
+	}
+	if( find ) /*找到了,指向下一个可用的地址,注意环回*/
+	{
+		vdr_08_addr = addr + 0x80;
+		if( vdr_08_addr >= ( VDR_08_START + sect * 4096 ) )
+		{
+			vdr_08_addr = VDR_08_START;
+		}
+	}
+	rt_kprintf( "\r\n%d>datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), YEAR( vdr_08_mytime ), MONTH( vdr_08_mytime ), DAY( vdr_08_mytime ), HOUR( vdr_08_mytime ), MINUTE( vdr_08_mytime ), SEC( vdr_08_mytime ) );
 }
 
-
-static uint32_t mytime_08_max	= 0, mytime_08_min = 0xFFFFFFFF;
-static uint16_t rec_08_max		= 0, rec_08_min;
-
-
-static uint32_t mytime_09_max	= 0, mytime_09_min = 0xFFFFFFFF;
-static uint16_t rec_09_max		= 0, rec_09_min;
-
-
-
 /*
-   获取08存储的状态 48小时 单位分钟内每秒的速度状态2byte  
-   48*60=2880个(128byte) 占用 90sector
-   多分配一个sector(32分钟的数据)，这样在循环写入时，可以直写，而不用回写。保证数据足够
-   
+   获取09存储的状态 360小时每分钟位置速度状态记录
+   360*60*11
+
+   每分钟记录占用16byte;
+   总共需要 360*60*16=345600bytes
+   345600/4096=84.375 =>85Sector
+   格式:
+   <'9'><mydatatime 4byte><分钟位置速度11byte>
  */
 
-static void vdr_init_08h( uint8_t *p )
+static void vdr_init_09( uint8_t *p )
 {
 	uint8_t		sect, rec, offset;
 	uint8_t		*prec;
 	uint8_t		find;
 	uint32_t	mytime_curr;
+	uint32_t	vdr_09_mytime	= 0;
+	uint32_t	addr			= 0;
 
-	for( sect = 0; sect < 90; sect++ )
+	for( sect = 0; sect < VDR_09_SECTORS; sect++ )
 	{
-		sst25_read( VDR_08H_START + sect * 4096, p, 4096 );
+		sst25_read( VDR_09_START + sect * 4096, p, 4096 );
 		for( rec = 0; rec < 64; rec++ )
 		{
-			prec = p + rec * 128;
-			if( ( prec[0] == '0' ) && ( prec[1] == '8' ) )                                          /*是有效的数据包*/
+			prec = p + rec * 16;
+			if( prec[0] == '9' )                                                                    /*是有效的数据包*/
 			{
-				mytime_curr = MYDATETIME( prec[2], prec[3], prec[4], prec[5], prec[6], prec[7] );   /*整分钟时刻*/
-				if( mytime_curr > mytime_08_max )
+				mytime_curr = MYDATETIME( prec[1], prec[2], prec[3], prec[4], prec[5], prec[6] );   /*整分钟时刻*/
+				if( mytime_curr > vdr_09_mytime )
 				{
-					mytime_08_max	= mytime_curr;
-					rec_08_max		= sect * 128 + rec;
-				}
-				if( mytime_curr < mytime_08_min )
-				{
-					mytime_08_min	= mytime_curr;
-					rec_08_min		= sect * 128 + rec;
+					vdr_09_mytime	= mytime_curr;
+					addr			= VDR_09_START + sect * 4096 + rec * 16;
+					find			= 1;
 				}
 			}
 		}
 	}
-	rt_kprintf( "\r\n%d>08_max(rec_08_max):%d-%d-%d %d:%d:%d", rt_tick_get( ),rec_08_max,YEAR(mytime_08_max),MONTH(mytime_08_max),DAY(mytime_08_max),HOUR(mytime_08_max),MINUTE(mytime_08_max),SEC(mytime_08_max));
-	rt_kprintf( "\r\n%d>08_min(rec_08_min):%d-%d-%d %d:%d:%d\r\n", rt_tick_get( ),rec_08_min,YEAR(mytime_08_min),MONTH(mytime_08_min),DAY(mytime_08_min),HOUR(mytime_08_min),MINUTE(mytime_08_min),SEC(mytime_08_min));
+	if( find ) /*找到了,指向下一个可用的地址,注意环回*/
+	{
+		vdr_09_addr = addr + 0x10;
+		if( vdr_09_addr >= ( VDR_09_START + sect * 4096 ) )
+		{
+			vdr_09_addr = VDR_09_START;
+		}
+	}
+	rt_kprintf( "\r\n%d>datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), YEAR( vdr_09_mytime ), MONTH( vdr_09_mytime ), DAY( vdr_09_mytime ), HOUR( vdr_09_mytime ), MINUTE( vdr_09_mytime ), SEC( vdr_09_mytime ) );
 }
 
 /*
-   获取09存储的状态 360小时每分钟速度状态记录
-   360*666字节
+   获取09存储的状态 360小时每分钟位置速度状态记录
+   360*60*11
 
-   如果按分钟存储 6+11=17
-
-   48*60=2880个(128byte) 占用 90sector
+   每分钟记录占用16byte;
+   总共需要 360*60*16=345600bytes
+   345600/4096=84.375 =>85Sector
+   格式:
+   <'9'><mydatatime 4byte><分钟位置速度11byte>
  */
 
-static void vdr_init_09h( uint8_t *p )
+static void vdr_init_10( uint8_t *p )
 {
 	uint8_t		sect, rec, offset;
 	uint8_t		*prec;
 	uint8_t		find;
 	uint32_t	mytime_curr;
+	uint32_t	vdr_09_mytime	= 0;
+	uint32_t	addr			= 0;
 
-	for( sect = 0; sect < 90; sect++ )
+	for( sect = 0; sect < VDR_09_SECTORS; sect++ )
 	{
-		sst25_read( VDR_09H_START + sect * 4096, p, 4096 );
+		sst25_read( VDR_09_START + sect * 4096, p, 4096 );
 		for( rec = 0; rec < 64; rec++ )
 		{
-			prec = p + rec * 128;
-			if( ( prec[0] == '0' ) && ( prec[1] == '8' ) )                                          /*是有效的数据包*/
+			prec = p + rec * 16;
+			if( prec[0] == '9' )                                                                    /*是有效的数据包*/
 			{
-				mytime_curr = MYDATETIME( prec[2], prec[3], prec[4], prec[5], prec[6], prec[7] );   /*整分钟时刻*/
-				if( mytime_curr > mytime_08_max )
+				mytime_curr = MYDATETIME( prec[1], prec[2], prec[3], prec[4], prec[5], prec[6] );   /*整分钟时刻*/
+				if( mytime_curr > vdr_09_mytime )
 				{
-					mytime_08_max	= mytime_curr;
-					rec_08_max		= sect * 128 + rec;
-				}
-				if( mytime_curr < mytime_08_min )
-				{
-					mytime_08_min	= mytime_curr;
-					rec_08_min		= sect * 128 + rec;
+					vdr_09_mytime	= mytime_curr;
+					addr			= VDR_09_START + sect * 4096 + rec * 16;
+					find			= 1;
 				}
 			}
 		}
 	}
-	rt_kprintf( "\r\n%d>08_max(rec_08_max):%d-%d-%d %d:%d:%d", rt_tick_get( ),rec_08_max,YEAR(mytime_08_max),MONTH(mytime_08_max),DAY(mytime_08_max),HOUR(mytime_08_max),MINUTE(mytime_08_max),SEC(mytime_08_max));
-	rt_kprintf( "\r\n%d>08_min(rec_08_min):%d-%d-%d %d:%d:%d\r\n", rt_tick_get( ),rec_08_min,YEAR(mytime_08_min),MONTH(mytime_08_min),DAY(mytime_08_min),HOUR(mytime_08_min),MINUTE(mytime_08_min),SEC(mytime_08_min));
+	if( find ) /*找到了,指向下一个可用的地址,注意环回*/
+	{
+		vdr_10_addr = addr + 0x10;
+		if( vdr_09_addr >= ( VDR_09_START + sect * 4096 ) )
+		{
+			vdr_09_addr = VDR_09_START;
+		}
+	}
+	rt_kprintf( "\r\n%d>datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), YEAR( vdr_09_mytime ), MONTH( vdr_09_mytime ), DAY( vdr_09_mytime ), HOUR( vdr_09_mytime ), MINUTE( vdr_09_mytime ), SEC( vdr_09_mytime ) );
 }
-
-
-
-
 
 /*
    初始化记录区数据
@@ -1811,14 +1873,6 @@ rt_err_t vdr_init( void )
 
 rt_err_t vdr_rx( void )
 {
-	uint32_t	alarm, status, lati, longi;
-	uint16_t	speed, alt;
-	alarm	= BYTESWAP4( gps_baseinfo.alarm );
-	status	= BYTESWAP4( gps_baseinfo.status );
-	lati	= BYTESWAP4( gps_baseinfo.latitude);
-	longi	= BYTESWAP4( gps_baseinfo.longitude);
-	speed	= BYTESWAP2( gps_baseinfo.speed_10x );
-	alt		= BYTESWAP4( gps_baseinfo.altitude );
 }
 
 /************************************** The End Of File **************************************/
