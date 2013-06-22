@@ -24,6 +24,7 @@
 #include <finsh.h>
 
 
+
 #define RS485_GPIO_TX			GPIO_Pin_2 	// PA2
 #define RS485_GPIO_RX			GPIO_Pin_3  // PA3
 #define RS485_GPIO_TxC			GPIOA
@@ -300,6 +301,7 @@ static void usart2_putc( const char c )
 }
 
 
+
 ALIGN( RT_ALIGN_SIZE )
 static char thread_RS485_stack[1024];
 struct rt_thread thread_RS485;
@@ -317,7 +319,8 @@ struct rt_thread thread_RS485;
 static void rt_thread_entry_RS485( void* parameter )
 {
 	rt_err_t	res;
-	Cam_init();
+	
+	Cam_Device_init();
 	while( 1 )
 	{
 		if(Camera_Process()==0)

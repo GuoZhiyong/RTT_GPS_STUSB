@@ -214,6 +214,32 @@ u16 Ascii_To_Hex( const u8* pSrc, u8* pDst, u16 nSrcLength )
 	// 返回目标数据长度
 	return ( nSrcLength >> 1 );
 }
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void printer_data_hex(u8 *pSrc,u16 nSrcLength)
+{
+	char pDst[3];
+ 	const u8	tab[] = "0123456789ABCDEF"; // 0x0-0xf的字符查找表
+	u16			i;
+	
+	pDst[2]=0;
+	for( i = 0; i < nSrcLength; i++ )
+	{
+		// 输出低4位
+		pDst[0] = tab[*pSrc >> 4];
+		// 输出高4位
+		pDst[1] = tab[*pSrc & 0x0f];
+		rt_kprintf("%s",pDst);
+		pSrc++;
+	}
+}
 
 /***********************************************************
 * Function:
