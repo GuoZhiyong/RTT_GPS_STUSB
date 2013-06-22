@@ -411,8 +411,11 @@ void process_gps( void )
 	
 /*生成要上报的数据*/
 	//jt808_add_msg_head(uint8_t * p,uint16_t id,uint16_t attr,uint16_t seq)
-	err=jt808_add_tx_data(1,TERMINAL_CMD,0x0200,28,-1,RT_NULL,RT_NULL,(uint8_t*)&gps_baseinfo,RT_NULL);
-	rt_kprintf("%d>add gps report=%d\r\n",rt_tick_get(),err);
+	if(gps_datetime[5]%10==0)
+	{
+		err=jt808_add_tx_data(1,TERMINAL_CMD,0x0200,28,-1,RT_NULL,RT_NULL,(uint8_t*)&gps_baseinfo,RT_NULL);
+		rt_kprintf("%d>add gps report=%d\r\n",rt_tick_get(),err);
+	}	
 	
 
 }

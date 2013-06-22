@@ -404,6 +404,7 @@ rt_err_t jt808_add_tx_data_gzy( uint8_t linkno,
 	pnodedata->head_id = id;
 
 	pdata		= pnodedata->tag_data;
+	
 	*pdata++	= id >> 8;
 	*pdata++	= id & 0xff;
 	*pdata++	= attr >> 8;
@@ -1378,7 +1379,7 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
    2013.06.08增加多包发送处理
  */
 
-static MsgListRet jt808_tx_proc_func( MsgListNode * node )
+static MsgListRet jt808_tx_proc( MsgListNode * node )
 {
 	MsgListNode			* pnode		= ( MsgListNode* )node;
 	JT808_TX_NODEDATA	* pnodedata = ( JT808_TX_NODEDATA* )( pnode->data );
@@ -1432,10 +1433,10 @@ static MsgListRet jt808_tx_proc_func( MsgListNode * node )
 			res_ret = pnodedata->cb_tx_response(pnodedata,NULL);
 			if(IDLE == res_ret)
 			{
-				rt_kprintf("\r\n发送数据:\r\n");
-				printer_data_hex(pnodedata->tag_data,pnodedata->msg_len);
-				ret=RT_EOK;
-				//ret = socket_write( pnodedata->linkno, pnodedata->tag_data, pnodedata->msg_len );
+				//rt_kprintf("\r\n发送数据:\r\n");
+				//printer_data_hex(pnodedata->tag_data,pnodedata->msg_len);
+				//ret=RT_EOK;
+				ret = socket_write( pnodedata->linkno, pnodedata->tag_data, pnodedata->msg_len );
 				
 				pnodedata->retry = 1;
 				if( ret == RT_EOK )             /*发送成功等待中心应答中*/
@@ -1490,7 +1491,7 @@ static MsgListRet jt808_tx_proc_func( MsgListNode * node )
    2013.06.08增加多包发送处理
  */
 
-static MsgListRet jt808_tx_proc( MsgListNode * node )
+static MsgListRet jt808_tx_proc_test( MsgListNode * node )
 {
 	MsgListNode			* pnode		= ( MsgListNode* )node;
 	JT808_TX_NODEDATA	* pnodedata = ( JT808_TX_NODEDATA* )( pnode->data );
@@ -1549,10 +1550,10 @@ static MsgListRet jt808_tx_proc( MsgListNode * node )
 			res_ret = pnodedata->cb_tx_response(pnodedata,NULL);
 			if(IDLE == res_ret)
 			{
-				rt_kprintf("\r\n发送数据:\r\n");
-				printer_data_hex(pnodedata->tag_data,pnodedata->msg_len);
-				ret=RT_EOK;
-				//ret = socket_write( pnodedata->linkno, pnodedata->tag_data, pnodedata->msg_len );
+				//rt_kprintf("\r\n发送数据:\r\n");
+				//printer_data_hex(pnodedata->tag_data,pnodedata->msg_len);
+				//ret=RT_EOK;
+				ret = socket_write( pnodedata->linkno, pnodedata->tag_data, pnodedata->msg_len );
 				
 				pnodedata->retry = 1;
 				if( ret == RT_EOK )             /*发送成功等待中心应答中*/
@@ -1681,7 +1682,7 @@ static void jt808_socket_proc( void )
 				/*重新拨号，发送鉴权命令或注册命令*/
 				rt_kprintf( "auth\r\n" );
 				//jt808_tx(0x0102,"012345",6);  /*这个简化的指令好像不能执行，基本函数*/
-				jt808_add_tx_data( 1, TERMINAL_CMD, 0x0102, 6, -1, RT_NULL, RT_NULL, "012345" );
+				jt808_add_tx_data( 1, TERMINAL_CMD, 0x0102, 6, -1, RT_NULL, RT_NULL, "012345",RT_NULL );
 				server_heartbeat_tick = rt_tick_get( ); /*首次用保留当前时刻*/
 			}
 			return;                                     /*直接返回，不连ICCARD*/
@@ -2256,7 +2257,7 @@ void reset( uint32_t reason )
 
 	rt_kprintf( "\r\n%08d reset>reason=%08x", rt_tick_get( ), reason );
 /*执行重启*/
-	rt_thread_delay( RT_TICK_PER_SECOND );
+	rt_thread_delay( RT_TICK_PER_SECOND*5 );
 	NVIC_SystemReset( );
 }
 
