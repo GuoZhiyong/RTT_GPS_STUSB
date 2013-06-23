@@ -19,6 +19,7 @@
 #include "stm32f4xx.h"
 #include "rs485.h"
 #include "jt808.h"
+#include "jt808_gps.h"
 #include "camera.h"
 #include "jt808_camera.h"
 #include <finsh.h>
@@ -762,9 +763,9 @@ static rt_err_t Cam_Flash_WrPic(u8 *pData,u16 len, TypeDF_PackageHead *pHead)
 *作	者:白养民
 *创建日期:2013-06-5
 *---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+*修 改 人:bai
+*修改日期:2013-06-23
+*修改描述:修改了拍照数据存储异常时的检索功能
 *********************************************************************************/
 u32 Cam_Flash_FindPicID(u32 id,TypeDF_PackageHead *p_head)
 {
@@ -782,10 +783,12 @@ u32 Cam_Flash_FindPicID(u32 id,TypeDF_PackageHead *p_head)
 		{
 		lastPackInfo.Data_ID=0xFFFFFFFF;
 		TempAddress=DF_PicParameter.FirstPic.Address;
-		for(i=0;i<DF_PicParameter.Number;i++)
+		for(i=0;i<DF_PicParameter.Number;)
 			{
 			TempAddress=Cam_Flash_AddrCheck(TempAddress);
 			sst25_read(TempAddress,(u8 *)&TempPackageHead,sizeof(TypeDF_PackageHead));
+			//rt_kprintf("\r\n NUM=%d,ADDR=%d,ID=%d, Head=",i,TempAddress,TempPackageHead.Data_ID);
+			//printer_data_hex((u8 *)&TempPackageHead,sizeof(TypeDF_PackageHead)-28);
 			if(strncmp(TempPackageHead.Head,CAM_HEAD,strlen(CAM_HEAD))==0)
 				{
 				///查看该图片是否被删除
@@ -800,11 +803,13 @@ u32 Cam_Flash_FindPicID(u32 id,TypeDF_PackageHead *p_head)
 						return lastPackInfo.Address;
 						}
 					}
+				i++;
 				TempAddress+=(TempPackageHead.Len+DF_CamSaveSect-1)/DF_CamSaveSect*DF_CamSaveSect;
 				}
 			else
 				{
-				return 0xFFFFFFFF;
+				TempAddress+=DF_CamSaveSect;		///修改存储异常，在此增加该代码，之前代码直接返回OXffff
+				//return 0xFFFFFFFF;
 				}
 			}
 		}
@@ -1506,13 +1511,16 @@ u8 Camera_Process(void)
 					pack_head.TiggerStyle=Current_Cam_Para.Para.TiggerStyle;
 					pack_head.Media_Format=0;
 					pack_head.Media_Style=0;
-					
+					memcpy(&pack_head.Time,gps_datetime,6);
+					/*
 					pack_head.Time.years=0x13;
 					pack_head.Time.months=0x06;
 					pack_head.Time.days=tick>>24;
 					pack_head.Time.hours=tick>>16;
 					pack_head.Time.minutes=tick>>8;
 					pack_head.Time.seconds=tick;
+					*/
+					memcpy(&pack_head.position,&gps_baseinfo,28);
 					pack_head.State=0xFF;
 					if(Current_Cam_Para.Para.SavePhoto == 0)
 						{
@@ -1580,6 +1588,7 @@ u8 Camera_Process(void)
 				{
 				Current_Cam_Para.Para.cb_response_cam_end(&Current_Cam_Para.Para);
 				rt_free(Current_Cam_Para.Para.user_para);
+				rt_kprintf("\r\nCam_jt808_0x8801_cam_end_free");
 				}
 			else		///默认的回调函数
 				{
@@ -1628,7 +1637,7 @@ void Cam_takepic_ex(u16 id,u16 num,u16 space,u8 save,u8 send,Cam_Trigger trige)
  tempPara.PhotoTotal=num;
  tempPara.SavePhoto	= save;
  tempPara.SendPhoto	= send;
- tempPara.TiggerStyle=Cam_TRIGGER_PLANTFORM;
+ tempPara.TiggerStyle=trige;
  take_pic_request(&tempPara);
  rt_kprintf("\r\n请求拍照ID=%d",id);
 }

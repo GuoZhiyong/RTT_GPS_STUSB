@@ -1611,21 +1611,24 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 			rt_kprintf( "%s", "7D02" );
 		}
 
-		if( c == 0x7d )
+		else if( c == 0x7d )
 		{
 			m66_write( &dev_gsm, 0, "7D01", 4 );
 			rt_kprintf( "%s", "7D01" );
 		}
-		USART_SendData( UART4, tbl[c >> 4] );
-		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		else
 		{
+			USART_SendData( UART4, tbl[c >> 4] );
+			while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+			{
+			}
+			rt_kprintf( "%c", tbl[c >> 4] );
+			USART_SendData( UART4, tbl[c & 0x0f] );
+			while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+			{
+			}
+			rt_kprintf( "%c", tbl[c & 0x0f] );
 		}
-		rt_kprintf( "%c", tbl[c >> 4] );
-		USART_SendData( UART4, tbl[c & 0x0f] );
-		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
-		{
-		}
-		rt_kprintf( "%c", tbl[c & 0x0f] );
 		len--;
 	}
 /*再发送fcs*/
@@ -1634,22 +1637,24 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 		m66_write( &dev_gsm, 0, "7D02", 4 );
 		rt_kprintf( "%s", "7D02" );
 	}
-
-	if( fcs == 0x7d )
+	else if( fcs == 0x7d )
 	{
 		m66_write( &dev_gsm, 0, "7D01", 4 );
 		rt_kprintf( "%s", "7D01" );
 	}
-	USART_SendData( UART4, tbl[fcs >> 4] );
-	while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+	else
 	{
+		USART_SendData( UART4, tbl[fcs >> 4] );
+		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		{
+		}
+		rt_kprintf( "%c", tbl[fcs >> 4] );
+		USART_SendData( UART4, tbl[fcs & 0x0f] );
+		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		{
+		}
+		rt_kprintf( "%c", tbl[fcs & 0x0f] );
 	}
-	rt_kprintf( "%c", tbl[fcs >> 4] );
-	USART_SendData( UART4, tbl[fcs & 0x0f] );
-	while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
-	{
-	}
-	rt_kprintf( "%c", tbl[fcs & 0x0f] );
 /*再发送7E尾*/	
 	m66_write( &dev_gsm, 0, "7E", 2 );
 	rt_kprintf( "%s", "7E" );

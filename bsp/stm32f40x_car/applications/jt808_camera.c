@@ -132,6 +132,21 @@ static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 *********************************************************************************/
 static JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
 {
+ u16 cmd_id;
+ cmd_id = nodedata->head_id;
+ switch( cmd_id )
+ 	{
+ 	case 0x800 :
+		{
+		rt_free( nodedata->user_para );
+		nodedata->user_para = RT_NULL;
+		break;
+ 		}
+	default :
+		{
+		break;
+		}
+ 	}
  rt_kprintf("\r\n Cam_tx_timeout");
  return ACK_OK;
 }
@@ -185,6 +200,7 @@ static JT808_MSG_STATE Cam_jt808_0x801_response( JT808_TX_NODEDATA * nodedata , 
 		{
 		if(( nodedata->head_sn == buf_to_data(msg,2) ) &&( nodedata->head_id == buf_to_data(msg+2,2) ) && ( msg[4] == 0 ))
 			{
+			nodedata->retry = 0;
 			return IDLE;
 			}
 		}
@@ -208,6 +224,7 @@ static JT808_MSG_STATE Cam_jt808_0x801_response( JT808_TX_NODEDATA * nodedata , 
 					p_para->Pack_Mark[tempu32data/8] |= BIT(tempu32data%8);
 					}
 				rt_kprintf("\r\n Cam_jt808_0x801_response\r\n lost_pack=%d",pack_num);
+				nodedata->retry = 0;
 				return IDLE;
 				}
 			else
@@ -342,7 +359,7 @@ static JT808_MSG_STATE Cam_jt808_0x800_response( JT808_TX_NODEDATA * nodedata , 
 		{
 		return IDLE;
 		}
-	rt_kprintf("\r\n Cam_jt808_0x800_response_1:\r\n");
+	
 	printer_data_hex(pmsg,17);
 	
 	temp_msg_id		= buf_to_data( pmsg , 2 );
@@ -350,7 +367,6 @@ static JT808_MSG_STATE Cam_jt808_0x800_response( JT808_TX_NODEDATA * nodedata , 
 	msg			= pmsg + 12;
 	if(0x8001 == temp_msg_id)		///Í¨ÓÃÓ¦´ð
 		{
-		rt_kprintf("\r\n Cam_jt808_0x800_response_2");
 		if(( nodedata->head_sn == buf_to_data(msg,2) ) &&( nodedata->head_id == buf_to_data(msg+2,2) ) && ( msg[4] == 0 ))
 			{
 			p_para					= nodedata->user_para;
@@ -377,7 +393,7 @@ static JT808_MSG_STATE Cam_jt808_0x800_response( JT808_TX_NODEDATA * nodedata , 
 			nodedata->timeout		= 0;
 			nodedata->cb_tx_timeout = Cam_jt808_timeout;
 			nodedata->cb_tx_response= Cam_jt808_0x801_response;
-			rt_kprintf("\r\n Cam_jt808_0x800_response_3");
+
 			return IDLE;
 			}
 		}
@@ -529,6 +545,7 @@ void Cam_jt808_0x8801_cam_end( struct _Style_Cam_Requset_Para *para )
  
  rt_free(para->user_para);
  para->user_para = RT_NULL;
+ rt_kprintf("\r\nCam_jt808_0x8801_cam_end");
  
  return;
 }

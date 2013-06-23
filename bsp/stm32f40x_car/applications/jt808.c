@@ -28,6 +28,7 @@
 #include "jt808_param.h"
 #include "jt808_sms.h"
 #include "jt808_gps.h"
+#include "jt808_camera.h"
 #include "vdr.h"
 
 #pragma diag_error 223
@@ -454,7 +455,7 @@ rt_err_t jt808_add_tx_data( uint8_t linkno,
 	{
 		return -RT_ERROR;
 	}
-	memset(pnodedata,0,sizeof(JT808_TX_NODEDATA));
+	memset(pnodedata,0,sizeof(JT808_TX_NODEDATA));		///绝对不能少，否则系统出错
 	pnodedata->multipacket = 0;
 	pnodedata->linkno	= linkno;
 	pnodedata->type		= type;
@@ -541,7 +542,7 @@ rt_err_t jt808_add_mult_tx_node( uint8_t linkno,
 		rt_free(userpara);
 		return -RT_ERROR;
 	}
-
+	memset(pnodedata,0,sizeof( JT808_TX_NODEDATA ));		///绝对不能少，否则系统出错
 	pnodedata->multipacket = 1;
 	pnodedata->linkno	= linkno;
 	pnodedata->type		= type;
@@ -696,7 +697,6 @@ static int handle_rx_0x8001( uint8_t linkno, uint8_t *pmsg )
 		if(iterdata->cb_tx_response!=RT_NULL)
 		{
 			iterdata->state = iterdata->cb_tx_response(iterdata,pmsg);
-			iterdata->retry = 0;
 		}
 		else
 		{
@@ -1114,7 +1114,6 @@ static int handle_rx_0x8800( uint8_t linkno, uint8_t *pmsg )
 		if(iterdata->cb_tx_response!=RT_NULL)
 		{
 			iterdata->state = iterdata->cb_tx_response(iterdata,pmsg);
-			iterdata->retry	= 0;
 		}
 		else
 		{
@@ -1179,6 +1178,7 @@ FINSH_FUNCTION_EXPORT( handle_8800, handle_8800 );
 /*摄像头立即拍摄命令*/
 static int handle_rx_0x8801( uint8_t linkno, uint8_t *pmsg )
 {
+	Cam_jt808_0x8801(linkno,pmsg );
 	return 1;
 }
 
@@ -1187,12 +1187,14 @@ static int handle_rx_0x8801( uint8_t linkno, uint8_t *pmsg )
  */
 static int handle_rx_0x8802( uint8_t linkno, uint8_t *pmsg )
 {
+	Cam_jt808_0x8802(linkno,pmsg );
 	return 1;
 }
 
 /**/
 static int handle_rx_0x8803( uint8_t linkno, uint8_t *pmsg )
 {
+	Cam_jt808_0x8803(linkno,pmsg );
 	return 1;
 }
 
@@ -1442,7 +1444,8 @@ static MsgListRet jt808_tx_proc( MsgListNode * node )
 				if( ret == RT_EOK )             /*发送成功等待中心应答中*/
 				{
 					pnodedata->tick 	= rt_tick_get( );
-					pnodedata->timeout	= jt808_param.id_0x0002 * RT_TICK_PER_SECOND;
+					//pnodedata->timeout	= jt808_param.id_0x0002 * RT_TICK_PER_SECOND;
+					pnodedata->timeout	= 10 * RT_TICK_PER_SECOND;
 					pnodedata->state	= WAIT_ACK;
 					rt_kprintf( "send retry=%d,timeout=%d\r\n", pnodedata->retry, pnodedata->timeout * 10 );
 				}else /*发送数据没有等到模块返回的OK，立刻重发，还是等一段时间再发*/
@@ -1456,7 +1459,8 @@ static MsgListRet jt808_tx_proc( MsgListNode * node )
 				pnodedata->tick 	= rt_tick_get( );
 				pnodedata->state	= WAIT_ACK;
 				pnodedata->retry++;
-				pnodedata->timeout	= jt808_param.id_0x0002 * RT_TICK_PER_SECOND;
+				//pnodedata->timeout	= jt808_param.id_0x0002 * RT_TICK_PER_SECOND;
+				pnodedata->timeout	= 10 * RT_TICK_PER_SECOND;
 			}
 			else
 			{
@@ -1671,6 +1675,12 @@ static void jt808_socket_proc( void )
 
 		if( connect_state.server_state == CONNECTED ) /*链路维护心跳包*/
 		{
+			
+			if(socketstate(SOCKET_STATE)==CONNECT_CLOSE) /*链接被挂断，是主动挂断还是网络原因*/
+			{
+				connect_state.server_state=CONNECT_IDLE;/*还是在cb_socket_close中判断*/
+				return;
+			}
 			if( server_heartbeat_tick )
 			{
 				/*要发送心跳包*/
@@ -1691,8 +1701,9 @@ static void jt808_socket_proc( void )
 		
 		if( connect_state.server_state == CONNECT_CLOSE ) /*链接关闭，区分主动还是被动关闭*/
 		{
-			
-			
+			connect_state.server_state=CONNECT_IDLE;/*还是在cb_socket_close中判断*/
+			gsmstate( GSM_GPRS );
+			return;
 		}
 
 
@@ -2076,6 +2087,8 @@ rt_err_t gprs_rx( uint8_t linkno, uint8_t * pinfo, uint16_t length )
 {
 	uint8_t * pmsg;
 	pmsg = rt_malloc( length + 3 );                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+
+
 
 
 
