@@ -25,6 +25,7 @@ typedef struct _auxio_out
 	void ( *onchange )( uint8_t value );    /*端口变化处理函数*/
 }AUX_OUT;
 
+
 /*紧急情况的处理*/
 void onemg( uint8_t value )
 {
@@ -140,9 +141,6 @@ void auxio_init( void )
 {
 	GPIO_InitTypeDef	GPIO_InitStructure;
 	int					i;
-
-
-
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA, ENABLE );
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB, ENABLE );
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOC, ENABLE );

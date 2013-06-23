@@ -55,9 +55,7 @@ static rt_thread_t tid_usb_vdr = RT_NULL;
 #define VDR_15_START	( VDR_14_START + VDR_14_SECTORS * 4096 )
 #define VDR_15_SECTORS	2   /*10条速度状态日志 10*133 实际 10*256*/
 
-
-static struct rt_timer	tmr_200ms;
-
+static struct rt_timer tmr_200ms;
 
 struct _sect_info
 {
@@ -96,7 +94,7 @@ typedef struct
 	uint16_t	blocks_remain;  /*当前组织上传包是还需要的的blocks*/
 }VDR_CMD;
 
-VDR_CMD			vdr_cmd;
+VDR_CMD vdr_cmd;
 
 
 /*传递写入文件的信息
@@ -167,6 +165,7 @@ typedef __packed struct _rec_09
 	uint32_t	longi;
 	uint16_t	speed;
 } STU_REC_09;
+
 STU_REC_09 stu_rec_09;
 
 /*外接车速信号*/
@@ -254,19 +253,56 @@ void TIM5_IRQHandler( void )
 	}
 }
 
+#define SPEED_LIMIT				10          /*速度门限 大于此值认为启动，小于此值认为停止*/
+#define SPEED_LIMIT_DURATION	10          /*速度门限持续时间*/
+
+#define SPEED_STATUS_ACC	0x01            /*acc状态 0:关 1:开*/
+#define SPEED_STATUS_BRAKE	0x02            /*刹车状态 0:关 1:开*/
+
+#define SPEED_JUDGE_ACC		0x04            /*是否判断ACC*/
+#define SPEED_JUDGE_BRAKE	0x08            /*是否判断BRAKE 刹车信号*/
+
+#define SPEED_USE_PULSE 0x10                /*使用脉冲信号 0:不使用 1:使用*/
+#define SPEED_USE_GPS	0x20                /*使用gps信号 0:不使用 1:使用*/
+
+struct _vehicle_status
+{
+	uint8_t status;                         /*当前车辆状态 0:停止 1:启动*/
+	uint8_t logic;                          /*当前逻辑状态*/
+
+	uint8_t		pulse_speed_judge_duration; /*速度门限持续时间*/
+	uint8_t		pulse_speed;                /*速度值*/
+	uint32_t	pulse_duration;             /*持续时间-秒*/
+
+	uint8_t		gps_judge_duration;         /*速度门限持续时间*/
+	uint8_t		gps_speed;                  /*速度值，当前速度值*/
+	uint32_t	gps_duration;               /*持续时间-秒*/
+} car_status =
+{
+	0, ( SPEED_USE_GPS ), 0, 0, 0, 0, 0, 0
+};
+
+
 /*
-50ms定时器
-监测迈速，事故疑点和速度校准
-*/
+   200ms定时器
+   监测迈速，事故疑点和速度校准
+
+   记录仪应能以0.2s的时间间隔持续记录并存储行驶结束前20s实时时间对应的行驶状态数据，该行
+   驶状态数据为：车辆行驶速度、制动等状态信号和行驶结束时的位置信息。
+
+   在车辆行驶状态下记录仪外部供电断开时，记录仪应能以0.2s的时间间隔持续记录并存储断电前
+   20s内的车辆行驶状态数据，该行驶状态数据为：车辆行驶速度、车辆制动等状态信号及断电时的
+   位置信息。
+
+   在车辆处于行驶状态且有效位置信息10s内无变化时，记录仪应能以0.2s的时间间隔持续记录并存
+   储断电前20s内的车辆行驶状态数据，该行驶状态数据为：车辆行驶速度、车辆制动等状态信号及
+   断电时的位置信息。
+
+ */
 static void cb_tmr_200ms( void* parameter )
 {
-
-
-
-
+/*判断驾驶状态*/
 }
-
-
 
 /*
    初始化记录数据
@@ -333,7 +369,7 @@ rt_err_t vdr_init( void )
 	uint8_t* pbuf;
 
 	pulse_init( ); /*接脉冲计数*/
-	
+
 	pbuf = rt_malloc( 4096 );
 	if( pbuf == RT_NULL )
 	{
@@ -341,10 +377,10 @@ rt_err_t vdr_init( void )
 	}
 
 	vdr_init_byid( 8, pbuf );
-	sst25_read(sect_info[0].addr,(uint8_t*)&stu_rec_08,sizeof( STU_REC_08 ));
+	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );
 
 	vdr_init_byid( 9, pbuf );
-	sst25_read(sect_info[1].addr,(uint8_t*)&stu_rec_09,sizeof( STU_REC_09 ));
+	sst25_read( sect_info[1].addr, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
 
 	vdr_init_byid( 10, pbuf );
 	vdr_init_byid( 11, pbuf );
@@ -356,14 +392,12 @@ rt_err_t vdr_init( void )
 	rt_free( pbuf );
 	pbuf = RT_NULL;
 /*初始化一个50ms的定时器，用作事故疑点判断*/
-	rt_timer_init( &tmr_200ms, "tmr_50ms",        /* 定时器名字是 tmr_50ms */
-	               cb_tmr_200ms,                  /* 超时时回调的处理函数 */
+	rt_timer_init( &tmr_200ms, "tmr_50ms",      /* 定时器名字是 tmr_50ms */
+	               cb_tmr_200ms,                /* 超时时回调的处理函数 */
 	               RT_NULL,                     /* 超时函数的入口参数 */
-	               RT_TICK_PER_SECOND / 5,     /* 定时长度，以OS Tick为单位 */
+	               RT_TICK_PER_SECOND / 5,      /* 定时长度，以OS Tick为单位 */
 	               RT_TIMER_FLAG_PERIODIC );    /* 周期性定时器 */
-	rt_timer_start( &tmr_200ms);
-
-
+	rt_timer_start( &tmr_200ms );
 }
 
 /*
@@ -391,7 +425,7 @@ static vdr_save_rec( uint8_t sect_id, uint8_t * pdata, uint16_t len )
 
 
 /*
-   收到gps数据的处理
+   收到gps数据的处理，有定位和未定位
    存储位置信息，
    速度判断，校准
  */
@@ -437,8 +471,48 @@ rt_err_t vdr_rx( void )
 		stu_rec_09.speed	= BYTESWAP2( gps_speed );
 		vdr_save_rec( 9, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
 	}
-/*10数据 事故疑点,不在此处理*/
-	
+/*10数据 事故疑点*/
+	if( car_status.status == 0 )                                            /*认为车辆停止,判断启动*/
+	{
+		if( gps_speed >= SPEED_LIMIT )                                      /*速度大于门限值*/
+		{
+			car_status.gps_judge_duration++;
+			if( car_status.gps_judge_duration >= SPEED_LIMIT_DURATION )     /*超过了持续时间*/
+			{
+				car_status.gps_duration			= SPEED_LIMIT_DURATION;
+				car_status.status				= 1;                        /*认为车辆行驶*/
+				car_status.gps_judge_duration	= 0;
+			}else
+			{
+				car_status.gps_duration++;                                  /*停车累计时间*/
+			}
+		}else
+		{
+			car_status.gps_duration++;                                      /*停车累计时间*/
+			/*在此判断停车超时*/
+			car_status.gps_judge_duration = 0;
+		}
+	}else /*车辆已启动*/
+	{
+		if( gps_speed <= SPEED_LIMIT )                                      /*速度小于门限值*/
+		{
+			car_status.gps_judge_duration++;
+			if( car_status.gps_judge_duration >= SPEED_LIMIT_DURATION )     /*超过了持续时间*/
+			{
+				car_status.gps_duration			= SPEED_LIMIT_DURATION;
+				car_status.status				= 0;                        /*认为车辆停驶*/
+				car_status.gps_judge_duration	= 0;
+			}else
+			{
+				car_status.gps_duration++;                                  /*行驶累计时间*/
+			}
+		}else
+		{
+			car_status.gps_duration++;                                      /*行驶累计时间*/
+		}
+	}
+
+/*11数据*/
 }
 
 /*

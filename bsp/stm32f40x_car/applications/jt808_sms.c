@@ -1203,7 +1203,7 @@ u8 SMS_Rx_PDU( char *instr, u16 len )
 {
 	char	*pstrTemp;
 	u8		ret = 0;
-#if 1
+#if 0
 	//rt_kprintf( "\r\n PDU_短信: " );
 	//SMS_SendConsoleStr( instr );
 	memset( SMS_Service.SMS_rx_Content, 0, sizeof( SMS_Service.SMS_rx_Content ) );
@@ -1212,7 +1212,7 @@ u8 SMS_Rx_PDU( char *instr, u16 len )
 	GetPhoneNumFromPDU( SMS_Service.SMS_destNum, SMS_Service.Sms_Info.TPA, sizeof( SMS_Service.Sms_Info.TPA ) );
 	SMS_Service.rx_state = SMS_RX_OK;
 #endif
-#if 0
+#if 1
 	memset( SMS_Service.SMS_destNum, 0, sizeof( SMS_Service.SMS_destNum ) );
 	pstrTemp = (char*)rt_malloc( 200 ); ///短信解码后的完整内容，解码后汉子为GB码
 	memset( pstrTemp, 0, 200 );

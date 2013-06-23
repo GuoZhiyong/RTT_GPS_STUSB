@@ -791,7 +791,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	//if( ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) )
 	if( strncmp( psrc + 3, "RMC,", 4 ) == 0 )
 	{
-		if( process_rmc( psrc ) == 0 )  /*处理正确的RMC信息*/
+		if( process_rmc( psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确*/
 		{
 			process_gps( );             /*处理GPS信息*/
 		}
