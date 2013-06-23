@@ -30,7 +30,6 @@
 
 #define BIT( n ) ( 1 << n )
 
-
 #define BYTESWAP2( val )    \
     ( ( ( val & 0xff ) << 8 ) |   \
       ( ( val & 0xff00 ) >> 8 ) )
@@ -40,8 +39,6 @@
       ( ( val & 0xff00 ) << 8 ) |  \
       ( ( val & 0xff0000 ) >> 8 ) |  \
       ( ( val & 0xff000000 ) >> 24 ) )
-
-
 
 typedef struct _GPSPoint
 {
@@ -58,23 +55,22 @@ uint32_t		jt808_alarm_last	= 0x0;      /*上一次的上报状态*/
 uint32_t		jt808_status		= 0x0;
 uint32_t		jt808_status_last	= 0x0;      /*上一次的状态信息*/
 
-uint16_t		jt808_speed=0;
-
+uint16_t		jt808_speed = 0;
 
 static uint32_t jt808_report_interval	= 0x0;  /*GPS上报时间间隔，为0:停止上报*/
 static uint32_t jt808_report_distance	= 0x0;  /*GPS上报距离间隔,为0 停止上报*/
 
-static uint32_t	distance=0;				/*定距上报当前距离值*/
-static uint32_t total_distance=0;		/*总的累计里程*/
+static uint32_t distance		= 0;            /*定距上报当前距离值*/
+static uint32_t total_distance	= 0;            /*总的累计里程*/
 
 /*超速判断*/
 static uint8_t	overspeed_flag = 0;             /*是否已超速 0:未超速 1:超速预警 2:已超速*/
 static uint32_t overspeed_timestamp_start;      /*开始时间戳*/
 
-
 /*疲劳驾驶计时*/
-static uint32_t	period_acc_on=0;  /*疲劳驾驶时间 acc开*/
-static uint32_t	period_acc_off=0;  /*疲劳驾驶时间acc关*/
+static uint32_t period_acc_on	= 0;            /*疲劳驾驶时间 acc开*/
+static uint32_t period_acc_off	= 0;            /*疲劳驾驶时间acc关*/
+
 
 /*
    区域的定义,使用list关联起来，如果node过多的话，
@@ -106,17 +102,14 @@ struct
 	uint8_t		datetime_end[6];
 	uint16_t	speed;
 	uint8_t		duration;                       /*持续时间*/
-} rectangle;
-
-
+}			rectangle;
 
 uint32_t	gps_lati;
 uint32_t	gps_longi;
 uint16_t	gps_speed;
-uint16_t	gps_cog;				/*course over ground*/
+uint16_t	gps_cog;                            /*course over ground*/
 uint16_t	gps_alti;
 uint8_t		gps_datetime[6];
-
 
 /*保存gps基本位置信息*/
 GPS_BASEINFO	gps_baseinfo;
@@ -133,89 +126,69 @@ GPS_STATUS		gps_status;
 unsigned long	timestamp_last	= 0;
 unsigned long	timestamp_now	= 0;
 
-
-
-uint8_t ACC_status;		/*0:ACC关   1:ACC开  */
-uint32_t ACC_ticks;		/*ACC状态发生变化时的tick值，此时GPS可能未定位*/
-
-
+uint8_t			ACC_status; /*0:ACC关   1:ACC开  */
+uint32_t		ACC_ticks;  /*ACC状态发生变化时的tick值，此时GPS可能未定位*/
 
 /*声明一个定时器，用来定时检查AUX*/
 struct rt_timer tmr_gps;
 
-
 struct
 {
-	uint8_t mode;	/*上报模式 0:定时 1:定距 2:定时定距*/
-	uint8_t	userlogin;	/*是否使用登录*/
-	uint32_t time_unlog;
-	uint32_t time_sleep;
-	uint32_t time_emg;
-	uint32_t time_default;
-	uint32_t distance_unlog;
-	uint32_t distance_sleep;
-	uint32_t distance_emg;
-	uint32_t distance_default;
+	uint8_t		mode;       /*上报模式 0:定时 1:定距 2:定时定距*/
+	uint8_t		userlogin;  /*是否使用登录*/
+	uint32_t	time_unlog;
+	uint32_t	time_sleep;
+	uint32_t	time_emg;
+	uint32_t	time_default;
+	uint32_t	distance_unlog;
+	uint32_t	distance_sleep;
+	uint32_t	distance_emg;
+	uint32_t	distance_default;
 
-	uint32_t last_tick;				/*上一次上报的时刻*/
-	uint32_t last_distance;			/*上一次上报时的里程*/
-
-}jt808_report;
-
-
-
-
-
-
-
+	uint32_t	last_tick;      /*上一次上报的时刻*/
+	uint32_t	last_distance;  /*上一次上报时的里程*/
+} jt808_report;
 
 struct
 {
 	uint32_t perion_acc_on;
-	
-
-
-}func_tired_drive;
+} func_tired_drive;
 
 
 /*
-定时器超时函数,当前设置为50ms
-*/
+   定时器超时函数,当前设置为50ms
+ */
 static void cb_tmr_gps( void* parameter )
 {
-	static uint8_t count_to_1_sec=0;
-	auxio_input_check();
+	static uint8_t count_to_1_sec = 0;
+	auxio_input_check( );
 	/*检查疲劳驾驶，GPS未定位时也要检查,使用定时器，长时间定时准不准?*/
 	count_to_1_sec++;
-	if(count_to_1_sec==20)
+	if( count_to_1_sec == 20 )
 	{
-		count_to_1_sec=0;
-		if(jt808_status&BIT_STATUS_ACC)	/*ACC开*/
+		count_to_1_sec = 0;
+		if( jt808_status & BIT_STATUS_ACC ) /*ACC开*/
 		{
-			period_acc_off=0;
+			period_acc_off = 0;
 			period_acc_on++;
-			if((period_acc_on%100)==0)
+			if( ( period_acc_on % 100 ) == 0 )
 			{
-				rt_kprintf("time adjust>%d %d\r\n",rt_tick_get(),timestamp());
+				rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
 			}
-			if(period_acc_on>=jt808_param.id_0x0057)
+			if( period_acc_on >= jt808_param.id_0x0057 )
 			{
-
 			}
-		}
-		else
+		}else
 		{
-			period_acc_on=0;
+			period_acc_on = 0;
 			period_acc_off++;
-			if((period_acc_off%100)==0)
+			if( ( period_acc_off % 100 ) == 0 )
 			{
-				rt_kprintf("time adjust>%d %d\r\n",rt_tick_get(),timestamp());
+				rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
 			}
-			
 		}
-	}	
+	}
 }
-
 
 /*
    Linux源码中的mktime算法解析
@@ -281,7 +254,7 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 /*超速、超速预警判断*/
 void do_overspeed_check( void )
 {
-	if( jt808_speed >= jt808_param.id_0x0055 )                                 /*超过最高速度*/
+	if( jt808_speed >= jt808_param.id_0x0055 )                                          /*超过最高速度*/
 	{
 		if( overspeed_flag == 2 )                                                       /*已超速*/
 		{
@@ -297,9 +270,9 @@ void do_overspeed_check( void )
 			overspeed_flag				= 2;
 			overspeed_timestamp_start	= timestamp_now;
 		}
-	}else if( jt808_speed >= ( jt808_param.id_0x0055 - jt808_param.id_0x005B ) )   /*超速预警*/
+	}else if( jt808_speed >= ( jt808_param.id_0x0055 - jt808_param.id_0x005B ) )    /*超速预警*/
 	{
-		if( ( jt808_param.id_0x0050 & ( 1 << 13 ) ) == 0 )                                  /*报警屏蔽字*/
+		if( ( jt808_param.id_0x0050 & ( 1 << 13 ) ) == 0 )                          /*报警屏蔽字*/
 		{
 			jt808_alarm |= ( 1 << 13 );
 		}
@@ -317,19 +290,19 @@ void do_overspeed_check( void )
 void process_gps( void )
 {
 	uint32_t	i, tmp;
-	uint8_t		flag_send = 0; /*默认不上报*/
+	uint8_t		flag_send = 0;                                                          /*默认不上报*/
 	rt_err_t	err;
-	uint8_t *pdata;
+	uint8_t		*pdata;
 
 /*RTC,避免和rtt的set_time,set_date歧义，rtt是一个Driver,此处没有使用*/
-	if(jt808_status&BIT_STATUS_GPS)
+	if( jt808_status & BIT_STATUS_GPS )
 	{
-		if(( gps_baseinfo.datetime[4] == 0 )&&( gps_baseinfo.datetime[5] == 0 ))	/*整小时校准*/
+		if( ( gps_baseinfo.datetime[4] == 0 ) && ( gps_baseinfo.datetime[5] == 0 ) )    /*整小时校准*/
 		{
 			date_set( gps_baseinfo.datetime[0], gps_baseinfo.datetime[1], gps_baseinfo.datetime[2] );
 			time_set( gps_baseinfo.datetime[3], gps_baseinfo.datetime[4], gps_baseinfo.datetime[5] );
 		}
-	}	
+	}
 /*行车记录仪数据处理*/
 	vdr_rx( );
 /*数据上报方式,如何组合出各种情况 */
@@ -339,32 +312,31 @@ void process_gps( void )
 		flag_send = 1;
 	}
 	/*不理解这个登录状态*/
-	if( tmp & BIT_STATUS_ACC )                                    /*ACC变化,修改汇报的间隔或距离*/
+	if( tmp & BIT_STATUS_ACC )                          /*ACC变化,修改汇报的间隔或距离*/
 	{
 		jt808_report_distance	= 0;
 		jt808_report_interval	= 0;
 		if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
 		{
-			if( jt808_status & BIT_STATUS_ACC )                   /*当前状态为ACC开*/
+			if( jt808_status & BIT_STATUS_ACC )         /*当前状态为ACC开*/
 			{
 				jt808_report_interval = jt808_param.id_0x0029;
 			}else
 			{
 				jt808_report_interval = jt808_param.id_0x0027;
 			}
-			timestamp_last=timestamp_now;	/*重新计时*/
-			
+			timestamp_last = timestamp_now;             /*重新计时*/
 		}
-		if( jt808_param.id_0x0020 )     /*有定距上报*/
+		if( jt808_param.id_0x0020 )                     /*有定距上报*/
 		{
-			if( jt808_status & BIT_STATUS_ACC)   /*当前状态为ACC开*/
+			if( jt808_status & BIT_STATUS_ACC )         /*当前状态为ACC开*/
 			{
 				jt808_report_distance = jt808_param.id_0x002C;
 			}else
 			{
 				jt808_report_distance = jt808_param.id_0x002E;
 			}
-			distance=0;		/*重新计算距离*/
+			distance = 0;                               /*重新计算距离*/
 		}
 	}
 
@@ -378,43 +350,43 @@ void process_gps( void )
 	{
 		if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
 		{
-			jt808_report_interval = jt808_param.id_0x0028;
-			timestamp_last=timestamp_now;
+			jt808_report_interval	= jt808_param.id_0x0028;
+			timestamp_last			= timestamp_now;
 		}
 		if( jt808_param.id_0x0020 )                     /*有定距上报*/
 		{
-			jt808_report_distance = jt808_param.id_0x002F;
-			distance=0;
+			jt808_report_distance	= jt808_param.id_0x002F;
+			distance				= 0;
 		}
 	}
 
 /*计算定时上报*/
-	if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )	/*有定时上报*/
+	if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 ) /*有定时上报*/
 	{
-		if(timestamp_now-timestamp_last>=jt808_report_interval)
+		if( timestamp_now - timestamp_last >= jt808_report_interval )
 		{
-			flag_send=1;
-			timestamp_last=timestamp_now;
+			flag_send		= 1;
+			timestamp_last	= timestamp_now;
 		}
 	}
 /*计算定距上报*/
-	if( jt808_param.id_0x0020 ) 					/*有定距上报*/
+	if( jt808_param.id_0x0020 )   /*有定距上报*/
 	{
-		jt808_report_distance = jt808_param.id_0x002F;
-		distance=0;
+		jt808_report_distance	= jt808_param.id_0x002F;
+		distance				= 0;
 	}
 
-	jt808_status_last=jt808_status;
+	jt808_status_last = jt808_status;
 
 	//if(flag_send==0) return;
 
-	
 /*生成要上报的数据*/
 	//jt808_add_msg_head(uint8_t * p,uint16_t id,uint16_t attr,uint16_t seq)
-	err=jt808_add_tx_data(1,TERMINAL_CMD,0x0200,28,-1,RT_NULL,RT_NULL,(uint8_t*)&gps_baseinfo);
-	rt_kprintf("%d>add gps report=%d\r\n",rt_tick_get(),err);
-	
-
+	if( gps_datetime[5] % 10 == 0 )
+	{
+		err = jt808_add_tx_data( 1, TERMINAL_CMD, 0x0200, 28, -1, RT_NULL, RT_NULL, (uint8_t*)&gps_baseinfo );
+		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );
+	}
 }
 
 /*
@@ -438,10 +410,9 @@ uint8_t process_rmc( uint8_t * pinfo )
 	uint32_t	degrees, minutes;
 	uint8_t		commacount = 0, count = 0;
 
-	uint32_t	lati,longi;
+	uint32_t	lati, longi;
 	uint16_t	speed_10x;
-	uint16_t	cog;				/*course over ground*/
-
+	uint16_t	cog;                /*course over ground*/
 
 	uint8_t		wait_dot_find;      /*确定信息中 dot .的位置*/
 	uint8_t		i;
@@ -505,10 +476,10 @@ uint8_t process_rmc( uint8_t * pinfo )
 				          ( buf [6] - 0x30 ) * 1000 +
 				          ( buf [7] - 0x30 ) * 100 +
 				          ( buf [8] - 0x30 ) * 10 +
-				          ( buf [9] - 0x30 );			/*多加了一个位，想要保证精度*/
+				          ( buf [9] - 0x30 );   /*多加了一个位，想要保证精度*/
 				lati = degrees + minutes / 6;
 				break;
-			case 4: /*N_S处理*/
+			case 4:                             /*N_S处理*/
 				if( buf[0] == 'N' )
 				{
 					jt808_status &= ~BIT_STATUS_NS;
@@ -538,7 +509,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 			case 6: /*E_W处理*/
 				if( buf[0] == 'E' )
 				{
-					jt808_status &=~BIT_STATUS_EW;
+					jt808_status &= ~BIT_STATUS_EW;
 				} else if( buf[0] == 'W' )
 				{
 					jt808_status |= BIT_STATUS_EW;
@@ -562,8 +533,8 @@ uint8_t process_rmc( uint8_t * pinfo )
 					}
 				}
 				/*当前是0.1knot => 0.1Kmh  1海里=1.852Km  1852=1024+512+256+32+16+8+4*/
-				speed_10x *= 1.852;
-				jt808_speed=speed_10x/10;
+				speed_10x	*= 1.852;
+				jt808_speed = speed_10x / 10;
 				//i=speed_10x;
 				//speed_10x=(i<<10)|(i<<9)|(i<<8)|(i<<5)|(i<<4)|(i<<3)|(i<<2);
 				//speed_10x/=1000;
@@ -630,23 +601,23 @@ uint8_t process_rmc( uint8_t * pinfo )
 				}
 
 				/*都处理完了更新 gps_baseinfo,没有高程信息*/
-				gps_lati=lati;
-				gps_longi=longi;
-				gps_speed=speed_10x/10;
-				gps_cog=cog;
-				gps_datetime[0]=year;
-				gps_datetime[1]=mon;
-				gps_datetime[2]=day;
-				gps_datetime[3]=hour;
-				gps_datetime[4]=minutes;
-				gps_datetime[5]=sec;
-				
-				gps_baseinfo.alarm		= BYTESWAP4(jt808_alarm);
-				gps_baseinfo.status		= BYTESWAP4(jt808_status);
-				gps_baseinfo.latitude	= BYTESWAP4(lati);
-				gps_baseinfo.longitude	= BYTESWAP4(longi);
-				gps_baseinfo.speed_10x	= BYTESWAP2(speed_10x);
-				gps_baseinfo.cog		= BYTESWAP2(cog);
+				gps_lati		= lati;
+				gps_longi		= longi;
+				gps_speed		= speed_10x / 10;
+				gps_cog			= cog;
+				gps_datetime[0] = year;
+				gps_datetime[1] = mon;
+				gps_datetime[2] = day;
+				gps_datetime[3] = hour;
+				gps_datetime[4] = minutes;
+				gps_datetime[5] = sec;
+
+				gps_baseinfo.alarm		= BYTESWAP4( jt808_alarm );
+				gps_baseinfo.status		= BYTESWAP4( jt808_status );
+				gps_baseinfo.latitude	= BYTESWAP4( lati );
+				gps_baseinfo.longitude	= BYTESWAP4( longi );
+				gps_baseinfo.speed_10x	= BYTESWAP2( speed_10x );
+				gps_baseinfo.cog		= BYTESWAP2( cog );
 
 				i							= year;
 				year						= ( ( i / 10 ) << 4 ) | ( i % 10 );
@@ -663,13 +634,12 @@ uint8_t process_rmc( uint8_t * pinfo )
 				gps_baseinfo.datetime[5]	= sec;
 
 				/*首次定位,校时*/
-				if((jt808_status_last&BIT_STATUS_GPS)==0)
+				if( ( jt808_status_last & BIT_STATUS_GPS ) == 0 )
 				{
 					date_set( year, mon, day );
-					time_set( hour,min,sec);
-				}	
+					time_set( hour, min, sec );
+				}
 
-				
 				return 0;
 				break;
 		}
@@ -781,8 +751,8 @@ uint8_t process_gga( uint8_t * pinfo )
 					altitute	= altitute * 10;
 					altitute	+= ( buf[i] - '0' );
 				}
-				gps_baseinfo.altitude = altitute;
-				gps_alti=altitute;
+				gps_baseinfo.altitude	= altitute;
+				gps_alti				= altitute;
 				return 0;
 				break;
 		}
@@ -850,11 +820,11 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 /*初始化jt808 gps相关的处理*/
 void jt808_gps_init( void )
 {
-	auxio_init();
+	auxio_init( );
 	rt_timer_init( &tmr_gps, "tmr_gps",         /* 定时器名字是 tmr_gps */
 	               cb_tmr_gps,                  /* 超时时回调的处理函数 */
 	               RT_NULL,                     /* 超时函数的入口参数 */
-	               RT_TICK_PER_SECOND / 20,      /* 定时长度，以OS Tick为单位 */
+	               RT_TICK_PER_SECOND / 20,     /* 定时长度，以OS Tick为单位 */
 	               RT_TIMER_FLAG_PERIODIC );    /* 周期性定时器 */
 
 	rt_timer_start( &tmr_gps );
@@ -871,7 +841,7 @@ void jt808_gps_init( void )
 ***********************************************************/
 void gps_dump( uint8_t mode )
 {
-	gps_status.Raw_Output = ~gps_status.Raw_Output ;
+	gps_status.Raw_Output = ~gps_status.Raw_Output;
 }
 
 FINSH_FUNCTION_EXPORT( gps_dump, dump gps raw info );

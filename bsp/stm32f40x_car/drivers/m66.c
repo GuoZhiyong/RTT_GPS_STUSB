@@ -570,23 +570,20 @@ rt_err_t resp_CGREG( char *p, uint16_t len )
  */
 rt_err_t resp_CIMI( char *p, uint16_t len )
 {
-
 	rt_kprintf( "cimi len=%d  %02x %02x\n", len, *p, *( p + 1 ) );
 	if( len < 15 )
 	{
 		return RT_ERROR;
 	}
 	strip_numstring( p );
-	mobile[0]=((*(p+3)-'0')<<4)|(*(p+4)-'0');
-	mobile[1]=((*(p+5)-'0')<<4)|(*(p+6)-'0');
-	mobile[2]=((*(p+7)-'0')<<4)|(*(p+8)-'0');
-	mobile[3]=((*(p+9)-'0')<<4)|(*(p+10)-'0');
-	mobile[4]=((*(p+11)-'0')<<4)|(*(p+12)-'0');
-	mobile[5]=((*(p+13)-'0')<<4)|(*(p+14)-'0');
+	mobile[0]	= ( ( *( p + 3 ) - '0' ) << 4 ) | ( *( p + 4 ) - '0' );
+	mobile[1]	= ( ( *( p + 5 ) - '0' ) << 4 ) | ( *( p + 6 ) - '0' );
+	mobile[2]	= ( ( *( p + 7 ) - '0' ) << 4 ) | ( *( p + 8 ) - '0' );
+	mobile[3]	= ( ( *( p + 9 ) - '0' ) << 4 ) | ( *( p + 10 ) - '0' );
+	mobile[4]	= ( ( *( p + 11 ) - '0' ) << 4 ) | ( *( p + 12 ) - '0' );
+	mobile[5]	= ( ( *( p + 13 ) - '0' ) << 4 ) | ( *( p + 14 ) - '0' );
 	strcpy( gsm_param.imsi, p );
 
-
-	
 	return RT_EOK;
 }
 
@@ -1040,7 +1037,7 @@ rt_err_t gsm_send( char *atcmd,
 
 lbl_send_wait_ok:
 	err = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pmsg, tm );
-	if( err == RT_EOK )   /*没有超时,判断信息是否正确*/
+	if( err == RT_EOK ) /*没有超时,判断信息是否正确*/
 	{
 		if( strstr( pmsg + 2, "OK" ) != RT_NULL )
 		{
@@ -1413,7 +1410,7 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 	if( strncmp( psrc, "%IPCLOSE:", 9 ) == 0 )
 	{
 		c = *( psrc + 9 ) - 0x30;
-		cb_socket_close( c);
+		cb_socket_close( c );
 		return;
 	}
 
@@ -1615,17 +1612,19 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 		{
 			m66_write( &dev_gsm, 0, "7D01", 4 );
 			rt_kprintf( "%s", "7D01" );
-		}
-		USART_SendData( UART4, tbl[c >> 4] );
-		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		}else
 		{
+			USART_SendData( UART4, tbl[c >> 4] );
+			while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+			{
+			}
+			rt_kprintf( "%c", tbl[c >> 4] );
+			USART_SendData( UART4, tbl[c & 0x0f] );
+			while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+			{
+			}
+			rt_kprintf( "%c", tbl[c & 0x0f] );
 		}
-		rt_kprintf( "%c", tbl[c >> 4] );
-		USART_SendData( UART4, tbl[c & 0x0f] );
-		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
-		{
-		}
-		rt_kprintf( "%c", tbl[c & 0x0f] );
 		len--;
 	}
 /*再发送fcs*/
@@ -1639,18 +1638,20 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 	{
 		m66_write( &dev_gsm, 0, "7D01", 4 );
 		rt_kprintf( "%s", "7D01" );
-	}
-	USART_SendData( UART4, tbl[fcs >> 4] );
-	while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+	}else
 	{
+		USART_SendData( UART4, tbl[fcs >> 4] );
+		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		{
+		}
+		rt_kprintf( "%c", tbl[fcs >> 4] );
+		USART_SendData( UART4, tbl[fcs & 0x0f] );
+		while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
+		{
+		}
+		rt_kprintf( "%c", tbl[fcs & 0x0f] );
 	}
-	rt_kprintf( "%c", tbl[fcs >> 4] );
-	USART_SendData( UART4, tbl[fcs & 0x0f] );
-	while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
-	{
-	}
-	rt_kprintf( "%c", tbl[fcs & 0x0f] );
-/*再发送7E尾*/	
+/*再发送7E尾*/
 	m66_write( &dev_gsm, 0, "7E", 2 );
 	rt_kprintf( "%s", "7E" );
 

@@ -1084,7 +1084,10 @@ static void jt808_socket_proc( void )
 	static rt_tick_t	server_heartbeat_tick	= 0;
 	static rt_tick_t	auth_heartbeat_tick		= 0;
 
-/*检查是否允许gsm工作*/
+/*
+检查是否允许gsm工作
+中间的时候关闭连接
+*/
 	if( connect_state.disable_connect )
 	{
 		return;
@@ -1145,6 +1148,12 @@ static void jt808_socket_proc( void )
 
 		if( connect_state.server_state == CONNECTED ) /*链路维护心跳包*/
 		{
+			/*判断当前链接是否异常*/
+			if(socketstate(SOCKET_STATE)==CONNECT_CLOSE) /*链接被挂断，是主动挂断还是网络原因*/
+			{
+				connect_state.server_state=CONNECT_IDLE;/*还是在cb_socket_close中判断*/
+				return;
+			}
 			if( server_heartbeat_tick )
 			{
 				/*要发送心跳包*/
@@ -1199,7 +1208,6 @@ static void jt808_socket_proc( void )
 				//connect_state.auth_state=CONNECT_IDLE;
 				//if(connect_state.auth_index>6)
 				//{
-
 				//}
 			}
 		}
@@ -1657,7 +1665,7 @@ void reset( uint32_t reason )
 
 	rt_kprintf( "\r\n%08d reset>reason=%08x", rt_tick_get( ), reason );
 /*执行重启*/
-	rt_thread_delay( RT_TICK_PER_SECOND );
+	rt_thread_delay( RT_TICK_PER_SECOND*5 );
 	NVIC_SystemReset( );
 }
 

@@ -269,6 +269,7 @@ static void sst25_bytewrite( uint32_t addr, uint8_t data )
 
 /*
    ²»ÅĞ¶ÏÊÇ·ñÒªÉ¾³ı£¬Ö±½ÓĞ´
+   ±ÜÃâ¿ç4kĞ´
  */
 
 void sst25_write_through( uint32_t addr, uint8_t *p, uint16_t len )

@@ -93,90 +93,6 @@ AUX_OUT PIN_OUT[] = {
 	{ GPIOB, GPIO_Pin_6, 0, 0 },                    /*蜂鸣器*/
 };
 
-/*外接车速信号*/
-__IO uint16_t	IC2Value	= 0;
-__IO uint16_t	DutyCycle	= 0;
-__IO uint32_t	Frequency	= 0;
-
-/*采用PA.0 作为外部脉冲计数*/
-void pulse_init( void )
-{
-	GPIO_InitTypeDef	GPIO_InitStructure;
-	NVIC_InitTypeDef	NVIC_InitStructure;
-	TIM_ICInitTypeDef	TIM_ICInitStructure;
-
-	/* TIM5 clock enable */
-	RCC_APB1PeriphClockCmd( RCC_APB1Periph_TIM5, ENABLE );
-
-	/* GPIOA clock enable */
-	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA, ENABLE );
-
-	/* TIM5 chennel1 configuration : PA.0 */
-	GPIO_InitStructure.GPIO_Pin		= GPIO_Pin_0;
-	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_100MHz;
-	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;
-	GPIO_Init( GPIOA, &GPIO_InitStructure );
-
-	/* Connect TIM pin to AF0 */
-	GPIO_PinAFConfig( GPIOA, GPIO_PinSource0, GPIO_AF_TIM5 );
-
-	/* Enable the TIM5 global Interrupt */
-	NVIC_InitStructure.NVIC_IRQChannel						= TIM5_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority	= 0;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority			= 1;
-	NVIC_InitStructure.NVIC_IRQChannelCmd					= ENABLE;
-	NVIC_Init( &NVIC_InitStructure );
-
-	TIM_ICInitStructure.TIM_Channel		= TIM_Channel_1;
-	TIM_ICInitStructure.TIM_ICPolarity	= TIM_ICPolarity_Rising;
-	TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
-	TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV1;
-	TIM_ICInitStructure.TIM_ICFilter	= 0x0;
-
-	TIM_PWMIConfig( TIM5, &TIM_ICInitStructure );
-
-	/* Select the TIM5 Input Trigger: TI1FP1 */
-	TIM_SelectInputTrigger( TIM5, TIM_TS_TI1FP1 );
-
-	/* Select the slave Mode: Reset Mode */
-	TIM_SelectSlaveMode( TIM5, TIM_SlaveMode_Reset );
-	TIM_SelectMasterSlaveMode( TIM5, TIM_MasterSlaveMode_Enable );
-
-	/* TIM enable counter */
-	TIM_Cmd( TIM5, ENABLE );
-
-	/* Enable the CC2 Interrupt Request */
-	TIM_ITConfig( TIM5, TIM_IT_CC2, ENABLE );
-}
-
-/*TIM5_CH1*/
-void TIM5_IRQHandler( void )
-{
-	RCC_ClocksTypeDef RCC_Clocks;
-	RCC_GetClocksFreq( &RCC_Clocks );
-
-	TIM_ClearITPendingBit( TIM5, TIM_IT_CC2 );
-
-	/* Get the Input Capture value */
-	IC2Value = TIM_GetCapture2( TIM5 );
-
-	if( IC2Value != 0 )
-	{
-		/* Duty cycle computation */
-		//DutyCycle = ( TIM_GetCapture1( TIM5 ) * 100 ) / IC2Value;
-		/* Frequency computation   TIM4 counter clock = (RCC_Clocks.HCLK_Frequency)/2 */
-		//Frequency = (RCC_Clocks.HCLK_Frequency)/2 / IC2Value;
-/*是不是反向电路?*/
-		DutyCycle	= ( IC2Value * 100 ) / TIM_GetCapture1( TIM5 );
-		Frequency	= ( RCC_Clocks.HCLK_Frequency ) / 2 / TIM_GetCapture1( TIM5 );
-	}else
-	{
-		DutyCycle	= 0;
-		Frequency	= 0;
-	}
-}
 
 /*
    读取输入口状态
@@ -225,7 +141,7 @@ void auxio_init( void )
 	GPIO_InitTypeDef	GPIO_InitStructure;
 	int					i;
 
-	pulse_init( ); /*接脉冲计数*/
+
 
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA, ENABLE );
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB, ENABLE );
