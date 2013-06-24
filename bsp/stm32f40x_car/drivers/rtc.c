@@ -172,7 +172,7 @@ rt_err_t rtc_init(void )
 {
 	if( RTC_ReadBackupRegister( RTC_BKP_DR0 ) != RTC_CONFIGED_FLAG )
 	{
-		rt_kprintf( "\r\n not config 0x32F2\r\n" );
+		rt_kprintf( "\r\n>RTC_CONFIGED_FLAG ERR\r\n" );
 		/* RTC configuration	*/
 		if( RTC_Config( ) == ERROR )
 		{

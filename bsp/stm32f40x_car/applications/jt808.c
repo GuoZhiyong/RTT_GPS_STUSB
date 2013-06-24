@@ -1392,15 +1392,9 @@ static void rt_thread_entry_jt808( void * parameter )
 	msglist_destroy( list_jt808_tx );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+#ifdef BKSRAM
+
+/**/
 void BkpSram_init( void )
 {
 	u16 uwIndex, uwErrorIndex = 0;
@@ -1424,15 +1418,7 @@ void BkpSram_init( void )
 	//rt_kprintf("\r\n BkpSram_init OK!");
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 void bkpSram_wr( u32 addr, u32 data )
 {
 	addr										&= 0xFFFC;
@@ -1442,15 +1428,7 @@ void bkpSram_wr( u32 addr, u32 data )
 FINSH_FUNCTION_EXPORT( bkpSram_wr, write to backup sram );
 
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 void bkpSram_rd( u32 addr )
 {
 	u32 data;
@@ -1461,12 +1439,15 @@ void bkpSram_rd( u32 addr )
 
 FINSH_FUNCTION_EXPORT( bkpSram_rd, read from backup sram );
 
+#endif
+
 /*jt808处理线程初始化*/
 void jt808_init( void )
 {
 	sms_init( );
+#ifdef BKSRAM	
 	BkpSram_init( );
-
+#endif
 	vdr_init();
 
 	dev_gsm = rt_device_find( "gsm" );

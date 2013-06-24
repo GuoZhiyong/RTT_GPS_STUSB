@@ -19,6 +19,7 @@
 #include "stm32f4xx.h"
 #include "gps.h"
 #include "jt808.h"
+#include "jt808_gps.h"
 
 #include <finsh.h>
 
@@ -59,6 +60,9 @@ uint8_t							flag_bd_upgrade_uart = 0;
 extern struct rt_device			dev_vuart;
 
 static rt_uint8_t				*ptr_mem_packet = RT_NULL;
+
+
+
 
 //*****************************************
 //CRC16 高字节表
@@ -393,13 +397,14 @@ static void rt_thread_entry_gps( void* parameter )
 {
 	rt_err_t	res;
 	LENGTH_BUF	buf;
-	rt_tick_t tick_last_rx=0; /*上一次收到gps数据的时刻*/
+	rt_tick_t tick_lastrx=rt_tick_get();
 	while( 1 )
 	{
 		res = rt_mq_recv( &mq_gps, (void*)&buf, 124, RT_TICK_PER_SECOND / 20 ); //等待100ms,实际上就是变长的延时,最长100ms
 		if( res == RT_EOK )                                                     //收到一包数据
 		{
-			tick_last_rx=rt_tick_get();
+			tick_lastrx=rt_tick_get();
+			jt808_alarm&=~(1<<4);
 			if( flag_bd_upgrade_uart == 0 )
 			{
 				gps_rx( buf.body, buf.wr );
@@ -412,9 +417,14 @@ static void rt_thread_entry_gps( void* parameter )
 			}
 		}
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
-		if((rt_tick_get()-tick_last_rx)>RT_TICK_PER_SECOND*5)
+		if(rt_tick_get()-tick_lastrx>RT_TICK_PER_SECOND*5)
 		{
-			rt_kprintf("$d>gps error\r\n",rt_tick_get());
+			rt_kprintf("%d>gps no output\r\n");
+			jt808_alarm|=(1<<4);
+			GPIO_ResetBits( GPIOD, GPIO_Pin_10 );  /*off gps*/
+			rt_thread_delay(RT_TICK_PER_SECOND);
+			GPIO_SetBits( GPIOD, GPIO_Pin_10 );		/*on gps*/
+			tick_lastrx=rt_tick_get();
 		}
 	}
 }

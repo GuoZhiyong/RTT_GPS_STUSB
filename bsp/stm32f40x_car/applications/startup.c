@@ -116,8 +116,6 @@ void rtthread_startup(void)
 	gsm_init();
 	hmi_init();
 	jt808_init();
- 	
-
 #ifdef RT_USING_FINSH
 	/* init finsh */
 	finsh_system_init();

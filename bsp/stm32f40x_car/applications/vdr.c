@@ -133,7 +133,7 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
       ( ( val & 0xff0000 ) >> 8 ) |  \
       ( ( val & 0xff000000 ) >> 24 ) )
 
-#define MYDATETIME( year, month, day, hour, minute, sec )	( ( year << 26 ) | ( month << 22 ) | ( day << 17 ) | ( hour << 12 ) | ( minute << 6 ) | sec )
+#define MYDATETIME( year, month, day, hour, minute, sec )	( (uint32_t)( year << 26 ) |(uint32_t) ( month << 22 ) |(uint32_t) ( day << 17 ) |(uint32_t) ( hour << 12 ) |(uint32_t) ( minute << 6 ) | sec )
 #define YEAR( datetime )									( ( datetime >> 26 ) & 0x3F )
 #define MONTH( datetime )									( ( datetime >> 22 ) & 0xF )
 #define DAY( datetime )										( ( datetime >> 17 ) & 0x1F )
@@ -310,7 +310,7 @@ static void cb_tmr_200ms( void* parameter )
  */
 static uint32_t vdr_init_byid( uint8_t id, uint8_t *p )
 {
-	uint8_t		sect, offset;
+	uint16_t	sect, offset;
 	uint8_t		*prec;
 	uint32_t	mytime_curr = 0;
 	uint32_t	mytime_vdr	= 0;
@@ -330,9 +330,9 @@ static uint32_t vdr_init_byid( uint8_t id, uint8_t *p )
 		for( offset = 0; offset < 4096; offset += rec_size )                                        /*按照记录大小遍历*/
 		{
 			prec = p + offset;
-			if( prec[0] == flag )                                                                   /*有效数据*/                                                                   /*是有效的数据包*/
+			if( prec[0] == flag ) /*每个记录头都是 <flag><mydatetime(4byte)>                                                                  /*有效数据*/                                                                   /*是有效的数据包*/
 			{
-				mytime_curr = MYDATETIME( prec[1], prec[2], prec[3], prec[4], prec[5], prec[6] );   /*整分钟时刻*/
+				mytime_curr = (prec[1]<<24)|(prec[2]<<16)|(prec[3]<<8)|prec[4];   /*整分钟时刻*/
 				if( mytime_curr > mytime_vdr )
 				{
 					mytime_vdr	= mytime_curr;
@@ -375,13 +375,10 @@ rt_err_t vdr_init( void )
 	{
 		return -RT_ENOMEM;
 	}
-
 	vdr_init_byid( 8, pbuf );
 	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );
-
 	vdr_init_byid( 9, pbuf );
 	sst25_read( sect_info[1].addr, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
-
 	vdr_init_byid( 10, pbuf );
 	vdr_init_byid( 11, pbuf );
 	vdr_init_byid( 12, pbuf );
@@ -392,7 +389,7 @@ rt_err_t vdr_init( void )
 	rt_free( pbuf );
 	pbuf = RT_NULL;
 /*初始化一个50ms的定时器，用作事故疑点判断*/
-	rt_timer_init( &tmr_200ms, "tmr_50ms",      /* 定时器名字是 tmr_50ms */
+	rt_timer_init( &tmr_200ms, "tmr_200ms",      /* 定时器名字是 tmr_50ms */
 	               cb_tmr_200ms,                /* 超时时回调的处理函数 */
 	               RT_NULL,                     /* 超时函数的入口参数 */
 	               RT_TICK_PER_SECOND / 5,      /* 定时长度，以OS Tick为单位 */
@@ -434,15 +431,24 @@ rt_err_t vdr_rx( void )
 {
 	uint32_t	datetime;
 	uint8_t		year, month, day, hour, minute, sec;
+
+
+	if((jt808_status&BIT_STATUS_GPS)==0) /*未定位*/
+	{
+
+		return;
+	}
+
 	year		= gps_datetime[0];
 	month		= gps_datetime[1];
 	day			= gps_datetime[2];
 	hour		= gps_datetime[3];
 	minute		= gps_datetime[4];
 	sec			= gps_datetime[5];
+	rt_kprintf("%d>vdr_rx=%02d-%02d-%02d %02d:%02d:%02d\r\n",rt_tick_get(),year,month,day,hour,minute,sec);
 	datetime	= MYDATETIME( year, month, day, hour, minute, sec );
-/*08数据*/
-	if( ( stu_rec_08.datetime & 0xFFFFFC00 ) != ( datetime & 0xFFFFFC00 ) ) /*不是在当前的一分钟内*/
+/*08数据,没有判断59秒时的情况，只要ymdhm不同，就保存*/
+	if( ( stu_rec_08.datetime & 0xFFFFFFC0 ) != ( datetime & 0xFFFFFFC0 ) ) /*不是在当前的一分钟内*/
 	{
 		if( stu_rec_08.datetime != 0xFFFFFFFF )                             /*是有效的数据,要保存*/
 		{
@@ -454,15 +460,9 @@ rt_err_t vdr_rx( void )
 	stu_rec_08.datetime				= datetime;
 	stu_rec_08.speed_status[sec][0] = gps_speed;
 	stu_rec_08.speed_status[sec][1] = vdr_signal_status;
-	if( sec == 59 )                                                         /*整分钟，存储*/
-	{
-		stu_rec_08.flag = '8';
-		vdr_save_rec( 8, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );
-		memset( (uint8_t*)&stu_rec_08, 0xFF, sizeof( STU_REC_08 ) );        /*新的记录，初始化为0xFF*/
-	}
 
-/*09数据 每分钟的位置速度，只保存有效的*/
-	if( ( stu_rec_09.datetime & 0xFFFFFC00 ) != ( datetime & 0xFFFFFC00 ) ) /*不是是在当前的一分钟内*/
+/*09数据 每分钟的位置速度，只保存第一次有效的*/
+	if( ( stu_rec_09.datetime & 0xFFFFFFC0 ) != ( datetime & 0xFFFFFFC0 ) ) /*不是是在当前的一分钟内*/
 	{
 		stu_rec_09.datetime = datetime;                                     /*置位相等*/
 		stu_rec_09.flag		= '9';
@@ -509,11 +509,26 @@ rt_err_t vdr_rx( void )
 		}else
 		{
 			car_status.gps_duration++;                                      /*行驶累计时间*/
+			/*判断疲劳驾驶*/
+			car_status.gps_judge_duration=0;
 		}
 	}
 
-/*11数据*/
+/*11数据超时驾驶记录*/
+
+
 }
+
+
+/*获取08数据*/
+void vdr_get_08()
+{
+
+
+}
+
+
+
 
 /*
    删除特定区域的记录数据
@@ -535,7 +550,6 @@ void vdr_format( uint16_t area )
 		}
 	}
 }
-
 FINSH_FUNCTION_EXPORT( vdr_format, format vdr record );
 
 /************************************** The End Of File **************************************/
