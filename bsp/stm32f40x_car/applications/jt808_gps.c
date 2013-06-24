@@ -72,6 +72,11 @@ static uint32_t period_acc_on	= 0;            /*疲劳驾驶时间 acc开*/
 static uint32_t period_acc_off	= 0;            /*疲劳驾驶时间acc关*/
 
 
+
+uint32_t gps_second_count=0;	/*gps秒语句输出*/
+
+
+
 /*
    区域的定义,使用list关联起来，如果node过多的话，
    RAM是否够用
@@ -382,7 +387,7 @@ void process_gps( void )
 
 /*生成要上报的数据*/
 	//jt808_add_msg_head(uint8_t * p,uint16_t id,uint16_t attr,uint16_t seq)
-	if( gps_datetime[5] % 10 == 0 )
+	if( (gps_datetime[5] % 10) == 0 )
 	{
 		err = jt808_add_tx_data( 1, TERMINAL_CMD, 0x0200, 28, -1, RT_NULL, RT_NULL, (uint8_t*)&gps_baseinfo );
 		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );

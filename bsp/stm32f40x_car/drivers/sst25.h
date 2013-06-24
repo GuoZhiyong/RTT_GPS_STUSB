@@ -3,6 +3,9 @@
 #ifndef __SST25V_H
 #define __SST25V_H
 #include <stm32f4xx.h>
+#include <rtthread>
+
+extern struct rt_semaphore sem_dataflash;
 
 void sst25_init(void);
 void sst25_read(uint32_t addr ,uint8_t *p,uint16_t len) ;

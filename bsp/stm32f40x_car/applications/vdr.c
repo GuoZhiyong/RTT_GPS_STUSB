@@ -310,7 +310,7 @@ static void cb_tmr_200ms( void* parameter )
  */
 static uint32_t vdr_init_byid( uint8_t id, uint8_t *p )
 {
-	uint8_t		sect, offset;
+	uint16_t	sect, offset;
 	uint8_t		*prec;
 	uint32_t	mytime_curr = 0;
 	uint32_t	mytime_vdr	= 0;
@@ -330,9 +330,9 @@ static uint32_t vdr_init_byid( uint8_t id, uint8_t *p )
 		for( offset = 0; offset < 4096; offset += rec_size )                                        /*按照记录大小遍历*/
 		{
 			prec = p + offset;
-			if( prec[0] == flag )                                                                   /*有效数据*/                                                                   /*是有效的数据包*/
+			if( prec[0] == flag ) /*每个记录头都是 <flag><mydatetime(4byte)>                                                                  /*有效数据*/                                                                   /*是有效的数据包*/
 			{
-				mytime_curr = MYDATETIME( prec[1], prec[2], prec[3], prec[4], prec[5], prec[6] );   /*整分钟时刻*/
+				mytime_curr = (prec[1]<<24)|(prec[2]<<16)|(prec[3]<<8)|prec[4];   /*整分钟时刻*/
 				if( mytime_curr > mytime_vdr )
 				{
 					mytime_vdr	= mytime_curr;
@@ -375,13 +375,10 @@ rt_err_t vdr_init( void )
 	{
 		return -RT_ENOMEM;
 	}
-
 	vdr_init_byid( 8, pbuf );
 	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );
-
 	vdr_init_byid( 9, pbuf );
 	sst25_read( sect_info[1].addr, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
-
 	vdr_init_byid( 10, pbuf );
 	vdr_init_byid( 11, pbuf );
 	vdr_init_byid( 12, pbuf );
@@ -392,7 +389,7 @@ rt_err_t vdr_init( void )
 	rt_free( pbuf );
 	pbuf = RT_NULL;
 /*初始化一个50ms的定时器，用作事故疑点判断*/
-	rt_timer_init( &tmr_200ms, "tmr_50ms",      /* 定时器名字是 tmr_50ms */
+	rt_timer_init( &tmr_200ms, "tmr_200ms",      /* 定时器名字是 tmr_50ms */
 	               cb_tmr_200ms,                /* 超时时回调的处理函数 */
 	               RT_NULL,                     /* 超时函数的入口参数 */
 	               RT_TICK_PER_SECOND / 5,      /* 定时长度，以OS Tick为单位 */
@@ -509,11 +506,26 @@ rt_err_t vdr_rx( void )
 		}else
 		{
 			car_status.gps_duration++;                                      /*行驶累计时间*/
+			/*判断疲劳驾驶*/
+			car_status.gps_judge_duration=0;
 		}
 	}
 
-/*11数据*/
+/*11数据超时驾驶记录*/
+
+
 }
+
+
+/*获取08数据*/
+void vdr_get_08()
+{
+
+
+}
+
+
+
 
 /*
    删除特定区域的记录数据
@@ -535,7 +547,6 @@ void vdr_format( uint16_t area )
 		}
 	}
 }
-
 FINSH_FUNCTION_EXPORT( vdr_format, format vdr record );
 
 /************************************** The End Of File **************************************/
