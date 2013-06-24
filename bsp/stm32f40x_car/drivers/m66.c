@@ -1462,6 +1462,7 @@ static void rt_thread_entry_gsm( void* parameter )
 		}
 		if( gsm_state == GSM_POWEROFF )
 		{
+		 
 		}
 
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );

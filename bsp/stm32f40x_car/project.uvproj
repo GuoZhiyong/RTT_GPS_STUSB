@@ -456,6 +456,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_camera.c</FilePath>
             </File>
+            <File>
+              <FileName>jt808_updata.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_updata.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -1269,6 +1269,7 @@ u8 SMS_Rx_PDU( char *instr, u16 len )
 	return ret;
 }
 
+
 /*********************************************************************************
   *函数名称:u8 SMS_Tx_Text(char *strDestNum,char *s)
   *功能描述:发送TEXT格式的短信函数
@@ -1832,6 +1833,9 @@ void SMS_Process( void )
 		}
 		case SMS_RX_OK:
 		{
+			rt_kprintf( "\r\n  短息来源号码:%s", SMS_Service.SMS_destNum );
+			rt_kprintf( "\r\n 短信收到消息: " );
+			rt_kprintf( SMS_Service.SMS_rx_Content );
 			if( strncmp( (char*)SMS_Service.SMS_rx_Content, "TW703#", 6 ) == 0 )                                        //短信修改UDP的IP和端口
 			{
 				ContentLen = strlen( SMS_Service.SMS_rx_Content );

@@ -65,8 +65,8 @@ typedef  __packed struct
 
 
 
-#define	DF_CamAddress_Start		0x1000			///图片数据存储开始位置
-#define DF_CamAddress_End		0X20000			///图片数据存储结束位置
+#define	DF_CamAddress_Start		0x40000			///图片数据存储开始位置
+#define DF_CamAddress_End		0X60000			///图片数据存储结束位置
 #define DF_CamSaveSect			0x400			///图片数据存储最小间隔
 
 extern rt_device_t _console_device;
