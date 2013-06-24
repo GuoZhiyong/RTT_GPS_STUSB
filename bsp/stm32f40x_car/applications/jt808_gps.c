@@ -48,6 +48,10 @@ typedef struct _GPSPoint
 	int sec;
 } GPSPoint;
 
+
+
+uint32_t	gps_sec_count=0;		/*gps秒脉冲输出*/
+
 /*要用union类型保存，位域，访问吗?*/
 uint32_t		jt808_alarm			= 0x0;
 uint32_t		jt808_alarm_last	= 0x0;      /*上一次的上报状态*/
@@ -793,6 +797,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	{
 		if( process_rmc( psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确*/
 		{
+			gps_sec_count++;
 			process_gps( );             /*处理GPS信息*/
 		}
 	}

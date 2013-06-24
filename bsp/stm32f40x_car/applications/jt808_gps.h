@@ -68,6 +68,8 @@ extern uint8_t		gps_datetime[6];    /*日期时间 hex格式*/
 extern uint32_t jt808_alarm;
 extern uint32_t jt808_status;
 
+extern uint32_t	gps_sec_count;		/*gps秒脉冲输出*/
+
 void gps_rx( uint8_t * pinfo, uint16_t length );
 
 
