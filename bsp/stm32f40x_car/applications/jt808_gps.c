@@ -40,6 +40,10 @@
       ( ( val & 0xff0000 ) >> 8 ) |  \
       ( ( val & 0xff000000 ) >> 24 ) )
 
+#define HEX2BCD(x)	((x/10)<<4|(x%10))
+#define BCD2HEX(x)	(((x>>4)*10)+(x&0x0f))
+
+
 typedef struct _GPSPoint
 {
 	int sign;
@@ -397,12 +401,14 @@ void process_gps( void )
 	//if(flag_send==0) return;
 
 /*生成要上报的数据*/
-	//jt808_add_msg_head(uint8_t * p,uint16_t id,uint16_t attr,uint16_t seq)
-	if( (gps_datetime[5] % 10) == 0 )
+	#if 0
+	
+	if( (gps_datetime[5] % 60) == 0 )
 	{
 		err = jt808_add_tx_data( 1, TERMINAL_CMD, 0x0200, 28, -1, RT_NULL, RT_NULL, (uint8_t*)&gps_baseinfo );
 		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );
 	}
+	#endif 
 }
 
 /*
@@ -461,10 +467,10 @@ uint8_t process_rmc( uint8_t * pinfo )
 					fDateModify = 1;
 					i			-= 24;
 				}
-				/*转成BCD*/
-				hour	= ( ( i / 10 ) << 4 ) | ( i % 10 );
-				min		= ( ( buf[2] - 0x30 ) << 4 ) | ( buf[3] - 0x30 );
-				sec		= ( ( buf[4] - 0x30 ) << 4 ) | ( buf[5] - 0x30 );
+				/*转成HEX格式*/
+				hour	= i;
+				min		= ( buf[2] - 0x30 ) *10 + ( buf[3] - 0x30 );
+				sec		= ( buf[4] - 0x30 ) *10 + ( buf[5] - 0x30 );
 				//rt_kprintf( "hour=%02x,min=%02x,sec=%02x\r\n", hour, min, sec );
 				break;
 			case 2: /*A_V*/
@@ -550,9 +556,10 @@ uint8_t process_rmc( uint8_t * pinfo )
 				}
 				/*当前是0.1knot => 0.1Kmh  1海里=1.852Km  1852=1024+512+256+32+16+8+4*/
 				#ifdef DEBUG_GPS
-					if(speed_count--)
+					if(speed_count)
 					{
 						speed_10x+=(speed_add*10);
+						speed_count--;
 					}
 
 				#endif
@@ -632,7 +639,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 				gps_datetime[1] = mon;
 				gps_datetime[2] = day;
 				gps_datetime[3] = hour;
-				gps_datetime[4] = minutes;
+				gps_datetime[4] = min;
 				gps_datetime[5] = sec;
 
 				gps_baseinfo.alarm		= BYTESWAP4( jt808_alarm );
@@ -642,19 +649,13 @@ uint8_t process_rmc( uint8_t * pinfo )
 				gps_baseinfo.speed_10x	= BYTESWAP2( speed_10x );
 				gps_baseinfo.cog		= BYTESWAP2( cog );
 
-				i							= year;
-				year						= ( ( i / 10 ) << 4 ) | ( i % 10 );
-				i							= mon;
-				mon							= ( ( i / 10 ) << 4 ) | ( i % 10 );
-				i							= day;
-				day							= ( ( i / 10 ) << 4 ) | ( i % 10 );
 				timestamp_now				= linux_mktime( year, mon, day, hour, min, sec );
-				gps_baseinfo.datetime[0]	= year;
-				gps_baseinfo.datetime[1]	= mon;
-				gps_baseinfo.datetime[2]	= day;
-				gps_baseinfo.datetime[3]	= hour;
-				gps_baseinfo.datetime[4]	= min;
-				gps_baseinfo.datetime[5]	= sec;
+				gps_baseinfo.datetime[0]	= HEX2BCD(year);
+				gps_baseinfo.datetime[1]	= HEX2BCD(mon);
+				gps_baseinfo.datetime[2]	= HEX2BCD(day);
+				gps_baseinfo.datetime[3]	= HEX2BCD(hour);
+				gps_baseinfo.datetime[4]	= HEX2BCD(min);
+				gps_baseinfo.datetime[5]	= HEX2BCD(sec);
 
 				/*首次定位,校时*/
 				if( ( jt808_status_last & BIT_STATUS_GPS ) == 0 )
@@ -814,8 +815,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	//if( ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) )
 	if( strncmp( psrc + 3, "RMC,", 4 ) == 0 )
 	{
-		gps_sec_count++;	
-		rt_kprintf("%d>gps_sec_count=%d\r\n",rt_tick_get(),gps_sec_count);
+		gps_sec_count++;
 		if( process_rmc( psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确*/
 		{
 

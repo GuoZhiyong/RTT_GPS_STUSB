@@ -419,12 +419,12 @@ static void rt_thread_entry_gps( void* parameter )
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 		if(rt_tick_get()-tick_lastrx>RT_TICK_PER_SECOND*5)
 		{
-			rt_kprintf("%d>gps no output\r\n");
+			//rt_kprintf("%d>gps no output\r\n");
 			jt808_alarm|=(1<<4);
-			GPIO_ResetBits( GPIOD, GPIO_Pin_10 );  /*off gps*/
-			rt_thread_delay(RT_TICK_PER_SECOND);
-			GPIO_SetBits( GPIOD, GPIO_Pin_10 );		/*on gps*/
-			tick_lastrx=rt_tick_get();
+		//	GPIO_ResetBits( GPIOD, GPIO_Pin_10 );  /*off gps*/
+		//	rt_thread_delay(RT_TICK_PER_SECOND);
+		//	GPIO_SetBits( GPIOD, GPIO_Pin_10 );		/*on gps*/
+		//	tick_lastrx=rt_tick_get();
 		}
 	}
 }

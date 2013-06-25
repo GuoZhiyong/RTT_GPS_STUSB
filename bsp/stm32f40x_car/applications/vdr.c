@@ -133,7 +133,7 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
       ( ( val & 0xff0000 ) >> 8 ) |  \
       ( ( val & 0xff000000 ) >> 24 ) )
 
-#define MYDATETIME( year, month, day, hour, minute, sec )	( (uint32_t)( year << 26 ) |(uint32_t) ( month << 22 ) |(uint32_t) ( day << 17 ) |(uint32_t) ( hour << 12 ) |(uint32_t) ( minute << 6 ) | sec )
+#define MYDATETIME( year, month, day, hour, minute, sec )	( (uint32_t)( year << 26 ) | (uint32_t)( month << 22 ) | (uint32_t)( day << 17 ) | (uint32_t)( hour << 12 ) | (uint32_t)( minute << 6 ) | sec )
 #define YEAR( datetime )									( ( datetime >> 26 ) & 0x3F )
 #define MONTH( datetime )									( ( datetime >> 22 ) & 0xF )
 #define DAY( datetime )										( ( datetime >> 17 ) & 0x1F )
@@ -330,9 +330,10 @@ static uint32_t vdr_init_byid( uint8_t id, uint8_t *p )
 		for( offset = 0; offset < 4096; offset += rec_size )                                        /*按照记录大小遍历*/
 		{
 			prec = p + offset;
-			if( prec[0] == flag ) /*每个记录头都是 <flag><mydatetime(4byte)>                                                                  /*有效数据*/                                                                   /*是有效的数据包*/
+			if( prec[0] == flag )                                                                   /*每个记录头都是 <flag><mydatetime(4byte)>  有效数据*/                                                                   /*是有效的数据包*/
 			{
-				mytime_curr = (prec[1]<<24)|(prec[2]<<16)|(prec[3]<<8)|prec[4];   /*整分钟时刻*/
+				/*注意存储的顺序，不能简单的BYTESWAP4*/
+				mytime_curr = ( prec[4] << 24 ) | ( prec[3] << 16 ) | ( prec[2] << 8 ) | prec[1];   /*整分钟时刻*/
 				if( mytime_curr > mytime_vdr )
 				{
 					mytime_vdr	= mytime_curr;
@@ -345,56 +346,7 @@ static uint32_t vdr_init_byid( uint8_t id, uint8_t *p )
 		}
 	}
 	sect_info[i].addr = addr;
-	rt_kprintf( "\r\n%d>sect:%02d addr=%08x datetime:%d-%d-%d %d:%d:%d", rt_tick_get( ), id, addr, YEAR( mytime_vdr ), MONTH( mytime_vdr ), DAY( mytime_vdr ), HOUR( mytime_vdr ), MINUTE( mytime_vdr ), SEC( mytime_vdr ) );
-}
-
-/*
-   获取08存储的状态 48小时 单位分钟内每秒的速度状态2byte
-   48*60*128=2880*128=368640 (bytes)
-   368640/4096=90(sectors)
-
-   格式:
-   <'8'><mydatetime(4bytes><60秒的速度状态120bytes>
-   循环递增
- */
-
-
-/*
-   初始化记录区数据
-   因为是属于固定时间段存储的
-   需要记录开始时刻的sector位置(相对的sector偏移)
- */
-rt_err_t vdr_init( void )
-{
-	uint8_t* pbuf;
-
-	pulse_init( ); /*接脉冲计数*/
-
-	pbuf = rt_malloc( 4096 );
-	if( pbuf == RT_NULL )
-	{
-		return -RT_ENOMEM;
-	}
-	vdr_init_byid( 8, pbuf );
-	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );
-	vdr_init_byid( 9, pbuf );
-	sst25_read( sect_info[1].addr, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
-	vdr_init_byid( 10, pbuf );
-	vdr_init_byid( 11, pbuf );
-	vdr_init_byid( 12, pbuf );
-	vdr_init_byid( 13, pbuf );
-	vdr_init_byid( 14, pbuf );
-	vdr_init_byid( 15, pbuf );
-
-	rt_free( pbuf );
-	pbuf = RT_NULL;
-/*初始化一个50ms的定时器，用作事故疑点判断*/
-	rt_timer_init( &tmr_200ms, "tmr_200ms",      /* 定时器名字是 tmr_50ms */
-	               cb_tmr_200ms,                /* 超时时回调的处理函数 */
-	               RT_NULL,                     /* 超时函数的入口参数 */
-	               RT_TICK_PER_SECOND / 5,      /* 定时长度，以OS Tick为单位 */
-	               RT_TIMER_FLAG_PERIODIC );    /* 周期性定时器 */
-	rt_timer_start( &tmr_200ms );
+	rt_kprintf( "\r\n%d>sect:%02d addr=%08x datetime:%02d-%02d-%02d %02d:%02d:%02d", rt_tick_get( ), id, addr, YEAR( mytime_vdr ), MONTH( mytime_vdr ), DAY( mytime_vdr ), HOUR( mytime_vdr ), MINUTE( mytime_vdr ), SEC( mytime_vdr ) );
 }
 
 /*
@@ -432,27 +384,27 @@ rt_err_t vdr_rx( void )
 	uint32_t	datetime;
 	uint8_t		year, month, day, hour, minute, sec;
 
-
-	if((jt808_status&BIT_STATUS_GPS)==0) /*未定位*/
+	if( ( jt808_status & BIT_STATUS_GPS ) == 0 ) /*未定位*/
 	{
-
 		return;
 	}
 
-	year		= gps_datetime[0];
-	month		= gps_datetime[1];
-	day			= gps_datetime[2];
-	hour		= gps_datetime[3];
-	minute		= gps_datetime[4];
-	sec			= gps_datetime[5];
-	rt_kprintf("%d>vdr_rx=%02d-%02d-%02d %02d:%02d:%02d\r\n",rt_tick_get(),year,month,day,hour,minute,sec);
-	datetime	= MYDATETIME( year, month, day, hour, minute, sec );
+	year	= gps_datetime[0];
+	month	= gps_datetime[1];
+	day		= gps_datetime[2];
+	hour	= gps_datetime[3];
+	minute	= gps_datetime[4];
+	sec		= gps_datetime[5];
+	//rt_kprintf( "%d>vdr_rx=%02d-%02d-%02d %02d:%02d:%02d\r\n", rt_tick_get( ), year, month, day, hour, minute, sec );
+
+	datetime = MYDATETIME( year, month, day, hour, minute, sec );
 /*08数据,没有判断59秒时的情况，只要ymdhm不同，就保存*/
+
 	if( ( stu_rec_08.datetime & 0xFFFFFFC0 ) != ( datetime & 0xFFFFFFC0 ) ) /*不是在当前的一分钟内*/
 	{
 		if( stu_rec_08.datetime != 0xFFFFFFFF )                             /*是有效的数据,要保存*/
 		{
-			stu_rec_08.flag = '8';
+			stu_rec_08.flag		= '8';
 			vdr_save_rec( 8, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );
 			memset( (uint8_t*)&stu_rec_08, 0xFF, sizeof( STU_REC_08 ) );    /*新的记录，初始化为0xFF*/
 		}
@@ -482,6 +434,7 @@ rt_err_t vdr_rx( void )
 				car_status.gps_duration			= SPEED_LIMIT_DURATION;
 				car_status.status				= 1;                        /*认为车辆行驶*/
 				car_status.gps_judge_duration	= 0;
+				rt_kprintf("%d>车辆行驶\r\n",rt_tick_get());
 			}else
 			{
 				car_status.gps_duration++;                                  /*停车累计时间*/
@@ -502,6 +455,7 @@ rt_err_t vdr_rx( void )
 				car_status.gps_duration			= SPEED_LIMIT_DURATION;
 				car_status.status				= 0;                        /*认为车辆停驶*/
 				car_status.gps_judge_duration	= 0;
+				rt_kprintf("%d>车辆停驶\r\n",rt_tick_get());
 			}else
 			{
 				car_status.gps_duration++;                                  /*行驶累计时间*/
@@ -510,25 +464,17 @@ rt_err_t vdr_rx( void )
 		{
 			car_status.gps_duration++;                                      /*行驶累计时间*/
 			/*判断疲劳驾驶*/
-			car_status.gps_judge_duration=0;
+			car_status.gps_judge_duration = 0;
 		}
 	}
 
 /*11数据超时驾驶记录*/
-
-
 }
-
 
 /*获取08数据*/
-void vdr_get_08()
+void vdr_get_08( )
 {
-
-
 }
-
-
-
 
 /*
    删除特定区域的记录数据
@@ -550,6 +496,59 @@ void vdr_format( uint16_t area )
 		}
 	}
 }
+
 FINSH_FUNCTION_EXPORT( vdr_format, format vdr record );
+
+
+/*
+   获取08存储的状态 48小时 单位分钟内每秒的速度状态2byte
+   48*60*128=2880*128=368640 (bytes)
+   368640/4096=90(sectors)
+
+   格式:
+   <'8'><mydatetime(4bytes><60秒的速度状态120bytes>
+   循环递增
+ */
+
+
+/*
+   初始化记录区数据
+   因为是属于固定时间段存储的
+   需要记录开始时刻的sector位置(相对的sector偏移)
+ */
+rt_err_t vdr_init( void )
+{
+	uint8_t* pbuf;
+
+	pulse_init( ); /*接脉冲计数*/
+	
+	//vdr_format( 0xff00 );
+	
+	pbuf = rt_malloc( 4096 );
+	if( pbuf == RT_NULL )
+	{
+		return -RT_ENOMEM;
+	}
+	vdr_init_byid( 8, pbuf );
+	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );  /*读出来是防止一分钟内的重启*/
+	vdr_init_byid( 9, pbuf );
+	sst25_read( sect_info[1].addr, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
+	vdr_init_byid( 10, pbuf );
+	vdr_init_byid( 11, pbuf );
+	vdr_init_byid( 12, pbuf );
+	vdr_init_byid( 13, pbuf );
+	vdr_init_byid( 14, pbuf );
+	vdr_init_byid( 15, pbuf );
+
+	rt_free( pbuf );
+	pbuf = RT_NULL;
+/*初始化一个50ms的定时器，用作事故疑点判断*/
+	rt_timer_init( &tmr_200ms, "tmr_200ms",     /* 定时器名字是 tmr_50ms */
+	               cb_tmr_200ms,                /* 超时时回调的处理函数 */
+	               RT_NULL,                     /* 超时函数的入口参数 */
+	               RT_TICK_PER_SECOND / 5,      /* 定时长度，以OS Tick为单位 */
+	               RT_TIMER_FLAG_PERIODIC );    /* 周期性定时器 */
+	rt_timer_start( &tmr_200ms );
+}
 
 /************************************** The End Of File **************************************/
