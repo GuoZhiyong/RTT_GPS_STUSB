@@ -552,28 +552,39 @@ rt_err_t vdr_init( void )
 	rt_timer_start( &tmr_200ms );
 }
 
-
-
-
 /*行车记录仪数据采集命令*/
 void vdr_rx_8700( uint8_t *pmsg )
 {
-	uint8_t * psrc;
-	uint8_t buf[500];
-	
-	uint16_t seq=JT808HEAD_SEQ(pmsg);
-	uint16_t len=JT808HEAD_LEN(pmsg);
-	uint8_t cmd = *( pmsg + 13 ); /*跳过前面12字节的头*/
+	uint8_t		* psrc;
+	uint8_t		buf[500];
 
+	uint16_t	seq = JT808HEAD_SEQ( pmsg );
+	uint16_t	len = JT808HEAD_LEN( pmsg );
+	uint8_t		cmd = *( pmsg + 13 );   /*跳过前面12字节的头*/
 
-	
 	switch( cmd )
 	{
-		case 0: /*采集记录仪执行标准版本*/
-			
-			jt808_add_tx_data(uint8_t linkno,JT808_MSG_TYPE type,uint16_t id,uint16_t attr,int32_t seq,void(* cb_tx_timeout)(),void(* cb_tx_response)(),uint8_t * pinfo)
-			
+		case 0:                         /*采集记录仪执行标准版本*/
+			buf[0]	= seq >> 8;
+			buf[1]	= seq & 0xff;
+			buf[2]	= cmd;
+			memcpy(buf+3,"\x55\x7A\x00\x00\x02\x00\x12\x00",8);
+			jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 11, buf, RT_NULL, RT_NULL );
 			break;
+		case 1:
+			buf[0]	= seq >> 8;
+			buf[1]	= seq & 0xff;
+			buf[2]	= cmd;
+			memcpy(buf+3,"\x55\x7A\x01\x00\x12\x00120221123456789\x00\x00\x00\x00",25);
+			jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 28, buf, RT_NULL, RT_NULL );
+		case 2:  /*行车记录仪时间*/
+			buf[0]	= seq >> 8;
+			buf[1]	= seq & 0xff;
+			buf[2]	= cmd;
+			sprintf(buf+3,"\x55\x7A\x02\x00\x06\x00%6s",gps_baseinfo.datetime);
+			jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 15, buf, RT_NULL, RT_NULL );
+		case 3:
+			
 	}
 }
 
