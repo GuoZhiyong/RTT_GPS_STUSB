@@ -26,9 +26,10 @@ typedef struct _vdrcmd
 }VDRCMD;
 
 
-rt_err_t vdr_rx(void);
+rt_err_t vdr_rx_gps(void);
 rt_err_t vdr_init( void );
 
+void vdr_rx_8700(uint8_t *pmsg);
 
 
 

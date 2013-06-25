@@ -531,4 +531,14 @@ void param_dump( void )
 
 FINSH_FUNCTION_EXPORT( param_dump, dump param );
 
+
+/* ÷∂Ø…Ë÷√apn*/
+void apn(char *s)
+{
+	param_put_str(0x0010,s);
+}
+FINSH_FUNCTION_EXPORT(apn,set apn);
+
+
+
 /************************************** The End Of File **************************************/

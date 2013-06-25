@@ -13,6 +13,7 @@
 
 #include "sst25.h"
 
+#include "jt808.h"
 #include "vdr.h"
 #include "jt808_gps.h"
 
@@ -379,7 +380,7 @@ static vdr_save_rec( uint8_t sect_id, uint8_t * pdata, uint16_t len )
    速度判断，校准
  */
 
-rt_err_t vdr_rx( void )
+rt_err_t vdr_rx_gps( void )
 {
 	uint32_t	datetime;
 	uint8_t		year, month, day, hour, minute, sec;
@@ -404,7 +405,7 @@ rt_err_t vdr_rx( void )
 	{
 		if( stu_rec_08.datetime != 0xFFFFFFFF )                             /*是有效的数据,要保存*/
 		{
-			stu_rec_08.flag		= '8';
+			stu_rec_08.flag = '8';
 			vdr_save_rec( 8, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );
 			memset( (uint8_t*)&stu_rec_08, 0xFF, sizeof( STU_REC_08 ) );    /*新的记录，初始化为0xFF*/
 		}
@@ -434,7 +435,7 @@ rt_err_t vdr_rx( void )
 				car_status.gps_duration			= SPEED_LIMIT_DURATION;
 				car_status.status				= 1;                        /*认为车辆行驶*/
 				car_status.gps_judge_duration	= 0;
-				rt_kprintf("%d>车辆行驶\r\n",rt_tick_get());
+				rt_kprintf( "%d>车辆行驶\r\n", rt_tick_get( ) );
 			}else
 			{
 				car_status.gps_duration++;                                  /*停车累计时间*/
@@ -455,7 +456,7 @@ rt_err_t vdr_rx( void )
 				car_status.gps_duration			= SPEED_LIMIT_DURATION;
 				car_status.status				= 0;                        /*认为车辆停驶*/
 				car_status.gps_judge_duration	= 0;
-				rt_kprintf("%d>车辆停驶\r\n",rt_tick_get());
+				rt_kprintf( "%d>车辆停驶\r\n", rt_tick_get( ) );
 			}else
 			{
 				car_status.gps_duration++;                                  /*行驶累计时间*/
@@ -521,16 +522,16 @@ rt_err_t vdr_init( void )
 	uint8_t* pbuf;
 
 	pulse_init( ); /*接脉冲计数*/
-	
+
 	//vdr_format( 0xff00 );
-	
+
 	pbuf = rt_malloc( 4096 );
 	if( pbuf == RT_NULL )
 	{
 		return -RT_ENOMEM;
 	}
 	vdr_init_byid( 8, pbuf );
-	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );  /*读出来是防止一分钟内的重启*/
+	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) ); /*读出来是防止一分钟内的重启*/
 	vdr_init_byid( 9, pbuf );
 	sst25_read( sect_info[1].addr, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
 	vdr_init_byid( 10, pbuf );
@@ -549,6 +550,31 @@ rt_err_t vdr_init( void )
 	               RT_TICK_PER_SECOND / 5,      /* 定时长度，以OS Tick为单位 */
 	               RT_TIMER_FLAG_PERIODIC );    /* 周期性定时器 */
 	rt_timer_start( &tmr_200ms );
+}
+
+
+
+
+/*行车记录仪数据采集命令*/
+void vdr_rx_8700( uint8_t *pmsg )
+{
+	uint8_t * psrc;
+	uint8_t buf[500];
+	
+	uint16_t seq=JT808HEAD_SEQ(pmsg);
+	uint16_t len=JT808HEAD_LEN(pmsg);
+	uint8_t cmd = *( pmsg + 13 ); /*跳过前面12字节的头*/
+
+
+	
+	switch( cmd )
+	{
+		case 0: /*采集记录仪执行标准版本*/
+			
+			jt808_add_tx_data(uint8_t linkno,JT808_MSG_TYPE type,uint16_t id,uint16_t attr,int32_t seq,void(* cb_tx_timeout)(),void(* cb_tx_response)(),uint8_t * pinfo)
+			
+			break;
+	}
 }
 
 /************************************** The End Of File **************************************/

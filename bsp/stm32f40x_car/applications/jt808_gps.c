@@ -40,9 +40,8 @@
       ( ( val & 0xff0000 ) >> 8 ) |  \
       ( ( val & 0xff000000 ) >> 24 ) )
 
-#define HEX2BCD(x)	((x/10)<<4|(x%10))
-#define BCD2HEX(x)	(((x>>4)*10)+(x&0x0f))
-
+#define HEX2BCD( x )	( ( x / 10 ) << 4 | ( x % 10 ) )
+#define BCD2HEX( x )	( ( ( x >> 4 ) * 10 ) + ( x & 0x0f ) )
 
 typedef struct _GPSPoint
 {
@@ -52,9 +51,7 @@ typedef struct _GPSPoint
 	int sec;
 } GPSPoint;
 
-
-
-uint32_t	gps_sec_count=0;		/*gps秒脉冲输出*/
+uint32_t gps_sec_count = 0;                     /*gps秒脉冲输出*/
 
 /*要用union类型保存，位域，访问吗?*/
 uint32_t		jt808_alarm			= 0x0;
@@ -77,9 +74,7 @@ static uint32_t overspeed_timestamp_start;      /*开始时间戳*/
 static uint32_t period_acc_on	= 0;            /*疲劳驾驶时间 acc开*/
 static uint32_t period_acc_off	= 0;            /*疲劳驾驶时间acc关*/
 
-
-
-uint32_t gps_second_count=0;	/*gps秒语句输出*/
+uint32_t		gps_second_count = 0;           /*gps秒语句输出*/
 
 
 /*
@@ -164,15 +159,12 @@ struct
 	uint32_t perion_acc_on;
 } func_tired_drive;
 
-
-
 #define DEBUG_GPS
 
 #ifdef DEBUG_GPS
-uint8_t speed_add=0;
-uint32_t speed_count=0;
+uint8_t		speed_add	= 0;
+uint32_t	speed_count = 0;
 #endif
-
 
 
 /*
@@ -274,7 +266,7 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 /*超速、超速预警判断*/
 void do_overspeed_check( void )
 {
-	if( gps_speed >= jt808_param.id_0x0055 )                                          /*超过最高速度*/
+	if( gps_speed >= jt808_param.id_0x0055 )                                            /*超过最高速度*/
 	{
 		if( overspeed_flag == 2 )                                                       /*已超速*/
 		{
@@ -290,9 +282,9 @@ void do_overspeed_check( void )
 			overspeed_flag				= 2;
 			overspeed_timestamp_start	= timestamp_now;
 		}
-	}else if( gps_speed >= ( jt808_param.id_0x0055 - jt808_param.id_0x005B ) )    /*超速预警*/
+	}else if( gps_speed >= ( jt808_param.id_0x0055 - jt808_param.id_0x005B ) )  /*超速预警*/
 	{
-		if( ( jt808_param.id_0x0050 & ( 1 << 13 ) ) == 0 )                          /*报警屏蔽字*/
+		if( ( jt808_param.id_0x0050 & ( 1 << 13 ) ) == 0 )                      /*报警屏蔽字*/
 		{
 			jt808_alarm |= ( 1 << 13 );
 		}
@@ -323,8 +315,6 @@ void process_gps( void )
 			time_set( gps_baseinfo.datetime[3], gps_baseinfo.datetime[4], gps_baseinfo.datetime[5] );
 		}
 	}
-/*行车记录仪数据处理*/
-	vdr_rx( );
 /*数据上报方式,如何组合出各种情况 */
 	tmp = jt808_status ^ jt808_status_last;
 	if( tmp )                                           /*状态发生变化，要上报,*/
@@ -390,7 +380,7 @@ void process_gps( void )
 		}
 	}
 /*计算定距上报*/
-	if( jt808_param.id_0x0020 )   /*有定距上报*/
+	if( jt808_param.id_0x0020 ) /*有定距上报*/
 	{
 		jt808_report_distance	= jt808_param.id_0x002F;
 		distance				= 0;
@@ -401,14 +391,14 @@ void process_gps( void )
 	//if(flag_send==0) return;
 
 /*生成要上报的数据*/
-	#if 0
-	
-	if( (gps_datetime[5] % 60) == 0 )
+#if 0
+
+	if( ( gps_datetime[5] % 60 ) == 0 )
 	{
 		err = jt808_add_tx_data( 1, TERMINAL_CMD, 0x0200, 28, -1, RT_NULL, RT_NULL, (uint8_t*)&gps_baseinfo );
 		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );
 	}
-	#endif 
+#endif
 }
 
 /*
@@ -469,8 +459,8 @@ uint8_t process_rmc( uint8_t * pinfo )
 				}
 				/*转成HEX格式*/
 				hour	= i;
-				min		= ( buf[2] - 0x30 ) *10 + ( buf[3] - 0x30 );
-				sec		= ( buf[4] - 0x30 ) *10 + ( buf[5] - 0x30 );
+				min		= ( buf[2] - 0x30 ) * 10 + ( buf[3] - 0x30 );
+				sec		= ( buf[4] - 0x30 ) * 10 + ( buf[5] - 0x30 );
 				//rt_kprintf( "hour=%02x,min=%02x,sec=%02x\r\n", hour, min, sec );
 				break;
 			case 2: /*A_V*/
@@ -555,16 +545,16 @@ uint8_t process_rmc( uint8_t * pinfo )
 					}
 				}
 				/*当前是0.1knot => 0.1Kmh  1海里=1.852Km  1852=1024+512+256+32+16+8+4*/
-				#ifdef DEBUG_GPS
-					if(speed_count)
-					{
-						speed_10x+=(speed_add*10);
-						speed_count--;
-					}
+#ifdef DEBUG_GPS
+				if( speed_count )
+				{
+					speed_10x += ( speed_add * 10 );
+					speed_count--;
+				}
 
-				#endif
+#endif
 				speed_10x	*= 1.852;
-				gps_speed = speed_10x / 10;
+				gps_speed	= speed_10x / 10;
 				//i=speed_10x;
 				//speed_10x=(i<<10)|(i<<9)|(i<<8)|(i<<5)|(i<<4)|(i<<3)|(i<<2);
 				//speed_10x/=1000;
@@ -650,12 +640,12 @@ uint8_t process_rmc( uint8_t * pinfo )
 				gps_baseinfo.cog		= BYTESWAP2( cog );
 
 				timestamp_now				= linux_mktime( year, mon, day, hour, min, sec );
-				gps_baseinfo.datetime[0]	= HEX2BCD(year);
-				gps_baseinfo.datetime[1]	= HEX2BCD(mon);
-				gps_baseinfo.datetime[2]	= HEX2BCD(day);
-				gps_baseinfo.datetime[3]	= HEX2BCD(hour);
-				gps_baseinfo.datetime[4]	= HEX2BCD(min);
-				gps_baseinfo.datetime[5]	= HEX2BCD(sec);
+				gps_baseinfo.datetime[0]	= HEX2BCD( year );
+				gps_baseinfo.datetime[1]	= HEX2BCD( mon );
+				gps_baseinfo.datetime[2]	= HEX2BCD( day );
+				gps_baseinfo.datetime[3]	= HEX2BCD( hour );
+				gps_baseinfo.datetime[4]	= HEX2BCD( min );
+				gps_baseinfo.datetime[5]	= HEX2BCD( sec );
 
 				/*首次定位,校时*/
 				if( ( jt808_status_last & BIT_STATUS_GPS ) == 0 )
@@ -818,7 +808,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		gps_sec_count++;
 		if( process_rmc( psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确*/
 		{
-
+			vdr_rx_gps( );              /*行车记录仪数据处理*/
 			process_gps( );             /*处理GPS信息*/
 		}
 	}
@@ -876,13 +866,13 @@ FINSH_FUNCTION_EXPORT( gps_dump, dump gps raw info );
 
 #ifdef DEBUG_GPS
 /**模拟调试gps速度*/
-void gps_speed_add(uint8_t sp,uint32_t count)
+void gps_speed_add( uint8_t sp, uint32_t count )
 {
-	speed_add=sp;
-	speed_count=count;
+	speed_add	= sp;
+	speed_count = count;
 }
-FINSH_FUNCTION_EXPORT_ALIAS( gps_speed_add,gps_speed, debug gps speed );
+
+FINSH_FUNCTION_EXPORT_ALIAS( gps_speed_add, gps_speed, debug gps speed );
 #endif
 
-
-
+/************************************** The End Of File **************************************/

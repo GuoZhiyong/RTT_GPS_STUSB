@@ -269,6 +269,23 @@ rt_err_t jt808_add_tx_data( uint8_t linkno,
 	return pnodedata->head_sn;      /*返回发送包序号*/
 }
 
+/*增加一个发送节点*/
+JT808_TX_NODEDATA * node_begin(uint16_t user_data_len)
+{
+		return  (JT808_TX_NODEDATA *)rt_malloc( sizeof( JT808_TX_NODEDATA ) + sizeof( JT808_MSG_HEAD ) + user_data_len );
+}
+
+
+
+JT808_TX_NODEDATA * node_end(JT808_TX_NODEDATA *pnodedata,uint16_t txseq)
+{
+		return  (JT808_TX_NODEDATA *)rt_malloc( sizeof( JT808_TX_NODEDATA ) + sizeof( JT808_MSG_HEAD ) + user_data_len );
+}
+
+
+
+
+
 /*
    终端通用应答
  */
@@ -638,6 +655,7 @@ static int handle_rx_0x8607( uint8_t linkno, uint8_t *pmsg )
 /*行驶记录仪数据采集*/
 static int handle_rx_0x8700( uint8_t linkno, uint8_t *pmsg )
 {
+	vdr_rx_8700(pmsg);
 	return 1;
 }
 
