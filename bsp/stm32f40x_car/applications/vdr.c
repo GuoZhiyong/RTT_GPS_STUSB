@@ -543,7 +543,7 @@ rt_err_t vdr_init( void )
 
 	rt_free( pbuf );
 	pbuf = RT_NULL;
-/*初始化一个50ms的定时器，用作事故疑点判断*/
+/*初始化一个200ms的定时器，用作IO检测，事故疑点等*/
 	rt_timer_init( &tmr_200ms, "tmr_200ms",     /* 定时器名字是 tmr_50ms */
 	               cb_tmr_200ms,                /* 超时时回调的处理函数 */
 	               RT_NULL,                     /* 超时函数的入口参数 */
@@ -577,13 +577,26 @@ void vdr_rx_8700( uint8_t *pmsg )
 			buf[2]	= cmd;
 			memcpy(buf+3,"\x55\x7A\x01\x00\x12\x00120221123456789\x00\x00\x00\x00",25);
 			jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 28, buf, RT_NULL, RT_NULL );
+			break;
 		case 2:  /*行车记录仪时间*/
 			buf[0]	= seq >> 8;
 			buf[1]	= seq & 0xff;
 			buf[2]	= cmd;
 			sprintf(buf+3,"\x55\x7A\x02\x00\x06\x00%6s",gps_baseinfo.datetime);
 			jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 15, buf, RT_NULL, RT_NULL );
+			break;
 		case 3:
+			break;
+		case 4:
+			break;
+		case 5:
+			break;
+		case 6:
+			break;
+		case 7:
+			break;
+		case 8:/*按范围查找或全部查找*/
+			break;
 			
 	}
 }
