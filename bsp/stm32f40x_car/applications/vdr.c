@@ -552,6 +552,21 @@ rt_err_t vdr_init( void )
 	rt_timer_start( &tmr_200ms );
 }
 
+#define PACK_BYTE( buf, byte ) ( *buf = byte )
+#define PACK_WORD( buf, word ) \
+    do { \
+		*buf			= word >> 8; \
+		*( buf + 1 )	= word & 0xff; \
+	} while( 0 )
+
+#define PACK_INT( buf, byte4 ) \
+    do { \
+		*buf			= byte4 >> 24; \
+		*( buf + 1 )	= byte4 >> 16; \
+		*( buf + 2 )	= byte4 >> 8; \
+		*( buf + 3 )	= byte4 & 0xff; \
+	} while( 0 )
+
 /*行车记录仪数据采集命令*/
 void vdr_rx_8700( uint8_t *pmsg )
 {
@@ -568,23 +583,45 @@ void vdr_rx_8700( uint8_t *pmsg )
 			buf[0]	= seq >> 8;
 			buf[1]	= seq & 0xff;
 			buf[2]	= cmd;
-			memcpy(buf+3,"\x55\x7A\x00\x00\x02\x00\x12\x00",8);
+			memcpy( buf + 3, "\x55\x7A\x00\x00\x02\x00\x12\x00", 8 );
 			jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 11, buf, RT_NULL, RT_NULL );
 			break;
 		case 1:
 			buf[0]	= seq >> 8;
 			buf[1]	= seq & 0xff;
 			buf[2]	= cmd;
-			memcpy(buf+3,"\x55\x7A\x01\x00\x12\x00120221123456789\x00\x00\x00\x00",25);
+			memcpy( buf + 3, "\x55\x7A\x01\x00\x12\x00120221123456789\x00\x00\x00\x00", 25 );
 			jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 28, buf, RT_NULL, RT_NULL );
-		case 2:  /*行车记录仪时间*/
+		case 2: /*行车记录仪时间*/
 			buf[0]	= seq >> 8;
 			buf[1]	= seq & 0xff;
 			buf[2]	= cmd;
-			sprintf(buf+3,"\x55\x7A\x02\x00\x06\x00%6s",gps_baseinfo.datetime);
+			sprintf( buf + 3, "\x55\x7A\x02\x00\x06\x00%6s", gps_baseinfo.datetime );
 			jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 15, buf, RT_NULL, RT_NULL );
 		case 3:
-			
+			break;
+		case 4:
+			break;
+		case 5:
+			break;
+		case 6:
+			break;
+		case 8:
+			break;
+		case 9:
+			break;
+		case 10:
+			break;
+		case 11:
+			break;
+		case 12:
+			break;
+		case 13:
+			break;
+		case 14:
+			break;
+		case 15:
+			break;
 	}
 }
 
