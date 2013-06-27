@@ -652,6 +652,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 				{
 					date_set( year, mon, day );
 					time_set( hour, min, sec );
+					rt_kprintf("%d>rtc sync %02d-%02d-%02d %02d:%02d:%02d\r\n",year,mon,day,hour,min,sec);
 				}
 
 				return 0;

@@ -35,7 +35,7 @@ static rt_thread_t tid_usb_vdr = RT_NULL;
 #define VDR_BASE 0x300000
 
 #define VDR_08_START	VDR_BASE
-#define VDR_08_SECTORS	145 /*每天45sector 共3天*/
+#define VDR_08_SECTORS	100 /*每小时2个sector,保留50小时*/
 #define VDR_08_END		( VDR_08_START + VDR_08_SECTORS * 4096 )
 
 #define VDR_09_START	( VDR_08_START + VDR_08_SECTORS * 4096 )
@@ -153,6 +153,7 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
 #define SEC( datetime )										( datetime & 0x3F )
 
 uint8_t vdr_signal_status = 0x01; /*行车记录仪的状态信号*/
+
 
 typedef __packed struct _rec_08
 {
@@ -360,10 +361,12 @@ static uint32_t vdr_init_byid( uint8_t id, uint8_t *p )
 	rt_kprintf( "\r\n%d>sect:%02d addr=%08x datetime:%02d-%02d-%02d %02d:%02d:%02d", rt_tick_get( ), id, addr, YEAR( mytime_vdr ), MONTH( mytime_vdr ), DAY( mytime_vdr ), HOUR( mytime_vdr ), MINUTE( mytime_vdr ), SEC( mytime_vdr ) );
 }
 
-uint32_t	vdr_08_addr			= VDR_08_START; /*当前要写入的地址*/
-uint32_t	vdr_08_time			= 0xFFFFFFFF;   /*当前时间戳*/
+#if 0
 
-uint8_t		vdr_08_day;                         /*三天的缓存数据，0-2 定位当前存在那个位置*/
+uint32_t	vdr_08_addr = VDR_08_START; /*当前要写入的地址*/
+uint32_t	vdr_08_time = 0xFFFFFFFF;   /*当前时间戳*/
+uint16_t	vdr_08_sect = 0;            /*当前要写入的sect号*/
+uint8_t		vdr_08_info[126];           /*保存要写入的信息*/
 
 
 /*
@@ -375,85 +378,87 @@ void vdr_init_08( void )
 {
 	uint8_t		i, sect = 0;
 	uint32_t	addr;
+	uint8_t		buf[32];
 	MYTIME		curr, old = 0;
-	uint8_t		find=0;
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	for( i = 0; i < VDR_08_SECTORS; i++ )
+	for( i = 0; i < VDR_08_SECTORS; i++ )                                       /*每个sector的第一个128 保存该半小时的信息,第一个有效记录的时刻*/
 	{
-		addr = VDR_08_START + i * 45;
+		addr = VDR_08_START + i * 4096;
 		sst25_read( addr, buf, 32 );
 		curr = ( buf[0] << 24 ) | ( buf[1] << 16 ) | ( buf[2] << 8 ) | buf[3];  /*前4个字节代表时间*/
 		if( curr != 0xFFFFFFFF )                                                /*是有效记录*/
 		{
-			if( curr >= old )/*找到更新的记录*/
+			if( curr >= old )                                                   /*找到更新的记录*/
 			{
 				old		= curr;
-				sect	= i; /*记录当前的sector号*/
-				find=1;
+				sect	= i;                                                    /*记录当前的sector号*/
 			}
 		}
 	}
-	rt_sem_release(&sem_dataflash);
 
-	if(find)
+	rt_sem_release( &sem_dataflash );
+	if( old == 0 )                                                              /*没有有效的记录,首次使用*/
 	{
-		vdr_08_day = sect / 45;
-		vdr_08_time = old; /*最近的时刻*/
-		/*删除最早的*/
+		vdr_08_sect = VDR_08_SECTORS;                                           /*当前要写入的sect号,如果为空是 0*/
 	}
-	else
-	{
-		vdr_08_day=0;
-	}
-	rt_kprintf( "%d>vdr_08 day=%d \r\n", vdr_08_day );
+	vdr_08_time = old;                                                          /*当前记录的时刻，如果为空是 0*/
+	rt_kprintf( ">vdr_08 %02d-%02d-%02d %02d:%02d:%02d\r\n", YEAR( old ), MONTH( old ), DAY( old ), HOUR( old ), MINUTE( old ), SEC( old ) );
 }
-
 
 /*保存数据 以1秒的间隔保存数据能否处理的过来**/
 void vdr_put_08( MYTIME mydatetime, uint8_t speed, uint8_t status )
 {
-	uint8_t buf[6];
-	uint8_t year,month,day,hour,minute,sec;
-	uint32_t pos;
+	uint8_t		buf[6];
+	uint8_t		year, month, day, hour, minute, sec;
+	uint32_t	pos;
+	uint32_t	addr;
+	uint8_t		write_head = 0;
+	uint8_t		min_1, min_2;
 
-	if((mydatetime&0xFFFE0000)!=(vdr_08_time&0xFFFE0000)) /*不是同一天*/
+	if( ( mydatetime & 0xFFFFF000 ) != ( vdr_08_time & 0xFFFFF000 ) )   /*不是同一小时 要写新扇区和扇区头*/
 	{
-		vdr_08_day++;  /* 0 1 2*/
-		vdr_08_day%=3;
+		write_head = 1;
+	}else
+	{
+		min_1	= MINUTE( mydatetime );                                 /*获取分钟 0-59 分为 0-29 30-59*/
+		min_2	= MINUTE( vdr_08_time );
+
+		if( ( min_1 < 30 ) && ( min_2 > 29 ) )                          /*时间是递增的。不在同一个半小时内,要写新扇区和扇区头*/
+		{
+			write_head = 1;
+		}
 	}
-	hour=HOUR(mydatetime);
-	minute=MINUTE(mydatetime);
-	sec=SEC(mydatetime);
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	buf[0]				= speed;
-	buf[1]				= status;
-	sst25_write_through( vdr_08_addr + min1 * 128 + sec * 2, buf, 2 ); /*写到指定的位置*/
-	rt_sem_release( &sem_dataflash );
-
-	vdr_08_addr += 4096;
-	if( vdr_08_addr >= VDR_08_END )
+	if( write_head )
 	{
-		vdr_08_addr = VDR_08_START;
+		vdr_08_sect++;
+		if( vdr_08_sect >= VDR_08_SECTORS )
+		{
+			vdr_08_sect = 0;
+		}
+		addr = VDR_08_START + (uint32_t)( vdr_08_sect << 12 );
+		sst25_erase_4k( addr );
+		buf[0]	= mydatetime >> 24;
+		buf[1]	= mydatetime >> 16;
+		buf[2]	= mydatetime >> 8;
+		buf[3]	= mydatetime & 0xff;
+		sst25_write_back( addr, buf, 4 );
 	}
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	sst25_erase_4k( vdr_08_addr );
-	buf[0]				= mydatetime >> 24;
-	buf[1]				= mydatetime >> 16;
-	buf[2]				= mydatetime >> 8;
-	buf[3]				= mydatetime & 0xff;
-	vdr_08_mydatetime	= mydatetime;
-	sst25_write_through( vdr_08_addr, buf, 4 );
-	min = MINUTE( mydatetime ) + 1; /*1-30  31-60*/
+
+	/*定位到要写入的4k内的偏移位置，以128为界*/
+	minute = MINUTE( mydatetime ) + 1; /*对应到 1-60=>1-30  31-60*/
+	if( minute > 30 )
+	{
+		minute -= 30;
+	}
 	sec = SEC( mydatetime );
-	if( min > 30 )
-	{
-		min -= 30;
-	}
+
 	buf[0]	= speed;
 	buf[1]	= status;
-	sst25_write_through( vdr_08_addr + min * 128 + sec * 2, buf, 2 ); /*写到指定的位置*/
+	addr	= vdr_08_addr + (uint32_t)( minute << 7 ) + (uint32_t)( sec << 1 );
+	sst25_write_through( addr, buf, 2 ); /*写到指定的位置*/
 	rt_sem_release( &sem_dataflash );
 }
 
@@ -462,7 +467,7 @@ void vdr_put_08( MYTIME mydatetime, uint8_t speed, uint8_t status )
    开始时刻，结束时刻，cmd上报还是打印
 
  */
-void vdr_get_08( uint32_t start, uint32_t end, uint8_t cmd )
+void vdr_get_08( MYTIME start, MYTIME end, uint8_t cmd )
 {
 }
 
@@ -471,13 +476,6 @@ void vdr_get_08( uint32_t start, uint32_t end, uint8_t cmd )
    最快频率，每分钟一组数据
    360小时=15天
    每天4个sector 每个sector对应6小时，每小时  680字节
-
-
-
-
-
-
-
  */
 void vdr_init_09( void )
 {
@@ -521,6 +519,9 @@ void vdr_init_09( void )
 	rt_kprintf( "%d>vdr_08 addr=%08x datetime=%08x\r\n", vdr_08_addr, vdr_08_mydatetime );
 }
 
+#endif
+
+
 /*
    保存行驶记录数据
    注意区分不同的数据类型
@@ -537,7 +538,7 @@ static vdr_save_rec( uint8_t sect_id, uint8_t * pdata, uint16_t len )
 		sect_info[id].addr = sect_info[id].start_addr;
 	}
 
-	if( ( sect_info[id].addr & 0xFFF ) == 0 )    /*在4k边界处*/
+	if( ( sect_info[id].addr & 0xFFF ) == 0 ) /*在4k边界处*/
 	{
 		sst25_erase_4k( sect_info[id].addr );
 	}
@@ -556,7 +557,7 @@ rt_err_t vdr_rx_gps( void )
 	uint32_t	datetime;
 	uint8_t		year, month, day, hour, minute, sec;
 
-	if( ( jt808_status & BIT_STATUS_GPS ) == 0 )    /*未定位*/
+	if( ( jt808_status & BIT_STATUS_GPS ) == 0 ) /*未定位*/
 	{
 		return;
 	}
@@ -571,21 +572,20 @@ rt_err_t vdr_rx_gps( void )
 
 	datetime = MYDATETIME( year, month, day, hour, minute, sec );
 /*08数据,没有判断59秒时的情况，只要ymdhm不同，就保存*/
-	vdr_put_08( datetime, gps_speed, vdr_signal_status );
-#if 0
-	if( ( stu_rec_08.datetime & 0xFFFFFFC0 ) != ( datetime & 0xFFFFFFC0 ) )     /*不是在当前的一分钟内*/
+//	vdr_put_08( datetime, gps_speed, vdr_signal_status );
+
+	if( ( stu_rec_08.datetime & 0xFFFFFFC0 ) != ( datetime & 0xFFFFFFC0 ) ) /*不是在当前的一分钟内*/
 	{
-		if( stu_rec_08.datetime != 0xFFFFFFFF )                                 /*是有效的数据,要保存*/
+		if( stu_rec_08.datetime != 0xFFFFFFFF )                             /*是有效的数据,要保存*/
 		{
 			stu_rec_08.flag = '8';
 			vdr_save_rec( 8, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );
-			memset( (uint8_t*)&stu_rec_08, 0xFF, sizeof( STU_REC_08 ) );        /*新的记录，初始化为0xFF*/
+			memset( (uint8_t*)&stu_rec_08, 0xFF, sizeof( STU_REC_08 ) );    /*新的记录，初始化为0xFF*/
 		}
 	}
 	stu_rec_08.datetime				= datetime;
 	stu_rec_08.speed_status[sec][0] = gps_speed;
 	stu_rec_08.speed_status[sec][1] = vdr_signal_status;
-#endif
 
 
 /*
@@ -694,9 +694,9 @@ rt_err_t vdr_init( void )
 {
 	uint8_t* pbuf;
 
-	pulse_init( );    /*接脉冲计数*/
+	pulse_init( ); /*接脉冲计数*/
 
-	vdr_format( 0xff00 );
+	//vdr_format( 0xff00 );
 
 	pbuf = rt_malloc( 4096 );
 	if( pbuf == RT_NULL )
@@ -704,7 +704,7 @@ rt_err_t vdr_init( void )
 		return -RT_ENOMEM;
 	}
 	vdr_init_byid( 8, pbuf );
-	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );    /*读出来是防止一分钟内的重启*/
+	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) ); /*读出来是防止一分钟内的重启*/
 	vdr_init_byid( 9, pbuf );
 	sst25_read( sect_info[1].addr, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
 	vdr_init_byid( 10, pbuf );

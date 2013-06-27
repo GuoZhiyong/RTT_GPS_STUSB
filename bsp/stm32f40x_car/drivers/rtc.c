@@ -23,7 +23,7 @@ RTC_InitTypeDef			RTC_InitStructure;
 RTC_DateTypeDef			RTC_DateStructure;
 
 
-#define RTC_CONFIGED_FLAG 0x32f2
+#define RTC_CONFIGED_FLAG 0x32f3
 
 #define RTC_CLOCK_SOURCE_LSE /* LSE used as RTC source clock */
 
@@ -56,14 +56,6 @@ static ErrorStatus RTC_Config( void )
 
 	while( RCC_GetFlagStatus( RCC_FLAG_LSERDY ) == RESET )
 	{
-		if( timeout )
-		{
-			timeout--;
-		}else
-		{
-			rt_kprintf( "\r\n%s(%d) error\r\n", __func__, __LINE__ );
-			return ERROR;
-		}
 	}
 
 	/* Select the RTC Clock Source */
@@ -71,6 +63,36 @@ static ErrorStatus RTC_Config( void )
 	/* ck_spre(1Hz) = RTCCLK(LSE) /(uwAsynchPrediv + 1)*(uwSynchPrediv + 1)*/
 	uwSynchPrediv	= 0xFF;
 	uwAsynchPrediv	= 0x7F;
+
+
+	 /* Configure the RTC data register and RTC prescaler */
+	RTC_InitStructure.RTC_AsynchPrediv = uwAsynchPrediv;
+	RTC_InitStructure.RTC_SynchPrediv = uwSynchPrediv;
+	RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;
+	
+	/* Check on RTC init */
+	if (RTC_Init(&RTC_InitStructure) == ERROR)
+	{
+	  rt_kprintf("\r\n>RTC Prescaler Config failed\r\n" );
+	}
+	
+	/* Enable the RTC Clock */
+	RCC_RTCCLKCmd(ENABLE);
+	
+	/* Wait for RTC APB registers synchronisation */
+	RTC_WaitForSynchro();
+	
+	/* Enable The TimeStamp */
+//	RTC_TimeStampCmd(RTC_TimeStampEdge_Falling, ENABLE);	
+
+
+
+
+
+
+
+
+	
 
 	/* Enable the RTC Clock */
 	RCC_RTCCLKCmd( ENABLE );
@@ -172,43 +194,15 @@ rt_err_t rtc_init(void )
 {
 	if( RTC_ReadBackupRegister( RTC_BKP_DR0 ) != RTC_CONFIGED_FLAG )
 	{
-		rt_kprintf( "\r\n>RTC_CONFIGED_FLAG ERR\r\n" );
-		/* RTC configuration	*/
-		if( RTC_Config( ) == ERROR )
-		{
-			rt_kprintf( "\r\n%s(%d) RTC error\r\n", __func__, __LINE__ );
-			goto lbl_rtc_err;
-		}
-		/* Display the RTC Time and Alarm */
-		datetime( );
-		rt_kprintf("\r\n RTC OK\r\n");
-		goto lbl_rtc_ok;
+		RTC_Config();
+
 	}else
 	{
-		rt_kprintf( "\r\n wait ForSynchro\r\n" );
-
-		/* Enable the PWR clock */
 		RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
-
-		/* Allow access to RTC */
 		PWR_BackupAccessCmd( ENABLE );
-
-		/* Wait for RTC APB registers synchronisation */
-		if( RTC_WaitForSynchro( ) == SUCCESS )
-		{
-			datetime( );
-			rt_kprintf("\r\n RTC OK\r\n");
-			goto lbl_rtc_ok;
-		}else
-		{
-			rt_kprintf( "\r\n%s(%d) error\r\n", __func__, __LINE__ );
-			goto lbl_rtc_err;
-		}
+		RTC_WaitForSynchro( );
 	}
-lbl_rtc_err:
-	return 1;
-lbl_rtc_ok:
-	return 0;
+	datetime( );
 }
 
 /*
