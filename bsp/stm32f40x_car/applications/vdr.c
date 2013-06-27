@@ -17,25 +17,43 @@
 #include "vdr.h"
 #include "jt808_gps.h"
 
+#define VDR_DEBUG
+
+//#define TEST_BKPSRAM
+
 typedef uint32_t MYTIME;
+
+/*转换hex到bcd的编码*/
+#define HEX2BCD( A ) ( ( ( ( A ) / 10 ) << 4 ) | ( ( A ) % 10 ) )
+
+#define PACK_BYTE( buf, byte ) ( *( buf ) = ( byte ) )
+#define PACK_WORD( buf, word ) \
+    do { \
+		*( buf )		= ( word ) >> 8; \
+		*( buf + 1 )	= ( word ) & 0xff; \
+	} \
+    while( 0 )
+
+#define PACK_INT( buf, byte4 ) \
+    do { \
+		*( buf )		= ( byte4 ) >> 24; \
+		*( buf + 1 )	= ( byte4 ) >> 16; \
+		*( buf + 2 )	= ( byte4 ) >> 8; \
+		*( buf + 3 )	= ( byte4 ) & 0xff; \
+	} while( 0 )
 
 
 /*
    4MB serial flash 0x400000
  */
 
-/*转换hex到bcd的编码*/
-#define HEX_TO_BCD( A ) ( ( ( ( A ) / 10 ) << 4 ) | ( ( A ) % 10 ) )
-
 static rt_thread_t tid_usb_vdr = RT_NULL;
 
-#define VDR_08H_09H_START	0x300000
-#define VDR_08H_09H_END		0x32FFFF
 
 #define VDR_BASE 0x300000
 
 #define VDR_08_START	VDR_BASE
-#define VDR_08_SECTORS	100 /*每小时 2 sector 共50小时*/
+#define VDR_08_SECTORS	100 /*每小时2个sector,保留50小时*/
 #define VDR_08_END		( VDR_08_START + VDR_08_SECTORS * 4096 )
 
 #define VDR_09_START	( VDR_08_START + VDR_08_SECTORS * 4096 )
@@ -153,31 +171,6 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
 #define SEC( datetime )										( datetime & 0x3F )
 
 uint8_t vdr_signal_status = 0x01; /*行车记录仪的状态信号*/
-
-typedef __packed struct _rec_08
-{
-	uint8_t		flag;
-	uint32_t	datetime;
-	uint8_t		speed_status[60][2];
-} STU_REC_08;
-STU_REC_08 stu_rec_08;
-
-
-/*
-   经度、纬度分别为4个字节组成一
-   个32位的有符号数，表示经度或纬
-   度，单位为0.0001分每比特
- */
-typedef __packed struct _rec_09
-{
-	uint8_t		flag;
-	uint32_t	datetime;
-	uint32_t	lati;
-	uint32_t	longi;
-	uint16_t	speed;
-} STU_REC_09;
-
-STU_REC_09 stu_rec_09;
 
 /*外接车速信号*/
 __IO uint16_t	IC2Value	= 0;
@@ -315,6 +308,9 @@ static void cb_tmr_200ms( void* parameter )
 /*判断驾驶状态*/
 }
 
+#if 0
+
+
 /*
    初始化记录数据
    找到最近一条记录的位置
@@ -360,152 +356,191 @@ static uint32_t vdr_init_byid( uint8_t id, uint8_t *p )
 	rt_kprintf( "\r\n%d>sect:%02d addr=%08x datetime:%02d-%02d-%02d %02d:%02d:%02d", rt_tick_get( ), id, addr, YEAR( mytime_vdr ), MONTH( mytime_vdr ), DAY( mytime_vdr ), HOUR( mytime_vdr ), MINUTE( mytime_vdr ), SEC( mytime_vdr ) );
 }
 
-uint32_t	vdr_08_addr			= VDR_08_START; /*当前要写入的地址*/
-uint32_t	vdr_08_time			= 0xFFFFFFFF;   /*当前时间戳*/
+#endif
 
-uint8_t		vdr_08_day;                         /*三天的缓存数据，0-2 定位当前存在那个位置*/
+static uint32_t vdr_08_addr = VDR_08_START; /*当前要写入的地址*/
+static MYTIME	vdr_08_time = 0xFFFFFFFF;   /*当前时间戳*/
+static uint16_t vdr_08_sect = 0;            /*当前要写入的sect号*/
+static uint8_t	vdr_08_info[128];           /*保存要写入的信息*/
+static uint8_t	vdr_08_sect_index	= 0;    /*在一个sect内的记录索引,每个sector存32个*/
+
+
+static MYTIME	vdr_09_time			= 0xFFFFFFFF;
+static uint16_t vdr_09_sect			= 0;    /*当前要写入的sect号*/
+static uint8_t	vdr_09_sect_index	= 0;    /*在一个sect内的记录索引,每个sector存6个*/
 
 
 /*
-   硬编码
-   每天45 Sector 每sector对应32分钟 存1440分钟数据 45*32
+   就顺序存储,没有那么复杂
 
  */
-void vdr_init_08_old( void )
-{
-	uint8_t		i, sect = 0;
-	uint32_t	addr;
-	MYTIME		curr, old = 0;
-	uint8_t		find=0;
-
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	for( i = 0; i < VDR_08_SECTORS; i++ )
-	{
-		addr = VDR_08_START + i * 45;
-		sst25_read( addr, buf, 32 );
-		curr = ( buf[0] << 24 ) | ( buf[1] << 16 ) | ( buf[2] << 8 ) | buf[3];  /*前4个字节代表时间*/
-		if( curr != 0xFFFFFFFF )                                                /*是有效记录*/
-		{
-			if( curr >= old )/*找到更新的记录*/
-			{
-				old		= curr;
-				sect	= i; /*记录当前的sector号*/
-				find=1;
-			}
-		}
-	}
-	rt_sem_release(&sem_dataflash);
-
-	if(find)
-	{
-		vdr_08_day = sect / 45;
-		vdr_08_time = old; /*最近的时刻*/
-		/*删除最早的*/
-	}
-	else
-	{
-		vdr_08_day=0;
-	}
-	rt_kprintf( "%d>vdr_08 day=%d \r\n", vdr_08_day );
-}
-
-
 void vdr_init_08( void )
 {
-	uint8_t		i, sect = 0;
-	uint32_t	addr;
+	uint32_t	i,j,sect,sect_index;
+	uint32_t	addr,addr_max;
 	MYTIME		curr, old = 0;
-	uint8_t		find=0;
+	uint8_t 	buf[16];
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	for( i = 0; i < VDR_08_SECTORS; i++ )
+	/*遍历一遍*/
+	for( addr = 0; addr < VDR_08_END; addr+=128 )                                       /*每个sector的第一个128 保存该半小时的信息,第一个有效记录的时刻*/
 	{
-		addr = VDR_08_START + i * 45;
-		sst25_read( addr, buf, 32 );
+		sst25_read( addr, buf, 4 );
 		curr = ( buf[0] << 24 ) | ( buf[1] << 16 ) | ( buf[2] << 8 ) | buf[3];  /*前4个字节代表时间*/
 		if( curr != 0xFFFFFFFF )                                                /*是有效记录*/
 		{
-			if( curr >= old )/*找到更新的记录*/
+			if( curr >= old )                                                   /*找到更新的记录*/
 			{
 				old		= curr;
-				sect	= i; /*记录当前的sector号*/
-				find=1;
+				addr_max=addr;				/*当前记录的地址*/
 			}
 		}
 	}
-	rt_sem_release(&sem_dataflash);
 
-	if(find)
+	rt_sem_release( &sem_dataflash );
+	if( old == 0 )                                                              /*没有有效的记录,首次使用*/
 	{
-		vdr_08_day = sect / 45;
-		vdr_08_time = old; /*最近的时刻*/
-		/*删除最早的*/
+		vdr_08_addr= VDR_08_END;
+		vdr_08_sect = VDR_08_SECTORS;                                           /*当前要写入的sect号,如果为空是 0*/
 	}
-	else
-	{
-		vdr_08_day=0;
-	}
-	rt_kprintf( "%d>vdr_08 day=%d \r\n", vdr_08_day );
+	vdr_08_time = old;                                                          /*当前记录的时刻，如果为空是 0*/
+	rt_kprintf( ">vdr_08 %02d-%02d-%02d %02d:%02d:%02d\r\n", YEAR( old ), MONTH( old ), DAY( old ), HOUR( old ), MINUTE( old ), SEC( old ) );
 }
 
-
-
-
-
-/*保存数据 以1秒的间隔保存数据能否处理的过来**/
-void vdr_put_08( MYTIME mydatetime, uint8_t speed, uint8_t status )
+#if 0
+/*
+   保存整分钟的数据
+   从backupsram中读取数据
+ */
+void vdr_put_08_rec( MYTIME mytime, uint8_t *pinfo )
 {
-	uint8_t buf[6];
-	uint8_t year,month,day,hour,minute,sec;
-	uint32_t pos;
+	uint8_t		buf[6];
+	uint8_t		year, month, day, hour, minute, sec;
+	uint32_t	pos;
+	uint32_t	addr;
+	uint8_t		write_head = 0;
+	uint8_t		i, min_1, min_2;
 
-	if((mydatetime&0xFFFE0000)!=(vdr_08_time&0xFFFE0000)) /*不是同一天*/
+	if( ( mytime & 0xFFFFF000 ) != ( vdr_08_time & 0xFFFFF000 ) )           /*不是同一小时 要写新扇区和扇区头*/
 	{
-		vdr_08_day++;  /* 0 1 2*/
-		vdr_08_day%=3;
+		write_head = 1;
+	}else
+	{
+		min_1	= MINUTE( mytime );                                         /*获取分钟 0-59 分为 0-29 30-59*/
+		min_2	= MINUTE( vdr_08_time );
+
+		if( ( min_1 < 30 ) && ( min_2 > 29 ) )                                  /*时间是递增的。不在同一个半小时内,要写新扇区和扇区头*/
+		{
+			write_head = 1;
+		}
 	}
-	hour=HOUR(mydatetime);
-	minute=MINUTE(mydatetime);
-	sec=SEC(mydatetime);
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	buf[0]				= speed;
-	buf[1]				= status;
-	sst25_write_through( vdr_08_addr + min1 * 128 + sec * 2, buf, 2 ); /*写到指定的位置*/
-	rt_sem_release( &sem_dataflash );
+	if( write_head )
+	{
+		vdr_08_sect++;
+		if( vdr_08_sect >= VDR_08_SECTORS )
+		{
+			vdr_08_sect = 0;
+		}
+		addr = VDR_08_START + (uint32_t)( vdr_08_sect << 12 );
+		sst25_erase_4k( addr );
+		buf[0]	= mytime >> 24;
+		buf[1]	= mytime >> 16;
+		buf[2]	= mytime >> 8;
+		buf[3]	= mytime & 0xff;
+		sst25_write_back( addr, buf, 4 );
+	}
 
-	vdr_08_addr += 4096;
-	if( vdr_08_addr >= VDR_08_END )
+	/*定位到要写入的4k内的偏移位置，以128为界*/
+	minute = MINUTE( mytime ) + 1; /*对应到 1-60=>1-30  31-60*/
+	if( minute > 30 )
+	{
+		minute -= 30;
+	}
+	sec = SEC( mytime );
+
+//	buf[0]	= speed;
+//	buf[1]	= status;
+	addr	= vdr_08_addr + (uint32_t)( minute << 7 ) + (uint32_t)( sec << 1 );
+	sst25_write_through( addr, buf, 2 ); /*写到指定的位置*/
+	rt_sem_release( &sem_dataflash );
+}
+
+#endif
+
+/*保存数据 以1秒的间隔保存数据能否处理的过来**/
+void vdr_put_08( MYTIME datetime, uint8_t speed, uint8_t status )
+{
+	uint32_t i,sec;
+
+	if( ( vdr_08_time & 0xFFFFFFC0 ) != ( datetime & 0xFFFFFFC0 ) ) /*不是在当前的一分钟内*/
+	{
+		if( vdr_08_time != 0xFFFFFFFF )                             /*是有效的数据,要保存*/
+		{
+			vdr_08_info[0]	= vdr_08_time >> 24;
+			vdr_08_info[1]	= vdr_08_time >> 16;
+			vdr_08_info[2]	= vdr_08_time >> 8;
+			vdr_08_info[3]	= vdr_08_time & 0xFF;
+#ifdef TEST_BKPSRAM
+			for( i = 0; i < sizeof( vdr_08_info ); i++ )
+			{
+				*(__IO uint8_t*)( BKPSRAM_BASE + i + 1 ) = vdr_08_info[i];
+			}
+			*(__IO uint8_t*)( BKPSRAM_BASE ) = 1;
+#else
+			
+/*增加一条新纪录*/
+	vdr_08_addr += 128;
+/*判断是否环回*/
+	if( vdr_08_addr >= ( VDR_08_START+ VDR_08_SECTORS* 4096 ))
 	{
 		vdr_08_addr = VDR_08_START;
 	}
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	sst25_erase_4k( vdr_08_addr );
-	buf[0]				= mydatetime >> 24;
-	buf[1]				= mydatetime >> 16;
-	buf[2]				= mydatetime >> 8;
-	buf[3]				= mydatetime & 0xff;
-	vdr_08_mydatetime	= mydatetime;
-	sst25_write_through( vdr_08_addr, buf, 4 );
-	min = MINUTE( mydatetime ) + 1; /*1-30  31-60*/
-	sec = SEC( mydatetime );
-	if( min > 30 )
+
+	if( ( vdr_08_addr & 0xFFF ) == 0 ) /*在4k边界处*/
 	{
-		min -= 30;
+		sst25_erase_4k( vdr_08_addr );
 	}
-	buf[0]	= speed;
-	buf[1]	= status;
-	sst25_write_through( vdr_08_addr + min * 128 + sec * 2, buf, 2 ); /*写到指定的位置*/
-	rt_sem_release( &sem_dataflash );
+	sst25_write_through( vdr_08_addr, vdr_08_info, sizeof(vdr_08_info) );
+#endif
+			memset( vdr_08_info, 0xFF, sizeof( vdr_08_info ) ); /*新的记录，初始化为0xFF*/
+		}
+	}
+	sec=SEC(datetime);
+	vdr_08_time					= datetime;
+	vdr_08_info[sec * 2 + 4]	= gps_speed;
+	vdr_08_info[sec * 2 + 5]	= vdr_signal_status;
 }
 
-/*
-   获取08数据 秒为0
-   开始时刻，结束时刻，cmd上报还是打印
 
- */
-void vdr_get_08( uint32_t start, uint32_t end, uint8_t cmd )
+
+
+
+
+/*定位数据的地址，要不要传递进nodedata?*/
+void vdr_get_08_locate(MYTIME start, MYTIME end)
 {
+
+}
+
+
+/*
+获取08数据
+1.判断是否读取全部
+2.按扇区先粗略查找
+3.扇区内查找
+4.生成指定block的数据
+
+约束条件，地址范围  ，起始结束时间，单包数据大小
+*/
+void vdr_get_08( MYTIME* start, MYTIME* end,uint8_t rec_count , uint8_t* pout)
+{
+	if((*start==0)&&(*end==0)) /*查找全部*/
+	{
+		
+	}
+
 }
 
 /*
@@ -513,13 +548,6 @@ void vdr_get_08( uint32_t start, uint32_t end, uint8_t cmd )
    最快频率，每分钟一组数据
    360小时=15天
    每天4个sector 每个sector对应6小时，每小时  680字节
-
-
-
-
-
-
-
  */
 void vdr_init_09( void )
 {
@@ -549,10 +577,10 @@ void vdr_init_09( void )
 		{
 			if( mytime_curr >= mytime_vdr_08 )
 			{
-				mytime_vdr_08		= mytime_curr;
-				vdr_08_addr			= addr;
-				vdr_08_mydatetime	= mytime_curr;
-				find				= 1;
+				mytime_vdr_08	= mytime_curr;
+				vdr_08_addr		= addr;
+				vdr_08_time		= mytime_curr;
+				find			= 1;
 			}
 		}
 	}
@@ -560,7 +588,66 @@ void vdr_init_09( void )
 	{
 		vdr_08_addr = VDR_08_START + VDR_08_SECTORS * 4096;
 	}
-	rt_kprintf( "%d>vdr_08 addr=%08x datetime=%08x\r\n", vdr_08_addr, vdr_08_mydatetime );
+	rt_kprintf( "%d>vdr_08 addr=%08x datetime=%08x\r\n", vdr_08_addr, vdr_08_time );
+}
+
+/*
+   每扇区存6个小时的数据
+   一个小时666byte 占用680byte
+
+ */
+void vdr_put_09( MYTIME datetime )
+{
+	uint8_t		buf[11], bufhead[10];
+	uint32_t	i;
+	uint32_t	addr;
+	PACK_INT( buf, ( gps_longi * 6 ) );
+	PACK_INT( buf + 4, ( gps_lati * 6 ) );
+	PACK_WORD( buf + 8, ( gps_alti ) );
+	buf[10] = gps_speed;
+
+	if( ( vdr_09_time & 0xFFFFF000 ) != ( datetime & 0xFFFFF000 ) ) /*不是是在当前的小时内*/
+	{
+		vdr_09_time = datetime;
+		vdr_09_sect_index++;                                        /*调整*/
+		if( vdr_09_sect_index > 5 )                                 /*每个sector存6个小时 0-5*/
+		{
+			vdr_09_sect_index = 0;
+			vdr_09_sect++;
+			if( vdr_09_sect >= VDR_09_SECTORS )
+			{
+				vdr_09_sect = 0;
+			}
+			addr = VDR_09_START + vdr_09_sect * 4096;   /*删除扇区*/
+#ifdef VDR_DEBUG
+			rt_kprintf( "%d>写入新的扇区 vdr_09_sect=%d\r\n", rt_tick_get( ), vdr_09_sect );
+#else
+			sst25_erase_4k( addr );
+			PACK_INT( bufhead, datetime );              /*写入新的记录头*/
+			PACK_BYTE( bufhead + 4, HEX2BCD( YEAR( datetime ) ) );
+			PACK_BYTE( bufhead + 4, HEX2BCD( MONTH( datetime ) ) );
+			PACK_BYTE( bufhead + 4, HEX2BCD( DAY( datetime ) ) );
+			PACK_BYTE( bufhead + 4, HEX2BCD( HOUR( datetime ) ) );
+			PACK_BYTE( bufhead + 4, HEX2BCD( MINUTE( datetime ) ) );
+			PACK_BYTE( bufhead + 4, HEX2BCD( SEC( datetime ) ) );
+#endif
+		}
+	}
+
+#ifdef VDR_DEBUG
+
+
+/*
+   rt_kprintf( "%d>写入已有数据 vdr_09_sect=%d\r\n", rt_tick_get( ), vdr_09_sect );
+   for( i = 0; i < 11; i++ )
+   {
+   rt_kprintf( "%02x ", buf[i] );
+   }
+   rt_kprintf("\r\n");
+ */
+#else
+
+#endif
 }
 
 /*
@@ -579,7 +666,7 @@ static vdr_save_rec( uint8_t sect_id, uint8_t * pdata, uint16_t len )
 		sect_info[id].addr = sect_info[id].start_addr;
 	}
 
-	if( ( sect_info[id].addr & 0xFFF ) == 0 )    /*在4k边界处*/
+	if( ( sect_info[id].addr & 0xFFF ) == 0 ) /*在4k边界处*/
 	{
 		sst25_erase_4k( sect_info[id].addr );
 	}
@@ -597,8 +684,25 @@ rt_err_t vdr_rx_gps( void )
 {
 	uint32_t	datetime;
 	uint8_t		year, month, day, hour, minute, sec;
+	uint32_t	i;
+	uint8_t		buf[128];
+	uint8_t		*pbkpsram;
+	
+#ifdef TEST_BKPSRAM
+/*上电后，有要写入的历史数据 08*/
+	if( *(__IO uint8_t*)( BKPSRAM_BASE ) == 1 )
+	{
+		pbkpsram = (__IO uint8_t*)BKPSRAM_BASE + 1;
+		for( i = 0; i < 128; i++ )
+		{
+			buf[i] = *pbkpsram++;
+		}
 
-	if( ( jt808_status & BIT_STATUS_GPS ) == 0 )    /*未定位*/
+		*(__IO uint8_t*)( BKPSRAM_BASE ) = 0;
+	}
+#endif
+
+	if( ( jt808_status & BIT_STATUS_GPS ) == 0 ) /*未定位*/
 	{
 		return;
 	}
@@ -612,79 +716,57 @@ rt_err_t vdr_rx_gps( void )
 	//rt_kprintf( "%d>vdr_rx=%02d-%02d-%02d %02d:%02d:%02d\r\n", rt_tick_get( ), year, month, day, hour, minute, sec );
 
 	datetime = MYDATETIME( year, month, day, hour, minute, sec );
-/*08数据,没有判断59秒时的情况，只要ymdhm不同，就保存*/
+
 	vdr_put_08( datetime, gps_speed, vdr_signal_status );
-#if 0
-	if( ( stu_rec_08.datetime & 0xFFFFFFC0 ) != ( datetime & 0xFFFFFFC0 ) )     /*不是在当前的一分钟内*/
-	{
-		if( stu_rec_08.datetime != 0xFFFFFFFF )                                 /*是有效的数据,要保存*/
-		{
-			stu_rec_08.flag = '8';
-			vdr_save_rec( 8, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );
-			memset( (uint8_t*)&stu_rec_08, 0xFF, sizeof( STU_REC_08 ) );        /*新的记录，初始化为0xFF*/
-		}
-	}
-	stu_rec_08.datetime				= datetime;
-	stu_rec_08.speed_status[sec][0] = gps_speed;
-	stu_rec_08.speed_status[sec][1] = vdr_signal_status;
-#endif
 
 
 /*
-   09数据 每分钟的位置速度，只保存第一次有效的
+   09数据 单位小时内每分钟的位置速度，只保存第一次有效的
    每小时(10+1)*60+6 字节
  */
+	vdr_put_09( datetime );
 
-	if( ( stu_rec_09.datetime & 0xFFFFFFC0 ) != ( datetime & 0xFFFFFFC0 ) ) /*不是是在当前的一分钟内*/
-	{
-		stu_rec_09.datetime = datetime;                                     /*置位相等*/
-		stu_rec_09.flag		= '9';
-		stu_rec_09.longi	= BYTESWAP4( gps_longi * 6 );                   /* 看含义*/
-		stu_rec_09.lati		= BYTESWAP4( gps_lati * 6 );
-		stu_rec_09.speed	= BYTESWAP2( gps_speed );
-		vdr_save_rec( 9, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
-	}
 /*10数据 事故疑点*/
-	if( car_status.status == 0 )                                            /*认为车辆停止,判断启动*/
+	if( car_status.status == 0 )                                        /*认为车辆停止,判断启动*/
 	{
-		if( gps_speed >= SPEED_LIMIT )                                      /*速度大于门限值*/
+		if( gps_speed >= SPEED_LIMIT )                                  /*速度大于门限值*/
 		{
 			car_status.gps_judge_duration++;
-			if( car_status.gps_judge_duration >= SPEED_LIMIT_DURATION )     /*超过了持续时间*/
+			if( car_status.gps_judge_duration >= SPEED_LIMIT_DURATION ) /*超过了持续时间*/
 			{
 				car_status.gps_duration			= SPEED_LIMIT_DURATION;
-				car_status.status				= 1;                        /*认为车辆行驶*/
+				car_status.status				= 1;                    /*认为车辆行驶*/
 				car_status.gps_judge_duration	= 0;
 				rt_kprintf( "%d>车辆行驶\r\n", rt_tick_get( ) );
 			}else
 			{
-				car_status.gps_duration++;                                  /*停车累计时间*/
+				car_status.gps_duration++;                              /*停车累计时间*/
 			}
 		}else
 		{
-			car_status.gps_duration++;                                      /*停车累计时间*/
-			                                                                /*在此判断停车超时*/
+			car_status.gps_duration++;                                  /*停车累计时间*/
+			                                                            /*在此判断停车超时*/
 			car_status.gps_judge_duration = 0;
 		}
 	}else /*车辆已启动*/
 	{
-		if( gps_speed <= SPEED_LIMIT )                                      /*速度小于门限值*/
+		if( gps_speed <= SPEED_LIMIT )                                  /*速度小于门限值*/
 		{
 			car_status.gps_judge_duration++;
-			if( car_status.gps_judge_duration >= SPEED_LIMIT_DURATION )     /*超过了持续时间*/
+			if( car_status.gps_judge_duration >= SPEED_LIMIT_DURATION ) /*超过了持续时间*/
 			{
 				car_status.gps_duration			= SPEED_LIMIT_DURATION;
-				car_status.status				= 0;                        /*认为车辆停驶*/
+				car_status.status				= 0;                    /*认为车辆停驶*/
 				car_status.gps_judge_duration	= 0;
 				rt_kprintf( "%d>车辆停驶\r\n", rt_tick_get( ) );
 			}else
 			{
-				car_status.gps_duration++;                                  /*行驶累计时间*/
+				car_status.gps_duration++;                              /*行驶累计时间*/
 			}
 		}else
 		{
-			car_status.gps_duration++;                                      /*行驶累计时间*/
-			                                                                /*判断疲劳驾驶*/
+			car_status.gps_duration++;                                  /*行驶累计时间*/
+			                                                            /*判断疲劳驾驶*/
 			car_status.gps_judge_duration = 0;
 		}
 	}
@@ -736,17 +818,20 @@ rt_err_t vdr_init( void )
 {
 	uint8_t* pbuf;
 
-	pulse_init( );    /*接脉冲计数*/
+	pulse_init( ); /*接脉冲计数*/
 
-	vdr_format( 0xff00 );
+	//vdr_format( 0xff00 );
 
 	pbuf = rt_malloc( 4096 );
 	if( pbuf == RT_NULL )
 	{
 		return -RT_ENOMEM;
 	}
+
+	vdr_init_08();
+#if 0
 	vdr_init_byid( 8, pbuf );
-	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) );    /*读出来是防止一分钟内的重启*/
+	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) ); /*读出来是防止一分钟内的重启*/
 	vdr_init_byid( 9, pbuf );
 	sst25_read( sect_info[1].addr, (uint8_t*)&stu_rec_09, sizeof( STU_REC_09 ) );
 	vdr_init_byid( 10, pbuf );
@@ -755,7 +840,7 @@ rt_err_t vdr_init( void )
 	vdr_init_byid( 13, pbuf );
 	vdr_init_byid( 14, pbuf );
 	vdr_init_byid( 15, pbuf );
-
+#endif
 	rt_free( pbuf );
 	pbuf = RT_NULL;
 /*初始化一个50ms的定时器，用作事故疑点判断*/
@@ -766,22 +851,6 @@ rt_err_t vdr_init( void )
 	               RT_TIMER_FLAG_PERIODIC );            /* 周期性定时器 */
 	rt_timer_start( &tmr_200ms );
 }
-
-#define PACK_BYTE( buf, byte ) ( *buf = byte )
-#define PACK_WORD( buf, word ) \
-    do { \
-		*buf			= word >> 8; \
-		*( buf + 1 )	= word & 0xff; \
-	} \
-    while( 0 )
-
-#define PACK_INT( buf, byte4 ) \
-    do { \
-		*buf			= byte4 >> 24; \
-		*( buf + 1 )	= byte4 >> 16; \
-		*( buf + 2 )	= byte4 >> 8; \
-		*( buf + 3 )	= byte4 & 0xff; \
-	} while( 0 )
 
 /*行车记录仪数据采集命令*/
 void vdr_rx_8700( uint8_t * pmsg )

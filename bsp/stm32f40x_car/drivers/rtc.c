@@ -23,7 +23,7 @@ RTC_InitTypeDef			RTC_InitStructure;
 RTC_DateTypeDef			RTC_DateStructure;
 
 
-#define RTC_CONFIGED_FLAG 0x32f2
+#define RTC_CONFIGED_FLAG 0x32f3
 
 #define RTC_CLOCK_SOURCE_LSE /* LSE used as RTC source clock */
 
@@ -141,7 +141,7 @@ void time_set(uint8_t hour,uint8_t min,uint8_t sec)
 	RTC_TimeStructure.RTC_Minutes = min;
 	RTC_TimeStructure.RTC_Seconds = sec; 
 	
-	RTC_SetTime(RTC_Format_BCD, &RTC_TimeStructure);  
+	RTC_SetTime(RTC_Format_BIN, &RTC_TimeStructure);  
 }
 FINSH_FUNCTION_EXPORT(time_set,set time);
 
@@ -153,7 +153,7 @@ void date_set(uint8_t year,uint8_t month,uint8_t day)
 	RTC_DateStructure.RTC_Month = month;
 	RTC_DateStructure.RTC_Date = day; 
 	
-	RTC_SetDate(RTC_Format_BCD, &RTC_DateStructure);  
+	RTC_SetDate(RTC_Format_BIN, &RTC_DateStructure);  
 }
 FINSH_FUNCTION_EXPORT(date_set,set date);
 

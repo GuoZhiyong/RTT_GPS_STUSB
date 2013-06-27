@@ -1175,7 +1175,7 @@ static void jt808_socket_proc( void )
 	state = gsmstate( GSM_STATE_GET );
 	if( state == GSM_IDLE )
 	{
-		gsmstate( GSM_POWERON );                /*开机登网*/
+		//gsmstate( GSM_POWERON );                /*开机登网*/
 		return;
 	}
 /*控制登网*/
@@ -1463,51 +1463,124 @@ static void rt_thread_entry_jt808( void * parameter )
 	msglist_destroy( list_jt808_tx );
 }
 
+#define BKSRAM
+
 #ifdef BKSRAM
 
+
 /**/
-void BkpSram_init( void )
+void bkpsram_init(void)
 {
-	u16 uwIndex, uwErrorIndex = 0;
+	u16 uwIndex,uwErrorIndex=0;
 
 	/* Enable the PWR APB1 Clock Interface */
-	RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
 
 	/* Allow access to BKP Domain */
-	PWR_BackupAccessCmd( ENABLE );
+	PWR_BackupAccessCmd(ENABLE);
 
-	/* Enable BKPSRAM Clock */
-	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_BKPSRAM, ENABLE );
+    /* Enable BKPSRAM Clock */
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_BKPSRAM, ENABLE);
 
 	/* Enable the Backup SRAM low power Regulator to retain it's content in VBAT mode */
-	PWR_BackupRegulatorCmd( ENABLE );
+	PWR_BackupRegulatorCmd(ENABLE);
 
 	/* Wait until the Backup SRAM low power Regulator is ready */
-	while( PWR_GetFlagStatus( PWR_FLAG_BRR ) == RESET )
+	while(PWR_GetFlagStatus(PWR_FLAG_BRR) == RESET)
 	{
 	}
 	//rt_kprintf("\r\n BkpSram_init OK!");
 }
 
-/**/
-void bkpSram_wr( u32 addr, u32 data )
+
+/*********************************************************************************
+*函数名称:u8 BkpSram_write(u32 addr,u8 *data, u16 len)
+*功能描述:backup sram 数据写入
+*输	入:	addr	:写入的地址
+		data	:写入的数据指针
+		len		:写入的长度
+*输	出:	none
+*返 回 值:u8	:	0:表示操作失败，	1:表示操作成功
+*作	者:白养民
+*创建日期:2013-06-18
+*---------------------------------------------------------------------------------
+*修 改 人:
+*修改日期:
+*修改描述:
+*********************************************************************************/
+u8 bkpsram_write(u32 addr,u8 *data, u16 len)
 {
-	addr										&= 0xFFFC;
-	*(__IO uint32_t*)( BKPSRAM_BASE + addr )	= data;
+	u32 i;
+	//addr &= 0xFFFC;
+	//*(__IO uint32_t *) (BKPSRAM_BASE + addr) = data;
+	for(i=0;i<len;i++)
+		{
+		if(addr<0x1000)
+			{
+			*(__IO uint8_t *) (BKPSRAM_BASE + addr) = *data++;
+			}
+		else
+			{
+			return 0;
+			}
+		++addr;
+		}
+	return 1;
 }
 
-FINSH_FUNCTION_EXPORT( bkpSram_wr, write to backup sram );
-
-/**/
-void bkpSram_rd( u32 addr )
+/*********************************************************************************
+*函数名称:u16 bkpSram_read(u32 addr,u8 *data, u16 len)
+*功能描述:backup sram 数据读取
+*输	入:	addr	:读取的地址
+		data	:读取的数据指针
+		len		:读取的长度
+*输	出:	none
+*返 回 值:u16	:表示实际读取的长度
+*作	者:白养民
+*创建日期:2013-06-18
+*---------------------------------------------------------------------------------
+*修 改 人:
+*修改日期:
+*修改描述:
+*********************************************************************************/
+u16 bkpsram_read(u32 addr,u8 *data, u16 len)
 {
-	u32 data;
-	addr	&= 0xFFFC;
-	data	= *(__IO uint32_t*)( BKPSRAM_BASE + addr );
-	rt_kprintf( "\r\n DATA=%d", data );
+	u32 i;
+	//addr &= 0xFFFC;
+	//data = *(__IO uint32_t *) (BKPSRAM_BASE + addr);
+	for(i=0;i<len;i++)
+		{
+		if(addr<0x1000)
+			{
+			*data++ = *(__IO uint8_t *) (BKPSRAM_BASE + addr);
+			}
+		else
+			{
+			break;
+			}
+		++addr;
+		}
+	return i;
 }
 
-FINSH_FUNCTION_EXPORT( bkpSram_rd, read from backup sram );
+void bkpsram_wr(u32 addr,char *psrc)
+{
+	char pstr[128];
+	memset(pstr,0,sizeof(pstr));
+	memcpy(pstr,psrc,strlen(psrc));
+	bkpsram_write(addr,pstr,strlen(pstr)+1);
+}
+FINSH_FUNCTION_EXPORT( bkpsram_wr, write from backup sram );
+
+/**/
+void bkpsram_rd(u32 addr)
+{
+	char pstr[128];
+	bkpsram_read(addr,pstr,sizeof(pstr));
+	rt_kprintf("\r\n str=%s\r\n",pstr);
+}
+FINSH_FUNCTION_EXPORT( bkpsram_rd, read from backup sram );
+
 
 #endif
 
@@ -1516,7 +1589,7 @@ void jt808_init( void )
 {
 	sms_init( );
 #ifdef BKSRAM
-	BkpSram_init( );
+	bkpsram_init( );
 #endif
 	vdr_init( );
 
