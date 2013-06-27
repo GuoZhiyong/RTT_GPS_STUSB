@@ -40,8 +40,8 @@
       ( ( val & 0xff0000 ) >> 8 ) |  \
       ( ( val & 0xff000000 ) >> 24 ) )
 
-#define HEX2BCD( x )	( ( x / 10 ) << 4 | ( x % 10 ) )
-#define BCD2HEX( x )	( ( ( x >> 4 ) * 10 ) + ( x & 0x0f ) )
+#define HEX2BCD( x )	( ( (x) / 10 ) << 4 | ( (x) % 10 ) )
+#define BCD2HEX( x )	( ( ( (x) >> 4 ) * 10 ) + ( (x) & 0x0f ) )
 
 typedef struct _GPSPoint
 {
@@ -309,10 +309,10 @@ void process_gps( void )
 /*RTC,避免和rtt的set_time,set_date歧义，rtt是一个Driver,此处没有使用*/
 	if( jt808_status & BIT_STATUS_GPS )
 	{
-		if( ( gps_baseinfo.datetime[4] == 0 ) && ( gps_baseinfo.datetime[5] == 0 ) )    /*整小时校准*/
+		if( ( gps_datetime[4] == 0 ) && ( gps_datetime[5] == 0 ) )    /*整小时校准*/
 		{
-			date_set( gps_baseinfo.datetime[0], gps_baseinfo.datetime[1], gps_baseinfo.datetime[2] );
-			time_set( gps_baseinfo.datetime[3], gps_baseinfo.datetime[4], gps_baseinfo.datetime[5] );
+			date_set( gps_datetime[0], gps_datetime[1], gps_datetime[2] );
+			time_set( gps_datetime[3], gps_datetime[4],gps_datetime[5] );
 		}
 	}
 /*数据上报方式,如何组合出各种情况 */
@@ -652,7 +652,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 				{
 					date_set( year, mon, day );
 					time_set( hour, min, sec );
-					rt_kprintf("%d>rtc sync %02d-%02d-%02d %02d:%02d:%02d\r\n",year,mon,day,hour,min,sec);
+					rt_kprintf("%d>rtc sync %02d-%02d-%02d %02d:%02d:%02d\r\n",rt_tick_get(),year,mon,day,hour,min,sec);
 				}
 
 				return 0;
@@ -807,9 +807,10 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	if( strncmp( psrc + 3, "RMC,", 4 ) == 0 )
 	{
 		gps_sec_count++;
+		vdr_rx_gps( );              /*行车记录仪数据处理*/
 		if( process_rmc( psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确*/
 		{
-			vdr_rx_gps( );              /*行车记录仪数据处理*/
+
 			process_gps( );             /*处理GPS信息*/
 		}
 	}

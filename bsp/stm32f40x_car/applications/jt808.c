@@ -1175,7 +1175,7 @@ static void jt808_socket_proc( void )
 	state = gsmstate( GSM_STATE_GET );
 	if( state == GSM_IDLE )
 	{
-		gsmstate( GSM_POWERON );                /*开机登网*/
+		//gsmstate( GSM_POWERON );                /*开机登网*/
 		return;
 	}
 /*控制登网*/
@@ -1463,11 +1463,13 @@ static void rt_thread_entry_jt808( void * parameter )
 	msglist_destroy( list_jt808_tx );
 }
 
+#define BKSRAM
+
 #ifdef BKSRAM
 
 
 /**/
-void BkpSram_init(void)
+void bkpsram_init(void)
 {
 	u16 uwIndex,uwErrorIndex=0;
 
@@ -1506,7 +1508,7 @@ void BkpSram_init(void)
 *修改日期:
 *修改描述:
 *********************************************************************************/
-u8 BkpSram_write(u32 addr,u8 *data, u16 len)
+u8 bkpsram_write(u32 addr,u8 *data, u16 len)
 {
 	u32 i;
 	//addr &= 0xFFFC;
@@ -1541,7 +1543,7 @@ u8 BkpSram_write(u32 addr,u8 *data, u16 len)
 *修改日期:
 *修改描述:
 *********************************************************************************/
-u16 BkpSram_read(u32 addr,u8 *data, u16 len)
+u16 bkpsram_read(u32 addr,u8 *data, u16 len)
 {
 	u32 i;
 	//addr &= 0xFFFC;
@@ -1561,23 +1563,23 @@ u16 BkpSram_read(u32 addr,u8 *data, u16 len)
 	return i;
 }
 
-void BkpSram_wr(u32 addr,char *psrc)
+void bkpsram_wr(u32 addr,char *psrc)
 {
 	char pstr[128];
 	memset(pstr,0,sizeof(pstr));
 	memcpy(pstr,psrc,strlen(psrc));
-	BkpSram_write(addr,pstr,strlen(pstr)+1);
+	bkpsram_write(addr,pstr,strlen(pstr)+1);
 }
-FINSH_FUNCTION_EXPORT( BkpSram_wr, write from backup sram );
+FINSH_FUNCTION_EXPORT( bkpsram_wr, write from backup sram );
 
 /**/
-void BkpSram_rd(u32 addr)
+void bkpsram_rd(u32 addr)
 {
 	char pstr[128];
-	BkpSram_read(addr,pstr,sizeof(pstr));
+	bkpsram_read(addr,pstr,sizeof(pstr));
 	rt_kprintf("\r\n str=%s\r\n",pstr);
 }
-FINSH_FUNCTION_EXPORT( BkpSram_rd, read from backup sram );
+FINSH_FUNCTION_EXPORT( bkpsram_rd, read from backup sram );
 
 
 #endif
@@ -1587,7 +1589,7 @@ void jt808_init( void )
 {
 	sms_init( );
 #ifdef BKSRAM
-	BkpSram_init( );
+	bkpsram_init( );
 #endif
 	vdr_init( );
 
