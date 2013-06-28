@@ -340,9 +340,9 @@ JT808_TX_NODEDATA * node_begin( uint16_t user_data_len )
 	{
 		return RT_NULL;
 	}
-	/*拷贝终端号码*/
-	pdata = pnodedata->tag_data;
-	memcpy( pdata + 4, mobile, 6 );
+	
+	pdata = pnodedata->tag_data;	/*指向消息头*/
+	memcpy( pdata + 4, mobile, 6 ); /*拷贝终端号码,此时可能还没有mobileh号码*/
 	return pnodedata;
 }
 
