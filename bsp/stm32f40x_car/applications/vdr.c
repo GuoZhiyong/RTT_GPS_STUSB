@@ -49,7 +49,6 @@ typedef uint32_t MYTIME;
 
 static rt_thread_t tid_usb_vdr = RT_NULL;
 
-
 #define VDR_BASE 0x300000
 
 #define VDR_08_START	VDR_BASE
@@ -162,7 +161,12 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
       ( ( val & 0xff0000 ) >> 8 ) |  \
       ( ( val & 0xff000000 ) >> 24 ) )
 
-#define MYDATETIME( year, month, day, hour, minute, sec )	( (uint32_t)( year << 26 ) | (uint32_t)( month << 22 ) | (uint32_t)( day << 17 ) | (uint32_t)( hour << 12 ) | (uint32_t)( minute << 6 ) | sec )
+#define MYDATETIME( year, month, day, hour, minute, sec )\
+	( (uint32_t)( ( year ) << 26 ) | \
+	(uint32_t)( ( month ) << 22 ) | \
+	(uint32_t)( ( day ) << 17 ) | \
+	(uint32_t)( ( hour ) << 12 ) | \
+	(uint32_t)( ( minute ) << 6 ) | ( sec ) )
 #define YEAR( datetime )									( ( datetime >> 26 ) & 0x3F )
 #define MONTH( datetime )									( ( datetime >> 22 ) & 0xF )
 #define DAY( datetime )										( ( datetime >> 17 ) & 0x1F )
@@ -358,190 +362,274 @@ static uint32_t vdr_init_byid( uint8_t id, uint8_t *p )
 
 #endif
 
-static uint32_t vdr_08_addr = VDR_08_START; /*µ±Ç°ÒªĞ´ÈëµÄµØÖ·*/
+static uint32_t vdr_08_addr = VDR_08_END;   /*µ±Ç°ÒªĞ´ÈëµÄµØÖ·*/
 static MYTIME	vdr_08_time = 0xFFFFFFFF;   /*µ±Ç°Ê±¼ä´Á*/
-static uint16_t vdr_08_sect = 0;            /*µ±Ç°ÒªĞ´ÈëµÄsectºÅ*/
-static uint8_t	vdr_08_info[128];           /*±£´æÒªĞ´ÈëµÄĞÅÏ¢*/
-static uint8_t	vdr_08_sect_index	= 0;    /*ÔÚÒ»¸ösectÄÚµÄ¼ÇÂ¼Ë÷Òı,Ã¿¸ösector´æ32¸ö*/
-
+static uint8_t	vdr_08_info[126];           /*±£´æÒªĞ´ÈëµÄĞÅÏ¢*/
+static uint8_t	vdr_08_sect_index = 0;      /*ÔÚÒ»¸ösectÄÚµÄ¼ÇÂ¼Ë÷Òı,Ã¿¸ösector´æ32¸ö*/
 
 static MYTIME	vdr_09_time			= 0xFFFFFFFF;
 static uint16_t vdr_09_sect			= 0;    /*µ±Ç°ÒªĞ´ÈëµÄsectºÅ*/
 static uint8_t	vdr_09_sect_index	= 0;    /*ÔÚÒ»¸ösectÄÚµÄ¼ÇÂ¼Ë÷Òı,Ã¿¸ösector´æ6¸ö*/
+
+/*´ÓbufÖĞ»ñÈ¡Ê±¼äĞÅÏ¢*/
+static MYTIME mytime_from_buf( uint8_t* buf )
+{
+	uint8_t year, month, day, hour, minute, sec;
+	uint8_t *psrc = buf;
+
+	year	= *psrc++;
+	month	= *psrc++;
+	day		= *psrc++;
+	hour	= *psrc++;
+	minute	= *psrc++;
+	sec		= *psrc;
+	return MYDATETIME( year, month, day, hour, minute, sec );
+}
+
+/*°ÑÊ±¼ä´æµ½bufferÖĞ  4byte=>6byte*/
+static void mytime_to_buf( MYTIME time, uint8_t* buf )
+{
+	uint8_t *psrc = buf;
+
+	*psrc++ = YEAR( time );
+	*psrc++ = MONTH( time );
+	*psrc++ = DAY( time );
+	*psrc++ = HOUR( time );
+	*psrc++ = MINUTE( time );
+	*psrc	= SEC( time );
+}
+
+typedef struct _vdr_08_userdata
+{
+	MYTIME		start;          /*¿ªÊ¼Ê±¿Ì*/
+	MYTIME		end;            /*½áÊøÊ±¿Ì*/
+	uint16_t	totalrecord;    /*×ÜµÃ¼ÇÂ¼Êı*/
+	uint32_t	addr_from;      /*µ±Ç°¶ÁµÄµØÖ·*/
+	uint32_t	addr_to;        /*µ±Ç°¶ÁµÄµØÖ·*/
+	uint8_t		rec_per_packet; /*Ã¿°üµÄ¼ÇÂ¼Êı*/
+	uint16_t	packet_total;   /*×Ü°üÊı*/
+	uint16_t	packet_curr;    /*µ±Ç°°üÊı*/
+}VDR_08_USERDATA;
+
+VDR_08_USERDATA vdr_08_userdata;
 
 
 /*
    ¾ÍË³Ğò´æ´¢,Ã»ÓĞÄÇÃ´¸´ÔÓ
 
  */
-void vdr_init_08( void )
+void vdr_08_init( void )
 {
-	uint32_t	i,j,sect,sect_index;
-	uint32_t	addr,addr_max;
+	uint32_t	addr, addr_max;
 	MYTIME		curr, old = 0;
-	uint8_t 	buf[16];
+	uint8_t		buf[16];
+
+	memset( vdr_08_info, 0xFF, sizeof( vdr_08_info ) ); /*ĞÂµÄ¼ÇÂ¼£¬³õÊ¼»¯Îª0xFF*/
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+
+	/*ÏÈ×ö¸ö²ë³ı°É*/
+	for( addr = VDR_08_START; addr < VDR_08_END; addr += 4096 )
+	{
+	//	sst25_erase_4k( addr );
+	}
 	/*±éÀúÒ»±é*/
-	for( addr = 0; addr < VDR_08_END; addr+=128 )                                       /*Ã¿¸ösectorµÄµÚÒ»¸ö128 ±£´æ¸Ã°ëĞ¡Ê±µÄĞÅÏ¢,µÚÒ»¸öÓĞĞ§¼ÇÂ¼µÄÊ±¿Ì*/
+	for( addr = VDR_08_START; addr < VDR_08_END; addr += 128 )                      /*Ã¿¸ösectorµÄµÚÒ»¸ö128 ±£´æ¸Ã°ëĞ¡Ê±µÄĞÅÏ¢,µÚÒ»¸öÓĞĞ§¼ÇÂ¼µÄÊ±¿Ì*/
 	{
 		sst25_read( addr, buf, 4 );
-		curr = ( buf[0] << 24 ) | ( buf[1] << 16 ) | ( buf[2] << 8 ) | buf[3];  /*Ç°4¸ö×Ö½Ú´ú±íÊ±¼ä*/
-		if( curr != 0xFFFFFFFF )                                                /*ÊÇÓĞĞ§¼ÇÂ¼*/
+		curr = ( buf[0] << 24 ) | ( buf[1] << 16 ) | ( buf[2] << 8 ) | ( buf[3] );  /*Ç°4¸ö×Ö½Ú´ú±íÊ±¼ä*/
+		if( curr != 0xFFFFFFFF )                                                    /*ÊÇÓĞĞ§¼ÇÂ¼*/
 		{
-			if( curr >= old )                                                   /*ÕÒµ½¸üĞÂµÄ¼ÇÂ¼*/
+			if( curr >= old )                                                       /*ÕÒµ½¸üĞÂµÄ¼ÇÂ¼*/
 			{
-				old		= curr;
-				addr_max=addr;				/*µ±Ç°¼ÇÂ¼µÄµØÖ·*/
+				old			= curr;
+				addr_max	= addr;                                                 /*µ±Ç°¼ÇÂ¼µÄµØÖ·*/
 			}
 		}
 	}
 
 	rt_sem_release( &sem_dataflash );
-	if( old == 0 )                                                              /*Ã»ÓĞÓĞĞ§µÄ¼ÇÂ¼,Ê×´ÎÊ¹ÓÃ*/
+	if( old )                                                                       /*²»»ñÈ¡Ê±¼ä£¬·ñÔò»áÓ°ÏìÊ×°üÊı¾İµÄvdr_08_put*/
 	{
-		vdr_08_addr= VDR_08_END;
-		vdr_08_sect = VDR_08_SECTORS;                                           /*µ±Ç°ÒªĞ´ÈëµÄsectºÅ,Èç¹ûÎª¿ÕÊÇ 0*/
+		vdr_08_addr = addr_max;                                                     /*µ±Ç°ÓĞ¼ÇÂ¼£¬¼ÇÂ¼µÄµØÖ·*/
 	}
-	vdr_08_time = old;                                                          /*µ±Ç°¼ÇÂ¼µÄÊ±¿Ì£¬Èç¹ûÎª¿ÕÊÇ 0*/
-	rt_kprintf( ">vdr_08 %02d-%02d-%02d %02d:%02d:%02d\r\n", YEAR( old ), MONTH( old ), DAY( old ), HOUR( old ), MINUTE( old ), SEC( old ) );
+	rt_kprintf( ">vdr08(%08x) %02d-%02d-%02d %02d:%02d:%02d\r\n", vdr_08_addr, YEAR( old ), MONTH( old ), DAY( old ), HOUR( old ), MINUTE( old ), SEC( old ) );
 }
-
-#if 0
-/*
-   ±£´æÕû·ÖÖÓµÄÊı¾İ
-   ´ÓbackupsramÖĞ¶ÁÈ¡Êı¾İ
- */
-void vdr_put_08_rec( MYTIME mytime, uint8_t *pinfo )
-{
-	uint8_t		buf[6];
-	uint8_t		year, month, day, hour, minute, sec;
-	uint32_t	pos;
-	uint32_t	addr;
-	uint8_t		write_head = 0;
-	uint8_t		i, min_1, min_2;
-
-	if( ( mytime & 0xFFFFF000 ) != ( vdr_08_time & 0xFFFFF000 ) )           /*²»ÊÇÍ¬Ò»Ğ¡Ê± ÒªĞ´ĞÂÉÈÇøºÍÉÈÇøÍ·*/
-	{
-		write_head = 1;
-	}else
-	{
-		min_1	= MINUTE( mytime );                                         /*»ñÈ¡·ÖÖÓ 0-59 ·ÖÎª 0-29 30-59*/
-		min_2	= MINUTE( vdr_08_time );
-
-		if( ( min_1 < 30 ) && ( min_2 > 29 ) )                                  /*Ê±¼äÊÇµİÔöµÄ¡£²»ÔÚÍ¬Ò»¸ö°ëĞ¡Ê±ÄÚ,ÒªĞ´ĞÂÉÈÇøºÍÉÈÇøÍ·*/
-		{
-			write_head = 1;
-		}
-	}
-
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	if( write_head )
-	{
-		vdr_08_sect++;
-		if( vdr_08_sect >= VDR_08_SECTORS )
-		{
-			vdr_08_sect = 0;
-		}
-		addr = VDR_08_START + (uint32_t)( vdr_08_sect << 12 );
-		sst25_erase_4k( addr );
-		buf[0]	= mytime >> 24;
-		buf[1]	= mytime >> 16;
-		buf[2]	= mytime >> 8;
-		buf[3]	= mytime & 0xff;
-		sst25_write_back( addr, buf, 4 );
-	}
-
-	/*¶¨Î»µ½ÒªĞ´ÈëµÄ4kÄÚµÄÆ«ÒÆÎ»ÖÃ£¬ÒÔ128Îª½ç*/
-	minute = MINUTE( mytime ) + 1; /*¶ÔÓ¦µ½ 1-60=>1-30  31-60*/
-	if( minute > 30 )
-	{
-		minute -= 30;
-	}
-	sec = SEC( mytime );
-
-//	buf[0]	= speed;
-//	buf[1]	= status;
-	addr	= vdr_08_addr + (uint32_t)( minute << 7 ) + (uint32_t)( sec << 1 );
-	sst25_write_through( addr, buf, 2 ); /*Ğ´µ½Ö¸¶¨µÄÎ»ÖÃ*/
-	rt_sem_release( &sem_dataflash );
-}
-
-#endif
 
 /*±£´æÊı¾İ ÒÔ1ÃëµÄ¼ä¸ô±£´æÊı¾İÄÜ·ñ´¦ÀíµÄ¹ıÀ´**/
-void vdr_put_08( MYTIME datetime, uint8_t speed, uint8_t status )
+void vdr_08_put( MYTIME datetime, uint8_t speed, uint8_t status )
 {
-	uint32_t i,sec;
+	uint32_t i, sec;
 
 	if( ( vdr_08_time & 0xFFFFFFC0 ) != ( datetime & 0xFFFFFFC0 ) ) /*²»ÊÇÔÚµ±Ç°µÄÒ»·ÖÖÓÄÚ*/
 	{
-		if( vdr_08_time != 0xFFFFFFFF )                             /*ÊÇÓĞĞ§µÄÊı¾İ,Òª±£´æ*/
+		if( vdr_08_time != 0xFFFFFFFF )                             /*ÊÇÓĞĞ§µÄÊı¾İ,Òª±£´æ£¬×¢ÒâµÚÒ»¸öÊı¾İµÄ´¦Àí*/
 		{
 			vdr_08_info[0]	= vdr_08_time >> 24;
 			vdr_08_info[1]	= vdr_08_time >> 16;
 			vdr_08_info[2]	= vdr_08_time >> 8;
 			vdr_08_info[3]	= vdr_08_time & 0xFF;
-#ifdef TEST_BKPSRAM
+//#ifdef TEST_BKPSRAM
+#if 0
 			for( i = 0; i < sizeof( vdr_08_info ); i++ )
 			{
 				*(__IO uint8_t*)( BKPSRAM_BASE + i + 1 ) = vdr_08_info[i];
 			}
 			*(__IO uint8_t*)( BKPSRAM_BASE ) = 1;
 #else
-			
-/*Ôö¼ÓÒ»ÌõĞÂ¼ÍÂ¼*/
-	vdr_08_addr += 128;
-/*ÅĞ¶ÏÊÇ·ñ»·»Ø*/
-	if( vdr_08_addr >= ( VDR_08_START+ VDR_08_SECTORS* 4096 ))
-	{
-		vdr_08_addr = VDR_08_START;
-	}
 
-	if( ( vdr_08_addr & 0xFFF ) == 0 ) /*ÔÚ4k±ß½ç´¦*/
-	{
-		sst25_erase_4k( vdr_08_addr );
-	}
-	sst25_write_through( vdr_08_addr, vdr_08_info, sizeof(vdr_08_info) );
+			vdr_08_addr += 128;                 /*Ôö¼ÓÒ»ÌõĞÂ¼ÍÂ¼*/
+			if( vdr_08_addr >= VDR_08_END )     /*ÅĞ¶ÏÊÇ·ñ»·»Ø*/
+			{
+				vdr_08_addr = VDR_08_START;
+			}
+			rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+			if( ( vdr_08_addr & 0xFFF ) == 0 )  /*ÔÚ4k±ß½ç´¦*/
+			{
+				sst25_erase_4k( vdr_08_addr );
+			}
+			sst25_write_through( vdr_08_addr, vdr_08_info, sizeof( vdr_08_info ) );
+			rt_sem_release( &sem_dataflash );
+			rt_kprintf( "%d>Ğ´Èë08 µØÖ·:%08x Öµ:%08x\r\n", rt_tick_get( ), vdr_08_addr, vdr_08_time );
+
 #endif
 			memset( vdr_08_info, 0xFF, sizeof( vdr_08_info ) ); /*ĞÂµÄ¼ÇÂ¼£¬³õÊ¼»¯Îª0xFF*/
 		}
 	}
-	sec=SEC(datetime);
+	sec							= SEC( datetime );
 	vdr_08_time					= datetime;
 	vdr_08_info[sec * 2 + 4]	= gps_speed;
 	vdr_08_info[sec * 2 + 5]	= vdr_signal_status;
 }
 
-
-
-
-
-
-/*¶¨Î»Êı¾İµÄµØÖ·£¬Òª²»Òª´«µİ½ønodedata?*/
-void vdr_get_08_locate(MYTIME start, MYTIME end)
-{
-
-}
-
-
 /*
-»ñÈ¡08Êı¾İ
-1.ÅĞ¶ÏÊÇ·ñ¶ÁÈ¡È«²¿
-2.°´ÉÈÇøÏÈ´ÖÂÔ²éÕÒ
-3.ÉÈÇøÄÚ²éÕÒ
-4.Éú³ÉÖ¸¶¨blockµÄÊı¾İ
-
-Ô¼ÊøÌõ¼ş£¬µØÖ··¶Î§  £¬ÆğÊ¼½áÊøÊ±¼ä£¬µ¥°üÊı¾İ´óĞ¡
-*/
-void vdr_get_08( MYTIME* start, MYTIME* end,uint8_t rec_count , uint8_t* pout)
+   »ñÈ¡08Êı¾İ
+   Ô¼ÊøÌõ¼ş£¬µØÖ··¶Î§  £¬ÆğÊ¼½áÊøÊ±¼ä£¬µ¥°üÊı¾İ´óĞ¡
+ */
+void vdr_08_get( JT808_TX_NODEDATA *pnodedata )
 {
-	if((*start==0)&&(*end==0)) /*²éÕÒÈ«²¿*/
+	uint8_t			i;
+	VDR_08_USERDATA * puserdata;
+	uint32_t		addr;
+	uint8_t			buf[126];
+
+	if( pnodedata == RT_NULL )
 	{
-		
+		return;
 	}
 
+	puserdata = (VDR_08_USERDATA* )( pnodedata->tag_data + 126 * 4 + 4 );
+
+/*´Óµ±Ç°µØÖ·¿ªÊ¼µ¹Ğò¶Á,Ã¿´Î4¸örecord*/
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	addr = puserdata->addr_from;
+	for( i = 0; i < 4; i++ )
+	{
+		sst25_read( addr, buf + 2, 124 ); /*ÔÚ´æÊı¾İÊ±Ã»ÓĞ´æBCDµÄÈÕÆÚ£¬¶øÊÇMYTIMEµÄ¸ñÊ½*/
+	}
+
+	rt_sem_release( &sem_dataflash );
 }
+
+/*ÊÕµ½Ó¦´ğµÄ´¦Àíº¯Êı*/
+static void jt808_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
+{
+}
+
+/*³¬Ê±ºóµÄ´¦Àíº¯Êı*/
+static void jt808_tx_timeout( JT808_TX_NODEDATA * nodedata )
+{
+}
+
+/*¶¨Î»Êı¾İµÄµØÖ·£
+   ´ÓÖ¸¶¨µÄ½áÊøÊ±¼äÖ®Ç°×î½üµÄµÚ1·ÖÖÓµÄĞĞÊ»ËÙ¶È¼ÇÂ¼¿ªÊ¼
+   Òª²»Òª´«µİ½ønodedata?
+   ×¼±¸Òª·¢ËÍµÄÊı¾İ£¬Ô¼ÊøÌõ¼ş:¿ªÊ¼½áÊøÊ±¿Ì£¬×ÜµÄblockÊı
+
+ */
+void vdr_08_get_ready( MYTIME start, MYTIME end, uint16_t totalrecord )
+{
+	uint32_t			addr;
+	JT808_TX_NODEDATA	*pnodedata;
+	VDR_08_USERDATA		*puserdata;
+	uint32_t			i;
+	uint16_t			rec_count = 0;              /*ÕÒµ½µÄ¼ÇÂ¼Êı*/
+	uint8_t				buf[4];
+
+	uint32_t			addr_from	= 0xFFFFFFFF;   /*¿ªÊ¼µÄµØÖ·*/
+	uint32_t			addr_to		= 0xFFFFFFFF;   /*½áÊøµÄµØÖ·*/
+
+	uint32_t			time_from	= 0xFFFFFFFF;   /*ÉÏ±¨¼ÇÂ¼ ¿ªÊ¼µÄÊ±¿Ì£¬×î½üµÄ*/
+	uint32_t			time_to		= 0xFFFFFFFF;   /*ÉÏ±¨¼ÇÂ¼ ½áÊøµÄÊ±¿Ì£¬×îÔ¶µÄ*/
+
+	MYTIME				mytime;
+
+/*´Óµ±Ç°Î»ÖÃ¿ªÊ¼ÄæĞò²éÕÒ*/
+	start	&= 0xFFFFFFC0;                          /*ºöÂÔÃë*/
+	end		&= 0xFFFFFFC0;
+
+	rt_kprintf( "%d>¿ªÊ¼±éÀúÊı¾İ\r\n", rt_tick_get( ) );
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	addr = vdr_08_addr + 128;                       /*ÅĞ¶ÏÖĞ×öÁËµØÖ·µİ¼õ*/
+	for( i = 0; i < VDR_08_SECTORS * 32; i++ )      /*×Ü¹²ÕÒµÄ¼ÇÂ¼Êı£¬ÍêÈ«Ê¹ÓÃµØÖ·ÅĞ¶Ï»á²»·½±ã*/
+	{
+		addr -= 128;
+		if( addr < VDR_08_START )                   /*»·»Ø*/
+		{
+			addr = VDR_08_END - 128;
+		}
+		sst25_read( addr, buf, 4 );
+		mytime = (uint32_t)( buf[0] << 24 ) | (uint32_t)( buf[1] << 16 ) | (uint32_t)( buf[2] << 8 ) | (uint32_t)( buf[3] );
+		if( mytime == 0xFFFFFFFF )
+		{
+			continue;                                   /*²»ÊÇÓĞĞ§¼ÇÂ¼¼ÌĞø²éÕÒ*/
+		}
+		mytime &= 0xFFFFFFC0;                           /*ºöÂÔÃë,¶ÔÓ¦µ½·ÖÖÓ*/
+		if( ( mytime <= end ) && ( mytime >= start ) )  /*ÊÇÔÚÊ±¼ä¶ÎÄÚ[0..0xffffffff]*/
+		{
+			rec_count++;                                /*ÓĞĞ§¼ÇÂ¼*/
+			if( rec_count >= totalrecord )              /*ÊÕµ½×ã¹»µÄ¼ÇÂ¼Êı*/
+			{
+				break;
+			}
+			if( time_from == 0xFFFFFFFF )               /*¼ÇÂ¼¿ªÊ¼µÄµØÖ·,µÚÒ»¸öÕÒµ½µÄ¾ÍÊÇ×î½üµÄ*/
+			{
+				time_from	= mytime;
+				addr_from	= addr;
+			}
+			if( mytime < time_to )                      /*ÄæĞò*/
+			{
+				time_to = mytime;
+				addr_to = addr;
+			}
+		}
+	}
+
+	rt_sem_release( &sem_dataflash );
+
+	rt_kprintf( "%d>±éÀú½áÊø form:%08x@%08x to:%08x@%08x\r\n", rt_tick_get( ), time_from, addr_from, time_to, addr_to );
+
+/*¾ö¶¨ÓÃµ¥°ü»¹ÊÇ¶à°ü·¢ËÍ*/
+	pnodedata = node_begin( 126 * 4 + 4 + sizeof( VDR_08_USERDATA ) );                  /*126×Ö½ÚÒ»¸ö¼ÇÂ¼(4¸ö¼ÇÂ¼),4×Ö½ÚÏûÏ¢·â°üÏî*/
+	if( pnodedata == RT_NULL )                                                          /*´´½¨Ê§°Ü*/
+	{
+		rt_kprintf( "\d>vdrÉú³É08Êı¾İÓĞÎó\r\n", rt_tick_get( ) );
+		return;
+	}
+
+	puserdata				= (VDR_08_USERDATA*)( pnodedata->tag_data + 126 * 4 + 4 );  /*Ö¸ÏòÓÃ»§Êı¾İ*/
+	puserdata->totalrecord	= rec_count;
+	puserdata->addr_from	= addr_from;
+	puserdata->addr_to		= addr_to;
+	puserdata->packet_total = (rec_count+3)/4;		/*Ã¿ËÄÌõ¼ÇÂ¼ĞÎ³ÉÒ»°ü*/
+	puserdata->packet_curr = 1;
+	//vdr_08_get( pnodedata );                                                            /*×¼±¸Êı¾İ²¢·¢ËÍ*/
+}
+
+FINSH_FUNCTION_EXPORT_ALIAS(vdr_08_get_ready,get_08,get_08_data);
+
+
 
 /*
    µ¥Î»Ğ¡Ê±ÄÚÃ¿·ÖÖÓµÄÎ»ÖÃĞÅÏ¢ºÍËÙ¶È
@@ -549,7 +637,7 @@ void vdr_get_08( MYTIME* start, MYTIME* end,uint8_t rec_count , uint8_t* pout)
    360Ğ¡Ê±=15Ìì
    Ã¿Ìì4¸ösector Ã¿¸ösector¶ÔÓ¦6Ğ¡Ê±£¬Ã¿Ğ¡Ê±  680×Ö½Ú
  */
-void vdr_init_09( void )
+void vdr_09_init( void )
 {
 	uint32_t	addr;
 	uint8_t		find = 0;
@@ -596,7 +684,7 @@ void vdr_init_09( void )
    Ò»¸öĞ¡Ê±666byte Õ¼ÓÃ680byte
 
  */
-void vdr_put_09( MYTIME datetime )
+void vdr_09_put( MYTIME datetime )
 {
 	uint8_t		buf[11], bufhead[10];
 	uint32_t	i;
@@ -687,7 +775,7 @@ rt_err_t vdr_rx_gps( void )
 	uint32_t	i;
 	uint8_t		buf[128];
 	uint8_t		*pbkpsram;
-	
+
 #ifdef TEST_BKPSRAM
 /*ÉÏµçºó£¬ÓĞÒªĞ´ÈëµÄÀúÊ·Êı¾İ 08*/
 	if( *(__IO uint8_t*)( BKPSRAM_BASE ) == 1 )
@@ -717,14 +805,14 @@ rt_err_t vdr_rx_gps( void )
 
 	datetime = MYDATETIME( year, month, day, hour, minute, sec );
 
-	vdr_put_08( datetime, gps_speed, vdr_signal_status );
+	vdr_08_put( datetime, gps_speed, vdr_signal_status );
 
 
 /*
    09Êı¾İ µ¥Î»Ğ¡Ê±ÄÚÃ¿·ÖÖÓµÄÎ»ÖÃËÙ¶È£¬Ö»±£´æµÚÒ»´ÎÓĞĞ§µÄ
    Ã¿Ğ¡Ê±(10+1)*60+6 ×Ö½Ú
  */
-	vdr_put_09( datetime );
+	//vdr_09_put( datetime );
 
 /*10Êı¾İ ÊÂ¹ÊÒÉµã*/
 	if( car_status.status == 0 )                                        /*ÈÏÎª³µÁ¾Í£Ö¹,ÅĞ¶ÏÆô¶¯*/
@@ -828,7 +916,7 @@ rt_err_t vdr_init( void )
 		return -RT_ENOMEM;
 	}
 
-	vdr_init_08();
+	vdr_08_init( );
 #if 0
 	vdr_init_byid( 8, pbuf );
 	sst25_read( sect_info[0].addr, (uint8_t*)&stu_rec_08, sizeof( STU_REC_08 ) ); /*¶Á³öÀ´ÊÇ·ÀÖ¹Ò»·ÖÖÓÄÚµÄÖØÆô*/
@@ -860,7 +948,9 @@ void vdr_rx_8700( uint8_t * pmsg )
 
 	uint16_t	seq = JT808HEAD_SEQ( pmsg );
 	uint16_t	len = JT808HEAD_LEN( pmsg );
-	uint8_t		cmd = *( pmsg + 13 );   /*Ìø¹ıÇ°Ãæ12×Ö½ÚµÄÍ·*/
+	uint8_t		cmd = *( pmsg + 12 );   /*Ìø¹ıÇ°Ãæ12×Ö½ÚµÄÍ·*/
+	MYTIME		start, end;
+	uint16_t	blocks;
 
 	switch( cmd )
 	{
@@ -891,7 +981,24 @@ void vdr_rx_8700( uint8_t * pmsg )
 			break;
 		case 6:
 			break;
-		case 8:
+		case 8:                                 /*08¼ÇÂ¼*/
+			if( len == 1 )                      /*»ñÈ¡ËùÓĞ¼ÇÂ¼*/
+			{
+				start	= 0;
+				end		= 0xffffffff;
+				blocks	= 0;
+			}else if( len == 22 )               /*ÏÂÀ´µÄ¸ñÊ½ <55><7A><cmd><len(2byte)><±£Áô><data_block(14byte)><XOR>*/
+			{
+				psrc	= pmsg + 12 + 1 + 7;    /*12×Ö½ÚÍ·+1byteÃüÁî×Ö+7×Ö½ÚvdrÊı¾İ*/
+				start	= mytime_from_buf( psrc );
+				end		= mytime_from_buf( psrc + 6 );
+				blocks	= ( *( psrc + 32 ) << 8 ) | ( *( psrc + 33 ) );
+			}else
+			{
+				rt_kprintf( "%d>8700µÄ¸ñÊ½²»Ê¶±ğ\r\n", rt_tick_get( ) );
+				return;
+			}
+			vdr_08_get_ready( start, end, blocks );
 			break;
 		case 9:
 			break;

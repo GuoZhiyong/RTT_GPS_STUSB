@@ -150,7 +150,8 @@ void sst25_init( void )
 	spi_tx( DBSY );
 	DF_CS_1;
 
-	rt_sem_init(&sem_dataflash,"sem_dataflash",1, RT_IPC_FLAG_FIFO );
+	rt_sem_init(&sem_dataflash,"sem_df",0, RT_IPC_FLAG_FIFO );
+	rt_sem_release(&sem_dataflash);
 	
 }
 

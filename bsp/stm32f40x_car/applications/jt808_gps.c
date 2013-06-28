@@ -807,9 +807,9 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	if( strncmp( psrc + 3, "RMC,", 4 ) == 0 )
 	{
 		gps_sec_count++;
-		vdr_rx_gps( );              /*行车记录仪数据处理*/
 		if( process_rmc( psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确*/
 		{
+			vdr_rx_gps( );				/*行车记录仪数据处理*/
 
 			process_gps( );             /*处理GPS信息*/
 		}
