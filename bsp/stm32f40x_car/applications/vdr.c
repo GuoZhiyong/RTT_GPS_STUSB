@@ -444,7 +444,7 @@ void vdr_08_init( void )
 	/*先做个搽除吧*/
 	for( addr = VDR_08_START; addr < VDR_08_END; addr += 4096 )
 	{
-		sst25_erase_4k( addr );
+		//	sst25_erase_4k( addr );
 	}
 	/*遍历一遍*/
 	for( addr = VDR_08_START; addr < VDR_08_END; addr += 128 )                      /*每个sector的第一个128 保存该半小时的信息,第一个有效记录的时刻*/
@@ -519,7 +519,7 @@ void vdr_08_put( MYTIME datetime, uint8_t speed, uint8_t status )
    获取08数据
    约束条件，地址范围  ，起始结束时间，单包数据大小
  */
-void vdr_08_fill_data( JT808_TX_NODEDATA *pnodedata )
+JT808_MSG_STATE vdr_08_fill_data( JT808_TX_NODEDATA *pnodedata )
 {
 	uint32_t		count = 0;
 	uint8_t			* pdata;
@@ -533,17 +533,27 @@ void vdr_08_fill_data( JT808_TX_NODEDATA *pnodedata )
 		return;
 	}
 
-	pdata = pnodedata->tag_data;
+	pdata		= pnodedata->tag_data;
+	puserdata	= (VDR_08_USERDATA* )( pdata[126 * 4 + sizeof( JT808_MSG_HEAD ) + 4 + 7] );
 
-	puserdata = (VDR_08_USERDATA* )( pdata[126 * 4 + sizeof( JT808_MSG_HEAD ) + 4] );
-
-/*从当前地址开始倒序读,每次4个record*/
+	/*
+	   判断是否已发送完成
+	   可以判断
+	   puserdata->packet_curr
+	   或puserdata->record_remain
+	 */
+	if( puserdata->record_remain == 0 )     /*已经发送完数据*/
+	{
+		return IDLE;
+	}
+	/*准备获取数据*/
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	addr = puserdata->addr;
+
+	addr = puserdata->addr;                 /*从当前地址开始倒序读,每次4个record*/
 
 	for( count = 0; count < 4; count++ )
 	{
-		sst25_read( addr, buf + 2, 124 ); /*在存数据时没有存BCD的日期，而是MYTIME的格式*/
+		sst25_read( addr, buf + 2, 124 );   /*在存数据时没有存BCD的日期，而是MYTIME的格式*/
 		mytime = (uint32_t)( buf[2] << 24 ) | (uint32_t)( buf[3] << 16 ) | (uint32_t)( buf[4] << 8 ) | (uint32_t)( buf[5] );
 		//mytime_to_buf(mytime,buf);
 		buf[0]	= HEX2BCD( YEAR( mytime ) );
@@ -569,16 +579,14 @@ void vdr_08_fill_data( JT808_TX_NODEDATA *pnodedata )
 		}
 	}
 	rt_sem_release( &sem_dataflash );
-#if 1		/*dump 数据*/
-	pnodedata->msg_len=count*126+4+sizeof( JT808_MSG_HEAD );
-	rt_kprintf("%d>生成 %d bytes\r\n",pnodedata->msg_len);
-	rt_kprintf("文件头: ");
-	for(count=0;count<14;count++)
+#if 1  /*dump 数据*/
+	pnodedata->msg_len = count * 126 + 4 + sizeof( JT808_MSG_HEAD );
+	rt_kprintf( "%d>生成 %d bytes\r\n", pnodedata->msg_len );
+	rt_kprintf( "文件头: " );
+	for( count = 0; count <12; count++ )
 	{
-
-
 	}
-#endif	
+#endif
 }
 
 /*收到应答的处理函数*/
@@ -661,9 +669,8 @@ void vdr_08_get_ready( MYTIME start, MYTIME end, uint16_t totalrecord )
 	rt_kprintf( "%d>遍历结束(%d条) form:%08x to:%08x\r\n", rt_tick_get( ), rec_count, addr_from, addr_to );
 
 /*默认按多包分配*/
-	/*126字节一个记录(4个记录),4字节消息封包项,808消息头,行车记录仪的数据头*/
-
-	pnodedata = node_begin( 126 * 4 + 4 + + sizeof( JT808_MSG_HEAD )+sizeof( VDR_08_USERDATA )+7 );
+	/*消息头12 + 消息封包项4 + VDR头尾7 + VDR数据126*4 */
+	pnodedata = node_begin( 12 + 4 + 7 + 126 * 4 + sizeof( VDR_08_USERDATA ) );
 	if( pnodedata == RT_NULL )                                                                                          /*创建失败*/
 	{
 		rt_kprintf( "\d>vdr生成08数据有误\r\n", rt_tick_get( ) );
@@ -671,17 +678,18 @@ void vdr_08_get_ready( MYTIME start, MYTIME end, uint16_t totalrecord )
 	}
 	rt_kprintf( ">生成数据节点\r\n" );
 
-	puserdata					= (VDR_08_USERDATA*)( pnodedata->tag_data[126 * 4 + sizeof( JT808_MSG_HEAD ) + 4] );    /*指向用户数据*/
+	puserdata					= (VDR_08_USERDATA*)( pnodedata->tag_data[12+4+7+126 * 4 ] );    /*指向用户数据*/
 	puserdata->record_total		= rec_count;
 	puserdata->record_remain	= rec_count;
 	puserdata->addr_from		= addr_from;
 	puserdata->addr_to			= addr_to;
 	puserdata->addr				= addr_from;
 	puserdata->packet_total		= ( rec_count + 3 ) / 4;                                                                /*每四条记录形成一包*/
-	puserdata->packet_curr		= 1;
+	puserdata->packet_curr		= 0;
 	vdr_08_fill_data( pnodedata );                                                                                      /*准备数据并发送*/
 	rt_kprintf( ">生成数据结束\r\n" );
 	node_end( pnodedata, 0xFF00 );
+	
 }
 
 FINSH_FUNCTION_EXPORT_ALIAS( vdr_08_get_ready, get_08, get_08_data );

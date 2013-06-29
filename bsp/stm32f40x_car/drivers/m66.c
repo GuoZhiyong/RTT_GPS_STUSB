@@ -1447,7 +1447,13 @@ static void rt_thread_entry_gsm( void* parameter )
 		{
 			rt_thread_gsm_power_on( RT_NULL );
 		}
-
+		if( gsm_state == GSM_POWEROFF )
+		{
+			GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
+			rt_thread_delay(RT_TICK_PER_SECOND*5);  /*—” ±5√Î‘Ÿ∆Ù∂Ø*/
+			gsm_state=GSM_IDLE;
+		}
+		
 		if( gsm_state == GSM_GPRS )
 		{
 			rt_thread_gsm_gprs( RT_NULL );
@@ -1456,9 +1462,6 @@ static void rt_thread_entry_gsm( void* parameter )
 		if( gsm_state == GSM_SOCKET_PROC )
 		{
 			rt_thread_gsm_socket( RT_NULL );
-		}
-		if( gsm_state == GSM_POWEROFF )
-		{
 		}
 
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
