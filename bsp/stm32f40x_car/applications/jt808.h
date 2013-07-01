@@ -340,7 +340,7 @@ typedef __packed struct _jt808_tx_nodedata
 	uint16_t	head_sn;                                                                                /*消息流水号*/
 /*用户数据*/
 	uint16_t	msg_len;                                                                                /*消息长度*/
-	uint8_t		tag_data[1];                                                                            /*变长数组*/
+	uint8_t		tag_data[];                                                                            /*变长数组*/
 }JT808_TX_NODEDATA;
 
 #endif

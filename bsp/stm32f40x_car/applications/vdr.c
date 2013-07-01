@@ -410,8 +410,8 @@ static void mytime_to_buf( MYTIME time, uint8_t* buf )
 
 typedef __packed struct _vdr_08_userdata
 {
-	MYTIME		start;          /*开始时刻*/
-	MYTIME		end;            /*结束时刻*/
+//	MYTIME		start;          /*开始时刻*/
+//	MYTIME		end;            /*结束时刻*/
 	uint16_t	record_total;   /*总得记录数*/
 	uint16_t	record_remain;  /*还没有发送的记录数*/
 
@@ -419,7 +419,7 @@ typedef __packed struct _vdr_08_userdata
 	uint32_t	addr_to;        /*信息结束的地址*/
 	uint32_t	addr;           /*当前要读的地址*/
 
-	uint8_t		rec_per_packet; /*每包的记录数*/
+	uint16_t	rec_per_packet; /*每包的记录数*/
 	uint16_t	packet_total;   /*总包数*/
 	uint16_t	packet_curr;    /*当前包数*/
 }VDR_08_USERDATA;
@@ -521,20 +521,31 @@ void vdr_08_put( MYTIME datetime, uint8_t speed, uint8_t status )
  */
 JT808_MSG_STATE vdr_08_fill_data( JT808_TX_NODEDATA *pnodedata )
 {
-	uint32_t		count = 0;
-	uint8_t			* pdata;
+	uint32_t		i, count = 0;
+	uint8_t			*pdata_body;
+	uint8_t			*pdata_head;
+	uint8_t			*pdata;
 	VDR_08_USERDATA * puserdata;
 	uint32_t		addr;
 	uint8_t			buf[126];
 	MYTIME			mytime;
+	uint8_t			fcs				= 0;
+	uint16_t		read_data_size	= 0;
 
 	if( pnodedata == RT_NULL )
 	{
 		return;
 	}
 
-	pdata		= pnodedata->tag_data;
-	puserdata	= (VDR_08_USERDATA* )( pdata[126 * 4 + sizeof( JT808_MSG_HEAD ) + 4 + 7] );
+	puserdata = (VDR_08_USERDATA* )( pnodedata->tag_data ); /*指向用户数据区*/
+#if 0
+	rt_kprintf( "puserdata->addr=%08x\r\n", puserdata->addr );
+	rt_kprintf( "puserdata->addr_from=%08x\r\n", puserdata->addr_from );
+	rt_kprintf( "puserdata->addr_to=%08x\r\n", puserdata->addr_to );
+	rt_kprintf( "puserdata->record_total=%d\r\n", puserdata->record_total );
+	rt_kprintf( "puserdata->record_remain=%d\r\n", puserdata->record_remain ); 3
+#endif
+
 
 	/*
 	   判断是否已发送完成
@@ -542,35 +553,64 @@ JT808_MSG_STATE vdr_08_fill_data( JT808_TX_NODEDATA *pnodedata )
 	   puserdata->packet_curr
 	   或puserdata->record_remain
 	 */
-	if( puserdata->record_remain == 0 )     /*已经发送完数据*/
+	if( puserdata->record_remain == 0 )                             /*已经发送完数据*/
 	{
 		return IDLE;
 	}
 	/*准备获取数据*/
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
 
-	addr = puserdata->addr;                 /*从当前地址开始倒序读,每次4个record*/
+	pdata_head = pnodedata->tag_data + sizeof( VDR_08_USERDATA );   /*真实发送数据的开始位置->消息头*/
+	rt_kprintf( "pdata_head=%p\r\n", pdata_head );
 
+	pdata_head[0]	= pnodedata->head_id >> 8;
+	pdata_head[1]	= pnodedata->head_id & 0xFF;
+	pnodedata->head_sn++;
+	pdata_head[10]	= pnodedata->head_sn >> 8;
+	pdata_head[11]	= pnodedata->head_sn & 0xFF;
+	memcpy( pdata_head + 4, mobile, 6 );    /*拷贝终端号码,此时可能还没有mobileh号码*/
+	if( pnodedata->multipacket )            /*多包发送*/
+	{
+		pdata_head[12]	= puserdata->packet_total >> 8;
+		pdata_head[13]	= puserdata->packet_total & 0xFF;
+		puserdata->packet_curr++;
+		pdata_head[14]	= puserdata->packet_curr >> 8;
+		pdata_head[15]	= puserdata->packet_curr & 0xFF;
+
+		pdata_head[2]	|= 0x20; /*多包发送*/
+		pdata_body		= pdata_head + 16;
+	}else
+	{
+		pdata_head[2]	= 0;
+		pdata_body		= pdata_head + 12;
+	}
+	rt_kprintf( "pdata_body=%p\r\n", pdata_body );
+
+	addr	= puserdata->addr;                              /*从当前地址开始倒序读,每次4个record*/
+	pdata	= pdata_body;
+
+	/*获取数据*/
 	for( count = 0; count < 4; count++ )
 	{
-		sst25_read( addr, buf + 2, 124 );   /*在存数据时没有存BCD的日期，而是MYTIME的格式*/
-		mytime = (uint32_t)( buf[2] << 24 ) | (uint32_t)( buf[3] << 16 ) | (uint32_t)( buf[4] << 8 ) | (uint32_t)( buf[5] );
-		//mytime_to_buf(mytime,buf);
+		sst25_read( addr, buf + 2, 124 );                   /*在存数据时没有存BCD的日期，而是MYTIME的格式*/
+		mytime	= (uint32_t)( buf[2] << 24 ) | (uint32_t)( buf[3] << 16 ) | (uint32_t)( buf[4] << 8 ) | (uint32_t)( buf[5] );
 		buf[0]	= HEX2BCD( YEAR( mytime ) );
 		buf[1]	= HEX2BCD( MONTH( mytime ) );
 		buf[2]	= HEX2BCD( DAY( mytime ) );
 		buf[3]	= HEX2BCD( HOUR( mytime ) );
 		buf[4]	= HEX2BCD( MINUTE( mytime ) );
-		buf[5]	= HEX2BCD( SEC( mytime ) );
-		if( puserdata->record_total > 4 )                                                       /*多包*/
+		buf[5]	= 0;                                        /*按照要求秒为0*/
+		if( puserdata->record_total > 4 )                   /*多包*/
 		{
-			memcpy( pdata + sizeof( JT808_MSG_HEAD ) + 4 + count * 126, buf, sizeof( buf ) );   /*拷贝126个到发送区*/
+			memcpy( pdata + 6 + count * 126, buf, 126 );    /*拷贝126个到发送区*/
 		}
-		addr -= 128;                                                                            /*定位到前一个记录*/
+		read_data_size	+= 126;
+		addr			-= 128;                             /*定位到前一个记录*/
 		if( addr < VDR_08_START )
 		{
 			addr = VDR_08_END - 128;
 		}
+		puserdata->addr=addr;		/*指向新的地址*/
 		/*不能拿地址puserdata->addr_to判断是否完成，如果addr_to=VDR_08_START?,用记录数判断*/
 		puserdata->record_remain--;
 		if( puserdata->record_remain == 0 )
@@ -579,24 +619,86 @@ JT808_MSG_STATE vdr_08_fill_data( JT808_TX_NODEDATA *pnodedata )
 		}
 	}
 	rt_sem_release( &sem_dataflash );
-#if 1  /*dump 数据*/
-	pnodedata->msg_len = count * 126 + 4 + sizeof( JT808_MSG_HEAD );
-	rt_kprintf( "%d>生成 %d bytes\r\n", pnodedata->msg_len );
-	rt_kprintf( "文件头: " );
-	for( count = 0; count <12; count++ )
+	/*计算VDR的FCS*/
+	pdata		= pdata_body;
+	pdata[0]	= 0x55;
+	pdata[1]	= 0x7A;
+	pdata[2]	= 0x08;
+	pdata[3]	= ( read_data_size ) >> 8;  /*并不知道实际发送的大小*/
+	pdata[4]	= ( read_data_size ) & 0xFF;
+	pdata[5]	= 0;                        /*预留*/
+
+	for( i = 0; i < ( read_data_size + 6 ); i++ )
 	{
+		fcs ^= *pdata++;
 	}
+	*pdata = fcs;
+
+	/*补充发送信息*/
+	if( pnodedata->multipacket )
+	{
+		pnodedata->msg_len = 12 + 4 + 7 + read_data_size;
+	}else
+	{
+		pnodedata->msg_len = 12 + 7 + read_data_size;
+	}
+	pdata_head[2]	= 0x20 | ( pnodedata->msg_len >> 8 );
+	pdata_head[3]	= pnodedata->msg_len & 0xFF;
+
+/*控制发送状态*/
+	pnodedata->max_retry=1;
+	pnodedata->retry=0;
+	pnodedata->timeout=RT_TICK_PER_SECOND*3;
+	//pnodedata->timeout_tick=rt_tick_get()+(pnodedata->retry+1)*pnodedata->timeout;
+
+	pnodedata->type=TERMINAL_CMD;
+	pnodedata->state=IDLE;
+	
+
+#if 1                                                               /*dump 数据*/
+	rt_kprintf( "%d>生成 %d bytes\r\n", rt_tick_get( ), pnodedata->msg_len );
+	rt_kprintf( "linkno=%d\r\n", pnodedata->linkno );               /*传输使用的link,包括了协议和远端socket*/
+	rt_kprintf( "multipacket=%d\r\n", pnodedata->multipacket );     /*是不是多包发送*/
+	rt_kprintf( "type=%d\r\n", pnodedata->type );                   /*发送消息的类型*/
+	rt_kprintf( "state=%d\r\n", pnodedata->state );                 /*发送状态*/
+	rt_kprintf( "retry=%d\r\n", pnodedata->retry );                 /*重传次数,递增，递减找不到*/
+	rt_kprintf( "max_retry=%d\r\n", pnodedata->max_retry );         /*最大重传次数*/
+	rt_kprintf( "timeout=%d\r\n", pnodedata->timeout );             /*超时时间*/
+	rt_kprintf( "tick=%x\r\n", pnodedata->tick );                   /*发送时间*/
+	rt_kprintf( "timeout_tick=%x\r\n", pnodedata->timeout_tick );   /*达到超时的tick值*/
+	rt_kprintf( "head_id=%04x\r\n", pnodedata->head_id );           /*消息ID*/
+	rt_kprintf( "head_sn=%04x\r\n", pnodedata->head_sn );           /*消息流水号*/
+
+	rt_kprintf( "puserdata->addr=%08x\r\n", puserdata->addr );
+	rt_kprintf( "puserdata->addr_from=%08x\r\n", puserdata->addr_from );
+	rt_kprintf( "puserdata->addr_to=%08x\r\n", puserdata->addr_to );
+	rt_kprintf( "puserdata->record_total=%d\r\n", puserdata->record_total );
+	rt_kprintf( "puserdata->record_remain=%d\r\n", puserdata->record_remain );
+
+	pdata = pnodedata->tag_data + sizeof( VDR_08_USERDATA );
+	//for( i = 0; i < pnodedata->msg_len; i++ )
+	for( i = 0; i < 32; i++ )
+	{
+		if( ( i % 16 ) == 0 )
+		{
+			rt_kprintf( "\r\n" );
+		}
+		rt_kprintf( "%02x ", *pdata++ );
+	}
+
 #endif
 }
 
 /*收到应答的处理函数*/
-static void jt808_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
+static void vdr_08_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
 {
+	vdr_08_fill_data( nodedata );
 }
 
 /*超时后的处理函数*/
-static void jt808_tx_timeout( JT808_TX_NODEDATA * nodedata )
+static void vdr_08_tx_timeout( JT808_TX_NODEDATA * nodedata )
 {
+	vdr_08_fill_data( nodedata );
 }
 
 /*定位数据的地址?
@@ -670,26 +772,37 @@ void vdr_08_get_ready( MYTIME start, MYTIME end, uint16_t totalrecord )
 
 /*默认按多包分配*/
 	/*消息头12 + 消息封包项4 + VDR头尾7 + VDR数据126*4 */
-	pnodedata = node_begin( 12 + 4 + 7 + 126 * 4 + sizeof( VDR_08_USERDATA ) );
-	if( pnodedata == RT_NULL )                                                                                          /*创建失败*/
+	//pnodedata = node_begin( 12 + 4 + 7 + 126 * 4 + sizeof( VDR_08_USERDATA ) );
+	pnodedata = (JT808_TX_NODEDATA*)rt_malloc( sizeof( JT808_TX_NODEDATA ) + 12 + 4 + 7 + 126 * 4 + sizeof( VDR_08_USERDATA ) );
+	if( pnodedata == RT_NULL )              /*创建失败*/
 	{
-		rt_kprintf( "\d>vdr生成08数据有误\r\n", rt_tick_get( ) );
+		rt_kprintf( "%d>vdr生成08数据有误\r\n", rt_tick_get( ) );
 		return;
 	}
-	rt_kprintf( ">生成数据节点\r\n" );
 
-	puserdata					= (VDR_08_USERDATA*)( pnodedata->tag_data[12+4+7+126 * 4 ] );    /*指向用户数据*/
+	if( puserdata->record_total > 4 )       /*多包发送*/
+	{
+		pnodedata->multipacket = 1;
+	}
+
+	pnodedata->linkno			= 1;
+	pnodedata->head_id			= 0x0700;
+	pnodedata->head_sn			= 0xF000;
+	pnodedata->cb_tx_response	= vdr_08_tx_response;
+	pnodedata->cb_tx_timeout	= vdr_08_tx_timeout;
+	rt_kprintf( "pnodedata=%p\r\n", pnodedata );
+	puserdata = (VDR_08_USERDATA*)( pnodedata->tag_data );  /*指向用户数据*/
+	rt_kprintf( "puserdata=%p\r\n", puserdata );
 	puserdata->record_total		= rec_count;
 	puserdata->record_remain	= rec_count;
 	puserdata->addr_from		= addr_from;
 	puserdata->addr_to			= addr_to;
 	puserdata->addr				= addr_from;
-	puserdata->packet_total		= ( rec_count + 3 ) / 4;                                                                /*每四条记录形成一包*/
+	puserdata->packet_total		= ( rec_count + 3 ) / 4;    /*每四条记录形成一包*/
 	puserdata->packet_curr		= 0;
-	vdr_08_fill_data( pnodedata );                                                                                      /*准备数据并发送*/
-	rt_kprintf( ">生成数据结束\r\n" );
-	node_end( pnodedata, 0xFF00 );
-	
+	vdr_08_fill_data( pnodedata );                          /*准备数据并发送*/
+	rt_kprintf( "\r\n%d>生成数据结束\r\n", rt_tick_get( ) );
+	node_end(pnodedata,0xF000);
 }
 
 FINSH_FUNCTION_EXPORT_ALIAS( vdr_08_get_ready, get_08, get_08_data );
@@ -801,6 +914,38 @@ void vdr_09_put( MYTIME datetime )
 
 #endif
 }
+
+JT808_MSG_STATE vdr_09_fill_data( JT808_TX_NODEDATA *pnodedata )
+{
+
+
+
+}
+
+
+/*收到应答的处理函数*/
+static void vdr_09_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
+{
+	vdr_09_fill_data( nodedata );
+}
+
+/*超时后的处理函数*/
+static void vdr_09_tx_timeout( JT808_TX_NODEDATA * nodedata )
+{
+	vdr_09_fill_data( nodedata );
+}
+
+
+
+
+
+void vdr_09_get_ready( MYTIME start, MYTIME end, uint16_t totalrecord )
+{
+
+
+
+}
+
 
 /*
    保存行驶记录数据
@@ -1065,6 +1210,25 @@ void vdr_rx_8700( uint8_t * pmsg )
 			vdr_08_get_ready( start, end, blocks );
 			break;
 		case 9:
+			if( len == 1 )                      /*获取所有记录*/
+			{
+				start	= 0;
+				end		= 0xffffffff;
+				blocks	= 0;
+			}else if( len == 22 )               /*下来的格式 <55><7A><cmd><len(2byte)><保留><data_block(14byte)><XOR>*/
+			{
+				psrc	= pmsg + 12 + 1 + 7;    /*12字节头+1byte命令字+7字节vdr数据*/
+				start	= mytime_from_buf( psrc );
+				end		= mytime_from_buf( psrc + 6 );
+				blocks	= ( *( psrc + 32 ) << 8 ) | ( *( psrc + 33 ) );
+			}else
+			{
+				rt_kprintf( "%d>8700的格式不识别\r\n", rt_tick_get( ) );
+				return;
+			}
+			vdr_09_get_ready( start, end, blocks );
+
+			
 			break;
 		case 10:
 			break;
