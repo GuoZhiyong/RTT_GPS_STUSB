@@ -451,6 +451,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_auxio.c</FilePath>
             </File>
+            <File>
+              <FileName>jt808_camera.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_camera.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

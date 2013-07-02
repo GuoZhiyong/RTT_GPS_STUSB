@@ -111,7 +111,7 @@ void rtthread_startup(void)
 	rtc_init();
 	timestamp();
 	rt_application_init();
-	RS485_init();
+	//RS485_init();
 	gps_init();
 	gsm_init();
 	hmi_init();
