@@ -199,7 +199,6 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
                                 int32_t seq,
                                 uint16_t datasize )
 {
-	uint8_t				* pdata;
 	JT808_TX_NODEDATA	* pnodedata;
 
 	if( fMultiPacket )
@@ -221,10 +220,13 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
 	pnodedata->retry		= 0;
 	if( fMultiPacket )
 	{
-		pnodedata->max_retry = 0;
+		pnodedata->max_retry = 1;
+		pnodedata->timeout=RT_TICK_PER_SECOND*3;
+		
 	} else
 	{
 		pnodedata->max_retry = 3;
+		pnodedata->timeout=RT_TICK_PER_SECOND*5;
 	}
 
 	pnodedata->packet_num	= 1;
@@ -252,8 +254,6 @@ JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA *pnodedata,
                                void  *userpara )
 {
 	uint8_t* pdata;
-	uint8_t offset;
-
 	pdata = pnodedata->tag_data;
 
 	pdata[0]	= pnodedata->head_id >> 8;
@@ -320,7 +320,7 @@ rt_err_t jt808_add_tx( uint8_t linkno,
 {
 	JT808_TX_NODEDATA* pnodedata;
 
-	pnodedata = node_begin( linkno,fMultiPacket,id, seq);
+	pnodedata = node_begin( linkno,fMultiPacket,id, seq,len);
 	node_data(pnodedata,pinfo,len,cb_tx_timeout, cb_tx_response,userpara );
 	msglist_append( list_jt808_tx, pnodedata );
 }
@@ -1079,6 +1079,7 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 	JT808_TX_NODEDATA	* pnodedata = ( JT808_TX_NODEDATA* )( pnode->data );
 	int					i;
 	rt_err_t			ret;
+	
 
 	if( node == RT_NULL )
 	{
@@ -1097,9 +1098,21 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 		{
 			return IDLE;
 		}
-#endif
-		//ret = socket_write( pnodedata->linkno, pnodedata->tag_data, pnodedata->msg_len );
+
+		ret = socket_write( pnodedata->linkno, pnodedata->tag_data, pnodedata->msg_len );
+#else
+		do{
+			uint8_t* pdata=pnodedata->tag_data;
+			rt_kprintf("\r\n>DUMP BEGIN\r\n");
+			for(i=0;i<pnodedata->msg_len;i++)
+			{
+				if((i%16)==0) rt_kprintf("\r\n");
+				rt_kprintf("%02x ",*pdata++);
+			}
+			rt_kprintf("\r\n>DUMP END\r\n");
+		}while(0);
 		ret = RT_EOK;
+#endif
 		if( ret != RT_EOK )                 /*发送数据没有等到模块返回的OK，立刻重发，还是等一段时间再发*/
 		{
 			total_send_error++;
@@ -1432,6 +1445,7 @@ static void rt_thread_entry_jt808( void * parameter )
 		{
 			//rt_kprintf( "%d>%s,%d\r\n", rt_tick_get( ), __func__, __LINE__ );
 			pnodedata = ( JT808_TX_NODEDATA* )( iter->data );
+			rt_free(pnodedata->user_para);
 			rt_free( pnodedata );                   /*删除节点数据*/
 			list_jt808_tx->first = iter->next;      /*指向下一个*/
 			rt_free( iter );
