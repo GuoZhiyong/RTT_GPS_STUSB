@@ -77,8 +77,6 @@ static char				msgpool_cam[256];
 
 static char				CamTestBuf[2000];
 
-extern MsgList			* list_jt808_tx;
-
 
 /*********************************************************************************
   *函数名称:static void delay_us( const uint32_t usec )
@@ -806,86 +804,6 @@ u32 Cam_Flash_FindPicID( u32 id, TypeDF_PackageHead *p_head )
   *修改日期:
   *修改描述:
 *********************************************************************************/
-rt_err_t Cam_Flash_RdPic_20130605( void *pData, u16 *len, u32 id, u8 offset )
-{
-	u16							i;
-	u32							TempAddress;
-	u32							temp_Len;
-	TypeDF_PackageHead			TempPackageHead;
-	static TypeDF_PackageInfo	lastPackInfo = { 0, 0, 0 };
-
-	*len = 0;
-
-	if( DF_PicParameter.Number == 0 )
-	{
-		return RT_ERROR;
-	}
-	if( ( id < DF_PicParameter.FirstPic.Data_ID ) || ( id > DF_PicParameter.LastPic.Data_ID ) )
-	{
-		return RT_ERROR;
-	}
-	if( id != lastPackInfo.Data_ID )
-	{
-		lastPackInfo.Data_ID	= 0xFFFFFFFF;
-		TempAddress				= DF_PicParameter.FirstPic.Address;
-		for( i = 0; i < DF_PicParameter.Number; i++ )
-		{
-			TempAddress = Cam_Flash_AddrCheck( TempAddress );
-			sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
-			if( strncmp( TempPackageHead.Head, CAM_HEAD, strlen( CAM_HEAD ) ) == 0 )
-			{
-				if( TempPackageHead.Data_ID == id )
-				{
-					lastPackInfo.Data_ID	= id;
-					lastPackInfo.Address	= TempAddress;
-					lastPackInfo.Len		= TempPackageHead.Len;
-					break;
-				}
-				TempAddress += ( TempPackageHead.Len + DF_CamSaveSect - 1 ) / DF_CamSaveSect * DF_CamSaveSect;
-			}else
-			{
-				return RT_ERROR;
-			}
-		}
-	}
-
-	if( lastPackInfo.Data_ID == 0xFFFFFFFF )
-	{
-		return RT_ERROR;
-	}
-	if( offset > ( lastPackInfo.Len - 1 ) / 512 )
-	{
-		return RT_ENOMEM;
-	}
-	if( offset == ( lastPackInfo.Len - 1 ) / 512 )
-	{
-		temp_Len = lastPackInfo.Len - ( offset * 512 );
-	}else
-	{
-		temp_Len = 512;
-	}
-	sst25_read( lastPackInfo.Address + offset * 512, (u8*)pData, temp_Len );
-	*len = temp_Len;
-	return RT_EOK;
-}
-
-/*********************************************************************************
-  *函数名称:rt_err_t Cam_Flash_RdPic(void *pData,u16 *len, u32 id,u8 offset )
-  *功能描述:从FLASH中读取图片数据
-  *输	入:	pData:写入的数据指针，指向数据buf；
-   len:返回的数据长度指针注意，该长度最大为512
-   id:多媒体ID号
-   offset:多媒体数据偏移量，从0开始，0表示读取多媒体图片包头信息，包头信息长度固定为64字节，采用
-    结构体TypeDF_PackageHead格式存储
-  *输	出:none
-  *返 回 值:re_err_t
-  *作	者:白养民
-  *创建日期:2013-06-5
-  *---------------------------------------------------------------------------------
-  *修 改 人:
-  *修改日期:
-  *修改描述:
-*********************************************************************************/
 rt_err_t Cam_Flash_RdPic( void *pData, u16 *len, u32 id, u8 offset )
 {
 	u16					i;
@@ -1511,15 +1429,6 @@ u8 Camera_Process( void )
 					pack_head.Media_Style	= 0;
 					memcpy( &pack_head.Time, gps_datetime, 6 );
 
-
-					/*
-					   pack_head.Time.years=0x13;
-					   pack_head.Time.months=0x06;
-					   pack_head.Time.days=tick>>24;
-					   pack_head.Time.hours=tick>>16;
-					   pack_head.Time.minutes=tick>>8;
-					   pack_head.Time.seconds=tick;
-					 */
 					memcpy( &pack_head.position, &gps_baseinfo, 28 );
 					pack_head.State = 0xFF;
 					if( Current_Cam_Para.Para.SavePhoto == 0 )

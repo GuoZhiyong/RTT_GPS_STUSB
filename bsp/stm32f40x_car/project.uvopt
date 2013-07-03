@@ -333,10 +333,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>18</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>1</TopLine>
-      <CurrentLine>16</CurrentLine>
+      <CurrentLine>1</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\vdr.c</PathWithFileName>
       <FilenameWithoutPath>vdr.c</FilenameWithoutPath>
@@ -365,10 +365,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>37</ColumnNumber>
+      <ColumnNumber>7</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>421</TopLine>
-      <CurrentLine>437</CurrentLine>
+      <TopLine>435</TopLine>
+      <CurrentLine>438</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808_camera.c</PathWithFileName>
       <FilenameWithoutPath>jt808_camera.c</FilenameWithoutPath>
@@ -613,10 +613,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>18</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>14</TopLine>
-      <CurrentLine>21</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>18</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\drivers\camera.c</PathWithFileName>
       <FilenameWithoutPath>camera.c</FilenameWithoutPath>
