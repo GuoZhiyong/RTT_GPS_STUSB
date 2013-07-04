@@ -16,6 +16,7 @@
 #include "jt808.h"
 #include "vdr.h"
 #include "jt808_gps.h"
+#include "jt808_param.h"
 
 #define VDR_DEBUG
 
@@ -229,40 +230,41 @@ void TIM5_IRQHandler( void )
 	}
 }
 
-#define SPEED_LIMIT				5          /*速度门限 大于此值认为启动，小于此值认为停止*/
-#define SPEED_LIMIT_DURATION	10          /*速度门限持续时间*/
+#define SPEED_LIMIT				5   /*速度门限 大于此值认为启动，小于此值认为停止*/
+#define SPEED_LIMIT_DURATION	10  /*速度门限持续时间*/
 
-#define SPEED_STATUS_ACC	0x01            /*acc状态 0:关 1:开*/
-#define SPEED_STATUS_BRAKE	0x02            /*刹车状态 0:关 1:开*/
+#define SPEED_STATUS_ACC	0x01    /*acc状态 0:关 1:开*/
+#define SPEED_STATUS_BRAKE	0x02    /*刹车状态 0:关 1:开*/
 
-#define SPEED_JUDGE_ACC		0x04            /*是否判断ACC*/
-#define SPEED_JUDGE_BRAKE	0x08            /*是否判断BRAKE 刹车信号*/
+#define SPEED_JUDGE_ACC		0x04    /*是否判断ACC*/
+#define SPEED_JUDGE_BRAKE	0x08    /*是否判断BRAKE 刹车信号*/
 
-#define SPEED_USE_PULSE 0x10                /*使用脉冲信号 0:不使用 1:使用*/
-#define SPEED_USE_GPS	0x20                /*使用gps信号 0:不使用 1:使用*/
+#define SPEED_USE_PULSE 0x10        /*使用脉冲信号 0:不使用 1:使用*/
+#define SPEED_USE_GPS	0x20        /*使用gps信号 0:不使用 1:使用*/
 
 enum _stop_run
 {
 	STOP=0,
-	RUN=1,
+	RUN =1,
 };
 
 struct _vehicle_status
 {
-	enum _stop_run stop_run;                         /*当前车辆状态 0:停止 1:启动*/
-	uint8_t logic;                          /*当前逻辑状态*/
-
-	uint8_t		pulse_speed_judge_duration; /*速度门限持续时间*/
-	uint8_t		pulse_speed;                /*速度值*/
-	uint32_t	pulse_duration;             /*持续时间-秒*/
-
-	uint8_t		gps_judge_duration;         /*速度门限持续时间*/
-	uint8_t		gps_speed;                  /*速度值，当前速度值*/
-	uint32_t	gps_duration;               /*持续时间-秒*/
+	enum _stop_run	stop_run;       /*当前车辆状态 0:停止 1:启动*/
+	uint8_t			logic;          /*当前逻辑状态*/
+	uint8_t			pulse_speed;    /*速度值*/
+	uint32_t		pulse_duration; /*持续时间-秒*/
+	uint8_t			gps_speed;      /*速度值，当前速度值*/
+	uint32_t		gps_duration;   /*持续时间-秒*/
 } car_status =
 {
-	STOP, ( SPEED_USE_GPS ), 0, 0, 0, 0, 0, 0
+	STOP, ( SPEED_USE_GPS ), 0, 0, 0, 0
 };
+
+/*200ms间隔的速度状态信息*/
+static uint8_t	speed_status[100][2];
+static uint8_t	speed_status_index	= 0;
+static uint32_t utc_speed_status	= 0; /*最近保存保存记录的时刻*/
 
 
 /*
@@ -281,9 +283,24 @@ struct _vehicle_status
    断电时的位置信息。
 
  */
+
+
+/*
+   每200毫秒检测并更新状态
+ */
 static void cb_tmr_200ms( void* parameter )
 {
-/*判断驾驶状态*/
+	__IO uint8_t i;
+
+	i									= ( speed_status_index + 99 ) % 100;    /*计算上一个位置，带环回*/
+	speed_status[speed_status_index][0] = speed_status[i][0];                   /*等于上一次的值*/
+	speed_status[speed_status_index][1] = vdr_signal_status;
+
+	speed_status_index++;
+	if( speed_status_index > 99 )
+	{
+		speed_status_index = 0;
+	}
 }
 
 static uint32_t vdr_08_addr = VDR_08_END;           /*当前要写入的地址*/
@@ -296,15 +313,12 @@ static MYTIME	vdr_09_time		= 0xFFFFFFFF;
 static uint16_t vdr_09_sect		= VDR_09_SECTORS;   /*当前要写入的sect号*/
 static uint8_t	vdr_09_index	= 5;                /*在一个sect内的记录索引,每个sector存6个*/
 
-static uint8_t	vdr_10_info[234];                   /*保存要写入的信息*/
 static MYTIME	vdr_10_time		= 0xFFFFFFFF;
 static uint16_t vdr_10_sect		= VDR_09_SECTORS;   /*当前要写入的sect号*/
 static uint8_t	vdr_10_index	= 5;                /*在一个sect内的记录索引,每个sector存6个*/
 
-static uint32_t	utc_car_stop=0;		/*车辆开始停驶时刻*/
-static uint32_t	utc_car_run=0;		/*车辆开始行驶时刻*/
-
-
+static uint32_t utc_car_stop	= 0;                /*车辆开始停驶时刻*/
+static uint32_t utc_car_run		= 0;                /*车辆开始行驶时刻*/
 
 
 /*
@@ -690,7 +704,7 @@ void vdr_08_get_ready( MYTIME start, MYTIME end, uint16_t totalrecord )
 
 	rt_kprintf( "%d>遍历结束(%d条) form:%08x to:%08x\r\n", rt_tick_get( ), rec_count, addr_from, addr_to );
 
-	if( rec_count == 0 )
+	if( rec_count == 0 ) /*没有记录，也要上报*/
 	{
 		return;
 	}
@@ -731,7 +745,7 @@ FINSH_FUNCTION_EXPORT_ALIAS( vdr_08_get_ready, get_08, get_08_data );
    最快频率，每分钟一组数据
    360小时=15天
    每天4个sector 每个sector对应6小时，每小时  680字节
-*/
+ */
 void vdr_09_init( void )
 {
 	uint32_t	addr, addr_max = 0xFFFFFFFF;
@@ -861,7 +875,7 @@ uint8_t vdr_09_fill_data( JT808_TX_NODEDATA *pnodedata )
 	rt_sem_release( &sem_dataflash );
 
 	/*整理一下数据,无效的位置信息填写0x7FFFFFFF*/
-	pdata = pdata_body + 6 + 6;                                                    /*跳过开始的6字节55 7A和BCD时间头*/
+	pdata = pdata_body + 6 + 6;                                                     /*跳过开始的6字节55 7A和BCD时间头*/
 	for( i = 0; i < 660; i += 11 )
 	{
 		if( pdata[i] == 0xff )
@@ -947,7 +961,6 @@ static JT808_MSG_STATE vdr_09_tx_timeout( JT808_TX_NODEDATA * nodedata )
 		return IDLE;
 	}
 	return IDLE;
-
 }
 
 /*生成09发送的数据包*/
@@ -1022,11 +1035,12 @@ void vdr_09_get_ready( MYTIME start, MYTIME end, uint16_t totalrecord )
 
 	rt_kprintf( "%d>09遍历结束(%d条) FROM %d:%d TO %08x\r\n", rt_tick_get( ), rec_count, sector_from, index_from, sector_to, index_to );
 
-	if( rec_count == 0 )
+	if( rec_count == 0 ) /*没有记录，也要上报*/
 	{
 		return;
 	}
 	puserdata = rt_malloc( sizeof( VDR_USERDATA ) );
+
 	if( puserdata == RT_NULL )
 	{
 		return;
@@ -1067,7 +1081,7 @@ FINSH_FUNCTION_EXPORT_ALIAS( vdr_09_get_ready, get_09, get_09_data );
 
 /*
    事故疑点记录
-*/
+ */
 void vdr_10_init( void )
 {
 	uint32_t	addr, addr_max = 0xFFFFFFFF;
@@ -1086,7 +1100,7 @@ void vdr_10_init( void )
 	for( vdr_10_sect = 0; vdr_10_sect < VDR_10_SECTORS; vdr_10_sect++ )
 	{
 		addr = VDR_10_START + vdr_10_sect * 4096;
-		for( count = 0; count < 16; count++ )                                                /*每扇区6条记录*/
+		for( count = 0; count < 16; count++ )                                               /*每扇区6条记录*/
 		{
 			sst25_read( addr, buf, 4 );
 			mytime_curr = ( buf[0] << 24 ) | ( buf[1] << 16 ) | ( buf[2] << 8 ) | buf[3];   /*前4个字节代表时间*/
@@ -1105,41 +1119,61 @@ void vdr_10_init( void )
 }
 
 /*
-234 byte
-这个不是秒单次触发的，而是车辆停驶产生的
+   234 byte
+   这个不是秒单次触发的，而是车辆停驶产生的
  */
 void vdr_10_put( MYTIME datetime )
 {
-	uint8_t		buf[16];
-	uint32_t	i;
+	uint32_t	i, j;
 	uint32_t	addr;
 	uint8_t		minute;
+	uint8_t		buf[234 + 4]; /*保存要写入的信息*/
+	uint8_t		* pdata;
+
+	j		= speed_status_index;
+	pdata	= buf + 28;
+	for( i = 0; i < 100; i++ )
+	{
+		*pdata++	= speed_status[j][0];
+		*pdata++	= speed_status[j][1];
+		if( j == 0 )
+		{
+			j = 100;
+		}
+		j--;
+	}
+	buf[0]	= datetime >> 24;
+	buf[1]	= datetime >> 24;
+	buf[2]	= datetime >> 24;
+	buf[3]	= datetime >> 24;
+	buf[4]	= HEX2BCD( YEAR( datetime ) );
+	buf[5]	= HEX2BCD( MONTH( datetime ) );
+	buf[6]	= HEX2BCD( DAY( datetime ) );
+	buf[7]	= HEX2BCD( HOUR( datetime ) );
+	buf[8]	= HEX2BCD( MINUTE( datetime ) );
+	buf[9]	= HEX2BCD( SEC( datetime ) );
+	memcpy( buf + 10, "12010419800101234", 18 );    /*驾驶证号码*/
+	PACK_INT( buf + 228, ( gps_longi * 6 ) );
+	PACK_INT( buf + 232, ( gps_lati * 6 ) );
+	PACK_WORD( buf + 236, ( gps_alti ) );
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-		vdr_09_index++;                                             /*要写入新的小时记录每680字节*/
-		if( vdr_09_index > 5 )                                      /*每个sector存6个小时 0-5,越过一个扇区*/
+	vdr_10_index++;                                 /*要写入新的小时记录每680字节*/
+	if( vdr_10_index > 5 )                          /*每个sector存6个小时 0-5,越过一个扇区*/
+	{
+		vdr_10_index = 0;
+		vdr_10_sect++;
+		if( vdr_10_sect >= VDR_10_SECTORS )
 		{
-			vdr_09_index = 0;
-			vdr_09_sect++;
-			if( vdr_09_sect >= VDR_09_SECTORS )
-			{
-				vdr_09_sect = 0;
-			}
-			addr = VDR_09_START + vdr_09_sect * 4096;
-			sst25_erase_4k( addr );
+			vdr_10_sect = 0;
 		}
+		addr = VDR_10_START + vdr_10_sect * 4096;
+		sst25_erase_4k( addr );
+	}
 
-		addr = VDR_09_START + vdr_09_sect * 4096 + vdr_09_index * 680;  /*每扇区680字节*/
-		PACK_INT( buf, ( datetime & 0xFFFFF000 ) );                     /*写入新的记录头*/
-		buf[4]	= HEX2BCD( YEAR( datetime ) );
-		buf[5]	= HEX2BCD( MONTH( datetime ) );
-		buf[6]	= HEX2BCD( DAY( datetime ) );
-		buf[7]	= HEX2BCD( HOUR( datetime ) );
-		buf[8]	= 0;
-		buf[9]	= 0;
-		sst25_write_through( addr, buf, 10 );
+	addr = VDR_10_START + vdr_10_sect * 4096 + vdr_10_index * 256; /*每扇区680字节*/
+	sst25_write_through( addr, buf, 238 );
 
-	vdr_10_time = datetime;
 	rt_sem_release( &sem_dataflash );
 	rt_kprintf( "%d>save 10 data addr=%08x\r\n", rt_tick_get( ), addr );
 }
@@ -1181,7 +1215,7 @@ uint8_t vdr_10_fill_data( JT808_TX_NODEDATA *pnodedata )
 	rt_sem_release( &sem_dataflash );
 
 	/*整理一下数据,无效的位置信息填写0x7FFFFFFF*/
-	pdata = pdata_body + 6 + 6;                                                    /*跳过开始的6字节55 7A和BCD时间头*/
+	pdata = pdata_body + 6 + 6;                                                     /*跳过开始的6字节55 7A和BCD时间头*/
 	for( i = 0; i < 660; i += 11 )
 	{
 		if( pdata[i] == 0xff )
@@ -1251,7 +1285,7 @@ uint8_t vdr_10_fill_data( JT808_TX_NODEDATA *pnodedata )
 /*收到应答的处理函数*/
 static void vdr_10_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
 {
-	vdr_09_fill_data( nodedata );
+	vdr_10_fill_data( nodedata );
 }
 
 /*超时后的处理函数*/
@@ -1260,17 +1294,16 @@ static JT808_MSG_STATE vdr_10_tx_timeout( JT808_TX_NODEDATA * nodedata )
 	nodedata->retry++;
 	if( nodedata->retry >= nodedata->max_retry )
 	{
-		if( vdr_09_fill_data( nodedata ) == 0 )
+		if( vdr_10_fill_data( nodedata ) == 0 )
 		{
 			return WAIT_DELETE;
 		}
 		return IDLE;
 	}
 	return IDLE;
-
 }
 
-/*生成09发送的数据包*/
+/*生成10发送的数据包*/
 void vdr_10_get_ready( MYTIME start, MYTIME end, uint16_t totalrecord )
 {
 	uint32_t			addr;
@@ -1378,12 +1411,11 @@ void vdr_10_get_ready( MYTIME start, MYTIME end, uint16_t totalrecord )
 	pnodedata->user_para		= puserdata;
 	pnodedata->cb_tx_timeout	= vdr_09_tx_timeout;
 	pnodedata->cb_tx_response	= vdr_09_tx_response;
-	vdr_09_fill_data( pnodedata );
+	vdr_10_fill_data( pnodedata );
 	node_end( pnodedata );
 }
 
 FINSH_FUNCTION_EXPORT_ALIAS( vdr_10_get_ready, get_10, get_10_data );
-
 
 
 /*
@@ -1396,7 +1428,7 @@ rt_err_t vdr_rx_gps( void )
 {
 	uint32_t	datetime;
 	uint8_t		year, month, day, hour, minute, sec;
-	uint32_t	i;
+	uint32_t	i, j;
 	uint8_t		buf[128];
 	uint8_t		*pbkpsram;
 
@@ -1432,52 +1464,64 @@ rt_err_t vdr_rx_gps( void )
 	vdr_08_put( datetime, gps_speed, vdr_signal_status );
 	vdr_09_put( datetime );
 
-
-/*10数据 事故疑点,*/
-	if( car_status.stop_run == STOP )                                        /*认为车辆停止,判断启动*/
+	/*保存数据,停车前20ms数据*/
+	if( utc_now - utc_speed_status > 20 )                               /*超过20秒的没有数据的间隔*/
 	{
+		speed_status_index = 0;                                         /*重新记录*/
+	}
+	speed_status[speed_status_index][0] = gps_speed;
+	utc_speed_status					= utc_now;
+
+/*判断车辆行驶状态*/
+	if( car_status.stop_run == STOP )                                   /*认为车辆停止,判断启动*/
+	{
+		if( utc_car_stop == 0 )                                         /*停车时刻尚未初始化，默认停驶*/
+		{
+			utc_car_stop = utc_now;
+		}
 		if( gps_speed >= SPEED_LIMIT )                                  /*速度大于门限值*/
 		{
-			
-			utc_car_run=utc_now;		/*记录开始时刻*/
-			
-			car_status.gps_judge_duration++;		/*这个时候不一定是每秒都能触发进来*/
-			if( car_status.gps_judge_duration >= SPEED_LIMIT_DURATION ) /*超过了持续时间*/
+			if( utc_car_run == 0 )
 			{
-				car_status.gps_duration			= SPEED_LIMIT_DURATION;
-				car_status.stop_run				= RUN;                    /*认为车辆行驶*/
-				car_status.gps_judge_duration	= 0;
+				utc_car_run = utc_now;                                  /*记录开始时刻*/
+			}
+
+			if( ( utc_now - utc_car_run ) >= SPEED_LIMIT_DURATION )     /*超过了持续时间*/
+			{
+				car_status.stop_run = RUN;                              /*认为车辆行驶*/
 				rt_kprintf( "%d>车辆行驶\r\n", rt_tick_get( ) );
-			}else
-			{
-				car_status.gps_duration++;                              /*停车累计时间*/
+				utc_car_stop = 0;                                       /*等待判断停驶*/
 			}
 		}else
 		{
-			car_status.gps_duration++;                                  /*停车累计时间*/
-			                                                            /*在此判断停车超时*/
-			car_status.gps_judge_duration = 0;
+			if( utc_now - utc_car_stop > jt808_param.id_0x005A )        /*判断停车最长时间*/
+			{
+				rt_kprintf( "达到停车最长时间\r\n" );
+			}
+			utc_car_run = 0;
 		}
 	}else                                                               /*车辆已启动*/
 	{
 		if( gps_speed <= SPEED_LIMIT )                                  /*速度小于门限值*/
 		{
-			car_status.gps_judge_duration++;
-			if( car_status.gps_judge_duration >= SPEED_LIMIT_DURATION ) /*超过了持续时间*/
+			if( utc_car_stop == 0 )
 			{
-				car_status.gps_duration			= SPEED_LIMIT_DURATION;
-				car_status.stop_run				= STOP;                    /*认为车辆停驶*/
-				car_status.gps_judge_duration	= 0;
+				utc_car_stop = utc_now;
+			}
+			if( ( utc_now - utc_car_stop ) >= SPEED_LIMIT_DURATION )    /*超过了持续时间*/
+			{
+				car_status.stop_run = STOP;                             /*认为车辆停驶*/
 				rt_kprintf( "%d>车辆停驶\r\n", rt_tick_get( ) );
-			}else
-			{
-				car_status.gps_duration++;                              /*行驶累计时间*/
+				utc_car_run = 0;
+				vdr_10_put( datetime );                                 /*生成VDR_10数据,事故疑点*/
 			}
 		}else
 		{
-			car_status.gps_duration++;                                  /*行驶累计时间*/
-			                                                            /*判断疲劳驾驶*/
-			car_status.gps_judge_duration = 0;
+			if( utc_now - utc_car_run > jt808_param.id_0x0057 )         /*判断连续驾驶最长时间*/
+			{
+				rt_kprintf( "达到连续驾驶最长时间\r\n" );
+			}
+			utc_car_stop = 0;
 		}
 	}
 
