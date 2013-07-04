@@ -281,7 +281,7 @@ static void sst25_bytewrite( uint32_t addr, uint8_t data )
 void sst25_write_through( uint32_t addr, uint8_t *p, uint16_t len )
 {
 	volatile uint8_t	st = 0;
-	uint32_t			i, wr_addr;
+	uint32_t			wr_addr;
 	uint8_t				*pdata	= p;
 	uint16_t			remain	= len;
 	wr_addr = addr;
@@ -293,11 +293,16 @@ void sst25_write_through( uint32_t addr, uint8_t *p, uint16_t len )
 		wr_addr++;
 	}
 #else
-/*AAI方式写*/
+/*AAI方式写,要判读地址的奇偶*/
 	if( len == 1 )
 	{
 		sst25_bytewrite( wr_addr, *pdata );
 		return;
+	}
+	if(wr_addr&0x01)	/*AAI需要从A0=0开始*/
+	{
+		sst25_bytewrite( wr_addr++, *pdata++ );
+		remain--;
 	}
 
 	DF_CS_0;

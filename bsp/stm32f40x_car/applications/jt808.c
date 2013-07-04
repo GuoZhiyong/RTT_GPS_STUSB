@@ -292,6 +292,37 @@ JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA *pnodedata,
 	}
 }
 
+
+/*修整发送数据的信息长度*/
+void node_datalen(JT808_TX_NODEDATA* pnodedata ,uint16_t datalen)
+{
+	uint8_t* pdata_head=pnodedata->tag_data;
+
+	pdata_head[2]	= datalen >> 8;
+	pdata_head[3]	= datalen & 0xFF;	
+	pnodedata->msg_len	= datalen + 12;		/*缺省是单包*/
+	if(pnodedata->multipacket)	/*多包数据*/
+	{
+		pdata_head[12]	= pnodedata->packet_num >> 8;
+		pdata_head[13]	= pnodedata->packet_num & 0xFF;
+		pnodedata->packet_no++;
+		pdata_head[14]		= pnodedata->packet_no >> 8;
+		pdata_head[15]		= pnodedata->packet_no & 0xFF;
+		pdata_head[2]		|= 0x20;        /*多包发送*/
+		pnodedata->msg_len	+= 4;
+	}
+}
+
+uint8_t* node_msg_body(JT808_TX_NODEDATA* pnodedata)
+{
+	if(pnodedata->multipacket)
+		return pnodedata->tag_data+16;
+	else
+		return pnodedata->tag_data+12;
+}
+
+
+
 /*添加到发送列表**/
 void node_end( JT808_TX_NODEDATA* pnodedata )
 {

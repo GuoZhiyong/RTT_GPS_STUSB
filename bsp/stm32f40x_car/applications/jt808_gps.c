@@ -68,7 +68,7 @@ static uint32_t total_distance	= 0;            /*总的累计里程*/
 
 /*超速判断*/
 static uint8_t	overspeed_flag = 0;             /*是否已超速 0:未超速 1:超速预警 2:已超速*/
-static uint32_t overspeed_timestamp_start;      /*开始时间戳*/
+static uint32_t utc_overspeed_start;      /*开始时间戳*/
 
 /*疲劳驾驶计时*/
 static uint32_t period_acc_on	= 0;            /*疲劳驾驶时间 acc开*/
@@ -128,8 +128,8 @@ GPS_STATUS		gps_status;
    是从Epoch（1970年1月1日00:00:00 UTC）开始所经过的秒数，不考虑闰秒。
 
  */
-unsigned long	timestamp_last	= 0;
-unsigned long	timestamp_now	= 0;
+uint32_t	utc_last	= 0;
+uint32_t	utc_now	= 0;
 
 uint8_t			ACC_status; /*0:ACC关   1:ACC开  */
 uint32_t		ACC_ticks;  /*ACC状态发生变化时的tick值，此时GPS可能未定位*/
@@ -270,7 +270,7 @@ void do_overspeed_check( void )
 	{
 		if( overspeed_flag == 2 )                                                       /*已超速*/
 		{
-			if( timestamp_now - overspeed_timestamp_start >= jt808_param.id_0x0056 )    /*已经持续超速*/
+			if( utc_now - utc_overspeed_start >= jt808_param.id_0x0056 )    /*已经持续超速*/
 			{
 				if( ( jt808_param.id_0x0050 & 0x02 ) == 0 )                             /*报警屏蔽字*/
 				{
@@ -280,7 +280,7 @@ void do_overspeed_check( void )
 		}else /*没有超速或超速预警，记录开始超速，*/
 		{
 			overspeed_flag				= 2;
-			overspeed_timestamp_start	= timestamp_now;
+			utc_overspeed_start	= utc_now;
 		}
 	}else if( gps_speed >= ( jt808_param.id_0x0055 - jt808_param.id_0x005B ) )  /*超速预警*/
 	{
@@ -335,7 +335,7 @@ void process_gps( void )
 			{
 				jt808_report_interval = jt808_param.id_0x0027;
 			}
-			timestamp_last = timestamp_now;             /*重新计时*/
+			utc_last = utc_now;             /*重新计时*/
 		}
 		if( jt808_param.id_0x0020 )                     /*有定距上报*/
 		{
@@ -361,7 +361,7 @@ void process_gps( void )
 		if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
 		{
 			jt808_report_interval	= jt808_param.id_0x0028;
-			timestamp_last			= timestamp_now;
+			utc_last			= utc_now;
 		}
 		if( jt808_param.id_0x0020 )                     /*有定距上报*/
 		{
@@ -373,10 +373,10 @@ void process_gps( void )
 /*计算定时上报*/
 	if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 ) /*有定时上报*/
 	{
-		if( timestamp_now - timestamp_last >= jt808_report_interval )
+		if( utc_now - utc_last >= jt808_report_interval )
 		{
 			flag_send		= 1;
-			timestamp_last	= timestamp_now;
+			utc_last	= utc_now;
 		}
 	}
 /*计算定距上报*/
@@ -639,7 +639,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 				gps_baseinfo.speed_10x	= BYTESWAP2( speed_10x );
 				gps_baseinfo.cog		= BYTESWAP2( cog );
 
-				timestamp_now				= linux_mktime( year, mon, day, hour, min, sec );
+				utc_now				= linux_mktime( year, mon, day, hour, min, sec );
 				gps_baseinfo.datetime[0]	= HEX2BCD( year );
 				gps_baseinfo.datetime[1]	= HEX2BCD( mon );
 				gps_baseinfo.datetime[2]	= HEX2BCD( day );

@@ -69,6 +69,7 @@ extern uint32_t jt808_alarm;
 extern uint32_t jt808_status;
 
 extern uint32_t	gps_sec_count;		/*gpsÃëÂö³åÊä³ö*/
+extern uint32_t	utc_now;
 
 void gps_rx( uint8_t * pinfo, uint16_t length );
 
