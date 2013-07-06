@@ -1,10 +1,22 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #ifndef _H_JT808_PARAM_
 #define _H_JT808_PARAM_
 
 #include "stm32f4xx.h"
 
 #define ADDR_PARAM 0x000000000
-
 
 typedef struct _jt808_param
 {
@@ -99,8 +111,18 @@ typedef struct _jt808_param
 	uint8_t		id_0x0117[8];   /*0x0117 其他CAN 总线 ID 单独采集设置*/
 	uint8_t		id_0x0118[8];   /*0x0118 其他CAN 总线 ID 单独采集设置*/
 	uint8_t		id_0x0119[8];   /*0x0119 其他CAN 总线 ID 单独采集设置*/
+
+	char	id_0xF000[32];      /*0xF000 制造商ID 5byte*/
+	char	id_0xF001[32];      /*0xF001 终端型号 20byte*/
+	char	id_0xF002[32];      /*0xF002 终端ID 7byte*/
+	char	id_0xF003[32];      /*0xF003 鉴权码*/
+	uint32_t	id_0xF004;		/*0xF004 终端类型*/
+	char	id_0xF005[32];		/*0xF005 车辆标识,VIN 或车牌号*/
+	char	id_0xF010[32];		/*0xF010 软件版本号*/
+	char	id_0xF011[32];		/*0xF011 硬件版本号*/
 }JT808_PARAM;
 
+#if 0
 typedef struct
 {
 	uint16_t	type;           /*终端类型,参见0x0107 终端属性应答*/
@@ -115,18 +137,27 @@ typedef struct
 	uint8_t		gnss_attr;  /*gnss属性,参见0x0107 终端属性应答*/
 	uint8_t		gsm_attr;   /*gnss属性,参见0x0107 终端属性应答*/
 }TERM_PARAM;
-
+#endif
 
 
 extern JT808_PARAM	jt808_param;
-extern TERM_PARAM term_param;
+
+//extern TERM_PARAM	term_param;
 
 uint8_t param_put( uint16_t id, uint8_t len, uint8_t* value );
+
+
 void param_put_int( uint16_t id, uint32_t value );
-void param_load(void);
+
+
+void param_load( void );
+
 
 uint8_t param_get( uint16_t id, uint8_t* value );
+
+
 uint32_t param_get_int( uint16_t id );
 
 
 #endif
+/************************************** The End Of File **************************************/

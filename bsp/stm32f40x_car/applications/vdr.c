@@ -1952,7 +1952,7 @@ void vdr_08_12_get_ready( uint8_t vdr_id, MYTIME start, MYTIME end, uint16_t tot
 		pnodedata = node_begin( 1, MULTI, 0x0700, 0xF000, i );
 	} else
 	{
-		pnodedata = node_begin( 1, SINGLE, 0x0700, 0xF000, i );
+		pnodedata = node_begin( 1, SINGLE_CMD, 0x0700, 0xF000, i );
 	}
 	if( pnodedata == RT_NULL )
 	{
@@ -1986,10 +1986,10 @@ rt_err_t vdr_init( void )
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 
-	vdr_08_time = vdr_08_12_init( 8, 1 );
+	vdr_08_time = vdr_08_12_init( 8, 0);
 	memset( vdr_08_info, 0xFF, sizeof( vdr_08_info ) );
-	vdr_09_time = vdr_08_12_init( 9, 1 );
-	vdr_10_time = vdr_08_12_init( 10, 1 );
+	vdr_09_time = vdr_08_12_init( 9, 0 );
+	vdr_10_time = vdr_08_12_init( 10, 0 );
 
 	rt_sem_release( &sem_dataflash );
 
