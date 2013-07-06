@@ -13,11 +13,12 @@
  ***********************************************************/
 
 #include "jt808_param.h"
+#include "sst25.h"
 #include <finsh.h>
 
 JT808_PARAM jt808_param =
 {
-	0x130060600,         /*0x0000 版本*/
+	0x13070501,         /*0x0000 版本*/
 	5,                  /*0x0001 心跳发送间隔*/
 	5,                  /*0x0002 TCP应答超时时间*/
 	3,                  /*0x0003 TCP超时重传次数*/
@@ -37,7 +38,7 @@ JT808_PARAM jt808_param =
 	5678,               /*0x0019 UDP端口*/
 	"www.google.com",   /*0x001A ic卡主服务器地址，ip或域名*/
 	9901,               /*0x001B ic卡服务器TCP端口*/
-	8875,                /*0x001C ic卡服务器UDP端口*/
+	8875,               /*0x001C ic卡服务器UDP端口*/
 	"www.google.com",   /*0x001D ic卡备份服务器地址，ip或域名*/
 	0,                  /*0x0020 位置汇报策略*/
 	1,                  /*0x0021 位置汇报方案*/
@@ -68,10 +69,10 @@ JT808_PARAM jt808_param =
 	5,                  /*0x0054 关键标志*/
 	3,                  /*0x0055 最高速度kmh*/
 	5,                  /*0x0056 超速持续时间*/
-	3,                  /*0x0057 连续驾驶时间门限*/
+	4 * 60 * 60,        /*0x0057 连续驾驶时间门限*/
 	5,                  /*0x0058 当天累计驾驶时间门限*/
-	3,                  /*0x0059 最小休息时间*/
-	5,                  /*0x005A 最长停车时间*/
+	1200,               /*0x0059 最小休息时间*/
+	7200,               /*0x005A 最长停车时间*/
 	900,                /*0x0005B 超速报警预警差值，单位为 1/10Km/h */
 	90,                 /*0x005C 疲劳驾驶预警差值，单位为秒（s），>0*/
 	0x200a,             /*0x005D 碰撞报警参数设置:*/
@@ -115,7 +116,7 @@ TERM_PARAM term_param =
 	0x07,
 	{ 0x11,0x22,	0x33, 0x44, 0x55, 0x66 },
 	{ "TCBBD" },
-	{ "TW701-BD" },
+	{ "TW703-BD" },
 	{ 0x00,0x99,	0xaa, 0xbb, 0xcc, 0xdd, 0xee},
 };
 
@@ -127,8 +128,10 @@ static uint32_t flag_disable_report = 0;    /*禁止上报的标志位*/
 /*保存参数到serialflash*/
 void param_save( void )
 {
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 	rt_kprintf( "parma_save size=%d\r\n", sizeof( jt808_param ) );
 	sst25_write_back( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
+	rt_sem_release( &sem_dataflash );
 }
 
 /*加载参数从serialflash*/
@@ -137,15 +140,17 @@ void param_load( void )
 	/*预读一部分数据*/
 	uint8_t		ver8[4];
 	uint32_t	ver32;
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 	sst25_read( ADDR_PARAM, ver8, 4 );
 	ver32 = ( ver8[0] ) | ( ver8[1] << 8 ) | ( ver8[2] << 16 ) | ( ver8[3] << 24 );
 	rt_kprintf( "param_load ver=%08x\r\n", ver32 );
 	if( jt808_param.id_0x0000 != ver32 ) /*不管是不是未初始化*/
 	{
 		rt_kprintf( "%s(%d)param_save\r\n", __func__, __LINE__ );
-		param_save( );
+		sst25_write_back( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
 	}
 	sst25_read( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
+	rt_sem_release( &sem_dataflash );
 }
 
 #define TYPE_BYTE	0x01    /*固定为1字节,小端对齐*/
@@ -265,7 +270,7 @@ struct _tbl_id_lookup
 ***********************************************************/
 uint8_t param_put( uint16_t id, uint8_t len, uint8_t* value )
 {
-	int		i, j;
+	int		i;
 	uint8_t *psrc, *pdst;
 
 	for( i = 0; i < sizeof( tbl_id_lookup ) / sizeof( struct _tbl_id_lookup ); i++ )
@@ -315,7 +320,7 @@ uint8_t param_put( uint16_t id, uint8_t len, uint8_t* value )
 			if( tbl_id_lookup[i].type == TYPE_STR )
 			{
 				psrc = tbl_id_lookup[i].val;
-				strncpy( psrc, value, 32 );
+				strncpy( (char*)psrc, (char*)value, 32 );
 				*( psrc + 31 ) = 0;
 				return 0;
 			}
@@ -328,7 +333,6 @@ uint8_t param_put( uint16_t id, uint8_t len, uint8_t* value )
 void param_put_int( uint16_t id, uint32_t value )
 {
 	uint32_t	i, j;
-	int			len;
 	uint8_t		*p;
 
 	for( i = 0; i < sizeof( tbl_id_lookup ) / sizeof( struct _tbl_id_lookup ); i++ )
@@ -357,7 +361,7 @@ void param_put_int( uint16_t id, uint32_t value )
 ***********************************************************/
 static void param_put_str( uint16_t id, uint8_t* value )
 {
-	int		i, j;
+	int		i;
 	int		len;
 	uint8_t *p;
 
@@ -531,14 +535,12 @@ void param_dump( void )
 
 FINSH_FUNCTION_EXPORT( param_dump, dump param );
 
-
 /*手动设置apn*/
-void apn(char *s)
+void apn( char *s )
 {
-	param_put_str(0x0010,s);
+	param_put_str( 0x0010, s );
 }
-FINSH_FUNCTION_EXPORT(apn,set apn);
 
-
+FINSH_FUNCTION_EXPORT( apn, set apn );
 
 /************************************** The End Of File **************************************/

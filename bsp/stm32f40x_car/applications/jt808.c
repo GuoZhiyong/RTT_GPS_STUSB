@@ -1177,13 +1177,16 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 	return IDLE;
 }
 
-/*808连接处理*/
+/*
+808连接处理
+是以gsm状态迁移的
+
+*/
 static void jt808_socket_proc( void )
 {
 	T_GSM_STATE			state;
 	static rt_tick_t	server_heartbeat_tick	= 0;
 	static rt_tick_t	auth_heartbeat_tick		= 0;
-
 
 /*
    检查是否允许gsm工作
@@ -1255,6 +1258,7 @@ static void jt808_socket_proc( void )
 				connect_state.server_state = CONNECT_IDLE;      /*还是在cb_socket_close中判断*/
 				return;
 			}
+
 			if( server_heartbeat_tick )
 			{
 				/*要发送心跳包*/
@@ -1267,8 +1271,10 @@ static void jt808_socket_proc( void )
 				rt_kprintf( "auth\r\n" );
 				jt808_tx( 0x0102, (uint8_t*)"012345", 6 );  /*这个简化的指令好像不能执行，基本函数*/
 				//jt808_add_tx_data( 1, TERMINAL_CMD, 0x0102, 6, -1, RT_NULL, RT_NULL, "012345" );
-				server_heartbeat_tick = rt_tick_get( );     /*首次用保留当前时刻*/
+				
 			}
+
+			server_heartbeat_tick = rt_tick_get( );     /*首次用保留当前时刻*/
 			return;                                         /*直接返回，不连ICCARD*/
 		}
 
@@ -1435,17 +1441,6 @@ static void rt_thread_entry_jt808( void * parameter )
 	int					j = 0xaabbccdd;
 
 	jt808_gps_init( );
-
-	rt_kprintf( "\r\n1.id0=%08x\r\n", param_get_int( 0x0000 ) );
-
-	param_put_int( 0x000, j );
-	rt_kprintf( "\r\nwrite j=%08x read=%08x\r\n", j, param_get_int( 0x0000 ) );
-
-	param_put( 0x000, 4, (uint8_t*)&j );
-	rt_kprintf( "\r\nid0=%08x\r\n", param_get_int( 0x0000 ) );
-
-/*读取参数，并配置*/
-	//param_load( );
 
 	list_jt808_tx	= msglist_create( );
 	list_jt808_rx	= msglist_create( );
@@ -1617,10 +1612,14 @@ FINSH_FUNCTION_EXPORT( bkpsram_rd, read from backup sram );
 /*jt808处理线程初始化*/
 void jt808_init( void )
 {
-	sms_init( );
+
+	/*读取参数，并配置,这个时候应该没有操作flash的*/
+	param_load( );
 #ifdef BKSRAM
-	bkpsram_init( );
+		bkpsram_init( );
 #endif
+
+	sms_init( );
 	vdr_init( );
 
 	dev_gsm = rt_device_find( "gsm" );

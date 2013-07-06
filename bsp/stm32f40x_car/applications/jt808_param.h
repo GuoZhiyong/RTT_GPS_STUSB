@@ -104,11 +104,9 @@ typedef struct _jt808_param
 typedef struct
 {
 	uint16_t	type;           /*ÖÕ¶ËÀàĞÍ,²Î¼û0x0107 ÖÕ¶ËÊôĞÔÓ¦´ğ*/
-	char		mobile[6];      /*ÖÕ¶ËºÅÂë*/
 	uint8_t		producer_id[5];
 	uint8_t		model[20];
 	uint8_t		terminal_id[7];
-	uint8_t		register_code[16];
 	uint8_t		sim_iccid[10];
 	uint8_t		hw_ver_len;
 	uint8_t		hw_ver[32];
@@ -125,7 +123,7 @@ extern TERM_PARAM term_param;
 
 uint8_t param_put( uint16_t id, uint8_t len, uint8_t* value );
 void param_put_int( uint16_t id, uint32_t value );
-
+void param_load(void);
 
 uint8_t param_get( uint16_t id, uint8_t* value );
 uint32_t param_get_int( uint16_t id );
