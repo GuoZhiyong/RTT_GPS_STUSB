@@ -30,18 +30,6 @@
 
 #define BIT( n ) ( 1 << n )
 
-#define BYTESWAP2( val )    \
-    ( ( ( val & 0xff ) << 8 ) |   \
-      ( ( val & 0xff00 ) >> 8 ) )
-
-#define BYTESWAP4( val )    \
-    ( ( ( val & 0xff ) << 24 ) |   \
-      ( ( val & 0xff00 ) << 8 ) |  \
-      ( ( val & 0xff0000 ) >> 8 ) |  \
-      ( ( val & 0xff000000 ) >> 24 ) )
-
-#define HEX2BCD( x )	( ( (x) / 10 ) << 4 | ( (x) % 10 ) )
-#define BCD2HEX( x )	( ( ( (x) >> 4 ) * 10 ) + ( (x) & 0x0f ) )
 
 typedef struct _GPSPoint
 {

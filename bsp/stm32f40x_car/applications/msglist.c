@@ -104,7 +104,7 @@ MsgListRet msglist_append(MsgList* thiz, void* data)
 
 
 
-size_t   msglist_length(MsgList* thiz)
+int   msglist_length(MsgList* thiz)
 {
 	size_t length = 0;
 	MsgListNode* iter = thiz->first;

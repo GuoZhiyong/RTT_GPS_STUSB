@@ -1949,7 +1949,7 @@ void vdr_08_12_get_ready( uint8_t vdr_id, MYTIME start, MYTIME end, uint16_t tot
 
 	if( rec_count * sect_info[id].data_size > 700 )                     /*¶à°ü·¢ËÍ,*/
 	{
-		pnodedata = node_begin( 1, MULTI, 0x0700, 0xF000, i );
+		pnodedata = node_begin( 1, MULTI_CMD, 0x0700, 0xF000, i );
 	} else
 	{
 		pnodedata = node_begin( 1, SINGLE_CMD, 0x0700, 0xF000, i );

@@ -46,7 +46,7 @@ MsgListNode* msglist_node_create(void* data);
 
 MsgListRet msglist_prepend(MsgList* thiz, void* data);
 MsgListRet msglist_append(MsgList* thiz, void* data);
-size_t   msglist_length(MsgList* thiz);
+int   msglist_length(MsgList* thiz);
 int      msglist_find(MsgList* thiz, MsgListDataCompareFunc cmp, void* ctx);
 MsgListRet msglist_foreach(MsgList* thiz, MsgListDataVisitFunc visit, void* ctx);
 void msglist_node_destroy(MsgListNode* node);

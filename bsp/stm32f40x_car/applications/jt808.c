@@ -32,15 +32,6 @@
 
 #pragma diag_error 223
 
-#define BYTESWAP2( val )    \
-    ( ( ( val & 0xff ) << 8 ) |   \
-      ( ( val & 0xff00 ) >> 8 ) )
-
-#define BYTESWAP4( val )    \
-    ( ( ( val & 0xff ) << 24 ) |   \
-      ( ( val & 0xff00 ) << 8 ) |  \
-      ( ( val & 0xff0000 ) >> 8 ) |  \
-      ( ( val & 0xff000000 ) >> 24 ) )
 
 typedef struct
 {

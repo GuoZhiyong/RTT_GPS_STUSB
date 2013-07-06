@@ -14,6 +14,7 @@
 
 #include "jt808_param.h"
 #include "sst25.h"
+#include "jt808.h"
 #include <finsh.h>
 
 JT808_PARAM jt808_param =
@@ -142,14 +143,14 @@ void param_load( void )
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 	sst25_read( ADDR_PARAM, ver8, 4 );
 	ver32 = ( ver8[0] ) | ( ver8[1] << 8 ) | ( ver8[2] << 16 ) | ( ver8[3] << 24 );
-	rt_kprintf( "param_load ver=%08x\r\n", ver32 );
 	if( jt808_param.id_0x0000 != ver32 ) /*不管是不是未初始化*/
 	{
-		rt_kprintf( "%s(%d)param_save\r\n", __func__, __LINE__ );
 		sst25_write_back( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
 	}
 	sst25_read( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
 	rt_sem_release( &sem_dataflash );
+	rt_kprintf( "parma ver=%x size=%d\r\n",BYTESWAP4(jt808_param.id_0x0000),sizeof( jt808_param ) );
+	
 }
 
 #define TYPE_BYTE	0x01    /*固定为1字节,小端对齐*/
