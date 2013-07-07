@@ -16,15 +16,6 @@
 #include "stm32f4xx.h"
 #include <rtthread.h>
 
-typedef struct _vdrcmd
-{
-	uint8_t		cmd;            /*命令类型，00-15h*/
-	uint16_t	get_counts; 	/*获取数据统计 从1(开始)计数*/
-	uint8_t		start[6];       /*开始时间*/
-	uint8_t		end[6];         /*结束时间*/
-	uint16_t	blocks;         /*最大单位数据块个数*/
-}VDRCMD;
-
 
 rt_err_t vdr_rx_gps(void);
 rt_err_t vdr_init( void );

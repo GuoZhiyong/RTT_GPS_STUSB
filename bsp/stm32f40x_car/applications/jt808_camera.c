@@ -287,12 +287,12 @@ rt_err_t Cam_jt808_0x0801( u32 mdeia_id, u8 media_delete )
 	//memset(p_para,0xFF,sizeof(p_para->Pack_Mark));
 
 	rt_ret = jt808_add_mult_tx_node( 1,
-	                                 TERMINAL_CMD,
+	                                 SINGLE_CMD,
 	                                 0x801,
 	                                 TempPackageHead.Len - 64 + 36,
 	                                 0xF001,
 	                                 Cam_jt808_timeout,
-	                                 Cam_jt808_0x801_response,
+	                                 Cam_jt808_0x0801_response,
 	                                 p_para );
 	if( rt_ret == RT_EOK )
 	{
@@ -350,7 +350,7 @@ static JT808_MSG_STATE Cam_jt808_0x0800_response( JT808_TX_NODEDATA * nodedata, 
 			}
 			nodedata->size			= TempPackageHead.Len - 64 + 36;
 			nodedata->multipacket	= 1;
-			nodedata->type			= TERMINAL_CMD;
+			nodedata->type			= SINGLE_CMD;
 			nodedata->state			= IDLE;
 			nodedata->retry			= 0;
 			nodedata->packet_num	= ( nodedata->size / JT808_PACKAGE_MAX );
@@ -367,7 +367,7 @@ static JT808_MSG_STATE Cam_jt808_0x0800_response( JT808_TX_NODEDATA * nodedata, 
 			nodedata->tick				= 0;
 			nodedata->timeout			= 0;
 			nodedata->cb_tx_timeout		= Cam_jt808_timeout;
-			nodedata->cb_tx_response	= Cam_jt808_0x801_response;
+			nodedata->cb_tx_response	= Cam_jt808_0x0801_response;
 
 			return IDLE;
 		}
@@ -430,7 +430,7 @@ rt_err_t Cam_jt808_0x0800( u32 mdeia_id, u8 media_delete )
 	                            datalen,
 	                            -1,
 	                            Cam_jt808_timeout,
-	                            Cam_jt808_0x800_response,
+	                            Cam_jt808_0x0800_response,
 	                            ptempbuf,
 	                            p_para );
 	if( rt_ret == RT_EOK )
@@ -617,9 +617,9 @@ typedef struct _pic_search_param
 	uint8_t type;   /*类型*/
 	uint8_t chn;    /*通道*/
 	uint8_t event;  /*时间项编码*/
-	T_TIMES start;  /*开始时刻*/
-	T_TIMES end;    /*结束时刻*/
-	T_TIMES curr;   /*当前要搜索的时刻*/
+	MYTIME start;  /*开始时刻*/
+	MYTIME end;    /*结束时刻*/
+	MYTIME curr;   /*当前要搜索的时刻*/
 }PIC_SEARCH_PARAM;
 
 
@@ -653,7 +653,7 @@ rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 	uint8_t				* psrc = pmsg;
 	uint16_t			seq, len;
 	uint32_t			i;
-	T_TIMES				start, end;
+	MYTIME				start, end;
 	PIC_SEARCH_PARAM	* puserdata;
 	uint8_t				* pdata;
 
@@ -670,12 +670,12 @@ rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 		return RT_ENOMEM;
 	}
 
-	puserdata.type	= psrc[12];
-	puserdata.chn	= psrc[13];
-	puserdata.event = psrc[14];
-	puserdata.start = (T_TIMES*)( psrc + 15 );
-	puserdata.end	= (T_TIMES*)( psrc + 21 );
-	puserdata.curr	= puserdata.start;
+	puserdata->type	= psrc[12];
+	puserdata->chn	= psrc[13];
+	puserdata->event = psrc[14];
+	puserdata->start = (T_TIMES*)( psrc + 15 );
+	puserdata->end	= (T_TIMES*)( psrc + 21 );
+	puserdata->curr	= puserdata.start;
 
 	///查找符合条件的图片，并将图片地址存入ptempbuf中
 	mediatotal = Cam_Flash_SearchPic( (T_TIMES*)( pmsg + 3 ), (T_TIMES*)( pmsg + 9 ), &TempPackageHead, ptempbuf );

@@ -120,18 +120,7 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
       ( ( val & 0xff0000 ) >> 8 ) |  \
       ( ( val & 0xff000000 ) >> 24 ) )
 
-#define MYDATETIME( year, month, day, hour, minute, sec ) \
-    ( (uint32_t)( ( year ) << 26 ) | \
-      (uint32_t)( ( month ) << 22 ) | \
-      (uint32_t)( ( day ) << 17 ) | \
-      (uint32_t)( ( hour ) << 12 ) | \
-      (uint32_t)( ( minute ) << 6 ) | ( sec ) )
-#define YEAR( datetime )	( ( datetime >> 26 ) & 0x3F )
-#define MONTH( datetime )	( ( datetime >> 22 ) & 0xF )
-#define DAY( datetime )		( ( datetime >> 17 ) & 0x1F )
-#define HOUR( datetime )	( ( datetime >> 12 ) & 0x1F )
-#define MINUTE( datetime )	( ( datetime >> 6 ) & 0x3F )
-#define SEC( datetime )		( datetime & 0x3F )
+
 
 uint8_t vdr_signal_status = 0x01; /*行车记录仪的状态信号*/
 

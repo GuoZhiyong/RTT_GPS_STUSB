@@ -1,16 +1,12 @@
 #ifndef _CAMERAPRO_H_
 #define _CAMERAPRO_H_
 
-
-//#include "uffs_types.h"
-
-
 #define nop 
 #ifndef BIT
 #define BIT(i) ((unsigned long)(1<<i))
 #endif
 
-
+#if 0
 typedef __packed struct
 {
  u8 years;
@@ -20,7 +16,7 @@ typedef __packed struct
  u8 minutes;
  u8 seconds;
 } T_TIMES;
-
+#endif
 
 
 typedef enum
@@ -74,7 +70,7 @@ typedef __packed struct
 	char 	Head[6];				///幻数部分，表示当前数据区域为某固定数据开始
 	u32		Len;					///数据长度，包括数据头部分内容,数据头部分固定为64字节
 	u8		State;					///表示图片状态标记，0xFF为初始化状态，bit0==0表示已经删除,bit1==0表示成功上传,bit2==0表示该数据为不存盘数据
-	T_TIMES	Time;					///记录数据的时间，BCD码表示，YY-MM-DD-hh-mm-ss
+	uint32_t	Time;					///记录数据的时间，BCD码表示，YY-MM-DD-hh-mm-ss
 	u32		Data_ID;				///数据ID,顺序递增方式记录
 	u8		Media_Format;			///0：JPEG；1：TIF；2：MP3；3：WAV；4：WMV； 其他保留
 	u8		Media_Style;			///数据类型:0：图像；1：音频；2：视频；
@@ -87,7 +83,7 @@ typedef __packed struct
 u32 		Cam_Flash_FindPicID(u32 id,TypeDF_PackageHead *p_head);
 rt_err_t 	Cam_Flash_DelPic(u32 id );
 rt_err_t 	Cam_Flash_TransOkSet(u32 id );
-u16 		Cam_Flash_SearchPic(T_TIMES *start_time,T_TIMES *end_time,TypeDF_PackageHead *para,u8 *pdest);
+u16 		Cam_Flash_SearchPic(uint32_t start_time,uint32_t  end_time,TypeDF_PackageHead *para,u8 *pdest);
 rt_err_t 	Cam_Flash_RdPic(void *pData,u16 *len, u32 id,u8 offset );
 TypeDF_PICPara Cam_get_state(void);
 rt_err_t 	take_pic_request( Style_Cam_Requset_Para *para);

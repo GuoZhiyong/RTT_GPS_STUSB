@@ -176,6 +176,25 @@ extern u8				avgspd_Mint_Wr; // 填写每分钟平均速度记录下标
 #define HEX2BCD( x )	( ( (x) / 10 ) << 4 | ( (x) % 10 ) )
 #define BCD2HEX( x )	( ( ( (x) >> 4 ) * 10 ) + ( (x) & 0x0f ) )
 
+
+typedef uint32_t MYTIME;
+
+#define MYDATETIME( year, month, day, hour, minute, sec ) \
+    ( (uint32_t)( ( year ) << 26 ) | \
+      (uint32_t)( ( month ) << 22 ) | \
+      (uint32_t)( ( day ) << 17 ) | \
+      (uint32_t)( ( hour ) << 12 ) | \
+      (uint32_t)( ( minute ) << 6 ) | ( sec ) )
+#define YEAR( datetime )	( ( datetime >> 26 ) & 0x3F )
+#define MONTH( datetime )	( ( datetime >> 22 ) & 0xF )
+#define DAY( datetime )		( ( datetime >> 17 ) & 0x1F )
+#define HOUR( datetime )	( ( datetime >> 12 ) & 0x1F )
+#define MINUTE( datetime )	( ( datetime >> 6 ) & 0x3F )
+#define SEC( datetime )		( datetime & 0x3F )
+
+
+
+
 typedef struct
 {
 	int		id;
