@@ -126,6 +126,16 @@ struct rt_messagequeue	mq_area;
 /* 消息队列中用到的放置消息的内存池*/
 static char				msgpool_area[256];
 
+static u16				test_speed;
+
+//*********************************************************************************
+//声明外部函数
+//*********************************************************************************
+u32 Times_To_LongInt( T_TIMES *T );
+
+
+extern uint32_t buf_to_data( uint8_t * psrc, uint8_t width );
+
 
 /*********************************************************************************
   *函数名称:rt_err_t area_jt808_0x8600(uint16_t fram_num,uint8_t *pmsg,u16 msg_len)
@@ -264,10 +274,12 @@ u32 dis_Point2Point( s32 Lati_1, s32 Longi_1, s32 Lati_2, s32 Longi_2 )
 	s32		temps32data;
 	double	tempd1, tempd2;
 
+	rt_kprintf( "\r\n Lati_1= %d,Longi_1= %d,Lati_2= %d,Longi_2= %d", Lati_1, Longi_1, Lati_2, Longi_2 );
+
 	temps32data = abs( Lati_1 + Lati_2 );
 	tempd1		= Cal_Longi_Distance( temps32data / 2 );
 	tempd1		*= abs( Longi_1 - Longi_2 );
-	tempd1		/= 1000000;
+	tempd1		/= 1000000.0;
 	tempd2		= WLENGH;
 	tempd2		*= abs( Lati_1 - Lati_2 );
 	tempd2		/= 1000000;
@@ -403,7 +415,7 @@ u8 Check_CooisInRect( TypeStruct_Coor *pCoo, TypeDF_AreaHead *pHead )
   *修改日期:
   *修改描述:
 *********************************************************************************/
-u8 Check_Area_Time( MYTIME StartTime, MYTIME EndTime )
+u8 Check_Area_Time( u8 * StartTime, u8 *EndTime )
 {
 	u8	i;
 	u8	T0[6];
@@ -497,6 +509,7 @@ u16 area_flash_read_area( u8 *pdatabuf, u16 maxlen )
 
 	Area_Para.area_len	= 0;
 	Area_Para.area_num	= 0;
+	memset( pdatabuf, 0, maxlen );
 	memset( (void*)( Area_Para.area_info ), 0, sizeof( Area_Para.area_info ) );
 
 	for( TempAddress = DF_AreaAddress_Start; TempAddress < DF_AreaAddress_End; )
@@ -549,6 +562,7 @@ u16 area_flash_read_line( u8 *pdatabuf, u16 maxlen )
 
 	Area_Para.line_len	= 0;
 	Area_Para.line_num	= 0;
+	memset( pdatabuf, 0, maxlen );
 	memset( &Area_Para.line_info, 0, sizeof( Area_Para.line_info ) );
 
 	for( TempAddress = DF_LineAddress_Start; TempAddress < DF_LineAddress_End; )
@@ -615,7 +629,7 @@ u16 area_flash_get_line_data( u8 *pdatabuf, u16 maxlen, Type_LineInfo *AreaInfo 
 			Area_Para.line_info[i].line_data = RT_NULL;
 		}
 	}
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	for( TempAddress = DF_LineAddress_Start; TempAddress < DF_LineAddress_End; )
 	{
 		sst25_read( TempAddress, (u8*)&TempAreaHead, sizeof( TypeDF_AreaHead ) );
@@ -683,7 +697,7 @@ u16 area_flash_write_area( u8 *pdatabuf, u16 maxlen, TypeDF_AreaHead *pData )
 	{
 		return 0;
 	}
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	///处理修改电子围栏区域命令
 	for( TempAddress = DF_AreaAddress_Start; TempAddress < DF_AreaAddress_End; )
 	{
@@ -760,7 +774,7 @@ u16 area_flash_write_line( u8 *pdatabuf, u16 maxlen, TypeDF_AreaHead *pData )
 	{
 		return 0;
 	}
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	TempAddress = DF_LineAddress_Start;
 	for( i = 0; i < LINENUM; i++ )
 	{
@@ -801,7 +815,7 @@ void area_flash_del_area( u32 del_id, ENUM_AREA del_State )
 	u32				TempAddress;
 	TypeDF_AreaHead TempAreaHead;
 
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	for( TempAddress = DF_AreaAddress_Start; TempAddress < DF_AreaAddress_End; )
 	{
 		sst25_read( TempAddress, (u8*)&TempAreaHead, sizeof( TypeDF_AreaHead ) );
@@ -839,7 +853,7 @@ void area_flash_del_line( u32 del_id )
 {
 	u32				TempAddress;
 	TypeDF_AreaHead TempAreaHead;
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	for( TempAddress = DF_LineAddress_Start; TempAddress < DF_LineAddress_End; )
 	{
 		sst25_read( TempAddress, (u8*)&TempAreaHead, sizeof( TypeDF_AreaHead ) );
@@ -962,6 +976,7 @@ rt_err_t area_jt808_0x8600( uint8_t linkno, uint8_t *pmsg )
 	u32				Longi, Lati; ///经度和纬度
 	TypeDF_AreaHead *pTempHead;
 	u8				tempbuf[64];
+	double			temp_d;
 
 	u8				*msg;
 	u16				msg_len;
@@ -1002,7 +1017,8 @@ rt_err_t area_jt808_0x8600( uint8_t linkno, uint8_t *pmsg )
 		pTempHead->Rect_left.Longi	= Longi - tempu32data;
 		pTempHead->Rect_right.Longi = Longi + tempu32data;
 		///计算圆半径对应的纬度数值
-		tempu32data					= buf_to_data( msg + 14, 4 ) * 1000000 / WLENGH;
+		temp_d						= buf_to_data( msg + 14, 4 );
+		tempu32data					= temp_d * 1000000 / WLENGH;
 		pTempHead->Rect_left.Lati	= Lati + tempu32data;
 		pTempHead->Rect_right.Lati	= Lati - tempu32data;
 		///复制电子围栏数据到将要写入的结构体中
@@ -1409,6 +1425,7 @@ void area_alarm_enter( Type_AreaInfo *AreaInfo )
 	data_to_buf( area_alarm.data + 1, AreaInfo->area_data->ID, 4 );
 	area_alarm.data[5] = 0;
 	rt_mq_send( &mq_area, (void*)&area_alarm, sizeof( Type_AREA_ALARM ) );
+	rt_kprintf( "\r\n 进入电子围栏:ID = %d", AreaInfo->area_data->ID );
 }
 
 /*********************************************************************************
@@ -1435,13 +1452,14 @@ void area_alarm_leave( Type_AreaInfo *AreaInfo )
 	data_to_buf( area_alarm.data + 1, AreaInfo->area_data->ID, 4 );
 	area_alarm.data[5] = 1;
 	rt_mq_send( &mq_area, (void*)&area_alarm, sizeof( Type_AREA_ALARM ) );
+	rt_kprintf( "\r\n 离开电子围栏:ID = %d", AreaInfo->area_data->ID );
 }
 
 /*********************************************************************************
   *函数名称:void area_alarm_speed( Type_AreaInfo *AreaInfo )
   *功能描述:电子围栏超速报警
   *输	入:	AreaInfo	:当前电子围栏信息
-  *输	出:none
+  *输	出: none
   *返 回 值:none
   *作	者:白养民
   *创建日期:2013-07-01
@@ -1453,6 +1471,7 @@ void area_alarm_leave( Type_AreaInfo *AreaInfo )
 void area_alarm_speed( Type_AreaInfo *AreaInfo )
 {
 	AreaInfo->speed = 1;
+	rt_kprintf( "\r\n 超速报警:ID = %d", AreaInfo->area_data->ID );
 }
 
 /*********************************************************************************
@@ -1479,6 +1498,7 @@ void area_alarm_enter_line( Type_LineInfo *AreaInfo )
 	data_to_buf( area_alarm.data + 1, AreaInfo->line_head.ID, 4 );
 	area_alarm.data[5] = 0;
 	rt_mq_send( &mq_area, (void*)&area_alarm, sizeof( Type_AREA_ALARM ) );
+	rt_kprintf( "\r\n 进入线路:ID = %d", AreaInfo->line_head.ID );
 }
 
 /*********************************************************************************
@@ -1505,6 +1525,7 @@ void area_alarm_leave_line( Type_LineInfo *AreaInfo )
 	data_to_buf( area_alarm.data + 1, AreaInfo->line_head.ID, 4 );
 	area_alarm.data[5] = 1;
 	rt_mq_send( &mq_area, (void*)&area_alarm, sizeof( Type_AREA_ALARM ) );
+	rt_kprintf( "\r\n 离开线路:ID = %d", AreaInfo->line_head.ID );
 }
 
 /*********************************************************************************
@@ -1596,31 +1617,35 @@ u8 area_process_circular( TypeStruct_Coor *pCoo, Type_AreaInfo *AreaInfo )
 	u32 curspeed;                   ///当前速度
 	u32 speed		= 0xFFFFFFFF;   ///最高速度
 	u32 speedtime	= 0xFFFFFFFF;   ///超速时间
+	rt_kprintf( "\r\n 圆形区域判断" );
 	if( Check_CooisInRect( pCoo, AreaInfo->area_data ) == 0 )
 	{
+		rt_kprintf( "\r\n 没在矩形里面" );
 		goto AREA_OUT;
 	}
+	attri	= buf_to_data( AreaInfo->area_data->Data, 2 );
 	datalen = 14;
-	attri	= buf_to_data( AreaInfo->area_data->Data[0], 2 );
-	if( attri & BIT( 0 ) )          ///根据时间
+	if( attri & BIT( 0 ) ) ///根据时间
 	{
 		if( Check_Area_Time( &AreaInfo->area_data->Data[datalen], &AreaInfo->area_data->Data[6 + datalen] ) == 0 )
 		{
+			rt_kprintf( "\r\n 没在时间范围" );
 			goto AREA_OUT;
 		}
 		datalen += 12;
 	}
 	if( attri & BIT( 1 ) ) ///限速
 	{
-		speed		= buf_to_data( AreaInfo->area_data->Data[datalen], 2 );
-		speedtime	= buf_to_data( AreaInfo->area_data->Data[datalen + 2], 1 );
+		speed		= buf_to_data( AreaInfo->area_data->Data + datalen, 2 );
+		speedtime	= buf_to_data( AreaInfo->area_data->Data + datalen + 2, 1 );
 		speedtime	*= RT_TICK_PER_SECOND;
 		datalen		+= 3;
 	}
-	lati	= buf_to_data( AreaInfo->area_data->Data[2], 4 );
-	longi	= buf_to_data( AreaInfo->area_data->Data[6], 4 );
-	r		= buf_to_data( AreaInfo->area_data->Data[10], 4 );
+	lati	= buf_to_data( AreaInfo->area_data->Data + 2, 4 );
+	longi	= buf_to_data( AreaInfo->area_data->Data + 6, 4 );
+	r		= buf_to_data( AreaInfo->area_data->Data + 10, 4 );
 	d		= dis_Point2Point( lati, longi, pCoo->Lati, pCoo->Longi );  ///当前点到中心点的距离
+	//rt_kprintf("\r\n circular_dis= %d,   r=%d",d,r);
 	if( d <= r )
 	{
 		goto AREA_IN;                                                   ///进区域
@@ -1630,7 +1655,8 @@ u8 area_process_circular( TypeStruct_Coor *pCoo, Type_AreaInfo *AreaInfo )
 	}
 
 AREA_IN:                                                                ///进区域
-	curspeed = gps_speed;
+	//curspeed	= gps_speed;
+	curspeed = test_speed;
 	if( AreaInfo->in_area == 0 )
 	{
 		AreaInfo->speed			= 0;
@@ -1694,8 +1720,8 @@ u8 area_process_rectangle( TypeStruct_Coor *pCoo, Type_AreaInfo *AreaInfo )
 	{
 		goto AREA_OUT;
 	}
+	attri	= buf_to_data( AreaInfo->area_data->Data, 2 );
 	datalen = 18;
-	attri	= buf_to_data( AreaInfo->area_data->Data[0], 2 );
 	if( attri & BIT( 0 ) )          ///根据时间
 	{
 		if( Check_Area_Time( &AreaInfo->area_data->Data[datalen], &AreaInfo->area_data->Data[6 + datalen] ) == 0 )
@@ -1707,14 +1733,15 @@ u8 area_process_rectangle( TypeStruct_Coor *pCoo, Type_AreaInfo *AreaInfo )
 
 	if( attri & BIT( 1 ) ) ///限速
 	{
-		speed		= buf_to_data( AreaInfo->area_data->Data[datalen], 2 );
-		speedtime	= buf_to_data( AreaInfo->area_data->Data[datalen + 2], 1 );
+		speed		= buf_to_data( AreaInfo->area_data->Data + datalen, 2 );
+		speedtime	= buf_to_data( AreaInfo->area_data->Data + datalen + 2, 1 );
 		speedtime	*= RT_TICK_PER_SECOND;
 		datalen		+= 3;
 	}
 
 AREA_IN:     ///进区域
-	curspeed = gps_speed;
+	//curspeed	= gps_speed;
+	curspeed = test_speed;
 	if( AreaInfo->in_area == 0 )
 	{
 		AreaInfo->speed			= 0;
@@ -1784,8 +1811,8 @@ u8 area_process_polygon( TypeStruct_Coor *pCoo, Type_AreaInfo *AreaInfo )
 	{
 		goto AREA_OUT;
 	}
+	attri	= buf_to_data( AreaInfo->area_data->Data, 2 );
 	datalen = 2;
-	attri	= buf_to_data( AreaInfo->area_data->Data[0], 2 );
 	if( attri & BIT( 0 ) )                                              ///根据时间
 	{
 		if( Check_Area_Time( &AreaInfo->area_data->Data[datalen], &AreaInfo->area_data->Data[6 + datalen] ) == 0 )
@@ -1796,13 +1823,13 @@ u8 area_process_polygon( TypeStruct_Coor *pCoo, Type_AreaInfo *AreaInfo )
 	}
 	if( attri & BIT( 1 ) ) ///限速
 	{
-		speed		= buf_to_data( AreaInfo->area_data->Data[datalen], 2 );
-		speedtime	= buf_to_data( AreaInfo->area_data->Data[datalen + 2], 1 );
+		speed		= buf_to_data( AreaInfo->area_data->Data + datalen, 2 );
+		speedtime	= buf_to_data( AreaInfo->area_data->Data + datalen + 2, 1 );
 		speedtime	*= RT_TICK_PER_SECOND;
 		datalen		+= 3;
 	}
 
-	point_num	= buf_to_data( AreaInfo->area_data->Data[datalen], 2 );
+	point_num	= buf_to_data( AreaInfo->area_data->Data + datalen, 2 );
 	datalen		+= 2;
 	///遍历一遍所有的点，计算出当前坐标是不是在该区域中
 	for( i = 0; i <= point_num; i++ ) ///多遍历一次，计算最后的点和第一个点之间的区域角度
@@ -1810,8 +1837,8 @@ u8 area_process_polygon( TypeStruct_Coor *pCoo, Type_AreaInfo *AreaInfo )
 		area_state = 0;
 		if( i < point_num )
 		{
-			lati	= buf_to_data( AreaInfo->area_data->Data[2], 4 );
-			longi	= buf_to_data( AreaInfo->area_data->Data[6], 4 );
+			lati	= buf_to_data( AreaInfo->area_data->Data + 2, 4 );
+			longi	= buf_to_data( AreaInfo->area_data->Data + 6, 4 );
 			datalen += 8;
 			angle	= AnglPoint2Point( pCoo->Lati, pCoo->Longi, lati, longi );
 		}else
@@ -1956,7 +1983,7 @@ u8 area_process_line( TypeStruct_Coor *pCoo, Type_LineInfo *AreaInfo )
 			goto AREA_OUT;
 		}
 	}
-	attri	= buf_to_data( AreaInfo->line_data[4], 2 );
+	attri	= buf_to_data( AreaInfo->line_data + 4, 2 );
 	datalen = 6;
 	if( attri & BIT( 0 ) ) ///根据时间
 	{
@@ -2125,15 +2152,54 @@ AREA_OUT:                                                                       
 void area_init( void )
 {
 	///初始化消息队列
-	rt_mq_init( &mq_area, "mq_area_alarm", &msgpool_area[0], sizeof( Type_AREA_ALARM ) + sizeof(void *), sizeof( msgpool_area ), RT_IPC_FLAG_FIFO );
+	rt_mq_init( &mq_area, "mq_area_alarm", &msgpool_area[0], sizeof( Type_AREA_ALARM ) + sizeof( void* ), sizeof( msgpool_area ), RT_IPC_FLAG_FIFO );
 
 	//rt_kprintf("enmu len=%d,area_info len=%d \r\n",sizeof(ENUM_AREA),sizeof(area_info));
 	memset( (void*)&Area_Para, 0, sizeof( Area_Para ) );
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	area_flash_read_area( area_buffer, AREA_BUF_SIZE );
 	area_flash_read_line( line_buffer, LINE_BUF_SIZE );
 	rt_sem_release( &sem_dataflash );
 }
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void area_read( void )
+{
+	u16 i;
+	area_init( );
+	for( i = 0; i < Area_Para.area_num; i++ )
+	{
+		rt_kprintf( "\r\n 电子围栏 ID=%5d, 类型=%d", Area_Para.area_info[i].area_data->ID, Area_Para.area_info[i].area_data->State );
+		rt_kprintf( "矩形区域为:经度1=%9d,纬度1=%9d,经度2=%9d,纬度2=%9d", \
+		            Area_Para.area_info[i].area_data->Rect_left.Longi, \
+		            Area_Para.area_info[i].area_data->Rect_left.Lati, \
+		            Area_Para.area_info[i].area_data->Rect_right.Longi, \
+		            Area_Para.area_info[i].area_data->Rect_right.Lati );
+		rt_kprintf( "\r\n   DATA=" );
+		printer_data_hex( (u8*)Area_Para.area_info[i].area_data, Area_Para.area_info[i].area_data->Len );
+	}
+	///线路处理，如果当前位置在一个线路中，则跳出线路扫描
+	for( i = 0; i < Area_Para.line_num; i++ )
+	{
+		rt_kprintf( "\r\n 线    路 ID=%5d, 类型=%d", Area_Para.line_info[i].line_head.ID, Area_Para.line_info[i].line_head.State );
+		rt_kprintf( "矩形区域为:经度1=%9d,纬度1=%9d,经度2=%9d,纬度2=%9d", \
+		            Area_Para.area_info[i].area_data->Rect_left.Longi, \
+		            Area_Para.area_info[i].area_data->Rect_left.Lati, \
+		            Area_Para.area_info[i].area_data->Rect_right.Longi, \
+		            Area_Para.area_info[i].area_data->Rect_right.Lati );
+	}
+}
+
+FINSH_FUNCTION_EXPORT( area_read, area_read );
+
 
 /*********************************************************************************
   *函数名称:void area_process(void)
@@ -2154,7 +2220,7 @@ void area_process( void )
 	TypeStruct_Coor cur_Coo;
 	static u16		cur_line = 0;
 	//static u16 cur_area = 0;
-
+	return;
 	///获取当前位置
 	cur_Coo.Lati	= gps_baseinfo.latitude;
 	cur_Coo.Longi	= gps_baseinfo.longitude;
@@ -2189,6 +2255,63 @@ void area_process( void )
 }
 
 /*********************************************************************************
+  *函数名称:void area_process_ex(void)
+  *功能描述:电子围栏和线路报警处理函数，该函数调用前需要首先调用一次函数"area_init",否则会异常。
+  *输	入:	none
+  *输	出:	none
+  *返 回 值:none
+  *作	者:白养民
+  *创建日期:2013-07-01
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
+*********************************************************************************/
+void area_proces_ex( u32 Longi, u32 Lati, u16 speed )
+{
+	u16				i;
+	TypeStruct_Coor cur_Coo;
+	static u16		cur_line = 0;
+	//static u16 cur_area = 0;
+	//return;
+	///获取当前位置
+	cur_Coo.Lati	= Lati;
+	cur_Coo.Longi	= Longi;
+	test_speed		= speed;
+
+	///电子围栏处理，需要将所有围栏都扫描一遍，可能有重叠的区域
+	for( i = 0; i < Area_Para.area_num; i++ )
+	{
+		if( Area_Para.area_info[i].area_data->State == AREA_Circular )
+		{
+			area_process_circular( &cur_Coo, &Area_Para.area_info[i] );
+		}else if( Area_Para.area_info[i].area_data->State == AREA_Rectangle )
+		{
+			area_process_rectangle( &cur_Coo, &Area_Para.area_info[i] );
+		}else if( Area_Para.area_info[i].area_data->State == AREA_Polygon )
+		{
+			area_process_polygon( &cur_Coo, &Area_Para.area_info[i] );
+		}else
+		{
+			continue;
+		}
+	}
+	///线路处理，如果当前位置在一个线路中，则跳出线路扫描
+	for( i = 0; i < Area_Para.line_num; i++ )
+	{
+		if( area_process_line( &cur_Coo, &Area_Para.line_info[cur_line] ) )
+		{
+			break;
+		}
+		cur_line++;
+		cur_line %= Area_Para.line_num;
+	}
+}
+
+FINSH_FUNCTION_EXPORT( area_proces_ex, area_proces_ex );
+
+
+/*********************************************************************************
   *函数名称:u32 area_get_alarm(u8 *pdestbuf,u16* len)
   *功能描述:电子围栏及线路报警获取，需要注意的是如果该函数的返回值不等于0，用户调用该
    函数后需要调用函数"rt_free()"将资源释放，防止内存泄露。
@@ -2209,10 +2332,11 @@ u32 area_get_alarm( u8 *pdestbuf, u16* destbuflen )
 	u16				datalen		= 0;
 	u32				retdata		= 0;
 	u8				alarem_num	= 0;
+	static u8		this_buf[256];
 	Type_AREA_ALARM area_alarm;
-	static u8 		this_buf[256];
 
 	*destbuflen = 0;
+
 	pdestbuf = this_buf;
 
 	///其它报警

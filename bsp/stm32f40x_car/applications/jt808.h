@@ -161,6 +161,10 @@ extern u8				avgspd_Mint_Wr; // 填写每分钟平均速度记录下标
 
 /*for new use*/
 
+#define FLASH_SEM_DELAY	2
+
+
+
 #define BYTESWAP2( val )    \
     ( ( ( ( val ) & 0xff ) << 8 ) |   \
       ( ( ( val ) & 0xff00 ) >> 8 ) )

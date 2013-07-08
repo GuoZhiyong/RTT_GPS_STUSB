@@ -28,6 +28,7 @@
 #include "jt808_param.h"
 #include "jt808_sms.h"
 #include "jt808_gps.h"
+#include "jt808_area.h"
 #include "vdr.h"
 
 #pragma diag_error 223
@@ -690,48 +691,63 @@ static int handle_rx_0x8500( uint8_t linkno, uint8_t *pmsg )
 /**/
 static int handle_rx_0x8600( uint8_t linkno, uint8_t *pmsg )
 {
+	area_jt808_0x8600(linkno,pmsg);
 	return 1;
 }
 
 /**/
 static int handle_rx_0x8601( uint8_t linkno, uint8_t *pmsg )
 {
+	area_jt808_0x8601(linkno,pmsg);
+
 	return 1;
 }
 
 /**/
 static int handle_rx_0x8602( uint8_t linkno, uint8_t *pmsg )
 {
+	area_jt808_0x8602(linkno,pmsg);
+
 	return 1;
 }
 
 /**/
 static int handle_rx_0x8603( uint8_t linkno, uint8_t *pmsg )
 {
+	area_jt808_0x8603(linkno,pmsg);
+
 	return 1;
 }
 
 /**/
 static int handle_rx_0x8604( uint8_t linkno, uint8_t *pmsg )
 {
+	area_jt808_0x8604(linkno,pmsg);
+
 	return 1;
 }
 
 /**/
 static int handle_rx_0x8605( uint8_t linkno, uint8_t *pmsg )
 {
+	area_jt808_0x8605(linkno,pmsg);
+
 	return 1;
 }
 
 /**/
 static int handle_rx_0x8606( uint8_t linkno, uint8_t *pmsg )
 {
+	area_jt808_0x8606(linkno,pmsg);
+
 	return 1;
 }
 
 /**/
 static int handle_rx_0x8607( uint8_t linkno, uint8_t *pmsg )
 {
+	area_jt808_0x8607(linkno,pmsg);
+
 	return 1;
 }
 
@@ -1132,7 +1148,7 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 
 	if( pnodedata->state == IDLE ) /*空闲，发送信息或超时后没有数据*/
 	{
-#if 1
+#if 0
 		/*要判断是不是出于GSM_TCPIP状态,当前socket是否可用*/
 		if( gsmstate( GSM_STATE_GET ) != GSM_TCPIP )
 		{
@@ -1228,7 +1244,7 @@ static void jt808_socket_proc( void )
 	state = gsmstate( GSM_STATE_GET );
 	if( state == GSM_IDLE )
 	{
-		gsmstate( GSM_POWERON );                /*开机登网*/
+		//gsmstate( GSM_POWERON );                /*开机登网*/
 		return;
 	}
 /*控制登网*/

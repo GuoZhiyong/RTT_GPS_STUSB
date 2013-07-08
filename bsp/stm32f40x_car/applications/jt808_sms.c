@@ -214,6 +214,32 @@ u16 Ascii_To_Hex( const u8* pSrc, u8* pDst, u16 nSrcLength )
 	// 返回目标数据长度
 	return ( nSrcLength >> 1 );
 }
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void printer_data_hex(u8 *pSrc,u16 nSrcLength)
+{
+	char pDst[3];
+ 	const u8	tab[] = "0123456789ABCDEF"; // 0x0-0xf的字符查找表
+	u16			i;
+	
+	pDst[2]=0;
+	for( i = 0; i < nSrcLength; i++ )
+	{
+		// 输出低4位
+		pDst[0] = tab[*pSrc >> 4];
+		// 输出高4位
+		pDst[1] = tab[*pSrc & 0x0f];
+		rt_kprintf("%s",pDst);
+		pSrc++;
+	}
+}
 
 /***********************************************************
 * Function:
@@ -1203,7 +1229,7 @@ u8 SMS_Rx_PDU( char *instr, u16 len )
 {
 	char	*pstrTemp;
 	u8		ret = 0;
-#if 0
+#if 1
 	//rt_kprintf( "\r\n PDU_短信: " );
 	//SMS_SendConsoleStr( instr );
 	memset( SMS_Service.SMS_rx_Content, 0, sizeof( SMS_Service.SMS_rx_Content ) );
@@ -1212,7 +1238,7 @@ u8 SMS_Rx_PDU( char *instr, u16 len )
 	GetPhoneNumFromPDU( SMS_Service.SMS_destNum, SMS_Service.Sms_Info.TPA, sizeof( SMS_Service.Sms_Info.TPA ) );
 	SMS_Service.rx_state = SMS_RX_OK;
 #endif
-#if 1
+#if 0
 	memset( SMS_Service.SMS_destNum, 0, sizeof( SMS_Service.SMS_destNum ) );
 	pstrTemp = (char*)rt_malloc( 200 ); ///短信解码后的完整内容，解码后汉子为GB码
 	memset( pstrTemp, 0, 200 );
@@ -1242,6 +1268,7 @@ u8 SMS_Rx_PDU( char *instr, u16 len )
 	//////
 	return ret;
 }
+
 
 /*********************************************************************************
   *函数名称:u8 SMS_Tx_Text(char *strDestNum,char *s)
@@ -1806,6 +1833,9 @@ void SMS_Process( void )
 		}
 		case SMS_RX_OK:
 		{
+			rt_kprintf( "\r\n  短息来源号码:%s", SMS_Service.SMS_destNum );
+			rt_kprintf( "\r\n 短信收到消息: " );
+			rt_kprintf( SMS_Service.SMS_rx_Content );
 			if( strncmp( (char*)SMS_Service.SMS_rx_Content, "TW703#", 6 ) == 0 )                                        //短信修改UDP的IP和端口
 			{
 				ContentLen = strlen( SMS_Service.SMS_rx_Content );
