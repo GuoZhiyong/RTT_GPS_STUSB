@@ -1,6 +1,6 @@
 #include "Menu_Include.h"
 #include <string.h>
-
+#include "sed1520.h"
 static unsigned char Menu_Text=0;//==1选择要显示的信息,选好要显示的信息后为2
 static int TxtInfo_len=0;//要显示的信息长度
 static unsigned char  TxtScreenNum_Total=0;// 消息显示屏幕总数
@@ -153,7 +153,7 @@ static void timetick(unsigned int systick)
 		}
 }
 
-MYTIME
+
 MENUITEM	Menu_7_CentreTextDisplay=
 {
     "中心下发消息",

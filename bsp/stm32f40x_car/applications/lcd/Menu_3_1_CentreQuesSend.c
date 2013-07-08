@@ -1,7 +1,7 @@
 #include "Menu_Include.h"
 #include <stdio.h>
 #include <string.h>
-#include "app_moduleConfig.h"
+#include "sed1520.h"
 
 /*unsigned char Question_menu=0;//=0时显示提问问题然后让其=1，=2显示答案，再按确认键把问题答案发送出来(前提:有中心提问消息)
 unsigned char Question_Len=0;//问题长度
@@ -200,8 +200,6 @@ static void timetick(unsigned int systick)
 }
 
 
-
-MYTIME
 MENUITEM	Menu_3_1_CenterQuesSend=
 {
 	"中心提问消息",

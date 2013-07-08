@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-
+#include "sed1520.h"
 u8 can_screen=0;
 u8 can_counter=1;
 u8 can_ID_counter=0;
@@ -137,7 +137,7 @@ static void timetick(unsigned int systick)
 	
 }
 
-MYTIME
+
 MENUITEM	Menu_5_5_can=
 {
 "CAN²ÎÊý²éÑ¯",

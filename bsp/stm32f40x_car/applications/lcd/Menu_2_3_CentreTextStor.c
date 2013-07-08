@@ -1,6 +1,6 @@
 #include "Menu_Include.h"
 #include <string.h>
-
+#include "sed1520.h"
 
 static unsigned char dis_screen=0;//文本信息主界面1
 static unsigned char dis_screen_counter=0;

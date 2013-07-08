@@ -1,6 +1,6 @@
 #include "Menu_Include.h"
 #include <string.h>
-
+#include "sed1520.h"
 
 unsigned char noselect_TirExspd[]={0x3C,0x7E,0xC3,0xC3,0xC3,0xC3,0x7E,0x3C};//空心
 unsigned char select_TirExspd[]={0x3C,0x7E,0xFF,0xFF,0xFF,0xFF,0x7E,0x3C};//实心
@@ -73,7 +73,6 @@ static void timetick(unsigned int systick)
 	pMenuItem->show();
 }
 
-MYTIME
 MENUITEM	Menu_4_InforTirExspd=
 {
     "违规驾驶",

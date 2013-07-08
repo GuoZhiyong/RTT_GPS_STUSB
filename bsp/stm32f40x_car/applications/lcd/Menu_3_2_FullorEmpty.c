@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-
+#include "sed1520.h"
 unsigned char car_status_str[3][4]={"空车","半空","重车"};
 
 unsigned char CarStatus_change=1;//状态选择

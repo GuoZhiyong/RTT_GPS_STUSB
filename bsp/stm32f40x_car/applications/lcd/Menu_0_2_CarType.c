@@ -1,8 +1,8 @@
 #include  <string.h>
 #include "Menu_Include.h"
+#include "sed1520.h"
 
-
-struct IMG_DEF test_scr_CarType={12,12,test_00};
+IMG_DEF test_scr_CarType={12,12,test_00};
 
 unsigned char CarType_counter=0;
 unsigned char CarType_Type=0;

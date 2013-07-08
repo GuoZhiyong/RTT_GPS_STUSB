@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-
+#include "sed1520.h"
 
 
 u8 RertartGps_screen=0;
@@ -82,7 +82,6 @@ static void timetick(unsigned int systick)
       RertartGps_screen=0;
 }
 
-MYTIME
 MENUITEM	Menu_5_4_bdColdBoot=
 {
 "±±¶·Ä£¿éÀäÆô¶¯",

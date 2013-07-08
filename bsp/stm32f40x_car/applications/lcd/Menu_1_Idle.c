@@ -1,8 +1,9 @@
-#include  <stdlib.h>//¨ºy¡Á?¡Áa??3¨¦¡Á?¡¤?¡ä?
+#include  <stdlib.h>
 #include  <stdio.h>
 #include  <string.h>
 
-
+#include "menu_include.h"
+#include "sed1520.h"
 unsigned char dispstat=0;
 unsigned char tickcount=0;
 unsigned int  reset_firstset=0;
@@ -329,7 +330,6 @@ Cent_To_Disp();
 
 }
 
-MYTIME
 MENUITEM	Menu_1_Idle=
 {
     "´ý»ú½çÃæ",

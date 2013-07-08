@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-
+#include "sed1520.h"
 
 unsigned char Menu_TelText=0;
 unsigned char TelText_scree=0;
@@ -96,7 +96,6 @@ static void timetick(unsigned int systick)
 		}
 }
 
-MYTIME
 MENUITEM	Menu_5_1_TelDis=
 {
     "电话本查看",

@@ -50,7 +50,6 @@
 
 #include <stdint.h>
 #include "sed1520.h"
-#include "bmp.h"
 #include "stm32f4xx.h"
 
 #include "Lcd.h"

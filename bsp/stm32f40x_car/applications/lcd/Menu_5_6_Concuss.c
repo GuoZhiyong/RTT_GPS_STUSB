@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-
+#include "sed1520.h"
 
 u8 concuss_screen=0;
 u8 concuss_step=40;
@@ -91,7 +91,7 @@ static void timetick(unsigned int systick)
 
 }
 
-MYTIME
+
 MENUITEM	Menu_5_6_Concuss=
 {
 "Υπ¶―Ό¶±π",

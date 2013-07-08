@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-#include "App_moduleConfig.h"
+#include "sed1520.h"
 
 
 u16  counter=0;
@@ -79,7 +79,7 @@ else if(ISP_Updata_Flag==2)
 	}
 }
 
-MYTIME
+
 MENUITEM	Menu_6_RemoteUpdata=
 {
 "Ô¶³ÌÉý¼¶",

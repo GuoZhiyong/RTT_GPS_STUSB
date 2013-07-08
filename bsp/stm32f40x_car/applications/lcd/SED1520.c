@@ -50,9 +50,9 @@
 
 #include <stdint.h>
 #include "sed1520.h"
-#include "bmp.h"
 #include "board.h"
 #include "stm32f4xx.h"
+#include "menu_include.h"
 
 /* pixel level bit masks for display */
 /* this array is setup to map the order */
@@ -706,7 +706,7 @@ void lcd_text_p(uint8_t left, uint8_t top, uint8_t font, const char *str)
 
 
 
-void lcd_bitmap(const uint8_t left, const uint8_t top, const struct IMG_DEF *img_ptr, const uint8_t mode)
+void lcd_bitmap(const uint8_t left, const uint8_t top, IMG_DEF *img_ptr, const uint8_t mode)
 { 
 	uint8_t width, heigth, h, w, pattern, mask;
 	uint8_t* ptable;

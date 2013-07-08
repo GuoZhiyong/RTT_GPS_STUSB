@@ -1,5 +1,6 @@
 #include  <string.h>
 #include "Menu_Include.h"
+#include "sed1520.h"
 
 u8 comfirmation_flag=0;
 u8 col_screen=0;

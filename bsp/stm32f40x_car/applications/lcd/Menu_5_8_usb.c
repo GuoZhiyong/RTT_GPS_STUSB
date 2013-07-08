@@ -4,7 +4,7 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <dfs_posix.h>
-#include "App_moduleConfig.h"
+#include "sed1520.h"
 
 unsigned char DataOutInFlag=0;//  1:导入导出界面  2:导出子菜单
 unsigned char USB_data_flag=0;//  0创建并导出数据，导出完成后为1，推出为0
@@ -307,7 +307,7 @@ static void timetick(unsigned int systick)
 	DataOutInFlag=0;
 }
 
-MYTIME
+
 MENUITEM	Menu_5_8_Usb=
 {
 	"USB数据",

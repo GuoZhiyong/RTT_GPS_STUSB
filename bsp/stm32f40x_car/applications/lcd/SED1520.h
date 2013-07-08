@@ -7,9 +7,7 @@
 //// #define LCD_DEBUG (1)
 
 #include <stdint.h>
-#include "bmp.h"
-
-
+#include "menu_include.h"
 
 /* draw modes */
 #define LCD_MODE_CLEAR     0
@@ -77,7 +75,7 @@ extern void lcd_text_p(uint8_t left, uint8_t top, uint8_t font, const char *str)
 #define lcd_text_P(lcdl_,lcdt_,lcdf_,lcds_) \
 	lcd_text_p(lcdl_,lcdt_,lcdf_,PSTR(lcds_))
 
-extern void lcd_bitmap(const uint8_t left, const uint8_t top, const struct IMG_DEF *img_ptr, const uint8_t mode);
+extern void lcd_bitmap(const uint8_t left, const uint8_t top, IMG_DEF *img_ptr, const uint8_t mode);
 extern void lcd_text12(char left,char top ,char *p,char len,const char mode);
 
 

@@ -1,6 +1,6 @@
 #include "Menu_Include.h"
 #include <string.h>
-
+#include "sed1520.h"
 
 #define  DIS_Dur_width_inter 11
 
@@ -95,7 +95,6 @@ static void timetick(unsigned int systick)
 
 }
 
-MYTIME
 MENUITEM	Menu_3_InforInteract=
 {
     "Ωªª•–≈œ¢",

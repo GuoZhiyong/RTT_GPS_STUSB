@@ -52,7 +52,7 @@ static void timetick(unsigned int systick)
 
 }
 
-MYTIME
+
 MENUITEM	Menu_5_7_Version=
 {
 "∞Ê±æœ‘ æ",

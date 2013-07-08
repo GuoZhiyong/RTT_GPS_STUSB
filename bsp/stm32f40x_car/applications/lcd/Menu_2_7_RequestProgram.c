@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-#include "App_moduleConfig.h"
+#include "sed1520.h"
 
 
 unsigned char Menu_dianbo=0;
@@ -385,7 +385,6 @@ else
   }
   
   
-  MYTIME
   MENUITEM	  Menu_2_7_RequestProgram=
   {
 	  "信息点播查看",

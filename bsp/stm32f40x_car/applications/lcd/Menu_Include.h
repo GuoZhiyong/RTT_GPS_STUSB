@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 #include "stm32f4xx.h"
-
-#include "sed1520.h"
+#include <rtthread.h>
+//#include "sed1520.h"
 
 #define KeyValueMenu    1
 #define KeyValueOk      2
@@ -18,8 +18,15 @@
 #define InforStartPage_Affair     6900
 #define InforStartPage_Meun       6950
 
+typedef struct _IMG_DEF 
+{
+unsigned char width_in_pixels;      /* Image width */
+unsigned char height_in_pixels;     /* Image height*/
+unsigned char *char_table;    /* Image table start address in memory  */
 
-#define DECL_BMP(width,height,imgdata)	struct IMG_DEF BMP_##imgdata={width,height,imgdata}	
+} IMG_DEF;
+
+#define DECL_BMP(width,height,imgdata)	IMG_DEF BMP_##imgdata={width,height,imgdata}	
 
 #define MaxBankIdleTime  1200//60s  LCD任务执行周期60ms,1min没有按键操作推出到idle状态
 

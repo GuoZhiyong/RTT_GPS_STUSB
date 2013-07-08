@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-
+#include "sed1520.h"
 
 unsigned char CarMulTrans_screen=0;
 
@@ -75,7 +75,7 @@ static void timetick(unsigned int systick)
 
 }
 
-MYTIME
+
 MENUITEM	Menu_3_5_MultimediaTrans=
 {
 "多媒体事件上传",

@@ -14,6 +14,7 @@
 #include "Menu_Include.h"
 //#include "stm32f4xx.h"
 //#include "gps.h"
+#include "sed1520.h"
 
 static uint8_t menu_pos=0;
 static uint8_t fupgrading=0;	/*是否在升级状态，禁用按键判断*/
@@ -241,7 +242,7 @@ static void timetick( unsigned int systick )
 
 }
 
-ALIGN( RT_ALIGN_SIZE )
+
 MENUITEM Menu_5_3_bdupgrade =
 {
 	"北斗升级",

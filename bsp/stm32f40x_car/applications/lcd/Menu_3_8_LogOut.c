@@ -1,7 +1,7 @@
 #include "Menu_Include.h"
 #include <stdio.h>
 #include <string.h>
-
+#include "sed1520.h"
 	   
 unsigned char Menu_Logout=0;  //  1:准备注册再按确认键=2   =2:发送注册
 unsigned char LogInorOut_screen=0;//选择鉴权/注销,选择好以后按确认键清0
@@ -161,7 +161,6 @@ static void timetick(unsigned int systick)
 	   }
 }
 
-MYTIME
 MENUITEM    Menu_3_8_LogOut=
 {
    "鉴权注册",

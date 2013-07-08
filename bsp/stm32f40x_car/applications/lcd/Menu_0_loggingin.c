@@ -1,12 +1,13 @@
 #include "Menu_Include.h"
-
+#include "sed1520.h"
 unsigned char noselect_log[]={0x3C,0x7E,0xC3,0xC3,0xC3,0xC3,0x7E,0x3C};//¿ÕÐÄ
 unsigned char select_log[]={0x3C,0x7E,0xFF,0xFF,0xFF,0xFF,0x7E,0x3C};//ÊµÐÄ
 
 unsigned char CarSet_0=1;
 //unsigned char CarSet_0_Flag=1;
 
-DECL_BMP(8,8,select_log); DECL_BMP(8,8,noselect_log); 
+DECL_BMP(8,8,select_log); 
+DECL_BMP(8,8,noselect_log); 
 
 void Selec_123(u8 par)
 {

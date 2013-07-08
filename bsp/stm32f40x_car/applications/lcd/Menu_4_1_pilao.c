@@ -199,9 +199,6 @@ static void timetick(unsigned int systick)
 }
 
 
-
-
-MYTIME
 MENUITEM	Menu_4_1_pilao=
 {
     "Æ£ÀÍ¼ÝÊ»²é¿´",

@@ -2,7 +2,7 @@
 
 #include "Menu_Include.h"
 #include <string.h>
-
+#include "sed1520.h"
 #include "stm32f4xx.h"
 unsigned char XinhaoStatus[20]={"ÐÅºÅÏß×´Ì¬:00000000"};
 

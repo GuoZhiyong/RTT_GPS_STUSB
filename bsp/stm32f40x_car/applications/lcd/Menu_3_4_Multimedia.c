@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-
+#include "sed1520.h"
 
 
 unsigned char Menu_Multimedia=0;
@@ -133,7 +133,6 @@ static void timetick(unsigned int systick)
 
 }
 
-MYTIME
 MENUITEM	Menu_3_4_Multimedia=
 {
 	"发送多媒体数据",

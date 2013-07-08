@@ -1,6 +1,7 @@
 #include "Menu_Include.h"
 #include  <string.h>
 
+#include "sed1520.h"
 
 void Disp_DnsIP(u8 par)
 {

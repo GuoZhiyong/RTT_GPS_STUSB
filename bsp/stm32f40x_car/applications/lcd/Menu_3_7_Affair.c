@@ -1,7 +1,7 @@
 #include "Menu_Include.h"
 #include <stdio.h>
 #include <string.h>
-#include "App_moduleConfig.h"
+#include "sed1520.h"
 
 unsigned char Menu_Affair=0;
 unsigned char Affair_scree=1;
@@ -249,7 +249,7 @@ else
 	}
 }
 
-MYTIME
+
 MENUITEM	Menu_3_7_Affair=
 {
     "事件信息",

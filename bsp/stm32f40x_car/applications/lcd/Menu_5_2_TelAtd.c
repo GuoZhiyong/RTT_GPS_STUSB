@@ -1,5 +1,5 @@
 #include "Menu_Include.h"
-
+#include "sed1520.h"
 
 
 u8 tel_screen=0;
@@ -70,7 +70,6 @@ static void timetick(unsigned int systick)
 
 }
 
-MYTIME
 MENUITEM	Menu_5_2_TelAtd=
 {
 "Ò»¼ü»Ø²¦",
