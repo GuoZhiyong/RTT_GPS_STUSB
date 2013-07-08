@@ -7,7 +7,7 @@ unsigned char select_5[]={0x3C,0x7E,0xFF,0xFF,0xFF,0xFF,0x7E,0x3C};//实心
 
 DECL_BMP(8,8,select_5); DECL_BMP(8,8,noselect_5); 
 
-static unsigned char menu_pos_5=0;
+static unsigned char menu_pos=0;
 static PMENUITEM psubmenu[8]=
 {
 	&Menu_5_1_TelDis,
@@ -28,8 +28,8 @@ lcd_text12(0,3,"其它",4,LCD_MODE_SET);
 lcd_text12(0,17,"信息",4,LCD_MODE_SET);
 for(i=0;i<8;i++)
 	lcd_bitmap(30+i*11, 5, &BMP_noselect_5, LCD_MODE_SET);
-lcd_bitmap(30+menu_pos_5*11,5,&BMP_select_5,LCD_MODE_SET);
-lcd_text12(30,19,(char *)(psubmenu[menu_pos_5]->caption),psubmenu[menu_pos_5]->len,LCD_MODE_SET);
+lcd_bitmap(30+menu_pos*11,5,&BMP_select_5,LCD_MODE_SET);
+lcd_text12(30,19,(char *)(psubmenu[menu_pos]->caption),psubmenu[menu_pos]->len,LCD_MODE_SET);
 lcd_update_all();
 }
 static void msg( void *p)
@@ -37,7 +37,7 @@ static void msg( void *p)
 }
 static void show(void)
 {
-    //menu_pos_5=0;
+    menu_pos=0;
 	menuswitch();
 }
 
@@ -47,25 +47,25 @@ static void keypress(unsigned int key)
 switch(KeyValue)
 	{
 	case KeyValueMenu:
-		pMenuItem=&Menu_8_bd808new;//
+		pMenuItem=&Menu_1_Idle;
 		pMenuItem->show();
 		CounterBack=0;
 		break;
 	case KeyValueOk:
-			pMenuItem=psubmenu[menu_pos_5];//疲劳驾驶
+			pMenuItem=psubmenu[menu_pos];//疲劳驾驶
 			pMenuItem->show();
 		break;
 	case KeyValueUP:
-		if(menu_pos_5==0) 
-			menu_pos_5=7;
+		if(menu_pos==0) 
+			menu_pos=7;
 		else
-			menu_pos_5--;
+			menu_pos--;
 		menuswitch();		
 		break;
 	case KeyValueDown:
-		menu_pos_5++;
-		if(menu_pos_5>7)
-			menu_pos_5=0;
+		menu_pos++;
+		if(menu_pos>7)
+			menu_pos=0;
 		menuswitch();
 		break;
 	}
@@ -84,7 +84,7 @@ static void timetick(unsigned int systick)
 	pMenuItem->show();
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_5_other=
 {
     "其他信息",

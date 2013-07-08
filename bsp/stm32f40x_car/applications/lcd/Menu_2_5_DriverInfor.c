@@ -27,12 +27,14 @@ lcd_fill(0);
 if(NameCode==1)
 	{
 	lcd_text12(30,3,"驾驶员姓名",10,LCD_MODE_SET);
-	lcd_text12(30,19,(char *)JT808Conf_struct.Driver_Info.BD_DriveName,strlen((char *)JT808Conf_struct.Driver_Info.BD_DriveName),LCD_MODE_SET);
+	lcd_text12(42,19,(char *)JT808Conf_struct.Driver_Info.DriveName,strlen((char *)JT808Conf_struct.Driver_Info.DriveName),LCD_MODE_SET);
+	//lcd_text12(48,19,(char *)Driver_Info.DriveName,strlen(Driver_Info.DriveName),LCD_MODE_SET);
 	}
 else
 	{
-	lcd_text12(30,3,"驾驶员从业资格证",16,LCD_MODE_SET);
-	lcd_text12(0,19,(char *)JT808Conf_struct.Driver_Info.BD_Drv_CareerID,20,LCD_MODE_SET);
+	lcd_text12(30,3,"驾驶证号码",10,LCD_MODE_SET);
+	lcd_text12(6,19,(char *)JT808Conf_struct.Driver_Info.DriverCard_ID,18,LCD_MODE_SET);
+	//lcd_text12(15,19,(char *)Driver_Info.DriverCard_ID,sizeof(Driver_Info.DriverCard_ID),LCD_MODE_SET);
 	}
 lcd_update_all();
 } 
@@ -110,7 +112,7 @@ static void keypress(unsigned int key)
 				else if(DIS_DRIVER_inform_temp.DIS_SHOW_check_send==1)//提示发送成功
 					{
 					Dis_DriverInfor(2,2);
-					SD_ACKflag.f_DriverInfoSD_0702H=1;
+					//SD_ACKflag.f_DriverInfoSD_0702H=1;
 					DIS_DRIVER_inform_temp.DIS_ENTER_check_send=0;//    1
 					DIS_DRIVER_inform_temp.DIS_SELECT_check_send=0;
 					DIS_DRIVER_inform_temp.DIS_SHOW_check_send=0;
@@ -166,7 +168,7 @@ static void timetick(unsigned int systick)
     memset(&DIS_DRIVER_inform_temp,0,sizeof(DIS_DRIVER_inform_temp));
 }
 
-ALIGN(RT_ALIGN_SIZE)
+
 MENUITEM	Menu_2_5_DriverInfor=
 {	
 	"驾驶员信息查看",

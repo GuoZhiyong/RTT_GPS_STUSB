@@ -1,9 +1,11 @@
 #ifndef _H_MENU_H_
 #define _H_MENU_H_
 
-//#include "sed1520.h"
 #include <stdio.h>
 #include "stm32f4xx.h"
+
+#include "sed1520.h"
+
 #define KeyValueMenu    1
 #define KeyValueOk      2
 #define KeyValueUP      3
@@ -113,16 +115,14 @@ extern unsigned char ServiceNum[13];//设备的唯一性编码,IMSI号码的后12位
 extern unsigned char DisComFlag;
 extern unsigned char OneKeyCallFlag;
 extern unsigned char data_tirexps[120];
-extern uint8_t CarSet_0_counter;//记录设置车辆信息的设置内容1:车牌号2:类型3:颜色
+extern u8 CarSet_0_counter;//记录设置车辆信息的设置内容1:车牌号2:类型3:颜色
 
-extern uint8_t Antenna_open_flag;
 
 extern  MENUITEM    *pMenuItem;
 extern  MENUITEM	Menu_0_0_password;
 extern  MENUITEM	Menu_0_1_license;
 extern  MENUITEM	Menu_0_2_CarType;
-extern  MENUITEM	Menu_0_3_Sim;
-extern  MENUITEM	Menu_0_5_speedtype;
+extern  MENUITEM	Menu_0_3_vin;
 extern  MENUITEM	Menu_0_4_Colour;
 extern  MENUITEM	Menu_0_loggingin;
 
@@ -164,11 +164,6 @@ extern  MENUITEM	Menu_5_other;
 
 extern  MENUITEM	Menu_6_RemoteUpdata;
 extern  MENUITEM	Menu_7_CentreTextDisplay;
-
-extern  MENUITEM	Menu_8_bd808new;
-extern  MENUITEM	Menu_8_1_updataResult;
-extern  MENUITEM	Menu_8_2_BDbatchTrans;
-extern  MENUITEM	Menu_8_3_electronicDisp;
 
 extern unsigned char SetVIN_NUM;//   1:设置车牌号码  2:设置VIN
 extern unsigned char OK_Counter;//记录在快捷菜单下ok键按下的次数
@@ -217,12 +212,11 @@ extern unsigned char print_rec_flag;
 
 //------------ 使用前锁定相关 ------------------
 extern unsigned char Menu_Car_license[10];//存放车牌号码
-extern uint8_t  Menu_Sim_Code[12];
-extern uint8_t  Menu_VechileType[10];  //  车辆类型
-extern uint8_t  Menu_VecLogoColor[10]; // 车牌颜色 
-extern uint8_t Menu_color_num; 
-extern uint8_t menu_speedtype;  //速度获取方式   0:gps速度     1:传感器速度
-extern uint8_t menu_color_flag;
+extern u8  Menu_VechileType[10];  //  车辆类型
+extern u8  Menu_VecLogoColor[10]; // 车牌颜色 
+extern u8 Menu_Vin_Code[17];
+extern u8 Menu_color_num; 
+extern u8 menu_type_flag,menu_color_flag;
 
 
 extern void Cent_To_Disp(void);

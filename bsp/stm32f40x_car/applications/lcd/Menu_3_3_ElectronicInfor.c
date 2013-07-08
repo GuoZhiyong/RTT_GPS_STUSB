@@ -54,7 +54,6 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_3_3_ElectronicInfor=
 {
     "电子运单发送",

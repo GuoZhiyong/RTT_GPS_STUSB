@@ -52,40 +52,46 @@ switch(KeyValue)
 		else if(CarStatus_screen==1)
 			{
 			CarStatus_screen=2;
-			
-		    JT808Conf_struct.LOAD_STATE=CarStatus_change;
+                     JT808Conf_struct.LOAD_STATE=CarStatus_change;
 			Api_Config_Recwrite_Large(jt808,0,(u8*)&JT808Conf_struct,sizeof(JT808Conf_struct));
-            Car_Status[2]&=~0x03;      //  空载
-	        if(CarStatus_change==1)
+
+		     /* Car_Status[2]&=~0x03;      //  空载
+	             if(CarStatus_change==1)
 				Car_Status[2]|=0x01;   //半载
 			else if(CarStatus_change==2)
-				Car_Status[2]|=0x03;   //满载
+				Car_Status[2]|=0x03;   //满载*/
 
             //上报位置信息
 			PositionSD_Enable();
 			Current_UDP_sd=1;
-			
+
 			lcd_fill(0);
 			lcd_text12(20,10,(char *)car_status_str[CarStatus_change],4,LCD_MODE_SET);
 			lcd_text12(48,10,"发送成功",8,LCD_MODE_SET);
 			lcd_update_all();
+			
+			CarStatus_change=1;//选择
+			CarStatus_screen=0;//界面切换使用
 			}
 		break;
 	case KeyValueUP:
 		if(CarStatus_screen==0)
 			{			
-			CarStatus_change--;
 			if(CarStatus_change<=0)
-				CarStatus_change=0;
+				CarStatus_change=2;
+			else
+				CarStatus_change--;
 			CarStatus(CarStatus_change);
 			}
 		break;
 	case KeyValueDown:
 		if(CarStatus_screen==0)
 			{		
-			CarStatus_change++;
 			if(CarStatus_change>=2)
-				CarStatus_change=2;
+				CarStatus_change=0;
+			else
+				CarStatus_change++;
+			
 			CarStatus(CarStatus_change);
 			}
 		break;
@@ -104,7 +110,7 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
+
 MENUITEM	Menu_3_2_FullorEmpty= 
 {
 

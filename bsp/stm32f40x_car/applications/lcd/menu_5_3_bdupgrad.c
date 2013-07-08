@@ -15,7 +15,7 @@
 //#include "stm32f4xx.h"
 //#include "gps.h"
 
-static uint8_t menu_pos_bd=0;
+static uint8_t menu_pos=0;
 static uint8_t fupgrading=0;	/*是否在升级状态，禁用按键判断*/
 static rt_thread_t tid_upgrade=RT_NULL;	/*开始更新*/
 
@@ -35,7 +35,7 @@ void menu_set(void)
 	lcd_fill( 0 );
 	lcd_text12( 0, 3, "北斗", 4, LCD_MODE_SET );
 	lcd_text12( 0, 17, "升级", 4, LCD_MODE_SET );
-	if( menu_pos_bd == 0 )
+	if( menu_pos == 0 )
 	{
 		lcd_text12( 35, 3, "1.串口升级", 10, LCD_MODE_INVERT );
 		lcd_text12( 35, 19, "2.USB升级", 9, LCD_MODE_SET );
@@ -60,7 +60,7 @@ void menu_set(void)
 ***********************************************************/
 static void show( void )
 {
-	menu_pos_bd=0;
+	menu_pos=0;
 	menu_set();
 }
 
@@ -191,7 +191,7 @@ static void keypress( unsigned int key )
 		case KeyValueOk:
 			if(BD_upgrad_contr==1)
 				menu_set();
-			if(menu_pos_bd==0)
+			if(menu_pos==0)
 			{
 				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_uart, (void*)msg, 1024, 5, 5 );
 				if( tid_upgrade != RT_NULL )
@@ -216,11 +216,11 @@ static void keypress( unsigned int key )
 			}
 			break;
 		case KeyValueUP:
-			menu_pos_bd=menu_pos_bd^0x01;
+			menu_pos=menu_pos^0x01;
 			menu_set();
 			break;
 		case KeyValueDown:
-			menu_pos_bd=menu_pos_bd^0x01;
+			menu_pos=menu_pos^0x01;
 			menu_set();
 			break;
 	}

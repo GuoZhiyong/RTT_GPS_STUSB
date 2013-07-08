@@ -5,7 +5,8 @@
 static unsigned char vech_num[16]={"车牌号:        "};
 static unsigned char vech_type[25]={"车辆类型:            "};
 static unsigned char  vech_ID[19]={"入网ID:            "}; 
-static unsigned char  vech_sim[20]={"SIM卡号:            "};
+static unsigned char  vech_VIN[20]={"VIN                 "}; 
+
 static unsigned char updown_flag=0;
 
 //驾驶员代码
@@ -41,19 +42,20 @@ switch(drivercar)
               memcpy(vech_type+9,JT808Conf_struct.Vechicle_Info.Vech_Type,6);
 		lcd_text12(0,3,(char *)vech_type,19,LCD_MODE_SET);		
 		//读取设备速度取得是GPS速度还是速度线速度
+		//读取设备速度取得是GPS速度还是速度线速度
 		if(JT808Conf_struct.DF_K_adjustState)
 			lcd_text12(0,18,"设备速度:传感器速度",19,LCD_MODE_SET);
 		else
 			lcd_text12(0,18,"设备速度:GPS速度",16,LCD_MODE_SET);
 		lcd_update_all();
 		break;
-	case 3:  //  车辆ID及车辆sim卡号码
-		memcpy(vech_ID+7,IMSI_CODE+3,12); 
-		memcpy(vech_sim+8,JT808Conf_struct.Vechicle_Info.Vech_sim,12);
-		lcd_fill(0);
-		lcd_text12(0,3,(char *)vech_ID,19,LCD_MODE_SET);
-		lcd_text12(0,18,(char *)vech_sim,20,LCD_MODE_SET);
-		lcd_update_all();   
+	case 3:  //  车辆ID
+        lcd_fill(0);
+        memcpy(vech_ID+7,IMSI_CODE+3,12); 
+        lcd_text12(0,3,(char *)vech_ID,19,LCD_MODE_SET);
+        memcpy(vech_VIN+3,JT808Conf_struct.Vechicle_Info.Vech_VIN,17); //车辆VIN
+        lcd_text12(0,19,(char *)vech_VIN,20,LCD_MODE_SET);
+        lcd_update_all();   
 		 break;
 	default:
 		break;
@@ -109,6 +111,7 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)
 {
+    Cent_To_Disp();
 	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime)
 		return;
@@ -118,7 +121,6 @@ static void timetick(unsigned int systick)
 }
 
 
-ALIGN(RT_ALIGN_SIZE)
 MENUITEM	Menu_2_4_CarInfor=
 {
 	"车辆信息查看",

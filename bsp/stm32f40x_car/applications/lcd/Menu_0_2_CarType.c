@@ -130,6 +130,7 @@ static void keypress(unsigned int key)
 		case KeyValueMenu:
 			pMenuItem=&Menu_0_loggingin;
 			pMenuItem->show();
+			
 			CarType_counter=0;
 			CarType_Type=0;
 			break;
@@ -163,7 +164,7 @@ static void keypress(unsigned int key)
 					memcpy(Menu_VechileType,"中型车",6); 
 				else if(CarType_counter==6)
 					memcpy(Menu_VechileType,"小型车",6); 
-				else if(CarType_counter==6)
+				else if(CarType_counter==7)
 					memcpy(Menu_VechileType,"微型车",6); 
 				else if(CarType_counter==8)
 					memcpy(Menu_VechileType,"出租车",6);  
@@ -182,9 +183,10 @@ static void keypress(unsigned int key)
 		case KeyValueUP:
 			if(	CarType_Type==1)
 				{
-				CarType_counter--;
-				if(CarType_counter<1)
+				if(CarType_counter==1)
 					CarType_counter=8;
+				else
+					CarType_counter--;
 				//printf("\r\n  up  车辆类型选择 = %d",CarType_counter);
 				CarType(CarType_counter,0);
 				}
@@ -192,9 +194,11 @@ static void keypress(unsigned int key)
 		case KeyValueDown:
 			if(	CarType_Type==1)
 				{
-				CarType_counter++;
-				if(CarType_counter>8)
+				if(CarType_counter>=8)
 					CarType_counter=1;
+				else
+					CarType_counter++;
+					
 				//printf("\r\n down 车辆类型选择 = %d",CarType_counter);
 				CarType(CarType_counter,0);
 				}
@@ -206,14 +210,16 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)
 {
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
+	/*CounterBack++;
+	if(CounterBack!=MaxBankIdleTime*5)
 		return;
 	CounterBack=0;
 	pMenuItem=&Menu_0_loggingin;
 	pMenuItem->show();
-
 	
+	CarType_counter=0;
+	CarType_Type=0;
+	*/
 }
 
 

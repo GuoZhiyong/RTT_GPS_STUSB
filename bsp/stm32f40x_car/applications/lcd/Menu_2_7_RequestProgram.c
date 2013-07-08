@@ -317,9 +317,12 @@ else
 				  }
 			  else if(Menu_dianbo==2)
 				  {
-				  SD_ACKflag.f_MsgBroadCast_0303H=1;
+				  //SD_ACKflag.f_MsgBroadCast_0303H=1;
+				  /*MSG_Obj.INFO_TYPE=MSG_Obj_8[dianbo_scree-1].INFO_TYPE;
+				  MSG_Obj.INFO_PlyCancel=MSG_Obj_8[dianbo_scree-1].INFO_PlyCancel;*/
+  
 				  //--- 更新最新的状态 ----------- 
-				  Api_RecordNum_Write(msg_broadcast, MSG_Obj_8[dianbo_scree-1].INFO_TYPE, (u8*)&MSG_Obj_8[dianbo_scree-1],sizeof(MSG_Obj_8[dianbo_scree-1])); 
+				  //DF_WriteFlash(DF_Msg_Page+dianbo_scree-1, 0, (u8*)&MSG_Obj_8[dianbo_scree-1], sizeof(MSG_Obj_8[dianbo_scree-1]));
 				  
 				  //发送出去的界面
 				  SenddianboMeun(dianbo_scree,1);
@@ -344,6 +347,7 @@ else
 			  else if(Menu_dianbo==2)
 				  {
 				  MSG_Obj_8[dianbo_scree-1].INFO_PlyCancel=1;//点播
+				  MSG_Obj_8[dianbo_scree-1].INFO_TYPE=1;
 				  SenddianboMeun(dianbo_scree,0);
 				  }
 			  break;
@@ -358,6 +362,7 @@ else
 			  else if(Menu_dianbo==2)
 				  {
 				  MSG_Obj_8[dianbo_scree-1].INFO_PlyCancel=0;//取消
+				  MSG_Obj_8[dianbo_scree-1].INFO_TYPE=1;// 0
 				  SenddianboMeun(dianbo_scree,0);
 				  }
 			  break;
@@ -380,7 +385,7 @@ else
   }
   
   
-  ALIGN(RT_ALIGN_SIZE)
+  MYTIME
   MENUITEM	  Menu_2_7_RequestProgram=
   {
 	  "信息点播查看",

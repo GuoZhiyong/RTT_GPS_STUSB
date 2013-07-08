@@ -153,7 +153,7 @@ static void timetick(unsigned int systick)
 		}
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_7_CentreTextDisplay=
 {
     "中心下发消息",

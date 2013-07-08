@@ -1,11 +1,10 @@
 #include  <stdlib.h>//êy×?×a??3é×?·?′?
 #include  <stdio.h>
 #include  <string.h>
-#include <./App_moduleConfig.h>
+
 
 unsigned char dispstat=0;
 unsigned char tickcount=0;
-unsigned char RetrySet_flag=0;
 unsigned int  reset_firstset=0;
 
 unsigned char gsm_g[]={
@@ -129,56 +128,51 @@ else
 	lcd_bitmap(72,2,&BMP_link_off, LCD_MODE_SET);
 
 //车辆载重标志
-if(JT808Conf_struct.LOAD_STATE==0)
+if(JT808Conf_struct.LOAD_STATE==1)
 	lcd_bitmap(95,2,&BMP_empty, LCD_MODE_SET);
-else if(JT808Conf_struct.LOAD_STATE==1)
-	lcd_bitmap(95,2,&BMP_full_0, LCD_MODE_SET);
 else if(JT808Conf_struct.LOAD_STATE==2)
+	lcd_bitmap(95,2,&BMP_full_0, LCD_MODE_SET);
+else if(JT808Conf_struct.LOAD_STATE==3)
 	lcd_bitmap(95,2,&BMP_full_1, LCD_MODE_SET);
 
 //电源标志
-if(ModuleStatus&Status_Battery)
+if(ModuleStatus&0x04)
 	lcd_bitmap(105,2,&BMP_Battery, LCD_MODE_SET);
 else
 	lcd_bitmap(105,2,&BMP_NOBattery, LCD_MODE_SET);
 
 //是否校验特征系数
-if(JT808Conf_struct.DF_K_adjustState)
+if(DF_K_adjustState)
 	lcd_bitmap(115,2,&BMP_TriangleS, LCD_MODE_SET);
 else
 	lcd_bitmap(115,2,&BMP_TriangleK, LCD_MODE_SET);
 }
 void  Disp_Idle(void)
 {
-u8 i=0;
+   u8 i=0;
    u16  disp_spd=0;
-   
-	
-	/*for(i=0;i<3;i++)
-		Dis_date[2+i*3]=Temp_Gps_Gprs.Date[i]/10+'0';
-	for(i=0;i<3;i++)
-		Dis_date[3+i*3]=Temp_Gps_Gprs.Date[i]%10+'0';
+   u8  Date[3],Time[3];
+
+	Date[0]= time_now.year;
+	Date[1]= time_now.month;
+	Date[2]= time_now.day;
+
+	Time[0]= time_now.hour;
+	Time[1]= time_now.min;
+	Time[2]= time_now.sec;
 
 	for(i=0;i<3;i++)
-		Dis_date[12+i*3]=Temp_Gps_Gprs.Time[i]/10+'0';
+		Dis_date[2+i*3]=Date[i]/10+'0';
 	for(i=0;i<3;i++)
-		Dis_date[13+i*3]=Temp_Gps_Gprs.Time[i]%10+'0';*/
-	time_now=Get_RTC();
-    Dis_date[2]=time_now.year/10+'0';
-    Dis_date[3]=time_now.year%10+'0';
-	Dis_date[5]=time_now.month/10+'0';
-    Dis_date[6]=time_now.month%10+'0';
-	Dis_date[8]=time_now.day/10+'0';
-    Dis_date[9]=time_now.day%10+'0';
-	
-	Dis_date[12]=time_now.hour/10+'0';
-    Dis_date[13]=time_now.hour%10+'0';
-	Dis_date[15]=time_now.min/10+'0';
-    Dis_date[16]=time_now.min%10+'0';
-	Dis_date[18]=time_now.sec/10+'0';
-    Dis_date[19]=time_now.sec%10+'0';
+		Dis_date[3+i*3]=Date[i]%10+'0';
+
+	for(i=0;i<3;i++)
+		Dis_date[12+i*3]=Time[i]/10+'0';
+	for(i=0;i<3;i++)
+		Dis_date[13+i*3]=Time[i]%10+'0'; 
+
        //----------------速度--------------------------
-	 disp_spd=GPS_speed/10; 
+	 disp_spd=Speed_gps/10;
        if((disp_spd>=100)&&(disp_spd<200))
        	{
                     Dis_speDer[0]=disp_spd/100+'0';
@@ -232,20 +226,7 @@ u8 i=0;
 	lcd_text12(0,10,(char *)Dis_date,20,LCD_MODE_SET);
 	lcd_text12(0,20,(char *)Dis_speDer,18,LCD_MODE_SET);
 	lcd_bitmap(0,3,&BMP_gsm_g, LCD_MODE_SET);
-
-	// ---------- GSM 信号--------
-	if(ModuleSQ>26)     //31/4	
-	     lcd_bitmap(8,3,&BMP_gsm_3, LCD_MODE_SET);
-	else
-       if(ModuleSQ>18)	  
-	    lcd_bitmap(8,3,&BMP_gsm_2, LCD_MODE_SET);	
-	else   
-	 if(ModuleSQ>9)	  
-	    lcd_bitmap(8,3,&BMP_gsm_1, LCD_MODE_SET);	   
-	else 
-	     lcd_bitmap(8,3,&BMP_gsm_0, LCD_MODE_SET); 	   	
-	   	
-		
+	lcd_bitmap(8,3,&BMP_gsm_3, LCD_MODE_SET);
 	GPSGPRS_Status();
 	
 	lcd_update_all();
@@ -272,14 +253,12 @@ static void keypress(unsigned int key)
 			CounterBack=0;
 			UpAndDown=1;//
 			
-			RetrySet_flag=0;//采集特征系数仅在待机界面有效
 
 			pMenuItem=&Menu_2_InforCheck;
 			pMenuItem->show();
             reset_firstset=0;
 			break;
 		case KeyValueOk:
-			RetrySet_flag=1;
 			if(reset_firstset==0)
 				reset_firstset=1;
 			else if(reset_firstset==3)
@@ -288,8 +267,6 @@ static void keypress(unsigned int key)
 				reset_firstset=5;	
 			break;
 		case KeyValueUP:
-			if(RetrySet_flag==1)
-				RetrySet_flag=2;
 			if(reset_firstset==1)
 				reset_firstset=2;
 			else if(reset_firstset==2)
@@ -299,26 +276,10 @@ static void keypress(unsigned int key)
 			break;
 		case KeyValueDown:
             reset_firstset=0;
-			if(RetrySet_flag==2)
-				{
-				RetrySet_flag=0;
-				pMenuItem=&Menu_0_0_password;//&Menu_SetTZXS;  // 以前是自检---现在是设置界面
-				pMenuItem->show();
-				// ----清除鉴权码 --需要重新注册重新鉴权
-				/*memset(Reg_buf,0,sizeof(Reg_buf));
-				DevRegisterFlag=0;
-				Reg_buf[20]=DevRegisterFlag;	  						
-				DF_WriteFlashSector(DF_DevConfirmCode_Page,0,(u8*)Reg_buf,21);	
-				Vechicle_Info.DevoceEffectFlag=0;
-				AT_Stage(AT_Idle);
-				*/   	 
-				}
-			else
-				{
-				//打印开电
-				GPIO_SetBits(GPIOB,GPIO_Pin_7);
+			//打印开电
+			GPIO_SetBits(GPIOB,GPIO_Pin_7);
+			if(print_rec_flag==0)
 				print_rec_flag=1;//打印标志
-				}
 
 			break;
 		}
@@ -337,10 +298,9 @@ if(reset_firstset==6)
 		Api_Config_Recwrite_Large(jt808,0,(u8*)&JT808Conf_struct,sizeof(JT808Conf_struct));    
 	//----------------------------------------------------------------------------------
 	}
-else if((reset_firstset>=7)&&(reset_firstset<=1207))//50ms一次,,60s
+else if(reset_firstset>=7)//50ms一次,,60s
 	{
-	if(reset_firstset==1207)
-		reset_firstset=0;
+	reset_firstset++;
 	lcd_fill(0);
 	lcd_text12(0,3,"需重新设置车牌号和ID",20,LCD_MODE_SET);
 	lcd_text12(24,18,"重新加电查看",12,LCD_MODE_SET); 
@@ -348,19 +308,28 @@ else if((reset_firstset>=7)&&(reset_firstset<=1207))//50ms一次,,60s
 	}
 else
 	{
-	if(Antenna_open_flag)
-		return;
+	//主电源掉电
+	if(Warn_Status[1]&0x01)  
+		{
+		BuzzerFlag=11;
+		lcd_fill(0);
+		lcd_text12(30,10,"主电源掉电",10,LCD_MODE_SET); 
+		lcd_update_all();
+		}
 	//循环显示待机界面
 	tickcount++;
-	if(tickcount>=10) 
+	if(tickcount>=16) 
 		{
-		tickcount=0;	
+		tickcount=0;
 	    Disp_Idle();
 		}
 	}
+    
+Cent_To_Disp();
+
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_1_Idle=
 {
     "待机界面",

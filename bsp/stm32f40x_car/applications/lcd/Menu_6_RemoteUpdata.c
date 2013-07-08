@@ -79,7 +79,7 @@ else if(ISP_Updata_Flag==2)
 	}
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_6_RemoteUpdata=
 {
 "Ô¶³ÌÉý¼¶",

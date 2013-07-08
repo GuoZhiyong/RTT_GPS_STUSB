@@ -53,12 +53,12 @@ if(par==1)
 	}
 else
 	{
-	CAN_baud[7]= JT808Conf_struct.BD_EXT.GNSS_Baud_Value/100000+'0';
-	CAN_baud[8]= JT808Conf_struct.BD_EXT.GNSS_Baud_Value%100000/10+'0';
-	CAN_baud[9]= JT808Conf_struct.BD_EXT.GNSS_Baud_Value%10000/10+'0';
-	CAN_baud[10]=JT808Conf_struct.BD_EXT.GNSS_Baud_Value%1000/10+'0';
-	CAN_baud[11]=JT808Conf_struct.BD_EXT.GNSS_Baud_Value%100/10+'0';
-	CAN_baud[12]=JT808Conf_struct.BD_EXT.GNSS_Baud_Value%10+'0'; 
+	CAN_baud[7]= BD_EXT.BD_Baud/100000+'0';
+	CAN_baud[8]= BD_EXT.BD_Baud%100000/10+'0';
+	CAN_baud[9]= BD_EXT.BD_Baud%10000/10+'0';
+	CAN_baud[10]=BD_EXT.BD_Baud%1000/10+'0';
+	CAN_baud[11]=BD_EXT.BD_Baud%100/10+'0';
+	CAN_baud[12]=BD_EXT.BD_Baud%10+'0';
 	lcd_text12(0,10,(char *)CAN_baud,13,LCD_MODE_SET);
 	}
 lcd_update_all();
@@ -123,6 +123,7 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)
 {
+    Cent_To_Disp();
 	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime*5)
 		return;
@@ -136,7 +137,7 @@ static void timetick(unsigned int systick)
 	
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_5_5_can=
 {
 "CAN²ÎÊý²éÑ¯",

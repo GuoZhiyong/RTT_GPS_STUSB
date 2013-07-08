@@ -191,6 +191,7 @@ u8 i=0;
 
 static void timetick(unsigned int systick)
 {
+       Cent_To_Disp();
 	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime)
 		return;
@@ -208,7 +209,7 @@ static void timetick(unsigned int systick)
 		}
 }
 
-ALIGN(RT_ALIGN_SIZE)
+
 MENUITEM	Menu_2_3_CentreTextStor=
 {
 	"文本消息查看",

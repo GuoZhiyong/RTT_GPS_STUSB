@@ -10,7 +10,7 @@ unsigned char select_inter[]={0x3C,0x7E,0xFF,0xFF,0xFF,0xFF,0x7E,0x3C};//实心
 DECL_BMP(8,8,select_inter); 
 DECL_BMP(8,8,noselect_inter); 
 
-static unsigned char menu_pos_3=0;
+static unsigned char menu_pos=0;
 static PMENUITEM psubmenu[8]=
 {
 	&Menu_3_1_CenterQuesSend,
@@ -33,8 +33,8 @@ unsigned char i=0;
 	lcd_text12(0,17,"交互",4,LCD_MODE_SET);
 	for(i=0;i<8;i++)
 		lcd_bitmap(30+i*DIS_Dur_width_inter, 5, &BMP_noselect_inter, LCD_MODE_SET);
-    lcd_bitmap(30+menu_pos_3*DIS_Dur_width_inter, 5, &BMP_select_inter, LCD_MODE_SET);
-    lcd_text12(30,19,(char *)(psubmenu[menu_pos_3]->caption),psubmenu[menu_pos_3]->len,LCD_MODE_SET);
+    lcd_bitmap(30+menu_pos*DIS_Dur_width_inter, 5, &BMP_select_inter, LCD_MODE_SET);
+    lcd_text12(30,19,(char *)(psubmenu[menu_pos]->caption),psubmenu[menu_pos]->len,LCD_MODE_SET);
 	lcd_update_all();
 }
 
@@ -44,7 +44,7 @@ static void msg( void *p)
 }
 static void show(void)
 {
-	//menu_pos_3=0;
+	menu_pos=0;
 	menuswitch();
 }
 
@@ -60,20 +60,20 @@ switch(KeyValue)
 		pMenuItem->show();
 		break;
 	case KeyValueOk:
-		pMenuItem=psubmenu[menu_pos_3];//鉴权注册
+		pMenuItem=psubmenu[menu_pos];//鉴权注册
 		pMenuItem->show();
 		break;
 	case KeyValueUP:
-		if(menu_pos_3==0) 
-			menu_pos_3=7;
+		if(menu_pos==0) 
+			menu_pos=7;
 		else
-			menu_pos_3--;
+			menu_pos--;
 		menuswitch();		
 		break;
 	case KeyValueDown:
-		menu_pos_3++;
-		if(menu_pos_3>7)
-			menu_pos_3=0;
+		menu_pos++;
+		if(menu_pos>7)
+			menu_pos=0;
 		menuswitch();
 		break;
 	}
@@ -85,6 +85,7 @@ KeyValue=0;
 
 static void timetick(unsigned int systick)
 {
+
 	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime)
 		return;
@@ -94,7 +95,7 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_3_InforInteract=
 {
     "交互信息",

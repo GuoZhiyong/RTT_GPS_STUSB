@@ -4,20 +4,14 @@
 unsigned char Menu_TelText=0;
 unsigned char TelText_scree=0;
 
-unsigned char Tel_num_code[22][3]={"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"};
+unsigned char Tel_num_code[10][2]={"0","1","2","3","4","5","6","7","8","9"};
 
 
 
 void Dis_TelText(unsigned char screen)
 	{
-	u8 len=0;
-	
-	if(screen<10)
-		len=1;
-	else
-		len=2;
 	lcd_fill(0);
-	lcd_text12(0,3,(char *)Tel_num_code[screen],len,LCD_MODE_SET);
+	lcd_text12(0,3,(char *)Tel_num_code[screen],1,LCD_MODE_SET);
 	if(PhoneBook_8[screen-1].Effective_Flag)
 		{
 		lcd_text12(15,3,(char*)PhoneBook_8[screen-1].UserStr,strlen((char*)PhoneBook_8[screen-1].UserStr),LCD_MODE_SET);
@@ -52,6 +46,12 @@ static void keypress(unsigned int key)
             TelText_scree=0;
 			break;
 		case KeyValueOk:
+			/*if(Menu_TelText==0)
+				{
+				//PhoneBook_Read();
+				Menu_TelText=1;
+				}
+			else */
 			if(Menu_TelText==1)
 				{
 				PhoneBook_Read();
@@ -73,8 +73,8 @@ static void keypress(unsigned int key)
 			if(Menu_TelText==2)
 				{
 				TelText_scree++;
-				if(TelText_scree>=20)
-					TelText_scree=20;
+				if(TelText_scree>=8)
+					TelText_scree=8;
 				Dis_TelText(TelText_scree);
 				}
 			break;
@@ -96,7 +96,7 @@ static void timetick(unsigned int systick)
 		}
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_5_1_TelDis=
 {
     "电话本查看",

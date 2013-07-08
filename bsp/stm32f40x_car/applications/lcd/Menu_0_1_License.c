@@ -13,10 +13,8 @@ unsigned char zifu_counter=0;
 
 
 //¾©½ò¼½»¦ÓåÔ¥ÔÆÁÉºÚÏæ  ÍîÂ³ÐÂËÕÕã¸Ó¶õ¹ð¸Ê½ú  ÃÉÉÂ¼ªÃö¹óÔÁÇà²Ø´¨Äþ  Çí
-unsigned char Car_HZ_code[57][2]={"¾©","½ò","¼½","»¦","Óå","Ô¥","ÔÆ","ÁÉ","ºÚ","Ïæ",\
-"Íî","Â³","ÐÂ","ËÕ","Õã","¸Ó","¶õ","¹ð","¸Ê","½ú","ÃÉ","ÉÂ","¼ª","Ãö","¹ó","ÔÁ","Çà",\
-"²Ø","´¨","Äþ","Çí"," A"," B"," C"," D"," E"," F"," G"," H"," I"," J"," K"," L"," M",\
-" N"," O"," P"," Q"," R"," S"," T"," U"," V"," W"," X"," Y"," Z"};
+unsigned char Car_HZ_code[31][2]={"¾©","½ò","¼½","»¦","Óå","Ô¥","ÔÆ","ÁÉ","ºÚ","Ïæ",\
+"Íî","Â³","ÐÂ","ËÕ","Õã","¸Ó","¶õ","¹ð","¸Ê","½ú","ÃÉ","ÉÂ","¼ª","Ãö","¹ó","ÔÁ","Çà","²Ø","´¨","Äþ","Çí"};
 //
 /*unsigned char Car_num_code[36]={'0','1','2','3','4','5','6','7','8','9',\
 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R',\
@@ -50,15 +48,12 @@ switch(par)
 		lcd_text12(0,20,"ÃÉÉÂ¼ªÃö¹óÔÁÇà²Ø´¨Äþ",20,LCD_MODE_SET);
 		break;	
 	case 4:
-		lcd_text12(0,20,"ÇíABCDEFGHIJKLMNOPQR",20,LCD_MODE_SET);
+		lcd_text12(0,20,"Çí",2,LCD_MODE_SET);
 		break;
 	case 5:
-		lcd_text12(0,20,"STUVWXYZ",8,LCD_MODE_SET);
-		break;
-	case 6:
 		lcd_text12(0,20,"0123456789ABCDEFGHIJ",20,LCD_MODE_SET);
 		break;	
-	case 7:
+	case 6:
 		lcd_text12(0,20,"KLMNOPQRSTUVWXYZ",16,LCD_MODE_SET);
 		break;
 	default:
@@ -77,11 +72,6 @@ offset:  type==2Ê±ÓÐÓÃ    ==1Ê±ÎÞÓÃ
 void license_input_az09(unsigned char type,unsigned char offset,unsigned char par)
 {
 if((type==1)&&(par>=1)&&(par<=31))
-	{
-	memcpy(Menu_Car_license,(char *)Car_HZ_code[par-1],2);
-	lcd_text12(0,0,(char *)Menu_Car_license,2,LCD_MODE_SET);
-	}
-else if((type==1)&&(par>31)&&(par<=57))
 	{
 	memcpy(Menu_Car_license,(char *)Car_HZ_code[par-1],2);
 	lcd_text12(0,0,(char *)Menu_Car_license,2,LCD_MODE_SET);
@@ -137,7 +127,7 @@ static void keypress(unsigned int key)
 				lcd_fill(0);
 				//lcd_text12(0,0,(char *)Car_license,zifu_counter,LCD_MODE_SET);
 				
-				license_input(6);//×ÖÄ¸Ñ¡Ôñ
+				license_input(5);//×ÖÄ¸Ñ¡Ôñ
 				license_input_az09(1,0,screen_in_sel);//Ð´ÈëÑ¡¶¨µÄºº×Ö
 				lcd_bitmap(0, top_line, &BMP_select, LCD_MODE_SET);
 				lcd_update_all();
@@ -149,7 +139,7 @@ static void keypress(unsigned int key)
 				zifu_counter++;
 				
 				lcd_fill(0);
-				license_input(6);//×ÖÄ¸Ñ¡Ôñ
+				license_input(5);//×ÖÄ¸Ñ¡Ôñ
 				license_input_az09(2,zifu_counter,screen_in_sel2);//
 				//license_input_az09(1,0,screen_in_sel);//Ð´ÈëÑ¡¶¨µÄºº×Ö
 				screen_in_sel2=1;
@@ -169,8 +159,6 @@ static void keypress(unsigned int key)
 				lcd_text12(18,20,"³µÅÆºÅÊäÈëÍê³É",14,LCD_MODE_INVERT);
 				license_input_az09(1,0,screen_in_sel);//Ð´ÈëÑ¡¶¨µÄºº×Ö
 				lcd_update_all();
-
-
 
 				screen_in_sel2=1;
 				}
@@ -192,7 +180,7 @@ static void keypress(unsigned int key)
 				if(screen_in_sel>=2)
 					screen_in_sel--;
 				else if(screen_in_sel==1)
-					screen_in_sel=57;
+					screen_in_sel=31;
 				if(screen_in_sel<=10)
 					{
 					license_input(1);
@@ -208,21 +196,11 @@ static void keypress(unsigned int key)
 					license_input(3);
 					lcd_bitmap((screen_in_sel-21)*width_hz, top_line, &BMP_select, LCD_MODE_SET);
 					}
-				else if(screen_in_sel==31)
+                else if(screen_in_sel==31)
                 	{
                 	license_input(4);
-					lcd_bitmap((screen_in_sel-31)*width_hz,top_line, &BMP_select, LCD_MODE_SET);
+					lcd_bitmap((screen_in_sel-31)*width_hz, top_line, &BMP_select, LCD_MODE_SET);
                 	}
-				else if((screen_in_sel>31)&&(screen_in_sel<=49))
-					{
-					license_input(4);
-					lcd_bitmap((screen_in_sel-30)*width_zf,top_line, &BMP_select, LCD_MODE_SET);
-					}
-				else if((screen_in_sel>49)&&(screen_in_sel<=57))
-					{
-					license_input(5);
-					lcd_bitmap((screen_in_sel-50)*width_zf,top_line, &BMP_select, LCD_MODE_SET);
-					}
 				lcd_update_all();
 				}
 			else if(screen_flag==5)//×ÖÄ¸/Êý×Ö Ñ¡Ôñ
@@ -233,12 +211,12 @@ static void keypress(unsigned int key)
 					screen_in_sel2=36;
 				if(screen_in_sel2<=20)
 					{
-					license_input(6);
+					license_input(5);
 					lcd_bitmap((screen_in_sel2-1)*width_zf,top_line, &BMP_select, LCD_MODE_SET);		
 					}
 				else if((screen_in_sel2>20)&&(screen_in_sel2<=36))
 					{
-					license_input(7);
+					license_input(6);
 					lcd_bitmap((screen_in_sel2-21)*width_zf,top_line, &BMP_select, LCD_MODE_SET);					
 					}
 				//license_input_az09(1,0,screen_in_sel);//Ð´ÈëÑ¡¶¨µÄ×ÖÄ¸¡¢Êý×Ö
@@ -249,9 +227,9 @@ static void keypress(unsigned int key)
 		case KeyValueDown:
 			if(screen_flag==1)//ºº×ÖÑ¡Ôñ
 				{
-				if(screen_in_sel<57)
+				if(screen_in_sel<31)
 					screen_in_sel++;
-				else if(screen_in_sel==57)
+				else if(screen_in_sel==31)
 					screen_in_sel=1;
 				if(screen_in_sel<=10)
 					{
@@ -273,16 +251,6 @@ static void keypress(unsigned int key)
                 	license_input(4);
 					lcd_bitmap((screen_in_sel-31)*width_hz,top_line, &BMP_select, LCD_MODE_SET);
                 	}
-				else if((screen_in_sel>31)&&(screen_in_sel<=49))
-					{
-					license_input(4);
-					lcd_bitmap((screen_in_sel-30)*width_zf,top_line, &BMP_select, LCD_MODE_SET);
-					}
-				else if((screen_in_sel>49)&&(screen_in_sel<=57))
-					{
-					license_input(5);
-					lcd_bitmap((screen_in_sel-50)*width_zf,top_line, &BMP_select, LCD_MODE_SET);
-					}
 				lcd_update_all();
 				}
 			else if(screen_flag==5)//×ÖÄ¸/Êý×Ö Ñ¡Ôñ
@@ -293,12 +261,12 @@ static void keypress(unsigned int key)
 					screen_in_sel2=1;
 				if(screen_in_sel2<=20)
 					{
-					license_input(6);
+					license_input(5);
 					lcd_bitmap((screen_in_sel2-1)*width_zf,top_line, &BMP_select, LCD_MODE_SET);
 					}
 				else if((screen_in_sel2>20)&&(screen_in_sel2<=36))
 					{
-					license_input(7);
+					license_input(6);
 					lcd_bitmap((screen_in_sel2-21)*width_zf,top_line, &BMP_select, LCD_MODE_SET);
 					}
 				//license_input_az09(1,0,screen_in_sel);//Ð´ÈëÑ¡¶¨µÄÊý×Ö¡¢×ÖÄ¸
@@ -314,8 +282,8 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)
 {
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
+	/*CounterBack++;
+	if(CounterBack!=MaxBankIdleTime*5)
 		return;
 	CounterBack=0;
 	pMenuItem=&Menu_0_loggingin;
@@ -325,10 +293,10 @@ static void timetick(unsigned int systick)
 	screen_flag=0;//==1¿ªÊ¼ÊäÈëºº×Ö½çÃæ
 	screen_in_sel=1;
 	screen_in_sel2=1;
-	zifu_counter=0;
+	zifu_counter=0;*/
 }
 
-ALIGN(RT_ALIGN_SIZE)
+
 MENUITEM	Menu_0_1_license=
 {
 	"³µÅÆºÅ",

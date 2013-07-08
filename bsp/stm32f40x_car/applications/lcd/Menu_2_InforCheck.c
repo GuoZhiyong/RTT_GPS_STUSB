@@ -5,7 +5,7 @@
 unsigned char noselect_check[]={0x3C,0x7E,0xC3,0xC3,0xC3,0xC3,0x7E,0x3C};//空心
 unsigned char select_check[]={0x3C,0x7E,0xFF,0xFF,0xFF,0xFF,0x7E,0x3C};//实心
 
-static unsigned char menu_pos_2=0;
+static unsigned char menu_pos=0;
 
 
 DECL_BMP(8,8,select_check); DECL_BMP(8,8,noselect_check); 
@@ -33,8 +33,8 @@ static void menuswitch(void)
 	lcd_text12(0,17,"查看",4,LCD_MODE_SET);
 	for(i=0;i<8;i++) 
 		lcd_bitmap(30+i*DIS_Dur_width_check, 5, &BMP_noselect_check, LCD_MODE_SET);
-	lcd_bitmap(30+menu_pos_2*DIS_Dur_width_check,5, &BMP_select_check, LCD_MODE_SET);
-	lcd_text12(30,19,(char *)(psubmenu[menu_pos_2]->caption),psubmenu[menu_pos_2]->len,LCD_MODE_SET);
+	lcd_bitmap(30+menu_pos*DIS_Dur_width_check,5, &BMP_select_check, LCD_MODE_SET);
+	lcd_text12(30,19,(char *)(psubmenu[menu_pos]->caption),psubmenu[menu_pos]->len,LCD_MODE_SET);
 	lcd_update_all();
 }
 static void msg( void *p)
@@ -42,7 +42,7 @@ static void msg( void *p)
 }
 static void show(void)
 {
-	//menu_pos_2=0;
+	menu_pos=0;
 	menuswitch();
 }
 
@@ -58,20 +58,20 @@ switch(KeyValue)
 		pMenuItem->show();
 		break;
 	case KeyValueOk:
-		pMenuItem=psubmenu[menu_pos_2];
+		pMenuItem=psubmenu[menu_pos];
 		pMenuItem->show();
 		break;
 	case KeyValueUP:
-		if(menu_pos_2==0) 
-			menu_pos_2=7;
+		if(menu_pos==0) 
+			menu_pos=7;
 		else
-			menu_pos_2--;
+			menu_pos--;
 		menuswitch();		
 		break;
 	case KeyValueDown:
-		menu_pos_2++;
-		if(menu_pos_2>7)
-			menu_pos_2=0;
+		menu_pos++;
+		if(menu_pos>7)
+			menu_pos=0;
 		menuswitch();
 		break;
 	}
@@ -81,6 +81,7 @@ KeyValue=0;
 
 static void timetick(unsigned int systick)
 {
+
 	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime)
 		return;
@@ -90,7 +91,7 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
+
 MENUITEM	Menu_2_InforCheck=
 {
 	"查看信息",

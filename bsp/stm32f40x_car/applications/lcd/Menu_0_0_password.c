@@ -1,5 +1,7 @@
-#include  <string.h>
 #include "Menu_Include.h"
+
+#include  <string.h>
+
 
 #define  Sim_width1  6
 #define  ENTER_CODE  "001100"
@@ -21,6 +23,7 @@ void password_Set(u8 par)
 		lcd_text12(84,3,(char *)password_Code,password_SetFlag-1,LCD_MODE_SET);//-1+14
 	lcd_bitmap(par*Sim_width1, 14, &BMP_password_icon, LCD_MODE_SET);
 	lcd_text12(0,19,"0123456789",10,LCD_MODE_SET);
+	lcd_text12(110,20,"TJ",2,LCD_MODE_SET);
 	lcd_update_all();
 }
 
@@ -141,7 +144,7 @@ static void timetick(unsigned int systick)
 		}
 }
 
-ALIGN(RT_ALIGN_SIZE)
+
 MENUITEM	Menu_0_0_password=
 {
 "√‹¬Î…Ë÷√",

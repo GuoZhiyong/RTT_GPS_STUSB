@@ -50,7 +50,7 @@ unsigned char DataOutOK=0;
 unsigned char Rx_TZXS_Flag=0;
 
 unsigned char battery_flag=0,tz_flag=0;
-unsigned char USB_insertFlag=0;
+unsigned char USB_insertFlag=1;
 
 
 unsigned char BuzzerFlag=0;//=1响1声  ＝11响2声
@@ -91,15 +91,13 @@ u8 CarSet_0_counter=1;//记录设置车辆信息的设置内容1:车牌号2:类型3:颜色
 
 //------------ 使用前锁定相关 ------------------
 unsigned char Menu_Car_license[10];//存放车牌号码
-u8 Menu_Sim_Code[12];
 u8 Menu_VechileType[10];  //  车辆类型
 u8 Menu_VecLogoColor[10]; // 车牌颜色
-u8 Menu_color_num=0;   // JT415    1  蓝 2 黄 3 黑 4 白 9其他
-u8 menu_speedtype=0;  //速度获取方式   0:gps速度     1:传感器速度
-u8 menu_color_flag=0; //颜色设置完成
+u8 Menu_Vin_Code[17];
 
-u8 Antenna_open_flag=0;
-u8 Antenna_open_counter=0;
+u8 Menu_color_num=0;   // JT415    1  蓝 2 黄 3 黑 4 白 9其他
+
+u8 menu_type_flag=0,menu_color_flag=0;
 
 
 MENUITEM *pMenuItem;   
@@ -108,23 +106,6 @@ MENUITEM *pMenuItem;
 //中心下发消息或者条件触发显示消息函数
 void Cent_To_Disp(void)
 {
-Antenna_open_counter++;
-if(Antenna_open_counter>=10)
-	{
-	Antenna_open_counter=0;
-	if(Antenna_open_flag==1)
-		{
-		lcd_fill(0);
-		lcd_text12(36,10,"天线开路",8,LCD_MODE_SET);
-		lcd_update_all();
-		}
-	else if(Antenna_open_flag==2)
-		{
-		lcd_fill(0);
-		lcd_text12(24,10,"天线恢复正常",12,LCD_MODE_SET);
-		lcd_update_all();
-		}
-	}
 }
 void version_disp(void)
 {

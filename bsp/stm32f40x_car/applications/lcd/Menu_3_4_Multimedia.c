@@ -133,7 +133,7 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_3_4_Multimedia=
 {
 	"发送多媒体数据",

@@ -106,7 +106,7 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_3_6_Record=
 {
 	"Â¼Òô¿ªÊ¼½áÊø",

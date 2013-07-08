@@ -350,7 +350,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F4XX,USE_USB_OTG_FS</Define>
               <Undefine></Undefine>
-              <IncludePath>.;..\..\components\dfs;..\..\components\dfs\filesystems\elmfat;..\..\components\dfs\filesystems\romfs;..\..\components\dfs\include;..\..\components\finsh;..\..\include;..\..\libcpu\arm\common;..\..\libcpu\arm\cortex-m4;STM32F4xx_Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;STM32F4xx_Libraries\CMSIS\Include;STM32F4xx_Libraries\CMSIS\ST\STM32F4xx\Include;STM32F4xx_Libraries\STM32F4xx_StdPeriph_Driver\inc;STM32F4xx_Libraries\STM32_USB_HOST_Library\Class\MSC\inc;STM32F4xx_Libraries\STM32_USB_HOST_Library\Core\inc;STM32F4xx_Libraries\STM32_USB_OTG_Driver\inc;applications;drivers;..\..\components\drivers\include</IncludePath>
+              <IncludePath>.;..\..\components\dfs;..\..\components\dfs\filesystems\elmfat;..\..\components\dfs\filesystems\romfs;..\..\components\dfs\include;..\..\components\finsh;..\..\include;..\..\libcpu\arm\common;..\..\libcpu\arm\cortex-m4;STM32F4xx_Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;STM32F4xx_Libraries\CMSIS\Include;STM32F4xx_Libraries\CMSIS\ST\STM32F4xx\Include;STM32F4xx_Libraries\STM32F4xx_StdPeriph_Driver\inc;STM32F4xx_Libraries\STM32_USB_HOST_Library\Class\MSC\inc;STM32F4xx_Libraries\STM32_USB_HOST_Library\Core\inc;STM32F4xx_Libraries\STM32_USB_OTG_Driver\inc;applications;.\applications\lcd;drivers;..\..\components\drivers\include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -460,91 +460,11 @@
               <FileName>jt808_area.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_area.c</FilePath>
-              <FileOption>
-                <CommonProperty>
-                  <UseCPPCompiler>2</UseCPPCompiler>
-                  <RVCTCodeConst>0</RVCTCodeConst>
-                  <RVCTZI>0</RVCTZI>
-                  <RVCTOtherData>0</RVCTOtherData>
-                  <ModuleSelection>0</ModuleSelection>
-                  <IncludeInBuild>0</IncludeInBuild>
-                  <AlwaysBuild>0</AlwaysBuild>
-                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
-                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
-                  <PublicsOnly>2</PublicsOnly>
-                  <StopOnExitCode>11</StopOnExitCode>
-                  <CustomArgument></CustomArgument>
-                  <IncludeLibraryModules></IncludeLibraryModules>
-                </CommonProperty>
-                <FileArmAds>
-                  <Cads>
-                    <interw>2</interw>
-                    <Optim>0</Optim>
-                    <oTime>2</oTime>
-                    <SplitLS>2</SplitLS>
-                    <OneElfS>2</OneElfS>
-                    <Strict>2</Strict>
-                    <EnumInt>2</EnumInt>
-                    <PlainCh>2</PlainCh>
-                    <Ropi>2</Ropi>
-                    <Rwpi>2</Rwpi>
-                    <wLevel>0</wLevel>
-                    <uThumb>2</uThumb>
-                    <uSurpInc>2</uSurpInc>
-                    <VariousControls>
-                      <MiscControls></MiscControls>
-                      <Define></Define>
-                      <Undefine></Undefine>
-                      <IncludePath></IncludePath>
-                    </VariousControls>
-                  </Cads>
-                </FileArmAds>
-              </FileOption>
             </File>
             <File>
               <FileName>jt808_updata.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_updata.c</FilePath>
-              <FileOption>
-                <CommonProperty>
-                  <UseCPPCompiler>2</UseCPPCompiler>
-                  <RVCTCodeConst>0</RVCTCodeConst>
-                  <RVCTZI>0</RVCTZI>
-                  <RVCTOtherData>0</RVCTOtherData>
-                  <ModuleSelection>0</ModuleSelection>
-                  <IncludeInBuild>0</IncludeInBuild>
-                  <AlwaysBuild>0</AlwaysBuild>
-                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
-                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
-                  <PublicsOnly>2</PublicsOnly>
-                  <StopOnExitCode>11</StopOnExitCode>
-                  <CustomArgument></CustomArgument>
-                  <IncludeLibraryModules></IncludeLibraryModules>
-                </CommonProperty>
-                <FileArmAds>
-                  <Cads>
-                    <interw>2</interw>
-                    <Optim>0</Optim>
-                    <oTime>2</oTime>
-                    <SplitLS>2</SplitLS>
-                    <OneElfS>2</OneElfS>
-                    <Strict>2</Strict>
-                    <EnumInt>2</EnumInt>
-                    <PlainCh>2</PlainCh>
-                    <Ropi>2</Ropi>
-                    <Rwpi>2</Rwpi>
-                    <wLevel>0</wLevel>
-                    <uThumb>2</uThumb>
-                    <uSurpInc>2</uSurpInc>
-                    <VariousControls>
-                      <MiscControls></MiscControls>
-                      <Define></Define>
-                      <Undefine></Undefine>
-                      <IncludePath></IncludePath>
-                    </VariousControls>
-                  </Cads>
-                </FileArmAds>
-              </FileOption>
             </File>
           </Files>
         </Group>
@@ -1065,62 +985,6 @@
         </Group>
         <Group>
           <GroupName>lcd</GroupName>
-          <GroupOption>
-            <CommonProperty>
-              <UseCPPCompiler>0</UseCPPCompiler>
-              <RVCTCodeConst>0</RVCTCodeConst>
-              <RVCTZI>0</RVCTZI>
-              <RVCTOtherData>0</RVCTOtherData>
-              <ModuleSelection>0</ModuleSelection>
-              <IncludeInBuild>0</IncludeInBuild>
-              <AlwaysBuild>0</AlwaysBuild>
-              <GenerateAssemblyFile>2</GenerateAssemblyFile>
-              <AssembleAssemblyFile>2</AssembleAssemblyFile>
-              <PublicsOnly>2</PublicsOnly>
-              <StopOnExitCode>11</StopOnExitCode>
-              <CustomArgument></CustomArgument>
-              <IncludeLibraryModules></IncludeLibraryModules>
-            </CommonProperty>
-            <GroupArmAds>
-              <Cads>
-                <interw>2</interw>
-                <Optim>0</Optim>
-                <oTime>2</oTime>
-                <SplitLS>2</SplitLS>
-                <OneElfS>2</OneElfS>
-                <Strict>2</Strict>
-                <EnumInt>2</EnumInt>
-                <PlainCh>2</PlainCh>
-                <Ropi>2</Ropi>
-                <Rwpi>2</Rwpi>
-                <wLevel>0</wLevel>
-                <uThumb>2</uThumb>
-                <uSurpInc>2</uSurpInc>
-                <VariousControls>
-                  <MiscControls></MiscControls>
-                  <Define></Define>
-                  <Undefine></Undefine>
-                  <IncludePath></IncludePath>
-                </VariousControls>
-              </Cads>
-              <Aads>
-                <interw>2</interw>
-                <Ropi>2</Ropi>
-                <Rwpi>2</Rwpi>
-                <thumb>2</thumb>
-                <SplitLS>2</SplitLS>
-                <SwStkChk>2</SwStkChk>
-                <NoWarn>2</NoWarn>
-                <uSurpInc>2</uSurpInc>
-                <VariousControls>
-                  <MiscControls></MiscControls>
-                  <Define></Define>
-                  <Undefine></Undefine>
-                  <IncludePath></IncludePath>
-                </VariousControls>
-              </Aads>
-            </GroupArmAds>
-          </GroupOption>
           <Files>
             <File>
               <FileName>bmp.c</FileName>
@@ -1148,19 +1012,14 @@
               <FilePath>.\applications\lcd\Menu_0_2_CarType.c</FilePath>
             </File>
             <File>
-              <FileName>Menu_0_3_Sim.c</FileName>
+              <FileName>Menu_0_3_VIN.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\lcd\Menu_0_3_Sim.c</FilePath>
+              <FilePath>.\applications\lcd\Menu_0_3_VIN.c</FilePath>
             </File>
             <File>
               <FileName>Menu_0_4_Colour.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\Menu_0_4_Colour.c</FilePath>
-            </File>
-            <File>
-              <FileName>Menu_0_5_speedtype.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\Menu_0_5_speedtype.c</FilePath>
             </File>
             <File>
               <FileName>Menu_0_loggingin.c</FileName>
@@ -1331,26 +1190,6 @@
               <FileName>Menu_7_CentreTextDisplay.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\Menu_7_CentreTextDisplay.c</FilePath>
-            </File>
-            <File>
-              <FileName>Menu_8_1_updataResult.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\Menu_8_1_updataResult.c</FilePath>
-            </File>
-            <File>
-              <FileName>Menu_8_2_BDbatchTrans.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\Menu_8_2_BDbatchTrans.c</FilePath>
-            </File>
-            <File>
-              <FileName>menu_8_3_electronicDisp.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\menu_8_3_electronicDisp.c</FilePath>
-            </File>
-            <File>
-              <FileName>Menu_8_bd808.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\Menu_8_bd808.c</FilePath>
             </File>
             <File>
               <FileName>Menu_Include.c</FileName>

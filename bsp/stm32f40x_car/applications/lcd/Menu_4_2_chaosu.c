@@ -196,7 +196,7 @@ static void timetick(unsigned int systick)
 
 
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_4_2_chaosu=
 {   
     "³¬ËÙ¼ÝÊ»²é¿´",

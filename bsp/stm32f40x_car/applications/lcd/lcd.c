@@ -62,10 +62,7 @@
 #define IO_Group       GPIOD
 #define IO_Group_NUM   GPIO_Pin_5
 
-//unsigned int  ICcardCheckDelayNum=0;
-//unsigned char ICcardInsert_PowerOn=1;//设备上电时IC卡已经插入
-//unsigned char ICcardCheck_pc7_LH=0;//PC7为低时=1，PC7变为高时=2，初始化IC卡=3
-unsigned int R_Flag=0;
+
 void Init_lcdkey(void)
 {
 
@@ -137,6 +134,8 @@ if(!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_8))
 	KeyCheck_Flag[2]++;
 	if(KeyCheck_Flag[2]==2)
 		KeyValue=3;
+	else if((KeyCheck_Flag[2]>20)&&(KeyCheck_Flag[2]%4==0))
+		KeyValue=3;
 	}
 else
 	KeyCheck_Flag[2]=0;
@@ -145,6 +144,8 @@ if(!GPIO_ReadInputDataBit(GPIOC,GPIO_Pin_8))
 	{
 	KeyCheck_Flag[3]++;
 	if(KeyCheck_Flag[3]==2)
+		KeyValue=4;
+	else if((KeyCheck_Flag[3]>20)&&(KeyCheck_Flag[3]%4==0))
 		KeyValue=4;
 	}
 else

@@ -13,27 +13,19 @@ void confirm_login(unsigned char par)
 lcd_fill(0);
 if(par==1)
 	{
-	lcd_text12(0, 3,"Çå¿Õ¼øÈ¨Âë",10,LCD_MODE_INVERT);
-	lcd_text12(60,3," ¼øÈ¨ ×¢²á",10,LCD_MODE_SET);
-	lcd_text12(0,18,"ÖÕ¶Ë×¢Ïú",8,LCD_MODE_SET);
+	lcd_text12(0, 10,"Çå¿Õ¼øÈ¨Âë",10,LCD_MODE_INVERT);
+	lcd_text12(60,10," ¼øÈ¨ ×¢²á",10,LCD_MODE_SET);
 	}
 else if(par==2)
 	{
-	lcd_text12(0, 3,"Çå¿Õ¼øÈ¨Âë",10,LCD_MODE_SET);
-	lcd_text12(66,3,"¼øÈ¨",4,LCD_MODE_INVERT);
-	lcd_text12(96,3,"×¢²á",4,LCD_MODE_SET);
-	lcd_text12(0,18,"ÖÕ¶Ë×¢Ïú",8,LCD_MODE_SET);
+	lcd_text12(0, 10,"Çå¿Õ¼øÈ¨Âë",10,LCD_MODE_SET);
+	lcd_text12(66,10,"¼øÈ¨",4,LCD_MODE_INVERT);
+	lcd_text12(96,10,"×¢²á",4,LCD_MODE_SET);
 	}
 else if(par==3)
 	{
-	lcd_text12(0, 3,"Çå¿Õ¼øÈ¨Âë ¼øÈ¨ ",16,LCD_MODE_SET);
-	lcd_text12(96,3,"×¢²á",4,LCD_MODE_INVERT);
-	lcd_text12(0,18,"ÖÕ¶Ë×¢Ïú",8,LCD_MODE_SET);
-	}
-else if(par==4)
-	{
-	lcd_text12(0, 3,"Çå¿Õ¼øÈ¨Âë ¼øÈ¨ ×¢²á",20,LCD_MODE_SET);
-	lcd_text12(0,18,"ÖÕ¶Ë×¢Ïú",8,LCD_MODE_INVERT);
+	lcd_text12(0, 10,"Çå¿Õ¼øÈ¨Âë ¼øÈ¨ ",16,LCD_MODE_SET);
+	lcd_text12(96,10,"×¢²á",4,LCD_MODE_INVERT);
 	}
 lcd_update_all();
 }
@@ -63,7 +55,6 @@ static void keypress(unsigned int key)
 		   LogInorOut=0;//	1:¼øÈ¨	 2:×¢Ïú
 		   break;
 	   case KeyValueOk:
-	   	   //Çå¿Õ¼øÈ¨Âë
 	   	   if(LogInorOut==1)//Çå¿Õ¼øÈ¨Âë
 			   {
 			   LogInorOut_screen=0;
@@ -88,7 +79,6 @@ static void keypress(unsigned int key)
 				lcd_text12(24,10,"¼øÈ¨ÂëÒÑÇå¿Õ",12,LCD_MODE_SET);
 				lcd_update_all();
 			   	}
-		   //¼øÈ¨
 		  else if(LogInorOut==2)//¼øÈ¨
 			   {
 			   LogInorOut_screen=0;
@@ -107,10 +97,8 @@ static void keypress(unsigned int key)
 			   lcd_update_all();
 			   
 			   DEV_Login.Operate_enable=1;
-			   
 			   DEV_Login.Enable_sd=1;
 			   }
-		   //×¢²á
 		   else if(LogInorOut==3)//×¢²á
 			   {
 			   LogInorOut_screen=0;
@@ -130,26 +118,6 @@ static void keypress(unsigned int key)
 			   lcd_text12(30,10,"×¢²áÒÑ·¢ËÍ",10,LCD_MODE_SET);
 			   lcd_update_all();
 			   }
-		   //ÖÕ¶Ë×¢Ïú
-		     else if(LogInorOut==4)
-			   {
-			   LogInorOut_screen=0;
-			   LogInorOut=0;
-			   lcd_fill(0);
-			   lcd_text12(0,10,"°´È·ÈÏ¼ü·¢ËÍÖÕ¶Ë×¢Ïú",20,LCD_MODE_SET);
-			   lcd_update_all();
-			   Menu_Logout=4;
-			   }
-		   else if(Menu_Logout==4)
-			   {
-			   Menu_Logout=0;
-
-			   DEV_regist.DeRegst_sd=1; // set ·¢ËÍÖÕ¶Ë×¢Ïú±êÖ¾Î»
-
-			   lcd_fill(0);
-			   lcd_text12(18,10,"ÖÕ¶Ë×¢ÏúÒÑ·¢ËÍ",14,LCD_MODE_SET);
-			   lcd_update_all();
-			   }
 		   break;
 	   case KeyValueUP:
 		   if(LogInorOut_screen==1)
@@ -165,8 +133,8 @@ static void keypress(unsigned int key)
 		   if(LogInorOut_screen==1)
 			   {
 			   LogInorOut++;
-			   if(LogInorOut>=4)
-				   LogInorOut=4;
+			   if(LogInorOut>=3)
+				   LogInorOut=3;
 			   confirm_login(LogInorOut);
 			   }
 		   break;
@@ -193,7 +161,7 @@ static void timetick(unsigned int systick)
 	   }
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM    Menu_3_8_LogOut=
 {
    "¼øÈ¨×¢²á",

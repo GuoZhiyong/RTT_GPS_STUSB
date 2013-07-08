@@ -77,13 +77,14 @@ static void keypress(unsigned int key)
 				col_screen=3;
 				comfirmation_flag=1;//保存设置信息标志
 				lcd_fill(0);
-			       lcd_text12(0,0,Menu_Car_license,8,LCD_MODE_SET);
+				lcd_text12(0,0,Menu_Car_license,8,LCD_MODE_SET);
 				lcd_text12(54,0,Menu_VechileType,6,LCD_MODE_SET);
 				lcd_text12(96,0,(char *)Menu_VecLogoColor,4,LCD_MODE_SET);
-				lcd_text12(0,10,"SIM卡号:",8,LCD_MODE_SET);
-				lcd_text12(48,10,Menu_Sim_Code,12,LCD_MODE_SET);
-				lcd_text12(24,20,"确定",4,LCD_MODE_INVERT);
-				lcd_text12(72,20,"取消",4,LCD_MODE_SET);
+				
+				lcd_text12(0,11,"VIN",3,LCD_MODE_SET);
+				lcd_text12(19,11,(char *)Menu_Vin_Code,17,LCD_MODE_SET);
+				lcd_text12(24,22,"确定",4,LCD_MODE_INVERT);
+				lcd_text12(72,22,"取消",4,LCD_MODE_SET);
 				lcd_update_all();
 				}
 			else if(comfirmation_flag==1)
@@ -96,39 +97,22 @@ static void keypress(unsigned int key)
 				lcd_text12(0,18,"按菜单键进入待机界面",20,LCD_MODE_SET);
 				lcd_update_all();
 
-                            //车牌号
+                //车牌号
 				memset(JT808Conf_struct.Vechicle_Info.Vech_Num,0,sizeof(JT808Conf_struct.Vechicle_Info.Vech_Num));
-				memcpy(JT808Conf_struct.Vechicle_Info.Vech_Num,Menu_Car_license+1,strlen(Menu_Car_license)-1);
-				// 车辆类型
+				memcpy(JT808Conf_struct.Vechicle_Info.Vech_Num,Menu_Car_license,strlen(Menu_Car_license));
+				//车辆类型
 				memset(JT808Conf_struct.Vechicle_Info.Vech_Type,0,sizeof(JT808Conf_struct.Vechicle_Info.Vech_Type));
 				memcpy(JT808Conf_struct.Vechicle_Info.Vech_Type,Menu_VechileType,strlen(Menu_VechileType));
-                //车辆sim卡号
-            	memset(JT808Conf_struct.Vechicle_Info.Vech_sim,0,sizeof(JT808Conf_struct.Vechicle_Info.Vech_sim));
-				memcpy(JT808Conf_struct.Vechicle_Info.Vech_sim,Menu_Sim_Code,strlen(Menu_Sim_Code));
-                
+                //车辆VIN
+                memset(JT808Conf_struct.Vechicle_Info.Vech_VIN,0,sizeof(JT808Conf_struct.Vechicle_Info.Vech_VIN));
+                memcpy(JT808Conf_struct.Vechicle_Info.Vech_VIN,Menu_Vin_Code,17);          
+
 				// 车牌颜色
 				JT808Conf_struct.Vechicle_Info.Dev_Color=Menu_color_num;
-				//速度获取方式     设置信息设置后就取相应的方式
-				if(menu_speedtype==1)
-					{
-					JT808Conf_struct.Speed_GetType=1; 
-					JT808Conf_struct.DF_K_adjustState=1;		
-					ModuleStatus|=Status_Pcheck;
-					}
-				else
-					{
-					JT808Conf_struct.Speed_GetType=0;  
-					JT808Conf_struct.DF_K_adjustState=0;	
-					ModuleStatus&=~Status_Pcheck;
-					}
 				//车辆设置完成
 				JT808Conf_struct.password_flag=1; 
 				//  存储
 				Api_Config_Recwrite_Large(jt808,0,(u8*)&JT808Conf_struct,sizeof(JT808Conf_struct));
-
-				
-				memcpy((char*)IMSI_CODE+3,(char*)JT808Conf_struct.Vechicle_Info.Vech_sim,12);
-	            IMSI_Convert_SIMCODE(); //  translate 
 				}
 			else if(comfirmation_flag==2)
 				{
@@ -165,13 +149,14 @@ static void keypress(unsigned int key)
 				{
 				comfirmation_flag=1;
 				lcd_fill(0);
-			       lcd_text12(0,0,Menu_Car_license,8,LCD_MODE_SET);
+			    	lcd_text12(0,0,Menu_Car_license,8,LCD_MODE_SET);
 				lcd_text12(54,0,Menu_VechileType,6,LCD_MODE_SET);
 				lcd_text12(96,0,(char *)Menu_VecLogoColor,4,LCD_MODE_SET);
-				lcd_text12(0,10,"SIM卡号:",8,LCD_MODE_SET);
-				lcd_text12(48,10,Menu_Sim_Code,12,LCD_MODE_SET);
-				lcd_text12(24,20,"确定",4,LCD_MODE_INVERT);
-				lcd_text12(72,20,"取消",4,LCD_MODE_SET);
+				
+				lcd_text12(0,11,"VIN",3,LCD_MODE_SET);
+				lcd_text12(19,11,(char *)Menu_Vin_Code,17,LCD_MODE_SET);
+				lcd_text12(24,22,"确定",4,LCD_MODE_INVERT);
+				lcd_text12(72,22,"取消",4,LCD_MODE_SET);
 				lcd_update_all();
 				}
 
@@ -188,13 +173,14 @@ static void keypress(unsigned int key)
 				{
 				comfirmation_flag=2;
 				lcd_fill(0);
-				   lcd_text12(0,0,Menu_Car_license,8,LCD_MODE_SET);
+				lcd_text12(0,0,Menu_Car_license,8,LCD_MODE_SET);
 				lcd_text12(54,0,Menu_VechileType,6,LCD_MODE_SET);
 				lcd_text12(96,0,(char *)Menu_VecLogoColor,4,LCD_MODE_SET);
-				lcd_text12(0,10,"SIM卡号:",8,LCD_MODE_SET);
-				lcd_text12(48,10,Menu_Sim_Code,12,LCD_MODE_SET);
-				lcd_text12(24,20,"确定",4,LCD_MODE_SET);
-				lcd_text12(72,20,"取消",4,LCD_MODE_INVERT);
+				
+				lcd_text12(0,11,"VIN",3,LCD_MODE_SET);
+				lcd_text12(19,11,(char *)Menu_Vin_Code,17,LCD_MODE_SET);
+				lcd_text12(24,22,"确定",4,LCD_MODE_SET);
+				lcd_text12(72,22,"取消",4,LCD_MODE_INVERT);
 				lcd_update_all();
 				}
 
@@ -206,9 +192,9 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)
 {
-
+/*
 	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
+	if(CounterBack!=MaxBankIdleTime*5)
 		return;
 	CounterBack=0;
 	pMenuItem=&Menu_0_loggingin;
@@ -217,13 +203,13 @@ static void timetick(unsigned int systick)
 
 	col_screen=0;
 	CarBrandCol_Cou=1;
-	comfirmation_flag=0;
+	comfirmation_flag=0;*/
 }
 
-ALIGN(RT_ALIGN_SIZE)
+
 MENUITEM	Menu_0_4_Colour=
 {
-"车牌颜色设置",
+"车辆颜色设置",
 	12,
 	&show,
 	&keypress,

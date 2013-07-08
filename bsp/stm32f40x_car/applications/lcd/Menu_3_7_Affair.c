@@ -161,9 +161,8 @@ static void msg( void *p)
 }
 static void show(void)
 	{
-	Menu_Affair=0;
 	lcd_fill(0);
-	lcd_text12(36,3,"事件信息",8,LCD_MODE_SET);
+	lcd_text12(36,3,"事件设置",8,LCD_MODE_SET);
 	lcd_text12(24,18,"按确认键查看",12,LCD_MODE_SET);
 	lcd_update_all();
 	}
@@ -203,7 +202,7 @@ static void keypress(unsigned int key)
 
 					//------------	发送事件ID相关	----------------
 					EventObj.Event_ID=Affair_scree;
-					SD_ACKflag.f_CurrentEventACK_0301H=1; 
+					//SD_ACKflag.f_CurrentEventACK_0301H=1; 
 					//返回事件信息菜单
 					Menu_Affair=0;
 					Affair_scree=1;
@@ -250,7 +249,7 @@ else
 	}
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_3_7_Affair=
 {
     "事件信息",

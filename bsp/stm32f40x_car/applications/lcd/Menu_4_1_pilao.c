@@ -201,7 +201,7 @@ static void timetick(unsigned int systick)
 
 
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_4_1_pilao=
 {
     "Æ£ÀÍ¼ÝÊ»²é¿´",

@@ -11,7 +11,6 @@ static void show(void)
 {
 	lcd_fill(0);
 	lcd_text12(20,3,"多媒体事件上传",14,LCD_MODE_SET);
-	lcd_text12(20,18,"按确认键上传信息",16,LCD_MODE_SET);
 	lcd_update_all();
 }
 
@@ -64,6 +63,7 @@ KeyValue=0;
 
 static void timetick(unsigned int systick)
 {
+
 	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime)
 		return;
@@ -75,7 +75,7 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_3_5_MultimediaTrans=
 {
 "多媒体事件上传",

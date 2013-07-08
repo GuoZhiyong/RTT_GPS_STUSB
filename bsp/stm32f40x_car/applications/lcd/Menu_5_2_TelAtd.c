@@ -41,6 +41,11 @@ static void keypress(unsigned int key)
 				/*OneKeyCallFlag=1;    
 				One_largeCounter=0;
 				One_smallCounter=0;*/
+				  if(DataLink_Status()&&(CallState==CallState_Idle))    //电话空闲且在线情况下
+                           {  
+			                 Speak_ON;   //开启功放
+					   rt_kprintf("\r\n  一键回拨(监听号码)-->普通通话\r\n");}
+                                      CallState=CallState_rdytoDialLis;  // 准备开始拨打监听号码 				
 				//-----------------------------
 				}
 			break;
@@ -55,6 +60,7 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)
 { 
+	Cent_To_Disp();   
 	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime*5)
 		return;
@@ -64,7 +70,7 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_5_2_TelAtd=
 {
 "一键回拨",

@@ -64,7 +64,7 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
+
 MENUITEM	Menu_2_6_Mileage=
 {
 	"里程信息查看",

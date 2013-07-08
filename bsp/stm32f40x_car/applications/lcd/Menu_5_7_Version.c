@@ -40,6 +40,7 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)
 {
+       Cent_To_Disp();
 	CounterBack++;
 	if(CounterBack!=MaxBankIdleTime*5)
 		return;
@@ -51,7 +52,7 @@ static void timetick(unsigned int systick)
 
 }
 
-ALIGN(RT_ALIGN_SIZE)
+MYTIME
 MENUITEM	Menu_5_7_Version=
 {
 "∞Ê±æœ‘ æ",
