@@ -367,7 +367,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>847</TopLine>
+      <TopLine>852</TopLine>
       <CurrentLine>860</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808_camera.c</PathWithFileName>
@@ -381,10 +381,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>3</ColumnNumber>
+      <ColumnNumber>26</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1486</TopLine>
-      <CurrentLine>1619</CurrentLine>
+      <TopLine>415</TopLine>
+      <CurrentLine>428</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808_area.c</PathWithFileName>
       <FilenameWithoutPath>jt808_area.c</FilenameWithoutPath>
@@ -629,10 +629,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>3</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>313</TopLine>
+      <CurrentLine>325</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\drivers\rs485.c</PathWithFileName>
       <FilenameWithoutPath>rs485.c</FilenameWithoutPath>

@@ -673,8 +673,8 @@ rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 	puserdata->type	= psrc[12];
 	puserdata->chn	= psrc[13];
 	puserdata->event = psrc[14];
-	puserdata->start = (T_TIMES*)( psrc + 15 );
-	puserdata->end	= (T_TIMES*)( psrc + 21 );
+	puserdata->start = buf_to_time( psrc + 15 );
+	puserdata->end	= buf_to_time( psrc + 21 );
 	puserdata->curr	= puserdata.start;
 
 	///查找符合条件的图片，并将图片地址存入ptempbuf中

@@ -2125,7 +2125,7 @@ AREA_OUT:                                                                       
 void area_init( void )
 {
 	///初始化消息队列
-	rt_mq_init( &mq_area, "mq_area_alarm", &msgpool_area[0], sizeof( Type_AREA_ALARM ), sizeof( msgpool_area ), RT_IPC_FLAG_FIFO );
+	rt_mq_init( &mq_area, "mq_area_alarm", &msgpool_area[0], sizeof( Type_AREA_ALARM ) + sizeof(void *), sizeof( msgpool_area ), RT_IPC_FLAG_FIFO );
 
 	//rt_kprintf("enmu len=%d,area_info len=%d \r\n",sizeof(ENUM_AREA),sizeof(area_info));
 	memset( (void*)&Area_Para, 0, sizeof( Area_Para ) );
@@ -2210,15 +2210,10 @@ u32 area_get_alarm( u8 *pdestbuf, u16* destbuflen )
 	u32				retdata		= 0;
 	u8				alarem_num	= 0;
 	Type_AREA_ALARM area_alarm;
+	static u8 		this_buf[256];
 
 	*destbuflen = 0;
-
-	pdestbuf = rt_malloc( 250 );
-	if( pdestbuf == RT_NULL )
-	{
-		rt_kprintf( "\r\n 获取资源错误!" );
-		return 0;
-	}
+	pdestbuf = this_buf;
 
 	///其它报警
 	for(;; )
@@ -2283,10 +2278,6 @@ u32 area_get_alarm( u8 *pdestbuf, u16* destbuflen )
 	}
 
 FUNC_RET:
-	if( retdata == 0 )
-	{
-		rt_free( pdestbuf );
-	}
 	return retdata;
 }
 

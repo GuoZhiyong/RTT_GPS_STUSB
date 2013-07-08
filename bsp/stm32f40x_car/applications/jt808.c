@@ -1663,7 +1663,7 @@ void jt808_init( void )
 
 	sms_init( );
 	vdr_init( );
-
+	
 	dev_gsm = rt_device_find( "gsm" );
 	rt_mb_init( &mb_gprsrx, "mb_gprs", &mb_gprsrx_pool, MB_GPRSDATA_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 

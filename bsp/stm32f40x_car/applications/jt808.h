@@ -20,8 +20,8 @@
 #include "msglist.h"
 #include "m66.h"
 
-#define   MsgQ_Timeout 3
-#define JT808_PACKAGE_MAX		512
+#define   MsgQ_Timeout		3
+#define JT808_PACKAGE_MAX	512
 
 
 /*
@@ -161,21 +161,18 @@ extern u8				avgspd_Mint_Wr; // 填写每分钟平均速度记录下标
 
 /*for new use*/
 
-
 #define BYTESWAP2( val )    \
-    ( ( ( (val) & 0xff ) << 8 ) |   \
-      ( ( (val) & 0xff00 ) >> 8 ) )
+    ( ( ( ( val ) & 0xff ) << 8 ) |   \
+      ( ( ( val ) & 0xff00 ) >> 8 ) )
 
 #define BYTESWAP4( val )    \
-    ( ( ( (val) & 0xff ) << 24 ) |   \
-      ( ( (val) & 0xff00 ) << 8 ) |  \
-      ( ( (val) & 0xff0000 ) >> 8 ) |  \
-      ( ( (val) & 0xff000000 ) >> 24 ) )
+    ( ( ( ( val ) & 0xff ) << 24 ) |   \
+      ( ( ( val ) & 0xff00 ) << 8 ) |  \
+      ( ( ( val ) & 0xff0000 ) >> 8 ) |  \
+      ( ( ( val ) & 0xff000000 ) >> 24 ) )
 
-
-#define HEX2BCD( x )	( ( (x) / 10 ) << 4 | ( (x) % 10 ) )
-#define BCD2HEX( x )	( ( ( (x) >> 4 ) * 10 ) + ( (x) & 0x0f ) )
-
+#define HEX2BCD( x )	( ( ( x ) / 10 ) << 4 | ( ( x ) % 10 ) )
+#define BCD2HEX( x )	( ( ( ( x ) >> 4 ) * 10 ) + ( ( x ) & 0x0f ) )
 
 typedef uint32_t MYTIME;
 
@@ -193,7 +190,26 @@ typedef uint32_t MYTIME;
 #define SEC( datetime )		( datetime & 0x3F )
 
 
-
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+__inline MYTIME buf_to_time( uint8_t *p )
+{
+	uint32_t ret;
+	ret = (uint32_t)( ( *p++ ) << 26 );
+	ret |= (uint32_t)( ( *p++ ) << 22 );
+	ret |= (uint32_t)( ( *p++ ) << 17 );
+	ret |= (uint32_t)( ( *p++ ) << 12 );
+	ret |= (uint32_t)( ( *p++ ) << 6 );
+	ret |= ( *p );
+	return ret;
+}
 
 typedef struct
 {
@@ -267,24 +283,24 @@ typedef enum
 	WAIT_DELETE,                /*等待删除*/
 } JT808_MSG_STATE;
 
+
 /*
-typedef enum
-{
-	TERMINAL_CMD = 1,
-	TERMINAL_ACK,
-	CENTER_CMD,
-	CENTER_ACK
-}JT808_MSG_TYPE;
-*/
+   typedef enum
+   {
+   TERMINAL_CMD = 1,
+   TERMINAL_ACK,
+   CENTER_CMD,
+   CENTER_ACK
+   }JT808_MSG_TYPE;
+ */
 
 typedef enum
 {
-	SINGLE_CMD=0,
-	SINGLE_ACK,	
+	SINGLE_CMD = 0,
+	SINGLE_ACK,
 	MULTI_CMD,
 	MULTI_ACK
 }JT808_MSG_TYPE;
-
 
 typedef __packed struct
 {
@@ -304,10 +320,6 @@ typedef __packed struct
 	uint16_t	packet_no;
 }JT808_MSG_HEAD_EX;
 
-
-
-
-
 #define JT808HEAD_ID( head )	( ( *( head + 0 ) << 8 ) | ( *( head + 1 ) ) )
 #define JT808HEAD_ATTR( head )	( ( *( head + 2 ) << 8 ) | ( *( head + 3 ) ) )
 #define JT808HEAD_LEN( head )	( ( *( head + 2 ) << 8 ) | ( *( head + 3 ) ) ) & 0x3FF
@@ -321,21 +333,21 @@ typedef __packed struct
 typedef __packed struct _jt808_tx_msg_nodedata_old
 {
 /*发送机制相关*/
-	uint8_t			linkno;                                 /*传输使用的link,包括了协议和远端socket*/
-	JT808_MSG_TYPE	type;                                   /*发送消息的类型*/
-	JT808_MSG_STATE state;                                  /*发送状态*/
-	uint32_t		retry;                                  /*重传次数,递增，递减找不到*/
-	uint32_t		max_retry;                              /*最大重传次数*/
-	uint32_t		timeout;                                /*超时时间*/
-	uint32_t		tick;                                   /*发送时间*/
+	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
+	JT808_MSG_TYPE	type;       /*发送消息的类型*/
+	JT808_MSG_STATE state;      /*发送状态*/
+	uint32_t		retry;      /*重传次数,递增，递减找不到*/
+	uint32_t		max_retry;  /*最大重传次数*/
+	uint32_t		timeout;    /*超时时间*/
+	uint32_t		tick;       /*发送时间*/
 /*接收的处理判断相关*/
 	void ( *cb_tx_timeout )( __packed struct _jt808_tx_msg_nodedata *pnodedata );
 	void ( *cb_tx_response )( uint8_t linkno, uint8_t *pmsg );
-	uint16_t	head_id;                                    /*消息ID*/
-	uint16_t	head_sn;                                    /*消息流水号*/
+	uint16_t	head_id;        /*消息ID*/
+	uint16_t	head_sn;        /*消息流水号*/
 /*真实的发送数据*/
-	uint16_t	msg_len;                                    /*消息长度*/
-	uint8_t		*pmsg;                                      /*发送消息体,真实的要发送的数据格式，经过转义和FCS后的<7e>为标志*/
+	uint16_t	msg_len;        /*消息长度*/
+	uint8_t		*pmsg;          /*发送消息体,真实的要发送的数据格式，经过转义和FCS后的<7e>为标志*/
 }JT808_TX_MSG_NODEDATA_OLD;
 #endif
 
@@ -360,7 +372,7 @@ typedef __packed struct _jt808_tx_nodedata
 /*单包真实的发送数据-消息体*/
 	uint16_t	msg_len;                                                    /*消息长度*/
 	uint8_t		*pmsg;                                                      /*原始信息,需要在发送时转义,因为多包发送时得到的是原始信息。
-	                                                                                         ，包括808转义和M66的HEX转义，这样，减少RAM使用*/
+	                                                                                                     ，包括808转义和M66的HEX转义，这样，减少RAM使用*/
 /*多包发送的处理*/
 
 
@@ -392,7 +404,7 @@ typedef __packed struct _jt808_tx_nodedata
 	uint32_t		max_retry;                                                                          /*最大重传次数*/
 	uint32_t		timeout;                                                                            /*超时时间*/
 	uint32_t		timeout_tick;                                                                       /*达到超时的tick值*/
-	uint16_t		user_size;		/*分配给用户的大小*/
+	uint16_t		user_size;                                                                          /*分配给用户的大小*/
 /*接收的处理判断相关*/
 	JT808_MSG_STATE ( *cb_tx_timeout )( __packed struct _jt808_tx_nodedata * thiz );                    /*发送超时的处理函数*/
 	JT808_MSG_STATE ( *cb_tx_response )( __packed struct _jt808_tx_nodedata * thiz, uint8_t *pmsg );    /*收到中心应答的处理函数*/
@@ -405,40 +417,36 @@ typedef __packed struct _jt808_tx_nodedata
 
 #endif
 
-
 typedef __packed struct _jt808_tx_nodedata
 {
 /*发送机制相关*/
-	uint8_t			linkno;                                                 /*传输使用的link,包括了协议和远端socket*/
-	uint8_t			multipacket;                                            /*是不是多包发送*/
-	JT808_MSG_TYPE	type;                                                   /*发送消息的类型*/
-	JT808_MSG_STATE state;                                                  /*发送状态*/
-	uint32_t		retry;                                                  /*重传次数,递增，递减找不到*/
-	uint32_t		max_retry;                                              /*最大重传次数*/
-	uint32_t		timeout;                                                /*超时时间*/
-	uint32_t		timeout_tick;                                                   /*发送时间*/
+	uint8_t			linkno;                                                                             /*传输使用的link,包括了协议和远端socket*/
+	uint8_t			multipacket;                                                                        /*是不是多包发送*/
+	JT808_MSG_TYPE	type;                                                                               /*发送消息的类型*/
+	JT808_MSG_STATE state;                                                                              /*发送状态*/
+	uint32_t		retry;                                                                              /*重传次数,递增，递减找不到*/
+	uint32_t		max_retry;                                                                          /*最大重传次数*/
+	uint32_t		timeout;                                                                            /*超时时间*/
+	uint32_t		timeout_tick;                                                                       /*发送时间*/
 /*接收的处理判断相关*/
-	JT808_MSG_STATE ( *cb_tx_timeout )( __packed struct _jt808_tx_nodedata * thiz );   /*发送超时的处理函数*/
-	JT808_MSG_STATE	( *cb_tx_response )( __packed struct _jt808_tx_nodedata * thiz, uint8_t *pmsg );              /*收到中心应答的处理函数*/
-	uint16_t	head_id;                                                    /*消息ID*/
-	uint16_t	head_sn;                                                    /*消息流水号*/
+	JT808_MSG_STATE ( *cb_tx_timeout )( __packed struct _jt808_tx_nodedata * thiz );                    /*发送超时的处理函数*/
+	JT808_MSG_STATE ( *cb_tx_response )( __packed struct _jt808_tx_nodedata * thiz, uint8_t *pmsg );    /*收到中心应答的处理函数*/
+	uint16_t	head_id;                                                                                /*消息ID*/
+	uint16_t	head_sn;                                                                                /*消息流水号*/
 
-	uint16_t	packet_num; 												/*多包总包数*/
-	uint16_t	packet_no;													/*多包当前包数*/
-	uint32_t	size;														/*消息体总得数据大小*/
-	uint16_t	msg_len;                                                    /*单包消息长度*/
+	uint16_t	packet_num;                                                                             /*多包总包数*/
+	uint16_t	packet_no;                                                                              /*多包当前包数*/
+	uint32_t	size;                                                                                   /*消息体总得数据大小*/
+	uint16_t	msg_len;                                                                                /*单包消息长度*/
 /*多包发送的处理*/
-	void 	*user_para;			/*cb_tx_response函数需要的关键原始数据参数，通过该参数和回调函数关联起来*/
-	uint8_t tag_data[];												/*指向数据的指针*/
+	void	*user_para;                                                                                 /*cb_tx_response函数需要的关键原始数据参数，通过该参数和回调函数关联起来*/
+	uint8_t tag_data[];                                                                                 /*指向数据的指针*/
 }JT808_TX_NODEDATA;
-
-
-
-
 
 extern uint8_t mobile[6];
 
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
+
 
 JT808_TX_NODEDATA * node_begin( uint8_t linkno,
                                 JT808_MSG_TYPE fMultiPacket,    /*是否为多包*/
@@ -446,8 +454,9 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
                                 int32_t seq,
                                 uint16_t datasize );
 
-JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA *pnodedata,
-                               uint8_t* pinfo, uint16_t len,
+
+JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA * pnodedata,
+                               uint8_t * pinfo, uint16_t len,
                                JT808_MSG_STATE ( *cb_tx_timeout )( ),
                                JT808_MSG_STATE ( *cb_tx_response )( ),
                                void  *userpara );
@@ -456,27 +465,21 @@ void node_end( JT808_TX_NODEDATA* pnodedata );
 
 
 rt_err_t jt808_add_tx( uint8_t linkno,
-                            JT808_MSG_TYPE fMultiPacket,   /*是否为多包*/
-                            uint16_t id,
-                            int32_t seq,
-                            JT808_MSG_STATE ( *cb_tx_timeout )( ),
-                            JT808_MSG_STATE ( *cb_tx_response )( ),
-                            uint16_t info_len,      /*信息长度*/
-                            uint8_t *pinfo,
-                            void  *userpara );
+                       JT808_MSG_TYPE fMultiPacket, /*是否为多包*/
+                       uint16_t id,
+                       int32_t seq,
+                       JT808_MSG_STATE ( *cb_tx_timeout )( ),
+                       JT808_MSG_STATE ( *cb_tx_response )( ),
+                       uint16_t info_len,           /*信息长度*/
+                       uint8_t * pinfo,
+                       void  *userpara );
 
-void jt808_add_tx_end(JT808_TX_NODEDATA* pnodedata);
-
-
-
-#define jt808_tx(id,info,len) jt808_add_tx(1,SINGLE_CMD,id,-1,RT_NULL,RT_NULL,len,info,RT_NULL)
-
-#define jt808_tx_ack(id,info,len) jt808_add_tx(1,SINGLE_ACK,id,-1,RT_NULL,RT_NULL,len,info,RT_NULL)
+void jt808_add_tx_end( JT808_TX_NODEDATA* pnodedata );
 
 
+#define jt808_tx( id, info, len ) jt808_add_tx( 1, SINGLE_CMD, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
 
-
-
+#define jt808_tx_ack( id, info, len ) jt808_add_tx( 1, SINGLE_ACK, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
 
 #endif
 
