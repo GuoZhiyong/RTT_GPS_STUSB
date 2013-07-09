@@ -232,6 +232,7 @@ typedef struct
 	char	interval;   /*持续时间,秒*/
 }GPS_AREA_CIRCLE;
 
+#if 0
 typedef enum
 {
 	T_NODEF = 1,
@@ -255,7 +256,7 @@ typedef __packed struct
 	PARAM_TYPE	type;
 	void		* pvalue;
 }PARAM_BODY;
-
+#endif
  
 
 typedef enum

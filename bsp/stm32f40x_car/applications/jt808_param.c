@@ -17,153 +17,130 @@
 #include "jt808.h"
 #include <finsh.h>
 
-typedef __packed struct
-{
-	uint16_t id;
-	uint8_t type;
-	uint32_t value;
-}PARAM_DWORD;
-
-typedef __packed struct
-{
-	uint16_t id;
-	uint8_t type;
-	char value[32];
-}PARAM_STR;
-
-struct
-{
-	PARAM_DWORD id_0x0000;
-	PARAM_DWORD id_0x0001;
-	PARAM_DWORD id_0x0002;
-	PARAM_DWORD id_0x0003;
-	PARAM_DWORD id_0x0004;
-	PARAM_DWORD id_0x0005;
-	PARAM_DWORD id_0x0006;
-	PARAM_DWORD id_0x0007;
-	PARAM_STR	id_0x0008;
-}para;
-
-
-
+#define TYPE_BYTE	0x01    /*固定为1字节,小端对齐*/
+#define TYPE_WORD	0x02    /*固定为2字节,小端对齐*/
+#define TYPE_DWORD	0x04    /*固定为4字节,小端对齐*/
+#define TYPE_STR	0x80    /*固定为32字节,网络顺序*/
+#define TYPE_CAN	0x48    /*固定为8字节,当前存储CAN_ID参数*/
 
 
 #if 1
 
+
 JT808_PARAM jt808_param =
 {
-	0x13070904,                             /*0x0000 版本*/
-	5,                                      /*0x0001 心跳发送间隔*/
-	5,                                      /*0x0002 TCP应答超时时间*/
-	3,                                      /*0x0003 TCP超时重传次数*/
-	3,                                      /*0x0004 UDP应答超时时间*/
-	5,                                      /*0x0005 UDP超时重传次数*/
-	3,                                      /*0x0006 SMS消息应答超时时间*/
-	5,                                      /*0x0007 SMS消息重传次数*/
-	"CMNET",                                /*0x0010 主服务器APN*/
-	"",                                     /*0x0011 用户名*/
-	"",                                     /*0x0012 密码*/
+	0x13070904,                                     /*0x0000 版本*/
+	5,                                              /*0x0001 心跳发送间隔*/
+	5,                                              /*0x0002 TCP应答超时时间*/
+	3,                                              /*0x0003 TCP超时重传次数*/
+	3,                                              /*0x0004 UDP应答超时时间*/
+	5,                                              /*0x0005 UDP超时重传次数*/
+	3,                                              /*0x0006 SMS消息应答超时时间*/
+	5,                                              /*0x0007 SMS消息重传次数*/
+	"CMNET",                                        /*0x0010 主服务器APN*/
+	"",                                             /*0x0011 用户名*/
+	"",                                             /*0x0012 密码*/
 	//"60.28.50.210",                         /*0x0013 主服务器地址*/
 	"218.95.142.6",
-	"CMNET",                                /*0x0014 备份APN*/
-	"",                                     /*0x0015 备份用户名*/
-	"",                                     /*0x0016 备份密码*/
-	"www.google.com",                       /*0x0017 备份服务器地址，ip或域名*/
-	9131,                                   /*0x0018 TCP端口*/
-	5678,                                   /*0x0019 UDP端口*/
-	"www.google.com",                       /*0x001A ic卡主服务器地址，ip或域名*/
-	9901,                                   /*0x001B ic卡服务器TCP端口*/
-	8875,                                   /*0x001C ic卡服务器UDP端口*/
-	"www.google.com",                       /*0x001D ic卡备份服务器地址，ip或域名*/
-	0,                                      /*0x0020 位置汇报策略*/
-	1,                                      /*0x0021 位置汇报方案*/
-	30,                                     /*0x0022 驾驶员未登录汇报时间间隔*/
-	120,                                    /*0x0027 休眠时汇报时间间隔*/
-	5,                                      /*0x0028 紧急报警时汇报时间间隔*/
-	30,                                     /*0x0029 缺省时间汇报间隔*/
-	500,                                    /*0x002c 缺省距离汇报间隔*/
-	1000,                                   /*0x002d 驾驶员未登录汇报距离间隔*/
-	1000,                                   /*0x002e 休眠时距离汇报间隔*/
-	100,                                    /*0x002f 紧急时距离汇报间隔*/
-	270,                                    /*0x0030 拐点补传角度*/
-	500,                                    /*0x0031 电子围栏半径（非法位移阈值），单位为米*/
-	"1008611",                              /*0x0040 监控平台电话号码*/
-	"",                                     /*0x0041 复位电话号码*/
-	"",                                     /*0x0042 恢复出厂设置电话号码*/
-	"",                                     /*0x0043 监控平台SMS号码*/
-	"",                                     /*0x0044 接收终端SMS文本报警号码*/
-	5,                                      /*0x0045 终端接听电话策略*/
-	3,                                      /*0x0046 每次通话时长*/
-	3,                                      /*0x0047 当月通话时长*/
-	"",                                     /*0x0048 监听电话号码*/
-	"",                                     /*0x0049 监管平台特权短信号码*/
-	5,                                      /*0x0050 报警屏蔽字*/
-	3,                                      /*0x0051 报警发送文本SMS开关*/
-	5,                                      /*0x0052 报警拍照开关*/
-	3,                                      /*0x0053 报警拍摄存储标志*/
-	5,                                      /*0x0054 关键标志*/
-	3,                                      /*0x0055 最高速度kmh*/
-	5,                                      /*0x0056 超速持续时间*/
-	4 * 60 * 60,                            /*0x0057 连续驾驶时间门限*/
-	5,                                      /*0x0058 当天累计驾驶时间门限*/
-	1200,                                   /*0x0059 最小休息时间*/
-	7200,                                   /*0x005A 最长停车时间*/
-	900,                                    /*0x0005B 超速报警预警差值，单位为 1/10Km/h */
-	90,                                     /*0x005C 疲劳驾驶预警差值，单位为秒（s），>0*/
-	0x200a,                                 /*0x005D 碰撞报警参数设置:*/
-	30,                                     /*0x005E 侧翻报警参数设置： 侧翻角度，单位 1 度，默认为 30 度*/
-	0,                                      /*0x0064 定时拍照控制*/
-	0,                                      /*0x0065 定距拍照控制*/
-	3,                                      /*0x0070 图像视频质量(1-10)*/
-	5,                                      /*0x0071 亮度*/
-	3,                                      /*0x0072 对比度*/
-	5,                                      /*0x0073 饱和度*/
-	3,                                      /*0x0074 色度*/
-	5,                                      /*0x0080 车辆里程表读数0.1km*/
-	12,                                     /*0x0081 省域ID*/
-	0,                                      /*0x0082 市域ID*/
-	"津O-00001",                            /*0x0083 机动车号牌*/
-	1,                                      /*0x0084 车牌颜色	1蓝色 2黄色 3黑色 4白色 9其他*/
-	0x0f,                                   /*0x0090 GNSS 定位模式*/
-	0x01,                                   /*0x0091 GNSS 波特率*/
-	0x01,                                   /*0x0092 GNSS 模块详细定位数据输出频率*/
-	0x01,                                   /*0x0093 GNSS 模块详细定位数据采集频率*/
-	0x01,                                   /*0x0094 GNSS 模块详细定位数据上传方式*/
-	0x01,                                   /*0x0095 GNSS 模块详细定位数据上传设置*/
-	0,                                      /*0x0100 CAN 总线通道 1 采集时间间隔(ms)，0 表示不采集*/
-	0,                                      /*0x0101 CAN 总线通道 1 上传时间间隔(s)，0 表示不上传*/
-	0,                                      /*0x0102 CAN 总线通道 2 采集时间间隔(ms)，0 表示不采集*/
-	0,                                      /*0x0103 CAN 总线通道 2 上传时间间隔(s)，0 表示不上传*/
-	{ 0,		   0  },                    /*0x0110 CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0111 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0112 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0113 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0114 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0115 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0116 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0117 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0118 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0119 其他CAN 总线 ID 单独采集设置*/
-	"70420",                                /*0xF000 制造商ID*/
-	"TW703-BD",                             /*0xF001 终端型号*/
-	"1234567",                              /*0xF002 终端ID*/
-	"",                                     /*0xF003 鉴权码*/
-	0x07,                                   /*0xF004 终端类型*/
-	"0000000000000000",                     /*0xF005 车辆VIN*/
-	"",                                     /*0xF006 车牌号*/
-	0x02,                                   /*0xF007 车牌颜色*/
-	"",										/*0xF008 驾驶员姓名*/
-	"",										/*0xF009 驾驶证号码*/
-	
-	"123456",                               /*0xF010 软件版本号*/
-	"0000",                                 /*0xF011 硬件版本号*/
-	0,										/*0xF020 总里程*/
+	"CMNET",                                        /*0x0014 备份APN*/
+	"",                                             /*0x0015 备份用户名*/
+	"",                                             /*0x0016 备份密码*/
+	"www.google.com",                               /*0x0017 备份服务器地址，ip或域名*/
+	9131,                                           /*0x0018 TCP端口*/
+	5678,                                           /*0x0019 UDP端口*/
+	"www.google.com",                               /*0x001A ic卡主服务器地址，ip或域名*/
+	9901,                                           /*0x001B ic卡服务器TCP端口*/
+	8875,                                           /*0x001C ic卡服务器UDP端口*/
+	"www.google.com",                               /*0x001D ic卡备份服务器地址，ip或域名*/
+	0,                                              /*0x0020 位置汇报策略*/
+	1,                                              /*0x0021 位置汇报方案*/
+	30,                                             /*0x0022 驾驶员未登录汇报时间间隔*/
+	120,                                            /*0x0027 休眠时汇报时间间隔*/
+	5,                                              /*0x0028 紧急报警时汇报时间间隔*/
+	30,                                             /*0x0029 缺省时间汇报间隔*/
+	500,                                            /*0x002c 缺省距离汇报间隔*/
+	1000,                                           /*0x002d 驾驶员未登录汇报距离间隔*/
+	1000,                                           /*0x002e 休眠时距离汇报间隔*/
+	100,                                            /*0x002f 紧急时距离汇报间隔*/
+	270,                                            /*0x0030 拐点补传角度*/
+	500,                                            /*0x0031 电子围栏半径（非法位移阈值），单位为米*/
+	"1008611",                                      /*0x0040 监控平台电话号码*/
+	"",                                             /*0x0041 复位电话号码*/
+	"",                                             /*0x0042 恢复出厂设置电话号码*/
+	"",                                             /*0x0043 监控平台SMS号码*/
+	"",                                             /*0x0044 接收终端SMS文本报警号码*/
+	5,                                              /*0x0045 终端接听电话策略*/
+	3,                                              /*0x0046 每次通话时长*/
+	3,                                              /*0x0047 当月通话时长*/
+	"",                                             /*0x0048 监听电话号码*/
+	"",                                             /*0x0049 监管平台特权短信号码*/
+	5,                                              /*0x0050 报警屏蔽字*/
+	3,                                              /*0x0051 报警发送文本SMS开关*/
+	5,                                              /*0x0052 报警拍照开关*/
+	3,                                              /*0x0053 报警拍摄存储标志*/
+	5,                                              /*0x0054 关键标志*/
+	3,                                              /*0x0055 最高速度kmh*/
+	5,                                              /*0x0056 超速持续时间*/
+	4 * 60 * 60,                                    /*0x0057 连续驾驶时间门限*/
+	5,                                              /*0x0058 当天累计驾驶时间门限*/
+	1200,                                           /*0x0059 最小休息时间*/
+	7200,                                           /*0x005A 最长停车时间*/
+	900,                                            /*0x0005B 超速报警预警差值，单位为 1/10Km/h */
+	90,                                             /*0x005C 疲劳驾驶预警差值，单位为秒（s），>0*/
+	0x200a,                                         /*0x005D 碰撞报警参数设置:*/
+	30,                                             /*0x005E 侧翻报警参数设置： 侧翻角度，单位 1 度，默认为 30 度*/
+	0,                                              /*0x0064 定时拍照控制*/
+	0,                                              /*0x0065 定距拍照控制*/
+	3,                                              /*0x0070 图像视频质量(1-10)*/
+	5,                                              /*0x0071 亮度*/
+	3,                                              /*0x0072 对比度*/
+	5,                                              /*0x0073 饱和度*/
+	3,                                              /*0x0074 色度*/
+	5,                                              /*0x0080 车辆里程表读数0.1km*/
+	12,                                             /*0x0081 省域ID*/
+	0,                                              /*0x0082 市域ID*/
+	"津O-00001",                                    /*0x0083 机动车号牌*/
+	1,                                              /*0x0084 车牌颜色	1蓝色 2黄色 3黑色 4白色 9其他*/
+	0x0f,                                           /*0x0090 GNSS 定位模式*/
+	0x01,                                           /*0x0091 GNSS 波特率*/
+	0x01,                                           /*0x0092 GNSS 模块详细定位数据输出频率*/
+	0x01,                                           /*0x0093 GNSS 模块详细定位数据采集频率*/
+	0x01,                                           /*0x0094 GNSS 模块详细定位数据上传方式*/
+	0x01,                                           /*0x0095 GNSS 模块详细定位数据上传设置*/
+	0,                                              /*0x0100 CAN 总线通道 1 采集时间间隔(ms)，0 表示不采集*/
+	0,                                              /*0x0101 CAN 总线通道 1 上传时间间隔(s)，0 表示不上传*/
+	0,                                              /*0x0102 CAN 总线通道 2 采集时间间隔(ms)，0 表示不采集*/
+	0,                                              /*0x0103 CAN 总线通道 2 上传时间间隔(s)，0 表示不上传*/
+	{ 0,		   0  },                            /*0x0110 CAN 总线 ID 单独采集设置*/
+	{ 0,		   0  },                            /*0x0111 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0  },                            /*0x0112 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0  },                            /*0x0113 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0  },                            /*0x0114 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0  },                            /*0x0115 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0  },                            /*0x0116 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0  },                            /*0x0117 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0  },                            /*0x0118 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0  },                            /*0x0119 其他CAN 总线 ID 单独采集设置*/
+	"70420",                                        /*0xF000 制造商ID*/
+	"TW703-BD",                                     /*0xF001 终端型号*/
+	"1234567",                                      /*0xF002 终端ID*/
+	"",                                             /*0xF003 鉴权码*/
+	0x07,                                           /*0xF004 终端类型*/
+	"0000000000000000",                             /*0xF005 车辆VIN*/
+	"",                                             /*0xF006 车牌号*/
+	0x02,                                           /*0xF007 车牌颜色*/
+	"",                                             /*0xF008 驾驶员姓名*/
+	"",                                             /*0xF009 驾驶证号码*/
+
+	"123456",                                       /*0xF010 软件版本号*/
+	"0000",                                         /*0xF011 硬件版本号*/
+	0,                                              /*0xF020 总里程*/
 };
 
-#define FLAG_DISABLE_REPORT_INVALID 1       /*设备非法*/
-#define FLAG_DISABLE_REPORT_AREA	2       /*区域内禁止上报*/
+#define FLAG_DISABLE_REPORT_INVALID 1               /*设备非法*/
+#define FLAG_DISABLE_REPORT_AREA	2               /*区域内禁止上报*/
 
-static uint32_t flag_disable_report = 0;    /*禁止上报的标志位*/
+static uint32_t flag_disable_report = 0;            /*禁止上报的标志位*/
 
 /*保存参数到serialflash*/
 void param_save( void )
@@ -195,12 +172,6 @@ void param_load( void )
 }
 
 FINSH_FUNCTION_EXPORT( param_load, load param );
-
-#define TYPE_BYTE	0x01    /*固定为1字节,小端对齐*/
-#define TYPE_WORD	0x02    /*固定为2字节,小端对齐*/
-#define TYPE_DWORD	0x04    /*固定为4字节,小端对齐*/
-#define TYPE_STR	0x80    /*固定为32字节,网络顺序*/
-#define TYPE_CAN_ID 0x48    /*固定为8字节,当前存储CAN_ID参数*/
 
 #define ID_LOOKUP( id, type ) { id, type, (uint8_t*)&( jt808_param.id_ ## id ) }
 
@@ -461,7 +432,7 @@ uint8_t param_put( uint16_t id, uint8_t len, uint8_t* value )
 				*pdst	= *psrc;
 				return 0;
 			}
-			if( tbl_id_lookup[i].type == TYPE_CAN_ID )
+			if( tbl_id_lookup[i].type == TYPE_CAN )
 			{
 				psrc	= value;
 				pdst	= tbl_id_lookup[i].val;
@@ -574,7 +545,7 @@ uint8_t param_get( uint16_t id, uint8_t* value )
 				memcpy( value, p, strlen( p ) );
 				return strlen( p );
 			}
-			if( tbl_id_lookup[i].type == TYPE_CAN_ID )
+			if( tbl_id_lookup[i].type == TYPE_CAN )
 			{
 				p = tbl_id_lookup[i].val;
 				memcpy( value, p, 8 );
@@ -635,7 +606,7 @@ void param_print( void )
 				val |= ( ( *p ) << 24 );
 				rt_kprintf( "\r\nid=%04x value=%08x\r\n", id, val );
 				break;
-			case TYPE_CAN_ID:
+			case TYPE_CAN:
 				val |= ( *p++ );
 				val |= ( ( *p++ ) << 8 );
 				val |= ( ( *p++ ) << 16 );
@@ -704,6 +675,261 @@ void apn( char *s )
 FINSH_FUNCTION_EXPORT( apn, set apn );
 
 #else
+typedef __packed struct
+{
+	uint16_t	id;
+	uint8_t		type;
+	uint32_t	value;
+}PARAM_DWORD;
+
+typedef __packed struct
+{
+	uint16_t	id;
+	uint8_t		type;
+	uint16_t	value;
+}PARAM_WORD;
+
+typedef __packed struct
+{
+	uint16_t	id;
+	uint8_t		type;
+	uint8_t		value;
+}PARAM_BYTE;
+
+typedef __packed struct
+{
+	uint16_t	id;
+	uint8_t		type;
+	uint8_t		value[8];
+}PARAM_CAN;
+
+typedef __packed struct
+{
+	uint16_t	id;
+	uint8_t		type;
+	char		value[32];
+}PARAM_STR;
+
+struct
+{
+	PARAM_DWORD id_0x0000;                          /*0x0000 版本*/
+	PARAM_DWORD id_0x0001;                          /*0x0001 心跳发送间隔*/
+	PARAM_DWORD id_0x0002;                          /*0x0002 TCP应答超时时间*/
+	PARAM_DWORD id_0x0003;                          /*0x0003 TCP超时重传次数*/
+	PARAM_DWORD id_0x0004;                          /*0x0004 UDP应答超时时间*/
+	PARAM_DWORD id_0x0005;                          /*0x0005 UDP超时重传次数*/
+	PARAM_DWORD id_0x0006;                          /*0x0006 SMS消息应答超时时间*/
+	PARAM_DWORD id_0x0007;                          /*0x0007 SMS消息重传次数*/
+	PARAM_STR	id_0x0010;                          /*0x0010 主服务器APN*/
+	PARAM_STR	id_0x0011;                          /*0x0011 用户名*/
+	PARAM_STR	id_0x0012;                          /*0x0012 密码*/
+	PARAM_STR	id_0x0013;                          /*0x0013 主服务器地址*/
+	PARAM_STR	id_0x0014;                          /*0x0014 备份APN*/
+	PARAM_STR	id_0x0015;                          /*0x0015 备份用户名*/
+	PARAM_STR	id_0x0016;                          /*0x0016 备份密码*/
+	PARAM_STR	id_0x0017;                          /*0x0017 备份服务器地址，ip或域名*/
+	PARAM_DWORD id_0x0018;                          /*0x0018 TCP端口*/
+	PARAM_DWORD id_0x0019;                          /*0x0019 UDP端口*/
+	PARAM_STR	id_0x001A;                          /*0x001A ic卡主服务器地址，ip或域名*/
+	PARAM_DWORD id_0x001B;                          /*0x001B ic卡服务器TCP端口*/
+	PARAM_STR	id_0x001C;                          /*0x001C ic卡服务器UDP端口*/
+	PARAM_STR	id_0x001D;                          /*0x001D ic卡备份服务器地址，ip或域名*/
+	PARAM_DWORD id_0x0020;                          /*0x0020 位置汇报策略*/
+	PARAM_DWORD id_0x0021;                          /*0x0021 位置汇报方案*/
+	PARAM_DWORD id_0x0022;                          /*0x0022 驾驶员未登录汇报时间间隔*/
+	PARAM_DWORD id_0x0027;                          /*0x0027 休眠时汇报时间间隔*/
+	PARAM_STR	id_0x0028;                          /*0x0028 紧急报警时汇报时间间隔*/
+	PARAM_DWORD id_0x0029;                          /*0x0029 缺省时间汇报间隔*/
+	PARAM_DWORD id_0x002C;                          /*0x002c 缺省距离汇报间隔*/
+	PARAM_DWORD id_0x002D;                          /*0x002d 驾驶员未登录汇报距离间隔*/
+	PARAM_DWORD id_0x002E;                          /*0x002e 休眠时距离汇报间隔*/
+	PARAM_DWORD id_0x002F;                          /*0x002f 紧急时距离汇报间隔*/
+	PARAM_DWORD id_0x0030;                          /*0x0030 拐点补传角度*/
+	PARAM_DWORD id_0x0031;                          /*0x0031 电子围栏半径（非法位移阈值），单位为米*/
+	PARAM_STR	id_0x0040;                          /*0x0040 监控平台电话号码*/
+	PARAM_STR	id_0x0041;                          /*0x0041 复位电话号码*/
+	PARAM_STR	id_0x0042;                          /*0x0042 恢复出厂设置电话号码*/
+	PARAM_STR	id_0x0043;                          /*0x0043 监控平台SMS号码*/
+	PARAM_STR	id_0x0044;                          /*0x0044 接收终端SMS文本报警号码*/
+	PARAM_DWORD id_0x0045;                          /*0x0045 终端接听电话策略*/
+	PARAM_DWORD id_0x0046;                          /*0x0046 每次通话时长*/
+	PARAM_DWORD id_0x0047;                          /*0x0047 当月通话时长*/
+	PARAM_STR	id_0x0048;                          /*0x0048 监听电话号码*/
+	PARAM_STR	id_0x0049;                          /*0x0049 监管平台特权短信号码*/
+	PARAM_STR	id_0x0050;                          /*0x0050 报警屏蔽字*/
+	PARAM_DWORD id_0x0051;                          /*0x0051 报警发送文本SMS开关*/
+	PARAM_DWORD id_0x0052;                          /*0x0052 报警拍照开关*/
+	PARAM_DWORD id_0x0053;                          /*0x0053 报警拍摄存储标志*/
+	PARAM_DWORD id_0x0054;                          /*0x0054 关键标志*/
+	PARAM_DWORD id_0x0055;                          /*0x0055 最高速度kmh*/
+	PARAM_DWORD id_0x0056;                          /*0x0056 超速持续时间*/
+	PARAM_DWORD id_0x0057;                          /*0x0057 连续驾驶时间门限*/
+	PARAM_DWORD id_0x0058;                          /*0x0058 当天累计驾驶时间门限*/
+	PARAM_STR	id_0x0059;                          /*0x0059 最小休息时间*/
+	PARAM_DWORD id_0x005A;                          /*0x005A 最长停车时间*/
+	PARAM_STR	id_0x005B;                          /*0x005B 超速报警预警差值，单位为 1/10Km/h */
+	PARAM_DWORD id_0x005C;                          /*0x005C 疲劳驾驶预警差值，单位为秒（s），>0*/
+	PARAM_DWORD id_0x005D;                          /*0x005D 碰撞报警参数设置:*/
+	PARAM_DWORD id_0x005E;                          /*0x005E 侧翻报警参数设置： 侧翻角度，单位 1 度，默认为 30 度*/
+	PARAM_DWORD id_0x0064;                          /*0x0064 定时拍照控制*/
+	PARAM_DWORD id_0x0065;                          /*0x0065 定距拍照控制*/
+	PARAM_DWORD id_0x0070;                          /*0x0070 图像视频质量(1-10)*/
+	PARAM_DWORD id_0x0071;                          /*0x0071 亮度*/
+	PARAM_DWORD id_0x0072;                          /*0x0072 对比度*/
+	PARAM_STR	id_0x0073;                          /*0x0073 饱和度*/
+	PARAM_DWORD id_0x0074;                          /*0x0074 色度*/
+	PARAM_DWORD id_0x0080;                          /*0x0080 车辆里程表读数0.1km*/
+	PARAM_DWORD id_0x0081;                          /*0x0081 省域ID*/
+	PARAM_DWORD id_0x0082;                          /*0x0082 市域ID*/
+	PARAM_STR	id_0x0083;                          /*0x0083 机动车号牌*/
+	PARAM_DWORD id_0x0084;                          /*0x0084 车牌颜色	1蓝色 2黄色 3黑色 4白色 9其他*/
+	PARAM_DWORD id_0x0090;                          /*0x0090 GNSS 定位模式*/
+	PARAM_DWORD id_0x0091;                          /*0x0091 GNSS 波特率*/
+	PARAM_STR	id_0x0092;                          /*0x0092 GNSS 模块详细定位数据输出频率*/
+	PARAM_DWORD id_0x0093;                          /*0x0093 GNSS 模块详细定位数据采集频率*/
+	PARAM_STR	id_0x0094;                          /*0x0094 GNSS 模块详细定位数据上传方式*/
+	PARAM_DWORD id_0x0095;                          /*0x0095 GNSS 模块详细定位数据上传设置*/
+	PARAM_DWORD id_0x0100;                          /*0x0100 CAN 总线通道 1 采集时间间隔(ms)，0 表示不采集*/
+	PARAM_DWORD id_0x0101;                          /*0x0101 CAN 总线通道 1 上传时间间隔(s)，0 表示不上传*/
+	PARAM_DWORD id_0x0102;                          /*0x0102 CAN 总线通道 2 采集时间间隔(ms)，0 表示不采集*/
+	PARAM_DWORD id_0x0103;                          /*0x0103 CAN 总线通道 2 上传时间间隔(s)，0 表示不上传*/
+	PARAM_CAN	id_0x0110;                          /*0x0110 CAN 总线 ID 单独采集设置*/
+	PARAM_CAN	id_0x0111;                          /*0x0111 其他CAN 总线 ID 单独采集设置*/
+	PARAM_CAN	id_0x0112;                          /*0x0112 其他CAN 总线 ID 单独采集设置*/
+	PARAM_CAN	id_0x0113;                          /*0x0113 其他CAN 总线 ID 单独采集设置*/
+	PARAM_CAN	id_0x0114;                          /*0x0114 其他CAN 总线 ID 单独采集设置*/
+	PARAM_CAN	id_0x0115;                          /*0x0115 其他CAN 总线 ID 单独采集设置*/
+	PARAM_CAN	id_0x0116;                          /*0x0116 其他CAN 总线 ID 单独采集设置*/
+	PARAM_CAN	id_0x0117;                          /*0x0117 其他CAN 总线 ID 单独采集设置*/
+	PARAM_CAN	id_0x0118;                          /*0x0118 其他CAN 总线 ID 单独采集设置*/
+	PARAM_CAN	id_0x0119;                          /*0x0119 其他CAN 总线 ID 单独采集设置*/
+	PARAM_STR	id_0xF000;                          /*0xF000 制造商ID*/
+	PARAM_STR	id_0xF001;                          /*0xF001 终端型号*/
+	PARAM_STR	id_0xF002;                          /*0xF002 终端ID*/
+	PARAM_STR	id_0xF003;                          /*0xF003 鉴权码*/
+	PARAM_STR	id_0xF004;                          /*0xF004 终端类型*/
+	PARAM_STR	id_0xF005;                          /*0xF005 车辆VIN*/
+	PARAM_STR	id_0xF006;                          /*0xF006 车牌号*/
+	PARAM_STR	id_0xF007;                          /*0xF007 车牌颜色*/
+	PARAM_STR	id_0xF008;                          /*0xF008 驾驶员姓名*/
+	PARAM_STR	id_0xF009;                          /*0xF009 驾驶证号码*/
+	PARAM_DWORD id_0xF00A;
+	PARAM_STR	id_0xF010;                          /*0xF010 软件版本号*/
+	PARAM_STR	id_0xF011;                          /*0xF011 硬件版本号*/
+	PARAM_STR	id_0xF020;                          /*0xF020 总里程*/
+} para =
+{
+	{ 0x0000, TYPE_DWORD, 0x13070904,		  },    /*0x0000 版本*/
+	{ 0x0001, TYPE_DWORD, 5,				  },    /*0x0001 心跳发送间隔*/
+	{ 0x0002, TYPE_DWORD, 5,				  },    /*0x0002 TCP应答超时时间*/
+	{ 0x0003, TYPE_DWORD, 3,				  },    /*0x0003 TCP超时重传次数*/
+	{ 0x0004, TYPE_DWORD, 3,				  },    /*0x0004 UDP应答超时时间*/
+	{ 0x0005, TYPE_DWORD, 5,				  },    /*0x0005 UDP超时重传次数*/
+	{ 0x0006, TYPE_DWORD, 3,				  },    /*0x0006 SMS消息应答超时时间*/
+	{ 0x0007, TYPE_DWORD, 5,				  },    /*0x0007 SMS消息重传次数*/
+	{ 0x0010, TYPE_STR,	  "CMNET",			  },    /*0x0010 主服务器APN*/
+	{ 0x0011, TYPE_STR,	  "",				  },    /*0x0011 用户名*/
+	{ 0x0012, TYPE_STR,	  "",				  },    /*0x0012 密码*/
+	{ 0x0013, TYPE_STR,	  "218.95.142.6",	  },    /*0x0013 主服务器地址*/
+	{ 0x0014, TYPE_STR,	  "CMNET",			  },    /*0x0014 备份APN*/
+	{ 0x0015, TYPE_STR,	  "",				  },    /*0x0015 备份用户名*/
+	{ 0x0016, TYPE_STR,	  "",				  },    /*0x0016 备份密码*/
+	{ 0x0017, TYPE_STR,	  "www.google.com",	  },    /*0x0017 备份服务器地址，ip或域名*/
+	{ 0x0018, TYPE_DWORD, 9131,				  },    /*0x0018 TCP端口*/
+	{ 0x0019, TYPE_DWORD, 5678,				  },    /*0x0019 UDP端口*/
+	{ 0x001A, TYPE_STR,	  "www.google.com",	  },    /*0x001A ic卡主服务器地址，ip或域名*/
+	{ 0x001B, TYPE_DWORD, 9901,				  },    /*0x001B ic卡服务器TCP端口*/
+	{ 0x001C, TYPE_DWORD, 8875,				  },    /*0x001C ic卡服务器UDP端口*/
+	{ 0x001D, TYPE_DWORD, "www.google.com",	  },    /*0x001D ic卡备份服务器地址，ip或域名*/
+	{ 0x0020, TYPE_DWORD, 0,				  },    /*0x0020 位置汇报策略*/
+	{ 0x0021, TYPE_DWORD, 1,				  },    /*0x0021 位置汇报方案*/
+	{ 0x0022, TYPE_DWORD, 30,				  },    /*0x0022 驾驶员未登录汇报时间间隔*/
+	{ 0x0027, TYPE_DWORD, 120,				  },    /*0x0027 休眠时汇报时间间隔*/
+	{ 0x0028, TYPE_DWORD, 5,				  },    /*0x0028 紧急报警时汇报时间间隔*/
+	{ 0x0029, TYPE_DWORD, 30,				  },    /*0x0029 缺省时间汇报间隔*/
+	{ 0x002C, TYPE_DWORD, 500,				  },    /*0x002c 缺省距离汇报间隔*/
+	{ 0x002D, TYPE_DWORD, 1000,				  },    /*0x002d 驾驶员未登录汇报距离间隔*/
+	{ 0x002E, TYPE_DWORD, 1000,				  },    /*0x002e 休眠时距离汇报间隔*/
+	{ 0x002F, TYPE_DWORD, 100,				  },    /*0x002f 紧急时距离汇报间隔*/
+	{ 0x0030, TYPE_DWORD, 270,				  },    /*0x0030 拐点补传角度*/
+	{ 0x0031, TYPE_DWORD, 500,				  },    /*0x0031 电子围栏半径（非法位移阈值），单位为米*/
+	{ 0x0040, TYPE_STR,	  "1008611",		  },    /*0x0040 监控平台电话号码*/
+	{ 0x0041, TYPE_STR,	  "",				  },    /*0x0041 复位电话号码*/
+	{ 0x0042, TYPE_STR,	  "",				  },    /*0x0042 恢复出厂设置电话号码*/
+	{ 0x0043, TYPE_STR,	  "",				  },    /*0x0043 监控平台SMS号码*/
+	{ 0x0044, TYPE_STR,	  "",				  },    /*0x0044 接收终端SMS文本报警号码*/
+	{ 0x0045, TYPE_DWORD, 5,				  },    /*0x0045 终端接听电话策略*/
+	{ 0x0046, TYPE_DWORD, 3,				  },    /*0x0046 每次通话时长*/
+	{ 0x0047, TYPE_DWORD, 3,				  },    /*0x0047 当月通话时长*/
+	{ 0x0048, TYPE_STR,	  "",				  },    /*0x0048 监听电话号码*/
+	{ 0x0049, TYPE_STR,	  "",				  },    /*0x0049 监管平台特权短信号码*/
+	{ 0x0050, TYPE_DWORD, 5,				  },    /*0x0050 报警屏蔽字*/
+	{ 0x0051, TYPE_DWORD, 3,				  },    /*0x0051 报警发送文本SMS开关*/
+	{ 0x0052, TYPE_DWORD, 5,				  },    /*0x0052 报警拍照开关*/
+	{ 0x0053, TYPE_DWORD, 3,				  },    /*0x0053 报警拍摄存储标志*/
+	{ 0x0054, TYPE_DWORD, 5,				  },    /*0x0054 关键标志*/
+	{ 0x0055, TYPE_DWORD, 3,				  },    /*0x0055 最高速度kmh*/
+	{ 0x0056, TYPE_DWORD, 5,				  },    /*0x0056 超速持续时间*/
+	{ 0x0057, TYPE_DWORD, 4 * 60 * 60,		  },    /*0x0057 连续驾驶时间门限*/
+	{ 0x0058, TYPE_DWORD, 5,				  },    /*0x0058 当天累计驾驶时间门限*/
+	{ 0x0059, TYPE_DWORD, 1200,				  },    /*0x0059 最小休息时间*/
+	{ 0x005A, TYPE_DWORD, 7200,				  },    /*0x005A 最长停车时间*/
+	{ 0x005B, TYPE_DWORD, 900,				  },    /*0x0005B 超速报警预警差值，单位为 1/10Km/h */
+	{ 0x005C, TYPE_DWORD, 90,				  },    /*0x005C 疲劳驾驶预警差值，单位为秒（s），>0*/
+	{ 0x005D, TYPE_DWORD, 0x200a,			  },    /*0x005D 碰撞报警参数设置:*/
+	{ 0x005E, TYPE_DWORD, 30,				  },    /*0x005E 侧翻报警参数设置： 侧翻角度，单位 1 度，默认为 30 度*/
+	{ 0x0064, TYPE_DWORD, 0,				  },    /*0x0064 定时拍照控制*/
+	{ 0x0065, TYPE_DWORD, 0,				  },    /*0x0065 定距拍照控制*/
+	{ 0x0070, TYPE_DWORD, 3,				  },    /*0x0070 图像视频质量(1-10)*/
+	{ 0x0071, TYPE_DWORD, 5,				  },    /*0x0071 亮度*/
+	{ 0x0072, TYPE_DWORD, 3,				  },    /*0x0072 对比度*/
+	{ 0x0073, TYPE_DWORD, 5,				  },    /*0x0073 饱和度*/
+	{ 0x0074, TYPE_DWORD, 3,				  },    /*0x0074 色度*/
+	{ 0x0080, TYPE_DWORD, 5,				  },    /*0x0080 车辆里程表读数0.1km*/
+	{ 0x0081, TYPE_DWORD, 12,				  },    /*0x0081 省域ID*/
+	{ 0x0082, TYPE_DWORD, 0,				  },    /*0x0082 市域ID*/
+	{ 0x0083, TYPE_STR,	  "津O-00001",		  },    /*0x0083 机动车号牌*/
+	{ 0x0084, TYPE_DWORD, 1,				  },    /*0x0084 车牌颜色	1蓝色 2黄色 3黑色 4白色 9其他*/
+	{ 0x0090, TYPE_DWORD, 0x0f,				  },    /*0x0090 GNSS 定位模式*/
+	{ 0x0091, TYPE_DWORD, 0x01,				  },    /*0x0091 GNSS 波特率*/
+	{ 0x0092, TYPE_DWORD, 0x01,				  },    /*0x0092 GNSS 模块详细定位数据输出频率*/
+	{ 0x0093, TYPE_DWORD, 0x01,				  },    /*0x0093 GNSS 模块详细定位数据采集频率*/
+	{ 0x0094, TYPE_DWORD, 0x01,				  },    /*0x0094 GNSS 模块详细定位数据上传方式*/
+	{ 0x0095, TYPE_DWORD, 0x01,				  },    /*0x0095 GNSS 模块详细定位数据上传设置*/
+	{ 0x0100, TYPE_DWORD, 0,				  },    /*0x0100 CAN 总线通道 1 采集时间间隔(ms)，0 表示不采集*/
+	{ 0x0101, TYPE_DWORD, 0,				  },    /*0x0101 CAN 总线通道 1 上传时间间隔(s)，0 表示不上传*/
+	{ 0x0102, TYPE_DWORD, 0,				  },    /*0x0102 CAN 总线通道 2 采集时间间隔(ms)，0 表示不采集*/
+	{ 0x0103, TYPE_DWORD, 0,				  },    /*0x0103 CAN 总线通道 2 上传时间间隔(s)，0 表示不上传*/
+	{ 0x0110, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0110 CAN 总线 ID 单独采集设置*/
+	{ 0x0111, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0111 其他CAN 总线 ID 单独采集设置*/
+	{ 0x0112, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0112 其他CAN 总线 ID 单独采集设置*/
+	{ 0x0113, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0113 其他CAN 总线 ID 单独采集设置*/
+	{ 0x0114, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0114 其他CAN 总线 ID 单独采集设置*/
+	{ 0x0115, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0115 其他CAN 总线 ID 单独采集设置*/
+	{ 0x0116, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0116 其他CAN 总线 ID 单独采集设置*/
+	{ 0x0117, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0117 其他CAN 总线 ID 单独采集设置*/
+	{ 0x0118, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0118 其他CAN 总线 ID 单独采集设置*/
+	{ 0x0119, TYPE_CAN,	  "\0\0\0\0\0\0\0\0", },    /*0x0119 其他CAN 总线 ID 单独采集设置*/
+	{ 0xF000, TYPE_STR,	  "70420",			  },    /*0xF000 制造商ID*/
+	{ 0xF001, TYPE_STR,	  "TW703-BD",		  },    /*0xF001 终端型号*/
+	{ 0xF002, TYPE_STR,	  "1234567",		  },    /*0xF002 终端ID*/
+	{ 0xF003, TYPE_STR,	  "",				  },    /*0xF003 鉴权码*/
+	{ 0xF004, TYPE_DWORD, 0x07,				  },    /*0xF004 终端类型*/
+	{ 0xF005, TYPE_STR,	  "0000000000000000", },    /*0xF005 车辆VIN*/
+	{ 0xF006, TYPE_STR,	  "",				  },    /*0xF006 车牌号*/
+	{ 0xF007, TYPE_DWORD, 0x02,				  },    /*0xF007 车牌颜色*/
+	{ 0xF008, TYPE_STR,	  "",				  },    /*0xF008 驾驶员姓名*/
+	{ 0xF009, TYPE_STR,	  "",				  },    /*0xF009 驾驶证号码*/
+	{ 0xF00A, TYPE_DWORD, 2,				  },
+	{ 0xF010, TYPE_STR,	  "123456",			  },    /*0xF010 软件版本号*/
+	{ 0xF011, TYPE_STR,	  "0000",			  },    /*0xF011 硬件版本号*/
+	{ 0xF020, TYPE_DWORD, 0,				  },    /*0xF020 总里程*/
+};
+
+
+
+
+
 
 #endif
 
