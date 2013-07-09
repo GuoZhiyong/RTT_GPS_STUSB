@@ -10,7 +10,9 @@ static void msg( void *p)
 }
 static void show(void)
 {
+	#if NEED_TODO
 concuss_step=JT808Conf_struct.concuss_step;
+	#endif
 concuss_dis[9]=concuss_step/10+'0';
 concuss_dis[10]=concuss_step%10+'0';
 lcd_fill(0);
@@ -36,9 +38,10 @@ static void keypress(unsigned int key)
 			if(concuss_screen==0)
 				{
 				concuss_screen=1;
+					#if NEED_TODO
 				JT808Conf_struct.concuss_step=concuss_step;
 				Api_Config_Recwrite_Large(jt808,0,(u8*)&JT808Conf_struct,sizeof(JT808Conf_struct));
-			
+			#endif
 
                 concuss_dis[9]=concuss_step/10+'0';
 				concuss_dis[10]=concuss_step%10+'0';

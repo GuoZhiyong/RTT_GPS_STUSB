@@ -121,22 +121,21 @@ static void keypress( unsigned int key )
 				lcd_update_all( );
 
 				//车牌号
-				//memset( JT808Conf_struct.Vechicle_Info.Vech_Num, 0, sizeof( JT808Conf_struct.Vechicle_Info.Vech_Num ) );
-				//memcpy( JT808Conf_struct.Vechicle_Info.Vech_Num, Menu_Car_license, strlen( Menu_Car_license ) );
-				memcpy(jt808_param.id_0xF005,Menu_Car_license,strlen(Menu_Car_license));
+				memset(jt808_param.id_0xF006, 0, 32 );
+				memcpy(jt808_param.id_0xF006,Menu_Car_license,strlen(Menu_Car_license));
 				//车辆类型
-				memset( JT808Conf_struct.Vechicle_Info.Vech_Type, 0, sizeof( JT808Conf_struct.Vechicle_Info.Vech_Type ) );
-				memcpy( JT808Conf_struct.Vechicle_Info.Vech_Type, Menu_VechileType, strlen( Menu_VechileType ) );
+				memset(jt808_param.id_0xF008, 0, 32 );
+				memcpy(jt808_param.id_0xF008,Menu_Car_license,strlen(Menu_Car_license));
 				//车辆VIN
-				memset( JT808Conf_struct.Vechicle_Info.Vech_VIN, 0, sizeof( JT808Conf_struct.Vechicle_Info.Vech_VIN ) );
-				memcpy( JT808Conf_struct.Vechicle_Info.Vech_VIN, Menu_Vin_Code, 17 );
+				memset(jt808_param.id_0xF005, 0, 32 );
+				memcpy(jt808_param.id_0xF005,Menu_Vin_Code,17);
 
 				// 车牌颜色
-				JT808Conf_struct.Vechicle_Info.Dev_Color = Menu_color_num;
-				//车辆设置完成
-				JT808Conf_struct.password_flag = 1;
+				jt808_param.id_0xF007 = Menu_color_num;
+				
 				//  存储
-				Api_Config_Recwrite_Large( jt808, 0, (u8*)&JT808Conf_struct, sizeof( JT808Conf_struct ) );
+				param_save();
+				
 			}else if( comfirmation_flag == 2 )
 			{
 				col_screen			= 0;

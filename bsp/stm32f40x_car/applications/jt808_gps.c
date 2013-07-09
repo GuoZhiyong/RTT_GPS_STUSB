@@ -387,11 +387,11 @@ void process_gps( void )
 	//if(flag_send==0) return;
 
 /*生成要上报的数据*/
-#if 0
+#if 1
 
-	if( ( gps_datetime[5] % 60 ) == 0 )
+	if( ( gps_datetime[5] % 30 ) == 0 )
 	{
-		err = jt808_add_tx_data( 1, TERMINAL_CMD, 0x0200, 28, -1, RT_NULL, RT_NULL, (uint8_t*)&gps_baseinfo );
+		err = jt808_tx( 0x0200, (uint8_t*)&gps_baseinfo,28 );
 		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );
 	}
 #endif

@@ -24,7 +24,7 @@ void thread_usbout_udisk( void* parameter )
 	u8 i=0;
 	u16 len=0;
 	u32 count=0;
-	
+	#if NEED_TODO
 
 	//车辆信息（  VIN 17 +  车牌号12  +  车牌分类 12 ）
 	memcpy(write_da,IMSI_CODE+3,12);
@@ -38,7 +38,7 @@ void thread_usbout_udisk( void* parameter )
 	write_da[62]=Vehicle_sensor;
 	//信息内容    条数2+内容
 	write_da[63]=0;
-
+#endif
 	msg = (void (*)(void*))parameter;
 
 	ptr_write_packet = rt_malloc(256);
@@ -48,7 +48,6 @@ void thread_usbout_udisk( void* parameter )
 		return;
 	}
 	//ptr_write_packet=write_da;
-/*查找U盘*/
 /*查找U盘*/
 	while( 1 )
 	{
@@ -102,7 +101,7 @@ void thread_usbout_udisk( void* parameter )
 			if(DataOutStartFlag==1)//疑点
 				{
 				write_da[64]=1;
-				Api_DFdirectory_Read(doubt_data,write_da+65,206,0,1);
+				//Api_DFdirectory_Read(doubt_data,write_da+65,206,0,1);
 				len=271;//65+206
 				size = write( fd,write_da,len);
 				rt_kprintf("\r\n 导出疑点数据记录sizeof= %d ",size);
@@ -112,6 +111,7 @@ void thread_usbout_udisk( void* parameter )
 				}
 			else if(DataOutStartFlag==2)//疲劳
 				{
+						#if NEED_TODO
 				write_da[64]=TiredDrv_write;
 				if(TiredDrv_write>=1)
 					{
@@ -124,11 +124,14 @@ void thread_usbout_udisk( void* parameter )
 				size = write( fd,write_da,len);
 				rt_kprintf("\r\n 导出疲劳记录sizeof= %d ",size);
 				data_fetch_comp=1;
+					#endif
 				msg("I数据导出完成");
+					
 				//goto end_usbdata_0;
 				}
 			else if(DataOutStartFlag==3)//超速
 				{
+					#if NEED_TODO
 				write_da[64]=ExpSpdRec_write;
 				if(ExpSpdRec_write>=1)
 					{
@@ -139,7 +142,9 @@ void thread_usbout_udisk( void* parameter )
 					}
 				len=65+ExpSpdRec_write*13;
 				size = write( fd,write_da,len);
+					#endif
 				rt_kprintf("\r\n 导出超速记录sizeof= %d ",size);
+					
 				data_fetch_comp=1;
 				msg("I数据导出完成");
 				//goto end_usbdata_0;
@@ -211,7 +216,7 @@ static void keypress(unsigned int key)
 	switch(KeyValue)
 		{
 		case KeyValueMenu:
-			DF_LOCK=0;
+//			DF_LOCK=0;
 			CounterBack=0;
 			//USB_data_flag=0;
 			if((data_fetch_comp==1)||(usb_error==1))

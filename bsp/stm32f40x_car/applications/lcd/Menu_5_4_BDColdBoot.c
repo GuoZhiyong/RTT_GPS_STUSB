@@ -43,21 +43,7 @@ static void keypress(unsigned int key)
                                   $CCSIR,2,1*48 
                                   $CCSIR,3,1*4A 
 				 */		    
-				if(GpsStatus.Position_Moule_Status==1)
-					{
-					gps_mode("1");
-					rt_kprintf("\r\n北斗模式下冷启动");
-					}
-				else if(GpsStatus.Position_Moule_Status==2)
-					{
-					gps_mode("2");
-					rt_kprintf("\r\nGPS模式下冷启动");
-					}
-				else if(GpsStatus.Position_Moule_Status==3)
-					{
-					gps_mode("3");
-					rt_kprintf("\r\n双模下冷启动");
-					}
+					gps_mode(gps_status.Position_Moule_Status);
 				}
 			break;
 		case KeyValueUP:

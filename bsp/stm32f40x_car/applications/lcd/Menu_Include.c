@@ -126,7 +126,9 @@ for(i=0,j=0;i<NumPilao;i++,j++)
 	data_tirexps[1+j*31]=i+1;	
 for(i=0;i<NumPilao;i++)
 	{
+		#if NEED_TODO
 	Api_DFdirectory_Read(tired_warn,Read_PilaoData,31,0,i); // 从new-->old  读取
+		#endif
 	memcpy(&data_tirexps[i*31+2],Read_PilaoData,30);
 	}
 }
@@ -140,7 +142,9 @@ for(i=0,j=0;i<NumExspeed;i++,j++)
 	data_tirexps[1+j*32]=i+1;	
 for(i=0;i<NumExspeed;i++)
 	{
+		#if NEED_TODO
 	Api_DFdirectory_Read(spd_warn,Read_ChaosuData,32,0,i); // 从new-->old  读取
+		#endif
     memcpy(&data_tirexps[i*32+2],Read_ChaosuData,31);
 	}
 }

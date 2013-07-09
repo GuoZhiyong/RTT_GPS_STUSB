@@ -18,6 +18,7 @@
 
 #define ADDR_PARAM 0x000000000
 
+
 typedef struct _jt808_param
 {
 	uint32_t	id_0x0000;      /*0x0000 版本*/
@@ -116,10 +117,18 @@ typedef struct _jt808_param
 	char	id_0xF001[32];      /*0xF001 终端型号 20byte*/
 	char	id_0xF002[32];      /*0xF002 终端ID 7byte*/
 	char	id_0xF003[32];      /*0xF003 鉴权码*/
-	uint32_t	id_0xF004;		/*0xF004 终端类型*/
-	char	id_0xF005[32];		/*0xF005 车辆标识,VIN 或车牌号*/
-	char	id_0xF010[32];		/*0xF010 软件版本号*/
-	char	id_0xF011[32];		/*0xF011 硬件版本号*/
+	uint8_t id_0xF004;          /*0xF004 终端类型*/
+	char	id_0xF005[32];      /*0xF005 车辆标识,VIN*/
+	char	id_0xF006[32];      /*0xF006 车辆标识,车牌号*/
+	uint8_t id_0xF007;          /*0xF007 车牌颜色*/
+
+	char	id_0xF008[32];      /*0xF008 驾驶员姓名*/
+	char	id_0xF009[32];      /*0xF009 驾驶证号码*/
+	char	id_0xF00A[32];      /*0xF008 车辆类型*/
+	char	id_0xF010[32];      /*0xF010 软件版本号*/
+	char	id_0xF011[32];      /*0xF011 硬件版本号*/
+
+	uint32_t	id_0xF020;		/*0xF020 总里程*/
 }JT808_PARAM;
 
 #if 0
@@ -139,8 +148,7 @@ typedef struct
 }TERM_PARAM;
 #endif
 
-
-extern JT808_PARAM	jt808_param;
+extern JT808_PARAM jt808_param;
 
 //extern TERM_PARAM	term_param;
 

@@ -24,9 +24,6 @@
 
 typedef uint32_t MYTIME;
 
-/*×ª»»hexµ½bcdµÄ±àÂë*/
-#define HEX2BCD( A )	( ( ( ( A ) / 10 ) << 4 ) | ( ( A ) % 10 ) )
-#define BCD2HEX( x )	( ( ( ( x ) >> 4 ) * 10 ) + ( ( x ) & 0x0f ) )
 
 #define PACK_BYTE( buf, byte ) ( *( buf ) = ( byte ) )
 #define PACK_WORD( buf, word ) \
@@ -109,16 +106,6 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
 	}
 	return ( ( ( (unsigned long)( year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day ) + year * 365 - 719499 ) * 24 + hour * 60 + min ) * 60 + sec );
 }
-
-#define BYTESWAP2( val )    \
-    ( ( ( val & 0xff ) << 8 ) |   \
-      ( ( val & 0xff00 ) >> 8 ) )
-
-#define BYTESWAP4( val )    \
-    ( ( ( val & 0xff ) << 24 ) |   \
-      ( ( val & 0xff00 ) << 8 ) |  \
-      ( ( val & 0xff0000 ) >> 8 ) |  \
-      ( ( val & 0xff000000 ) >> 24 ) )
 
 
 

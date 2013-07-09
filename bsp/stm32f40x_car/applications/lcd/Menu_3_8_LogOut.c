@@ -68,13 +68,7 @@ static void keypress(unsigned int key)
 			   	{
 			   	Menu_Logout=0;
 				
-		              //-----------------------------------------------------------	
-				    JT808Conf_struct.Regsiter_Status=0; 
-				    memset(Reg_buf,0,sizeof(Reg_buf));
-				    memcpy(Reg_buf,JT808Conf_struct.ConfirmCode,20);
-				    Reg_buf[20]=JT808Conf_struct.Regsiter_Status;			
-		                  Api_Config_Recwrite_Large(jt808,0,(u8*)&JT808Conf_struct,sizeof(JT808Conf_struct));   
-				//---------------------------------------------------------------
+				memset(jt808_param.id_0xF003,0,32);
 				lcd_fill(0); 
 				lcd_text12(24,10,"鉴权码已清空",12,LCD_MODE_SET);
 				lcd_update_all();
@@ -96,8 +90,8 @@ static void keypress(unsigned int key)
 			   lcd_text12(30,10,"鉴权已发送",10,LCD_MODE_SET);
 			   lcd_update_all();
 			   
-			   DEV_Login.Operate_enable=1;
-			   DEV_Login.Enable_sd=1;
+//			   DEV_Login.Operate_enable=1;
+//			   DEV_Login.Enable_sd=1;
 			   }
 		   else if(LogInorOut==3)//注册
 			   {
@@ -112,7 +106,7 @@ static void keypress(unsigned int key)
 			   {
 			   Menu_Logout=0;
 
-				DEV_regist.Enable_sd=1; // set 发送注册标志位
+//				DEV_regist.Enable_sd=1; // set 发送注册标志位
 
 			   lcd_fill(0);
 			   lcd_text12(30,10,"注册已发送",10,LCD_MODE_SET);

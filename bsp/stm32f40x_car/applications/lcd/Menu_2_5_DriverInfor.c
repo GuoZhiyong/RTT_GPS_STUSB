@@ -27,14 +27,13 @@ lcd_fill(0);
 if(NameCode==1)
 	{
 	lcd_text12(30,3,"¼ÝÊ»Ô±ÐÕÃû",10,LCD_MODE_SET);
-	lcd_text12(42,19,(char *)JT808Conf_struct.Driver_Info.DriveName,strlen((char *)JT808Conf_struct.Driver_Info.DriveName),LCD_MODE_SET);
+	lcd_text12(42,19,jt808_param.id_0xF008,strlen(jt808_param.id_0xF008),LCD_MODE_SET);
 	//lcd_text12(48,19,(char *)Driver_Info.DriveName,strlen(Driver_Info.DriveName),LCD_MODE_SET);
 	}
 else
 	{
 	lcd_text12(30,3,"¼ÝÊ»Ö¤ºÅÂë",10,LCD_MODE_SET);
-	lcd_text12(6,19,(char *)JT808Conf_struct.Driver_Info.DriverCard_ID,18,LCD_MODE_SET);
-	//lcd_text12(15,19,(char *)Driver_Info.DriverCard_ID,sizeof(Driver_Info.DriverCard_ID),LCD_MODE_SET);
+	lcd_text12(42,19,jt808_param.id_0xF009,strlen(jt808_param.id_0xF009),LCD_MODE_SET);
 	}
 lcd_update_all();
 } 

@@ -289,7 +289,9 @@ else
 	  {
 	  //u8 i=0;
 	  //读出8条消息在判断显示
+			#if NEED_TODO
 	  MSG_BroadCast_Read();
+			#endif
 	  Dis_dianbo(1);
       Menu_dianbo=1;
 	  }

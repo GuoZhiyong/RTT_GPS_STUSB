@@ -32,7 +32,9 @@ switch(KeyValue)
 		lcd_fill(0);
 		lcd_text12(10,10,"电子运单发送成功",16,LCD_MODE_SET);
 		lcd_update_all();
-		SD_ACKflag.f_Worklist_SD_0701H=1;//按键选择发送电子运单标志
+	#if NEED_TODO
+		//SD_ACKflag.f_Worklist_SD_0701H=1;//按键选择发送电子运单标志
+	#endif
 		break;
 	case KeyValueUP:
 		break;

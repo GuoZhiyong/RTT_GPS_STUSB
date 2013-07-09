@@ -93,25 +93,8 @@ MsgList				* list_jt808_rx;
 
 static rt_device_t	dev_gsm;
 
-typedef enum
-{
-	CONNECT_NONE	= 0,            /*不连接*/
-	CONNECT_IDLE	= 1,            /*空闲，准备连接*/
-	CONNECT_PEER,                   /*正在连接到对端*/
-	CONNECTED,                      /*连接成功*/
-	CONNECT_ERROR,                  /*连接错误*/
-	CONNECT_CLOSE,                  /*连接关闭，区分是主动还是被动*/
-}CONN_STATE;
 
-struct
-{
-	uint32_t	disable_connect;    /*禁止链接标志，协议控制 0:允许链接*/
-	CONN_STATE	server_state;
-	uint8_t		server_index;
-	CONN_STATE	auth_state;
-	uint8_t		auth_index;
-} connect_state =
-{ 0, CONNECT_IDLE, 0, CONNECT_NONE, 0 };
+struct _connect_state  connect_state ={ 0, CONNECT_IDLE, 0, CONNECT_NONE, 0 };
 
 #if 0
 
@@ -1148,7 +1131,7 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 
 	if( pnodedata->state == IDLE ) /*空闲，发送信息或超时后没有数据*/
 	{
-#if 0
+#if 1
 		/*要判断是不是出于GSM_TCPIP状态,当前socket是否可用*/
 		if( gsmstate( GSM_STATE_GET ) != GSM_TCPIP )
 		{
@@ -1244,7 +1227,7 @@ static void jt808_socket_proc( void )
 	state = gsmstate( GSM_STATE_GET );
 	if( state == GSM_IDLE )
 	{
-		//gsmstate( GSM_POWERON );                /*开机登网*/
+		gsmstate( GSM_POWERON );                /*开机登网*/
 		return;
 	}
 /*控制登网*/

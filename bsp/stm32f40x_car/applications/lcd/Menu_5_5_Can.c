@@ -30,6 +30,7 @@ void can_set_check(u8  par )
 lcd_fill(0);
 if(par==1)
 	{	
+		#if NEED_TODO
 	CAN_ID1[5]= canid_check[(u8)(BD_EXT.CAN_1_ID&0xF0000000)>>28];
 	CAN_ID1[6]= canid_check[(u8)(BD_EXT.CAN_1_ID&0x0F000000)>>24];
 	CAN_ID1[7]= canid_check[(u8)(BD_EXT.CAN_1_ID&0x00F00000)>>20];
@@ -47,18 +48,21 @@ if(par==1)
 	CAN_ID2[10]=canid_check[(u8)(BD_EXT.CAN_2_ID&0x00000F00)>>8];
 	CAN_ID2[11]=canid_check[(u8)(BD_EXT.CAN_2_ID&0x000000F0)>>4];
 	CAN_ID2[12]=canid_check[(u8)(BD_EXT.CAN_2_ID&0x0000000F)];
-	
+	#endif
+		
 	lcd_text12(0, 3,(char *)CAN_ID1,13,LCD_MODE_SET);
 	lcd_text12(0,19,(char *)CAN_ID2,13,LCD_MODE_SET);
 	}
 else
 	{
+		#if NEED_TODO
 	CAN_baud[7]= BD_EXT.BD_Baud/100000+'0';
 	CAN_baud[8]= BD_EXT.BD_Baud%100000/10+'0';
 	CAN_baud[9]= BD_EXT.BD_Baud%10000/10+'0';
 	CAN_baud[10]=BD_EXT.BD_Baud%1000/10+'0';
 	CAN_baud[11]=BD_EXT.BD_Baud%100/10+'0';
 	CAN_baud[12]=BD_EXT.BD_Baud%10+'0';
+		#endif
 	lcd_text12(0,10,(char *)CAN_baud,13,LCD_MODE_SET);
 	}
 lcd_update_all();

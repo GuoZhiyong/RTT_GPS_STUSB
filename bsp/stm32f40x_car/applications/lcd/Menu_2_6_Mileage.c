@@ -14,7 +14,7 @@ static void show(void)
 {
 	unsigned long DisKm=0;
 
-	DisKm=JT808Conf_struct.Distance_m_u32/1000;//单位:m
+	DisKm=jt808_param.id_0xF020/1000;//单位:m
 
 	licheng_sum[7] =DisKm%1000000/100000+0x30;
 	licheng_sum[8] =DisKm%100000/10000+0x30;

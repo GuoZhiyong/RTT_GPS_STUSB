@@ -20,6 +20,10 @@
 #include "msglist.h"
 #include "m66.h"
 
+#define NEED_TODO	0
+
+
+
 #define   MsgQ_Timeout		3
 #define JT808_PACKAGE_MAX	512
 
@@ -252,32 +256,7 @@ typedef __packed struct
 	void		* pvalue;
 }PARAM_BODY;
 
-#if 0
-typedef struct
-{
-	uint32_t ver; /*版本信息四个字节yy_mm_dd_build,比较大小*/
-/*车辆注册信息*/
-	uint16_t	id0100_1_w;
-	uint16_t	id0100_2_w;
-	uint8_t		id0100_3_s[5];
-	uint8_t		id0100_4_s[8];
-	uint8_t		id0100_5_s[7];
-	uint8_t		id0100_6_b;
-	uint8_t		id0100_7_s[12];
-
-/*网络有关*/
-	char	apn[32];
-	char	user[32];
-	char	psw[32];
-	char	mobile[6];
-/*传输相关*/
-	uint32_t	timeout_udp;    /*udp传输超时时间*/
-	uint32_t	retry_udp;      /*udp传输重传次数*/
-	uint32_t	timeout_tcp;    /*udp传输超时时间*/
-	uint32_t	retry_tcp;      /*udp传输重传次数*/
-}JT808_PARAM;
-
-#endif
+ 
 
 typedef enum
 {
@@ -328,6 +307,30 @@ typedef __packed struct
 #define JT808HEAD_ATTR( head )	( ( *( head + 2 ) << 8 ) | ( *( head + 3 ) ) )
 #define JT808HEAD_LEN( head )	( ( *( head + 2 ) << 8 ) | ( *( head + 3 ) ) ) & 0x3FF
 #define JT808HEAD_SEQ( head )	( ( *( head + 10 ) << 8 ) | ( *( head + 11 ) ) )
+
+
+typedef enum
+{
+	CONNECT_NONE	= 0,            /*不连接*/
+	CONNECT_IDLE	= 1,            /*空闲，准备连接*/
+	CONNECT_PEER,                   /*正在连接到对端*/
+	CONNECTED,                      /*连接成功*/
+	CONNECT_ERROR,                  /*连接错误*/
+	CONNECT_CLOSE,                  /*连接关闭，区分是主动还是被动*/
+}CONN_STATE;
+
+struct _connect_state
+{
+	uint32_t	disable_connect;    /*禁止链接标志，协议控制 0:允许链接*/
+	CONN_STATE	server_state;
+	uint8_t		server_index;
+	CONN_STATE	auth_state;
+	uint8_t		auth_index;
+};
+
+extern struct _connect_state connect_state ;
+
+
 
 
 /*

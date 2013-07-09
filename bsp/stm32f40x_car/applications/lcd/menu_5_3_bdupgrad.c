@@ -194,7 +194,7 @@ static void keypress( unsigned int key )
 				menu_set();
 			if(menu_pos==0)
 			{
-				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_uart, (void*)msg, 1024, 5, 5 );
+//				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_uart, (void*)msg, 1024, 5, 5 );
 				if( tid_upgrade != RT_NULL )
 				{
 					msg("I等待串口升级");
@@ -205,7 +205,7 @@ static void keypress( unsigned int key )
 				}
 			}else /*U盘升级*/
 			{
-				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_udisk, (void*)msg, 1024, 5, 5 );
+//				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_udisk, (void*)msg, 1024, 5, 5 );
 				if( tid_upgrade != RT_NULL )
 				{
 					msg("I等待U盘升级");

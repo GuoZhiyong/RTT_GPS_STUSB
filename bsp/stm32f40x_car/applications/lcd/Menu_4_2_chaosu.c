@@ -83,7 +83,9 @@ static void keypress(unsigned int key)
 			if(ChaoScreen==1)
 				{
 				ChaoScreen=2;
+					#if NEED_TODO
 				exspeed_num=Api_DFdirectory_Query(tired_warn,0);   //查询当前疲劳驾驶记录数目
+					#endif
                 if(exspeed_num>0)
 					{
 					expsp_Flag=1;

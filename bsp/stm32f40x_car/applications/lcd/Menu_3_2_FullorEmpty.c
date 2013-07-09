@@ -52,9 +52,10 @@ switch(KeyValue)
 		else if(CarStatus_screen==1)
 			{
 			CarStatus_screen=2;
-                     JT808Conf_struct.LOAD_STATE=CarStatus_change;
+#if NEED_TODO
+				JT808Conf_struct.LOAD_STATE=CarStatus_change;
 			Api_Config_Recwrite_Large(jt808,0,(u8*)&JT808Conf_struct,sizeof(JT808Conf_struct));
-
+#endif
 		     /* Car_Status[2]&=~0x03;      //  空载
 	             if(CarStatus_change==1)
 				Car_Status[2]|=0x01;   //半载
@@ -62,8 +63,10 @@ switch(KeyValue)
 				Car_Status[2]|=0x03;   //满载*/
 
             //上报位置信息
+				#if NEED_TODO
 			PositionSD_Enable();
 			Current_UDP_sd=1;
+				#endif
 
 			lcd_fill(0);
 			lcd_text12(20,10,(char *)car_status_str[CarStatus_change],4,LCD_MODE_SET);

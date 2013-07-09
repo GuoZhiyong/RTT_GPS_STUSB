@@ -85,7 +85,9 @@ unsigned char tired_num=0;
 			if(PiLaoSreen==1)
 				{
 				PiLaoSreen=2;
+					#if NEED_TODO
 				tired_num=Api_DFdirectory_Query(tired_warn,0);   //查询当前疲劳驾驶记录数目
+					#endif
                 if(tired_num>0)
 					{
 					tire_Flag=1;
@@ -94,6 +96,7 @@ unsigned char tired_num=0;
 						ReadPiLao(3);
 					else	
 						ReadPiLao(tired_num);
+					
 					Dis_pilao(data_tirexps);
 					}
 				else
