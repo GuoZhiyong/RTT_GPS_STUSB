@@ -62,7 +62,7 @@ void DIS_MEUN_2( u8 screen )
 		InforNum[0] = '0' + screen;
 		lcd_fill( 0 );
 		lcd_text12( 0, 10, (char*)InforNum, 2, LCD_MODE_SET );
-		lcd_text12( 20, 10, (char*)TEXT_Obj_8[screen - 1].TEXT_STR, TEXT_Obj_8[screen - 1].TEXT_LEN, LCD_MODE_SET );
+		//lcd_text12( 20, 10, (char*)TEXT_Obj_8[screen - 1].TEXT_STR, TEXT_Obj_8[screen - 1].TEXT_LEN, LCD_MODE_SET );
 		lcd_update_all( );
 	}
 }
@@ -141,10 +141,10 @@ static void keypress( unsigned int key )
 				for( i = 0; i <= 7; i++ )
 				{
 					//Api_RecordNum_Read( text_msg, i + 1, (u8*)&TEXT_Obj, sizeof( TEXT_Obj ) );
-					memcpy( (u8*)&TEXT_Obj_8[i], (u8*)&TEXT_Obj, sizeof( TEXT_Obj ) );
+					//memcpy( (u8*)&TEXT_Obj_8[i], (u8*)&TEXT_Obj, sizeof( TEXT_Obj ) );
 					//rt_kprintf("\r\n文本信息 最新:%d  消息TYPE:%d  长度:%d",TEXT_Obj_8bak[i].TEXT_mOld,TEXT_Obj_8bak[i].TEXT_TYPE,TEXT_Obj_8bak[i].TEXT_LEN);
 				}
-				TxtInfo_len_0 = TEXT_Obj_8[dis_screen_counter - 1].TEXT_LEN; // 收到文本信息长度
+				//TxtInfo_len_0 = TEXT_Obj_8[dis_screen_counter - 1].TEXT_LEN; // 收到文本信息长度
 				//rt_kprintf("\r\n 数据长度 = %d ",TxtInfo_len_0);
 				if( TxtInfo_len_0 == 0 )
 				{
@@ -164,19 +164,19 @@ static void keypress( unsigned int key )
 						{
 							TxtScreenNum_Total_0 = TxtInfo_len_0 / 40;
 						}
-						lcd_text12( 0, 0, (char*)TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR, 20, LCD_MODE_SET );
-						lcd_text12( 0, 15, (char*)&TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR + 20, 20, LCD_MODE_SET );
+						//lcd_text12( 0, 0, (char*)TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR, 20, LCD_MODE_SET );
+						//lcd_text12( 0, 15, (char*)&TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR + 20, 20, LCD_MODE_SET );
 						//rt_kprintf("\r\n 写入汉字数 : %d个 长度=%d,需要显示%d屏,当前第%d屏",CurrentDisplen,TxtInfo_len_0,TxtScreenNum_Total_0,TxtScreen_CurrentNum_0);
 					}else
 					{
 						TxtScreenNum_Total_0 = 1;
 						if( TxtInfo_len_0 > 20 )
 						{
-							lcd_text12( 0, 0, (char*)TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR, 20, LCD_MODE_SET );
-							lcd_text12( 0, 15, (char*)TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR + 20, TxtInfo_len_0 - 20, LCD_MODE_SET );
+							//lcd_text12( 0, 0, (char*)TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR, 20, LCD_MODE_SET );
+							//lcd_text12( 0, 15, (char*)TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR + 20, TxtInfo_len_0 - 20, LCD_MODE_SET );
 						}else
 						{
-							lcd_text12( 0, 0, (char*)TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR, TxtInfo_len_0, LCD_MODE_SET );
+							//bitter:lcd_text12( 0, 0, (char*)TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR, TxtInfo_len_0, LCD_MODE_SET );
 						}
 						//rt_kprintf("\r\n 写入汉字数 : %d个 长度=%d,需要显示%d屏",CurrentDisplen,TxtInfo_len_0,TxtScreenNum_Total_0);
 					}
@@ -227,14 +227,14 @@ static void keypress( unsigned int key )
 				lcd_fill( 0 );
 				if( TxtScreen_CurrentNum_0 != TxtScreenNum_Total_0 )
 				{
-					memcpy( read_temp_0, &TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR[40 * ( TxtScreen_CurrentNum_0 - 1 )], 40 );               //20个汉字20*2个字节
+					//memcpy( read_temp_0, &TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR[40 * ( TxtScreen_CurrentNum_0 - 1 )], 40 );               //20个汉字20*2个字节
 					lcd_text12( 0, 0, (char*)read_temp_0, 20, LCD_MODE_SET );
 					lcd_text12( 0, 15, (char*)read_temp_0 + 20, 20, LCD_MODE_SET );
 				}else
 				{
 					//rt_kprintf("\r\n  最后一屏");
 					CurrentDisplen = TxtInfo_len_0 % 40;
-					memcpy( read_temp_0, &TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR[40 * ( TxtScreen_CurrentNum_0 - 1 )], CurrentDisplen );   //20个汉字20*2个字节
+					//memcpy( read_temp_0, &TEXT_Obj_8[dis_screen_counter - 1].TEXT_STR[40 * ( TxtScreen_CurrentNum_0 - 1 )], CurrentDisplen );   //20个汉字20*2个字节
 					if( CurrentDisplen > 20 )
 					{
 						lcd_text12( 0, 0, (char*)read_temp_0, 20, LCD_MODE_SET );

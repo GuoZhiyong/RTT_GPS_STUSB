@@ -12,13 +12,15 @@ void Dis_TelText(unsigned char screen)
 	{
 	lcd_fill(0);
 	lcd_text12(0,3,(char *)Tel_num_code[screen],1,LCD_MODE_SET);
-	if(PhoneBook_8[screen-1].Effective_Flag)
+#if NEED_TODO
+		if(PhoneBook_8[screen-1].Effective_Flag)
 		{
 		lcd_text12(15,3,(char*)PhoneBook_8[screen-1].UserStr,strlen((char*)PhoneBook_8[screen-1].UserStr),LCD_MODE_SET);
 		lcd_text12(40,19,(char *)PhoneBook_8[screen-1].NumberStr,strlen((char*)PhoneBook_8[screen-1].NumberStr),LCD_MODE_SET);
 		}
 	else
 		lcd_text12(50,19,"Null",4, LCD_MODE_SET);
+#endif	
 	lcd_update_all();
 	}
 
@@ -54,7 +56,7 @@ static void keypress(unsigned int key)
 			else */
 			if(Menu_TelText==1)
 				{
-				PhoneBook_Read();
+//bitter:				PhoneBook_Read();
 				Menu_TelText=2;
 				TelText_scree=1;
 				Dis_TelText(1);

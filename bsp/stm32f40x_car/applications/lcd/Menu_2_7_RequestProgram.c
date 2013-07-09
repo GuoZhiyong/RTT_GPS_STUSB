@@ -23,8 +23,10 @@ MSG_BRODCAST	 MSG_Obj_8[8];	// 信息点播
 */
 void SenddianboMeun(unsigned char screen,unsigned char SendOK)
 {
+	#if NEED_TODO
 if(SendOK==1)
   {
+		
   MSG_Obj_8[screen-1].INFO_TYPE=screen;
   if(MSG_Obj_8[screen-1].INFO_Effective)
 	  {
@@ -36,6 +38,7 @@ if(SendOK==1)
 		 lcd_text12(30,19,"取消成功",8,LCD_MODE_INVERT);
 	  lcd_update_all();
 	  }
+		
   MSG_TypeToCenter=screen;//发送给中心点播信息的序号
   }
 else
@@ -60,10 +63,13 @@ else
 		  }
 	  }
   }
+	#endif
 }
   
   void Dis_dianbo(unsigned char screen)
   {
+		
+		#if NEED_TODO
   switch(screen)
 	  {
 	  case 1:
@@ -280,7 +286,7 @@ else
 		  break;
 	  
 	  }
-  
+  #endif
   }
   static void msg( void *p)
 {
@@ -348,8 +354,8 @@ else
 				  }
 			  else if(Menu_dianbo==2)
 				  {
-				  MSG_Obj_8[dianbo_scree-1].INFO_PlyCancel=1;//点播
-				  MSG_Obj_8[dianbo_scree-1].INFO_TYPE=1;
+//bitter:				  MSG_Obj_8[dianbo_scree-1].INFO_PlyCancel=1;//点播
+//bitter:				  MSG_Obj_8[dianbo_scree-1].INFO_TYPE=1;
 				  SenddianboMeun(dianbo_scree,0);
 				  }
 			  break;
@@ -363,8 +369,8 @@ else
 				  }
 			  else if(Menu_dianbo==2)
 				  {
-				  MSG_Obj_8[dianbo_scree-1].INFO_PlyCancel=0;//取消
-				  MSG_Obj_8[dianbo_scree-1].INFO_TYPE=1;// 0
+//bitter:				  MSG_Obj_8[dianbo_scree-1].INFO_PlyCancel=0;//取消
+//bitter:				  MSG_Obj_8[dianbo_scree-1].INFO_TYPE=1;// 0
 				  SenddianboMeun(dianbo_scree,0);
 				  }
 			  break;

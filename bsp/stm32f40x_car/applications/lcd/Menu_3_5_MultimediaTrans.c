@@ -42,6 +42,7 @@ switch(KeyValue)
 			lcd_update_all();
             //置上传多媒体信息的标志
 			rt_kprintf("\r\n -----  多媒体事件上传成功 \r\n");  
+				#if NEED_TODO
 			MediaObj.Media_Type=0; //图像
 		    MediaObj.Media_totalPacketNum=1;  // 图片总包数
 		    MediaObj.Media_currentPacketNum=1;	// 图片当前报数
@@ -49,6 +50,7 @@ switch(KeyValue)
 		    MediaObj.Media_Channel=Camera_Number;  // 图片摄像头通道号
 		    MediaObj.SD_media_Flag=1; //多媒体事件信息上传标志
 		    Duomeiti_sdFlag=1; 
+				#endif
 			}
 		break;
 	case KeyValueUP:

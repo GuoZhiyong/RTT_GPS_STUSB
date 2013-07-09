@@ -20,32 +20,7 @@
 #include "lcd\lcd.h"
 #include "jt808.h"
 
-/* 消息队列控制块 */
-static struct rt_messagequeue hmi2app808_mq;   // 消息队列
-static u8 hmi2app808_pool[64]; 
 
-static struct rt_messagequeue hmi2gsm_mq;   // 消息队列  
-static u8 hmi2gsm_pool[64]; 
-
-
- //  1.   MsgQueue  Rx
-rt_err_t rt_Rx_hmi2gsm_MsgQue(u8 *buffer,u16 rec_len) 
-{       
-     if(rt_mq_recv(&hmi2gsm_mq,&buffer[0], rec_len, MsgQ_Timeout) //RT_WAITING_FOREVER
-            != RT_EOK )
-          return  RT_ERROR; 
-    else
-	   return RT_EOK;            
-}
-
-rt_err_t rt_Rx_hmi2app808_MsgQue(u8 *buffer,u16 rec_len)  
-{       
-     if(rt_mq_recv(&hmi2app808_mq,&buffer[0], rec_len, MsgQ_Timeout) 
-            != RT_EOK )
-          return  RT_ERROR; 
-    else
-	   return RT_EOK;            
-}
 
 /*
 #define KEY_MENU_PORT	GPIOC
@@ -158,14 +133,14 @@ static void rt_thread_entry_hmi( void* parameter )
 {
 
 	key_lcd_port_init();
-//	lcd_init();
+	lcd_init();
 
-//	pscr = &scr_idle;
-//	pscr->show(NULL);
+	pMenuItem= &Menu_1_Idle;
+	pMenuItem->show();
 	while( 1 )
 	{
-//		pscr->timetick(rt_tick_get() );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
-//		pscr->keypress(keycheck() );  //每个子菜单的 按键检测  时钟源50ms timer
+		pMenuItem->timetick(rt_tick_get() );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
+		pMenuItem->keypress(keycheck() );  //每个子菜单的 按键检测  时钟源50ms timer
 		rt_thread_delay( 5 );
 	}
 }

@@ -23,6 +23,7 @@ EVENT          EventObj_8[8]; // 事件
 
 void SendAffairMeun(unsigned char screen,unsigned char SendOK)
 {
+	#if NEED_TODO
 if(SendOK==1)
 	{
 	if(EventObj_8[screen-1].Event_Effective)
@@ -44,11 +45,13 @@ else
 			}
 		}
 	}
+	#endif
 }
 
 
 void Dis_Affair(unsigned char screen)
 {
+	#if NEED_TODO
 lcd_fill(0);
 switch(screen)
 	{
@@ -153,6 +156,7 @@ switch(screen)
 	default :
 		break;	
 	}
+	#endif
 lcd_update_all();
 }
 
@@ -182,21 +186,24 @@ static void keypress(unsigned int key)
 		case KeyValueOk:
 			if(Menu_Affair==0)
 				{
-				Event_Read();//读出事件
+//bitter:				Event_Read();//读出事件
 				Dis_Affair(1);
 				Menu_Affair=1;
 				}
 			else if(Menu_Affair==1)
 				{
+					#if NEED_TODO
 				if(EventObj_8[Affair_scree-1].Event_Effective)
 					{
 					Menu_Affair=2;
 					//将选中的序号数据显示发送的界面
 					SendAffairMeun(Affair_scree,0);
 					}
+					#endif
 				}
 			else if(Menu_Affair==2)
 				{
+					#if NEED_TODO
 				if(EventObj_8[Affair_scree-1].Event_Effective)
 					{
 
@@ -211,6 +218,7 @@ static void keypress(unsigned int key)
 					SendAffairMeun(Affair_scree,1);
 					
 					}
+					#endif
 				}
 			break;
 		case KeyValueUP:

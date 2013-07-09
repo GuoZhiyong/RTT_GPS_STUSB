@@ -29,6 +29,7 @@
 #include "jt808_sms.h"
 #include "jt808_gps.h"
 #include "jt808_area.h"
+#include "jt808_misc.h"
 #include "vdr.h"
 
 #pragma diag_error 223
@@ -623,19 +624,19 @@ static int handle_rx_0x8202( uint8_t linkno, uint8_t *pmsg )
 	return 1;
 }
 
-/**/
+/*文本信息下发*/
 static int handle_rx_0x8300( uint8_t linkno, uint8_t *pmsg )
 {
 	return 1;
 }
 
-/**/
+/*事件设置*/
 static int handle_rx_0x8301( uint8_t linkno, uint8_t *pmsg )
 {
 	return 1;
 }
 
-/**/
+/*提问下发*/
 static int handle_rx_0x8302( uint8_t linkno, uint8_t *pmsg )
 {
 	return 1;
@@ -1482,6 +1483,7 @@ static void rt_thread_entry_jt808( void * parameter )
 
 	int					j = 0xaabbccdd;
 
+	jt808_misc_init();
 	jt808_gps_init( );
 
 	list_jt808_tx	= msglist_create( );

@@ -71,7 +71,6 @@ void thread_usbout_udisk( void* parameter )
 		usb_error=0;
 		break;
 		}
-	WatchDog_Feed();
 	}
 	count=0;
 	
@@ -90,7 +89,6 @@ void thread_usbout_udisk( void* parameter )
 			strcpy( (char *)TarName, "/udisk/EXSPEED.TXT" );
 		else
 			break;
-		WatchDog_Feed(); 	
 		if(DataOutStartFlag)
 			fd = open((const char*)TarName,(O_CREAT|O_WRONLY|O_TRUNC), 0 );			
 		if( fd >= 0 )
@@ -164,7 +162,6 @@ void thread_usbout_udisk( void* parameter )
 			}
 		}
 	end_usbdata_0:
-	WatchDog_Feed();
 	 rt_free( ptr_write_packet );
 	 ptr_write_packet = RT_NULL;
 }
@@ -233,7 +230,6 @@ static void keypress(unsigned int key)
 				if (tid_write_file != RT_NULL && tid_write_file->stat != RT_THREAD_CLOSE)	///²âÊÔOK
 					{
 					rt_thread_delete(tid_write_file);
-					//WatchDog_Feed();
 					}
 				/* µ÷¶ÈÆ÷½âËø*/
 				rt_exit_critical();

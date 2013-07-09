@@ -69,10 +69,10 @@ switch(KeyValue)
 			{
 			Multimedia_screen=2;
 
-			MediaObj.SD_Data_Flag=1;//发送多媒体数据标志
+//bitter:			MediaObj.SD_Data_Flag=1;//发送多媒体数据标志
 			if(Multimedia_change==1)
 				{
-				MediaObj.Media_Type=1;//音频1
+//bitter:					MediaObj.Media_Type=1;//音频1
 				/*memset(send_data,0,sizeof(send_data));
 				send_data[0]=0x08;
 				send_data[1]=0x01;
@@ -87,7 +87,7 @@ switch(KeyValue)
 				}
 			else if(Multimedia_change==2)
 				{
-				MediaObj.Media_Type=2;//音频2
+//bitter:					MediaObj.Media_Type=2;//音频2
 				/*memset(send_data,0,sizeof(send_data));
 				send_data[0]=0x08;
 				send_data[1]=0x01;

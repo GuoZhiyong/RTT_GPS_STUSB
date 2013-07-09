@@ -75,6 +75,7 @@ static void msg( void *p )
 ***********************************************************/
 static void show( void )
 {
+	#if NEED_TODO
 	//Api_RecordNum_Read( ask_quesstion, 1, (u8*)&ASK_Centre, sizeof( ASK_Centre ) );
 	if( ASK_Centre.ASK_SdFlag == 1 )
 	{
@@ -134,6 +135,7 @@ static void show( void )
 		lcd_text12( 24, 10, "没有提问消息", 12, LCD_MODE_SET );
 		lcd_update_all( );
 	}
+	#endif
 }
 
 /***********************************************************
@@ -164,14 +166,14 @@ static void keypress( unsigned int key )
 				lcd_update_all( );
 				if( DIS_QUESTION_INFOR_temp.DIS_QUESTION_answer == 2 )
 				{
-					ASK_Centre.ASK_answerID = DIS_QUESTION_INFOR_temp.DIS_ANSWER1_ID;
+		//bitter:					ASK_Centre.ASK_answerID = DIS_QUESTION_INFOR_temp.DIS_ANSWER1_ID;
 				}
 				if( DIS_QUESTION_INFOR_temp.DIS_QUESTION_answer == 3 )
 				{
-					ASK_Centre.ASK_answerID = DIS_QUESTION_INFOR_temp.DIS_ANSWER2_ID;
+		//bitter:					ASK_Centre.ASK_answerID = DIS_QUESTION_INFOR_temp.DIS_ANSWER2_ID;
 				}
-				rt_kprintf( "\r\n发到中心的答案ID:%d", ASK_Centre.ASK_answerID );
-				ASK_Centre.ASK_SdFlag = 2; //   把结果发送给中心
+	//bitter:					rt_kprintf( "\r\n发到中心的答案ID:%d", ASK_Centre.ASK_answerID );
+	//bitter:			ASK_Centre.ASK_SdFlag = 2; //   把结果发送给中心
 			}
 			break;
 		case KeyValueUP:
