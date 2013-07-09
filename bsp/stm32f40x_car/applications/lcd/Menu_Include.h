@@ -55,6 +55,14 @@ typedef  __packed struct _menuitem{
 typedef __packed struct _menuitem * PMENUITEM; 
 
 
+
+#define HMI_TEXTMSG_NEW	0x80000000		/*新的文本信息*/
+
+/*定义hmi要显示的信息*/
+extern uint32_t hmi_status;
+
+
+
 extern unsigned int CounterBack;
 extern unsigned char UpAndDown;
 extern unsigned char KeyValue;

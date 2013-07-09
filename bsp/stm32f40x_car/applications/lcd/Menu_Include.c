@@ -4,6 +4,17 @@
 #include <string.h>
 #include "sed1520.h"
 #include "stm32f4xx.h"
+
+
+
+uint32_t hmi_status;
+
+
+
+
+
+
+
 unsigned char XinhaoStatus[20]={"ÐÅºÅÏß×´Ì¬:00000000"};
 
 unsigned int  tzxs_value=6000;
