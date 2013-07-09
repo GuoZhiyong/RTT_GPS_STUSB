@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include "stm32f4xx.h"
 #include <rtthread.h>
-//#include "sed1520.h"
+
+#include "jt808.h"
+#include "jt808_param.h"
 
 #define KeyValueMenu    1
 #define KeyValueOk      2
