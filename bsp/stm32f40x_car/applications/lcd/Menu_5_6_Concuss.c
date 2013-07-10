@@ -24,9 +24,9 @@ lcd_update_all();
 static void keypress(unsigned int key)
 {
 
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_5_other;
 			pMenuItem->show();
 			CounterBack=0;
@@ -34,7 +34,7 @@ static void keypress(unsigned int key)
 			concuss_screen=0;
 			break;
 			
-		case KeyValueOk:
+		case KEY_OK:
 			if(concuss_screen==0)
 				{
 				concuss_screen=1;
@@ -52,7 +52,7 @@ static void keypress(unsigned int key)
 				}
 			break;
 			
-		case KeyValueUP:
+		case KEY_UP:
 			 if(concuss_step==0)
 				concuss_step=79;
 			else if(concuss_step>=1)
@@ -66,7 +66,7 @@ static void keypress(unsigned int key)
 						
 			break;
 			
-		case KeyValueDown:
+		case KEY_DOWN:
 			concuss_step++;
 			if(concuss_step>79)
 				concuss_step=0;
@@ -78,7 +78,6 @@ static void keypress(unsigned int key)
 			lcd_update_all();
 			break;	
 		}
- KeyValue=0;
 }
 
 

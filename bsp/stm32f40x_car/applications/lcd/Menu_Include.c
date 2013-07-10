@@ -34,9 +34,7 @@ unsigned char speed_time_rec[15][6];//年  月  日  时  分  速度
 unsigned char DriverName[22],DriverCardNUM[20];//从IC卡里读出的驾驶员姓名和驾驶证号码
 unsigned char ServiceNum[13];//设备的唯一性编码,IMSI号码的后12位
 
-unsigned char KeyValue=0;
-unsigned char KeyCheck_Flag[4]={0,0,0,0};             
-
+     
 unsigned char ErrorRecord=0;//疲劳超速记录   疲劳时间错误为1超速时间错误为2,按任意键清0
 PilaoRecord PilaoJilu[12];
 ChaosuRecord ChaosuJilu[20];

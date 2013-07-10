@@ -16,6 +16,7 @@
 
 #include <rtthread.h>
 #include "stm32f4xx.h"
+#include "jt808.h"
 
 #define BIT_STATUS_ACC	0x01
 #define BIT_STATUS_GPS	0x02
@@ -70,6 +71,7 @@ extern uint32_t jt808_status;
 
 extern uint32_t	gps_sec_count;		/*gps√Î¬ˆ≥Â ‰≥ˆ*/
 extern uint32_t	utc_now;
+extern MYTIME mytime_now;
 
 void gps_rx( uint8_t * pinfo, uint16_t length );
 

@@ -34,9 +34,9 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_7_CentreTextDisplay;
 			pMenuItem->show();
 			if(ISP_Updata_Flag==2)
@@ -47,17 +47,16 @@ static void keypress(unsigned int key)
 				pMenuItem->show();
 				}
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 				
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 		
 			break;
 		}
-	KeyValue=0;	
 }
 
 static void timetick(unsigned int systick)  

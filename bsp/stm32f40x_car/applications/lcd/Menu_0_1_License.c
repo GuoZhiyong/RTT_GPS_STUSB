@@ -1,6 +1,6 @@
 #include  <string.h>
 #include "Menu_Include.h"
-#include "Lcd.h"
+#include "sed1520.h"
 
 #define width_hz   12
 #define width_zf   6
@@ -105,9 +105,9 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_0_loggingin;
 			pMenuItem->show();
 
@@ -117,7 +117,7 @@ static void keypress(unsigned int key)
 			zifu_counter=0;
 			
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if(screen_flag==1)
 				{							
 				if(zifu_counter==0)
@@ -174,7 +174,7 @@ static void keypress(unsigned int key)
 				zifu_counter=0;
 				}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if(screen_flag==1)//ºº×ÖÑ¡Ôñ
 				{
 				if(screen_in_sel>=2)
@@ -224,7 +224,7 @@ static void keypress(unsigned int key)
 				lcd_update_all();
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if(screen_flag==1)//ºº×ÖÑ¡Ôñ
 				{
 				if(screen_in_sel<31)
@@ -276,7 +276,6 @@ static void keypress(unsigned int key)
 
 			break;
 		}
-	KeyValue=0;
 }
 
 

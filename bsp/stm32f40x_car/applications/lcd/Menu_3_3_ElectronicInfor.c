@@ -13,15 +13,15 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-switch(KeyValue)
+switch(key)
 	{
-	case KeyValueMenu:
+	case KEY_MENU:
 		pMenuItem=&Menu_3_InforInteract;//scr_CarMulTrans;
 		pMenuItem->show();
 		CounterBack=0;
 
 		break;
-	case KeyValueOk:
+	case KEY_OK:
 		/*memset(send_data,0,sizeof(send_data));
 		send_data[0]=0x07;
 		send_data[1]=0x01;
@@ -36,12 +36,11 @@ switch(KeyValue)
 		//SD_ACKflag.f_Worklist_SD_0701H=1;//按键选择发送电子运单标志
 	#endif
 		break;
-	case KeyValueUP:
+	case KEY_UP:
 		break;
-	case KeyValueDown:
+	case KEY_DOWN:
 		break;
 	}
-KeyValue=0;
 }
 
 

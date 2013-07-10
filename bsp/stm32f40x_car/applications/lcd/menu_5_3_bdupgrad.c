@@ -12,8 +12,7 @@
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
 #include "Menu_Include.h"
-//#include "stm32f4xx.h"
-//#include "gps.h"
+#include <string.h>
 #include "sed1520.h"
 
 static uint8_t menu_pos=0;
@@ -176,9 +175,9 @@ static void msg( void *p)
 static void keypress( unsigned int key )
 {
 	if(fupgrading)	return;
-	switch( KeyValue )
+	switch( key )
 	{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_5_other;
 			pMenuItem->show();
 			CounterBack=0;
@@ -189,7 +188,7 @@ static void keypress( unsigned int key )
 			}
 			
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if(BD_upgrad_contr==1)
 				menu_set();
 			if(menu_pos==0)
@@ -216,16 +215,15 @@ static void keypress( unsigned int key )
 				}
 			}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			menu_pos=menu_pos^0x01;
 			menu_set();
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			menu_pos=menu_pos^0x01;
 			menu_set();
 			break;
 	}
-	KeyValue = 0;
 }
 
 /***********************************************************

@@ -149,16 +149,16 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
-	switch( KeyValue )
+	switch( key )
 	{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem = &Menu_3_InforInteract;
 			pMenuItem->show( );
 
 			CounterBack = 0;
 			memset( &DIS_QUESTION_INFOR_temp, 0, sizeof( DIS_QUESTION_INFOR_temp ) );
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if( DIS_QUESTION_INFOR_temp.DIS_QUESTION_effic == 1 ) //把选择的结果发给中心
 			{
 				lcd_fill( 0 );
@@ -176,7 +176,7 @@ static void keypress( unsigned int key )
 	//bitter:			ASK_Centre.ASK_SdFlag = 2; //   把结果发送给中心
 			}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if( DIS_QUESTION_INFOR_temp.DIS_QUESTION_effic == 1 )
 			{
 				if( DIS_QUESTION_INFOR_temp.DIS_QUESTION_answer == 3 )
@@ -192,7 +192,7 @@ static void keypress( unsigned int key )
 				}
 			}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if( DIS_QUESTION_INFOR_temp.DIS_QUESTION_effic == 1 )
 			{
 				if( DIS_QUESTION_INFOR_temp.DIS_QUESTION_answer == 1 )
@@ -231,7 +231,6 @@ static void keypress( unsigned int key )
 			}
 			break;
 	}
-	KeyValue = 0;
 }
 
 /***********************************************************

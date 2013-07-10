@@ -1,9 +1,6 @@
 #include  <string.h>
 #include "Menu_Include.h"
-#include "Lcd.h"
-
-
-
+#include "sed1520.h"
 static unsigned char ChaoSuNumScreen=1;
 static unsigned char ChaoScreen=1;//ÐÂ¼Ó
 
@@ -64,9 +61,9 @@ static void keypress(unsigned int key)
 	unsigned char temp=0;
 	unsigned char exspeed_num=0;
 
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_4_InforTirExspd;
 			pMenuItem->show();
 
@@ -79,7 +76,7 @@ static void keypress(unsigned int key)
 			ChaoScreen=1;
 
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if(ChaoScreen==1)
 				{
 				ChaoScreen=2;
@@ -117,7 +114,7 @@ static void keypress(unsigned int key)
 				}
 			
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if(expsp_Flag==4)
 				{
 				if(ChaoSuNumScreen>0)
@@ -136,7 +133,7 @@ static void keypress(unsigned int key)
 					}
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if(expsp_Flag==4)
 				{
 				ChaoSuNumScreen++;
@@ -161,7 +158,6 @@ static void keypress(unsigned int key)
 				}
 			break;
 		}
-	KeyValue=0;
 }
 
 

@@ -80,9 +80,9 @@ static void show(void)
 static void keypress(unsigned int key)
 {
 
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_5_other;
 			pMenuItem->show();
 			CounterBack=0;
@@ -91,7 +91,7 @@ static void keypress(unsigned int key)
 			can_counter=1;
 			can_ID_counter=0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if(can_screen==0)
 				{
 			       can_screen=1;
@@ -103,7 +103,7 @@ static void keypress(unsigned int key)
 				can_select(can_counter);
 				}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if(can_screen==0)
 				{
 				can_counter=1;
@@ -113,7 +113,7 @@ static void keypress(unsigned int key)
 				{
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if(can_screen==0)
 				{
 				can_counter=2;
@@ -121,7 +121,6 @@ static void keypress(unsigned int key)
 				}
 			break;
 		}
- KeyValue=0;
 }
 
 

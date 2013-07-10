@@ -210,9 +210,9 @@ static void show(void)
 
 static void keypress(unsigned int key)
 { 
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 //			DF_LOCK=0;
 			CounterBack=0;
 			//USB_data_flag=0;
@@ -240,7 +240,7 @@ static void keypress(unsigned int key)
 			OUT_DataCounter=0;
 			DataOutInFlag=0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			//±¾µØÉý¼¶
 			if(DataOutInFlag==1)
 				{
@@ -268,7 +268,7 @@ static void keypress(unsigned int key)
 					}
 				}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 				if(DataOutInFlag==2)
 					{
 					if(OUT_DataCounter<=1)
@@ -278,7 +278,7 @@ static void keypress(unsigned int key)
 					USB_OUTFileSe(OUT_DataCounter);
 					}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 				if(DataOutInFlag==2)
 					{
 					if(OUT_DataCounter>=3)
@@ -289,7 +289,6 @@ static void keypress(unsigned int key)
 					}
 			break;
 		}
-KeyValue=0;
 }
 	
 

@@ -46,16 +46,16 @@ Vin_Set(VIN_SetCounter,1);
 
 static void keypress(unsigned int key)
 {
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_0_loggingin;
 			pMenuItem->show();
 			memset(Menu_Vin_Code,0,sizeof(Menu_Vin_Code));
 			VIN_SetFlag=1;
 			VIN_SetCounter=0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if((VIN_SetFlag>=1)&&(VIN_SetFlag<=17))
 				{
 				Menu_Vin_Code[VIN_SetFlag-1]=ABC[VIN_SetCounter][0];
@@ -85,7 +85,7 @@ static void keypress(unsigned int key)
 				}
 			
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if((VIN_SetFlag>=1)&&(VIN_SetFlag<=17))
 				{
 				if(VIN_SetCounter==0)
@@ -98,7 +98,7 @@ static void keypress(unsigned int key)
 					Vin_Set(VIN_SetCounter,2);
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if((VIN_SetFlag>=1)&&(VIN_SetFlag<=17))
 				{
 				VIN_SetCounter++;
@@ -111,7 +111,6 @@ static void keypress(unsigned int key)
 				}
 			break;
 		}
-	KeyValue=0;
 }
 
 

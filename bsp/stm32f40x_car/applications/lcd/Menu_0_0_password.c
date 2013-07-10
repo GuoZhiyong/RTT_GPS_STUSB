@@ -39,7 +39,7 @@ void password_Set( u8 par )
 	lcd_bitmap( par * Sim_width1, 14, &BMP_password_icon, LCD_MODE_SET );
 	lcd_text12( 0, 19, "0123456789", 10, LCD_MODE_SET );
 	lcd_text12( 110, 20, "TJ", 2, LCD_MODE_SET );
-	lcd_update_all( );
+	lcd_update_all();
 }
 
 /**/
@@ -70,9 +70,9 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
-	switch( KeyValue )
+	switch( key )
 	{
-		case KeyValueMenu:
+		case KEY_MENU:
 			if( Password_correctFlag == 1 )
 			{
 				if( set_car_codetype == 1 )
@@ -90,7 +90,7 @@ static void keypress( unsigned int key )
 				password_Counter	= 0;
 			}
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if( ( password_SetFlag >= 1 ) && ( password_SetFlag <= 6 ) )
 			{
 				if( password_Counter <= 9 )
@@ -126,7 +126,7 @@ static void keypress( unsigned int key )
 				pMenuItem->show( );
 			}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if( ( password_SetFlag >= 1 ) && ( password_SetFlag <= 6 ) )
 			{
 				if( password_Counter == 0 )
@@ -140,7 +140,7 @@ static void keypress( unsigned int key )
 			}
 
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if( ( password_SetFlag >= 1 ) && ( password_SetFlag <= 6 ) )
 			{
 				password_Counter++;
@@ -153,7 +153,6 @@ static void keypress( unsigned int key )
 			
 			break;
 	}
-	KeyValue = 0;
 }
 
 /***********************************************************

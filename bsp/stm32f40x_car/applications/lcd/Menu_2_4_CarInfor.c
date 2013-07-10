@@ -13,7 +13,7 @@
  ***********************************************************/
 #include  <string.h>
 #include "Menu_Include.h"
-#include "Lcd.h"
+#include "sed1520.h"
 
 static unsigned char	vech_num[16] = { "车牌号:        " };
 static unsigned char	vech_type[25] = { "车辆类型:            " };
@@ -121,20 +121,20 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
-	switch( KeyValue )
+	switch( key )
 	{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );
 			CounterBack = 0;
 
 			updown_flag = 0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			updown_flag = 1;
 			Display_driver( 1 );
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if( updown_flag == 1 )
 			{
 				Display_driver( 1 );
@@ -144,7 +144,7 @@ static void keypress( unsigned int key )
 				Display_driver( 2 ); updown_flag = 1;
 			}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if( updown_flag == 1 )
 			{
 				Display_driver( 2 ); updown_flag = 2;
@@ -155,7 +155,7 @@ static void keypress( unsigned int key )
 			}
 			break;
 	}
-	KeyValue = 0;
+
 }
 
 /***********************************************************

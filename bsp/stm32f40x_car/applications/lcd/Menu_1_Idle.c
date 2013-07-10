@@ -18,8 +18,9 @@
 #include "menu_include.h"
 #include "sed1520.h"
 
+static uint32_t			lasttick;
+
 unsigned char			dispstat		= 0;
-unsigned char			tickcount		= 0;
 unsigned int			reset_firstset	= 0;
 
 unsigned char			gsm_g[] = {
@@ -194,26 +195,25 @@ void GPSGPRS_Status( void )
 void  Disp_Idle( void )
 {
 	char	buf_datetime[22];
-	char  buf_speed[20];
+	char	buf_speed[20];
 
-
-	sprintf( buf_datetime, "20%02d/%02d/%02d    %02d:%02d:%02d",
+	sprintf( buf_datetime, "20%02d/%02d/%02d  %02d:%02d:%02d",
 	         gps_datetime[0],
 	         gps_datetime[1],
 	         gps_datetime[2],
 	         gps_datetime[3],
 	         gps_datetime[4],
-	         gps_datetime[5]);
-	sprintf(buf_speed,"%3d  km/h    %3d 度",gps_speed,gps_cog);
+	         gps_datetime[5] );
+	sprintf( buf_speed, "%3dkm/h   %3d度 ", gps_speed, gps_cog );
 
 	lcd_fill( 0 );
-	lcd_text12( 0, 10, (char*)buf_datetime, 20, LCD_MODE_SET );
-	lcd_text12( 0, 20, (char*)buf_speed, 18, LCD_MODE_SET );
+	lcd_text12( 0, 10, (char*)buf_datetime, strlen( buf_datetime ), LCD_MODE_SET );
+	lcd_text12( 0, 20, (char*)buf_speed, strlen( buf_speed ), LCD_MODE_SET );
 	lcd_bitmap( 0, 3, &BMP_gsm_g, LCD_MODE_SET );
 	lcd_bitmap( 8, 3, &BMP_gsm_3, LCD_MODE_SET );
 	GPSGPRS_Status( );
-
 	lcd_update_all( );
+	lasttick		= rt_tick_get( );
 }
 
 /***********************************************************
@@ -241,7 +241,7 @@ static void msg( void *p )
 static void show( void )
 {
 	Disp_Idle( );
-	reset_firstset = 0;
+	reset_firstset	= 0;
 }
 
 /***********************************************************
@@ -255,9 +255,9 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
-	switch( KeyValue )
+	switch( key )
 	{
-		case KeyValueMenu:
+		case KEY_MENU:
 			CounterBack = 0;
 			SetVIN_NUM	= 1;
 			OK_Counter	= 0;
@@ -269,7 +269,7 @@ static void keypress( unsigned int key )
 			pMenuItem->show( );
 			reset_firstset = 0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if( reset_firstset == 0 )
 			{
 				reset_firstset = 1;
@@ -281,7 +281,7 @@ static void keypress( unsigned int key )
 				reset_firstset = 5;
 			}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if( reset_firstset == 1 )
 			{
 				reset_firstset = 2;
@@ -293,7 +293,7 @@ static void keypress( unsigned int key )
 				reset_firstset = 6;
 			}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			reset_firstset = 0;
 			//打印开电
 			GPIO_SetBits( GPIOB, GPIO_Pin_7 );
@@ -303,7 +303,6 @@ static void keypress( unsigned int key )
 			}
 			break;
 	}
-	KeyValue = 0;
 }
 
 /***********************************************************
@@ -317,8 +316,7 @@ static void keypress( unsigned int key )
 ***********************************************************/
 static void timetick( unsigned int systick )
 {
-	
-#if NEED_TODO	
+#if NEED_TODO
 
 	if( reset_firstset == 6 )
 	{
@@ -354,7 +352,12 @@ static void timetick( unsigned int systick )
 	}
 
 	Cent_To_Disp( );
-#endif	
+#endif
+
+	if( systick - lasttick >= RT_TICK_PER_SECOND )
+	{
+		Disp_Idle( );
+	}
 }
 
 MENUITEM Menu_1_Idle =

@@ -1,8 +1,6 @@
 #include  <string.h>
 #include "Menu_Include.h"
-#include "Lcd.h"
-
-
+#include "sed1520.h"
 /*
 static unsigned char Jiayuan_screen=0;  //  显示查看/发送界面   =1时选择是查看还是发送界面
 static unsigned char CheckJiayuanFlag=0;//  1:进入显示驾驶员信息   2:进入发送驾驶员信息
@@ -77,16 +75,16 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_2_InforCheck;
 			pMenuItem->show();
 			CounterBack=0;
 
 			memset(&DIS_DRIVER_inform_temp,0,sizeof(DIS_DRIVER_inform_temp));
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if(DIS_DRIVER_inform_temp.DIS_ENTER_check_send==1)
 				{
 				DIS_DRIVER_inform_temp.DIS_ENTER_check_send=2;
@@ -118,7 +116,7 @@ static void keypress(unsigned int key)
 					}
 				}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if(DIS_DRIVER_inform_temp.DIS_ENTER_check_send==2)
 				{
 				if(DIS_DRIVER_inform_temp.DIS_SHOW_check_send==0)//查看
@@ -134,7 +132,7 @@ static void keypress(unsigned int key)
 				Dis_DriverInfor(1,1);
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if(DIS_DRIVER_inform_temp.DIS_ENTER_check_send==2)
 				{
 				if(DIS_DRIVER_inform_temp.DIS_SHOW_check_send==0)//查看
@@ -150,7 +148,6 @@ static void keypress(unsigned int key)
 				}
 			break;
 		}
-	KeyValue=0;
 }
 
 

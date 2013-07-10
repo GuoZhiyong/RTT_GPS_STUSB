@@ -1,8 +1,7 @@
 #include "Menu_Include.h"
-#include "Lcd.h"
 #include <string.h>
 #include <stdlib.h>
-
+#include "sed1520.h"
 
 
 unsigned char licheng_sum[18]={"×ÜÀï³Ì:000000 KM"};
@@ -34,21 +33,20 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-switch(KeyValue)
+switch(key)
 	{
-	case KeyValueMenu:
+	case KEY_MENU:
 		pMenuItem=&Menu_2_InforCheck;
 		pMenuItem->show();
 		CounterBack=0;
 		break;
-	case KeyValueOk:
+	case KEY_OK:
 		break;
-	case KeyValueUP:
+	case KEY_UP:
 		break;
-	case KeyValueDown:
+	case KEY_DOWN:
 		break;
 	}
-KeyValue=0;
 }
 
 static void timetick(unsigned int systick)

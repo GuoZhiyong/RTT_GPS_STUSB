@@ -49,33 +49,32 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-switch(KeyValue)
+switch(key)
 	{
-	case KeyValueMenu:
+	case KEY_MENU:
 		CounterBack=0;
 
 		pMenuItem=&Menu_3_InforInteract;//scr_CarMulTrans;
 		pMenuItem->show();
 		break;
-	case KeyValueOk:
+	case KEY_OK:
 		pMenuItem=psubmenu[menu_pos];
 		pMenuItem->show();
 		break;
-	case KeyValueUP:
+	case KEY_UP:
 		if(menu_pos==0) 
 			menu_pos=7;
 		else
 			menu_pos--;
 		menuswitch();		
 		break;
-	case KeyValueDown:
+	case KEY_DOWN:
 		menu_pos++;
 		if(menu_pos>7)
 			menu_pos=0;
 		menuswitch();
 		break;
 	}
-KeyValue=0;
 }
 
 

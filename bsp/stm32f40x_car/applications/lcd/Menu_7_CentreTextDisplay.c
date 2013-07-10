@@ -25,9 +25,9 @@ static void keypress(unsigned int key)
 {
 unsigned char CurrentDisplen=0;
 
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_1_Idle;
 			pMenuItem->show();
 			CounterBack=0;
@@ -36,7 +36,7 @@ unsigned char CurrentDisplen=0;
 			TxtInfo_len=0;//要显示的信息长度
 
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if(Menu_Text==0)
 				{
 				//bitter:rt_kprintf("\r\n需要显示的内容:%s",TextInfo.TEXT_Content);
@@ -74,7 +74,7 @@ unsigned char CurrentDisplen=0;
                 TxtScreen_CurrentNum=1; // 代表当前屏是第一屏
 				}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if(Menu_Text==1)
 				{
 				if(TxtScreen_CurrentNum>1)
@@ -103,7 +103,7 @@ unsigned char CurrentDisplen=0;
 				lcd_update_all();
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if(Menu_Text==1)
 				{
 				TxtScreen_CurrentNum++;
@@ -136,7 +136,6 @@ unsigned char CurrentDisplen=0;
 				}
 			break;
 		}
- KeyValue=0;
 }
 
 

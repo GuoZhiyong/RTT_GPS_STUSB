@@ -106,7 +106,7 @@ uint8_t		gps_datetime[6];
 /*保存gps基本位置信息*/
 GPS_BASEINFO	gps_baseinfo;
 /*gps的状态*/
-GPS_STATUS		gps_status;
+GPS_STATUS		gps_status={3,0,0,0};
 
 
 /*
@@ -117,6 +117,8 @@ GPS_STATUS		gps_status;
  */
 uint32_t	utc_last	= 0;
 uint32_t	utc_now		= 0;
+
+MYTIME	mytime_now=0;
 
 uint8_t		ACC_status;     /*0:ACC关   1:ACC开  */
 uint32_t	ACC_ticks;      /*ACC状态发生变化时的tick值，此时GPS可能未定位*/
@@ -389,7 +391,7 @@ void process_gps( void )
 /*生成要上报的数据*/
 #if 1
 
-	if( ( gps_datetime[5] % 30 ) == 0 )
+	if( ( gps_datetime[5] % 600 ) == 0 )
 	{
 		err = jt808_tx( 0x0200, (uint8_t*)&gps_baseinfo,28 );
 		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );
@@ -636,12 +638,14 @@ uint8_t process_rmc( uint8_t * pinfo )
 				gps_baseinfo.cog		= BYTESWAP2( cog );
 
 				utc_now						= linux_mktime( year, mon, day, hour, min, sec );
+				mytime_now=MYDATETIME(year,mon,day,hour,min,sec);
 				gps_baseinfo.datetime[0]	= HEX2BCD( year );
 				gps_baseinfo.datetime[1]	= HEX2BCD( mon );
 				gps_baseinfo.datetime[2]	= HEX2BCD( day );
 				gps_baseinfo.datetime[3]	= HEX2BCD( hour );
 				gps_baseinfo.datetime[4]	= HEX2BCD( min );
 				gps_baseinfo.datetime[5]	= HEX2BCD( sec );
+
 
 				/*首次定位,校时*/
 				if( ( jt808_status_last & BIT_STATUS_GPS ) == 0 )

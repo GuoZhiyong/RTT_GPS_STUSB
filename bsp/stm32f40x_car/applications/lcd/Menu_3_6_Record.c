@@ -35,9 +35,9 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-switch(KeyValue)
+switch(key)
 	{
-	case KeyValueMenu:
+	case KEY_MENU:
 		pMenuItem=&Menu_3_InforInteract;
 		pMenuItem->show();
 		CounterBack=0;
@@ -45,7 +45,7 @@ switch(KeyValue)
 		Record_screen=0;//进入录音界面=1,准备发送开始/结束时为2	 开始/结束已发送为3    到下一界面恢复初试值
 		Record_StartEnd=0;//==1录音开始	 ==2录音结束   到下一界面恢复初试值
 		break;
-	case KeyValueOk:
+	case KEY_OK:
 		if(Record_screen==1)
 			{
 			Record_screen=2;
@@ -75,14 +75,14 @@ switch(KeyValue)
 			}
 
 		break;
-	case KeyValueUP:
+	case KEY_UP:
         if(Record_screen==1)
         	{
         	Record_StartEnd=1;
 			record_sel(1);
         	}
 		break;
-	case KeyValueDown:
+	case KEY_DOWN:
          if(Record_screen==1)
         	{
         	Record_StartEnd=2;
@@ -90,7 +90,7 @@ switch(KeyValue)
         	}
 		break;
 	}
-KeyValue=0;
+
 }
 
 	

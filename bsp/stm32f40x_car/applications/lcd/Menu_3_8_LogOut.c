@@ -43,9 +43,9 @@ static void keypress(unsigned int key)
 {
      u8  Reg_buf[40];
 	 
-   switch(KeyValue)
+   switch(key)
 	   {
-	   case KeyValueMenu:
+	   case KEY_MENU:
 		   pMenuItem=&Menu_3_InforInteract;
 		   pMenuItem->show();
 		   CounterBack=0;
@@ -54,7 +54,7 @@ static void keypress(unsigned int key)
 		   LogInorOut_screen=0;
 		   LogInorOut=0;//	1:鉴权	 2:注销
 		   break;
-	   case KeyValueOk:
+	   case KEY_OK:
 	   	   if(LogInorOut==1)//清空鉴权码
 			   {
 			   LogInorOut_screen=0;
@@ -113,7 +113,7 @@ static void keypress(unsigned int key)
 			   lcd_update_all();
 			   }
 		   break;
-	   case KeyValueUP:
+	   case KEY_UP:
 		   if(LogInorOut_screen==1)
 			   {
 			   LogInorOut--;
@@ -123,7 +123,7 @@ static void keypress(unsigned int key)
 			   }
 		   break;
 		   
-	   case KeyValueDown:
+	   case KEY_DOWN:
 		   if(LogInorOut_screen==1)
 			   {
 			   LogInorOut++;
@@ -134,7 +134,7 @@ static void keypress(unsigned int key)
 		   break;
 		   
 	   }
-KeyValue=0;
+
 }
    
 

@@ -36,9 +36,9 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-switch(KeyValue)
+switch(key)
 	{
-	case KeyValueMenu:
+	case KEY_MENU:
 		pMenuItem=&Menu_3_InforInteract;
 		pMenuItem->show();
 		CounterBack=0;
@@ -47,7 +47,7 @@ switch(KeyValue)
 		Multimedia_change=1;//选择
 		Multimedia_screen=0;//界面切换使用
 		break;
-	case KeyValueOk:
+	case KEY_OK:
 		if(Multimedia_screen==0)
 			{
 			Multimedia_screen=1;
@@ -103,14 +103,14 @@ switch(KeyValue)
 			
 			}
 		break;
-	case KeyValueUP:
+	case KEY_UP:
 		if(Multimedia_screen==0)
 			{
 			Multimedia_change=1;
 			Multimedia(1);
 			}
 		break;
-	case KeyValueDown:
+	case KEY_DOWN:
 		if(Multimedia_screen==0)
 			{
 			Multimedia_change=2;
@@ -118,7 +118,6 @@ switch(KeyValue)
 			}
 		break;
 	}
-KeyValue=0;
 }
 
 

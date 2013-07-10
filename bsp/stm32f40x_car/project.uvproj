@@ -992,11 +992,6 @@
           <GroupName>lcd</GroupName>
           <Files>
             <File>
-              <FileName>lcd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\lcd\lcd.c</FilePath>
-            </File>
-            <File>
               <FileName>Menu_0_0_password.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\Menu_0_0_password.c</FilePath>

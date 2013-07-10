@@ -12,7 +12,8 @@
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
 #include "Menu_Include.h"
-#include "Lcd.h"
+#include "sed1520.h"
+
 
 //unsigned long AvrgSpdPerMin_write=0;//存储过整小时的速度，记录存储的条数
 unsigned char			Speed_15min[120];       //读取 最近15分钟的速度信息
@@ -296,9 +297,9 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
-	switch( KeyValue )
+	switch( key )
 	{
-		case KeyValueMenu:
+		case KEY_MENU:
 			Speed_15minFlag = 0;
 			CounterBack		= 0;
 			CheckSpeedFlag	= 0;
@@ -306,7 +307,7 @@ static void keypress( unsigned int key )
 			pMenuItem->show( );
 			ReadSpeedFlag = 0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if( ReadSpeedFlag == 1 )
 			{
 				ReadSpeedFlag	= 0;
@@ -317,14 +318,14 @@ static void keypress( unsigned int key )
 				CheckSpeedFlag	= 1;
 			}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if( ( SpeedNumScreen >= 1 ) && ( CheckSpeedFlag == 1 ) )
 			{
 				SpeedNumScreen--;
 				drawspeed( SpeedNumScreen * 3 + 1 );
 			}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if( ( SpeedNumScreen <= 3 ) && ( CheckSpeedFlag == 1 ) )
 			{
 				SpeedNumScreen++;
@@ -332,18 +333,9 @@ static void keypress( unsigned int key )
 			}
 			break;
 	}
-	KeyValue = 0;
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void timetick( unsigned int systick )
 {
 	Cent_To_Disp( );

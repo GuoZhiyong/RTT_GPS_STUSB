@@ -305,9 +305,9 @@ else
   static void keypress(unsigned int key)
   {
   //u8 result=0;
-	  switch(KeyValue)
+	  switch(key)
 		  {
-		  case KeyValueMenu:
+		  case KEY_MENU:
 			  pMenuItem=&Menu_2_InforCheck;
 			  pMenuItem->show();
 			  CounterBack=0;
@@ -316,7 +316,7 @@ else
 			  dianbo_scree=1;
               MSG_TypeToCenter=0;//发送给中心的序号
 			  break; 
-		  case KeyValueOk:
+		  case KEY_OK:
 			  if(Menu_dianbo==1)
 				  {
 				  Menu_dianbo=2;
@@ -344,7 +344,7 @@ else
 				  dianbo_scree=1;
 				  }
 			  break;
-		  case KeyValueUP:
+		  case KEY_UP:
 			  if(Menu_dianbo==1)
 				  {
 				  dianbo_scree--;
@@ -359,7 +359,7 @@ else
 				  SenddianboMeun(dianbo_scree,0);
 				  }
 			  break;
-		  case KeyValueDown:
+		  case KEY_DOWN:
 			  if(Menu_dianbo==1)
 				  {
 				  dianbo_scree++;
@@ -375,7 +375,6 @@ else
 				  }
 			  break;
 		  }
-   KeyValue=0;
   }
 	  
   

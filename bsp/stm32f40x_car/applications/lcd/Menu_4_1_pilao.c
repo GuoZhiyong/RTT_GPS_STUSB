@@ -1,8 +1,7 @@
 #include  <string.h>
 #include "Menu_Include.h"
-#include "Lcd.h"
 #include <string.h>
-
+#include "sed1520.h"
 
 
 
@@ -69,9 +68,9 @@ unsigned char tired_num=0;
 
 
 
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			CounterBack=0;
 			ErrorRecord=0;//疲劳超速记录错误清0
 			StartDisTiredExpspeed=0;
@@ -81,7 +80,7 @@ unsigned char tired_num=0;
 			pMenuItem=&Menu_4_InforTirExspd;
 			pMenuItem->show();
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if(PiLaoSreen==1)
 				{
 				PiLaoSreen=2;
@@ -120,7 +119,7 @@ unsigned char tired_num=0;
 				}
 
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if(tire_Flag==4)
 				{
 				if(PiLaoNumScreen>0)
@@ -139,7 +138,7 @@ unsigned char tired_num=0;
 					}
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if(tire_Flag==4)
 				{
 				PiLaoNumScreen++;
@@ -163,8 +162,6 @@ unsigned char tired_num=0;
 				}
 			break;
 		}
-	KeyValue=0;
-
 }
 
 

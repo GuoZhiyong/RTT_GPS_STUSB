@@ -12,9 +12,8 @@
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
 #include "Menu_Include.h"
-#include "Lcd.h"
 #include <string.h>
-
+#include "sed1520.h"
 static u8 signal_counter = 0;
 
 
@@ -65,9 +64,9 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
-	switch( KeyValue )
+	switch( key )
 	{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );
 			CounterBack = 0;
@@ -76,7 +75,6 @@ static void keypress( unsigned int key )
 			msg( XinhaoStatus );
 			break;
 	}
-	KeyValue = 0;
 }
 
 /***********************************************************

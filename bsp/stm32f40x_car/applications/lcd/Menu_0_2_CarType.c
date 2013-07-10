@@ -125,16 +125,16 @@ CounterBack=0;
 
 static void keypress(unsigned int key)
 {
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_0_loggingin;
 			pMenuItem->show();
 			
 			CarType_counter=0;
 			CarType_Type=0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if(CarType_Type==1)
 				{
 				CarType_Type=2;
@@ -180,7 +180,7 @@ static void keypress(unsigned int key)
 				CarType_Type=0;
 				}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if(	CarType_Type==1)
 				{
 				if(CarType_counter==1)
@@ -191,7 +191,7 @@ static void keypress(unsigned int key)
 				CarType(CarType_counter,0);
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if(	CarType_Type==1)
 				{
 				if(CarType_counter>=8)
@@ -204,7 +204,6 @@ static void keypress(unsigned int key)
 				}
 			break;
 		}
-	KeyValue=0;
 }
 
 

@@ -17,16 +17,16 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-switch(KeyValue)
+switch(key)
 	{
-	case KeyValueMenu:
+	case KEY_MENU:
 		pMenuItem=&Menu_3_InforInteract;
 		pMenuItem->show();
 		CounterBack=0;
 
 		CarMulTrans_screen=0;
 		break;
-	case KeyValueOk:
+	case KEY_OK:
 		if(CarMulTrans_screen==0)
 			{
 			CarMulTrans_screen=1;
@@ -53,12 +53,11 @@ switch(KeyValue)
 				#endif
 			}
 		break;
-	case KeyValueUP:
+	case KEY_UP:
 		break;
-	case KeyValueDown:
+	case KEY_DOWN:
 		break;
 	}
-KeyValue=0;
 }
 
 	

@@ -133,24 +133,23 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
-	switch( KeyValue )
+	switch( key )
 	{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );
 			CounterBack = 0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			Disp_DnsIP( 1 );
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			Disp_DnsIP( 1 );
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			Disp_DnsIP( 2 );
 			break;
 	}
-	KeyValue = 0;
 }
 
 /***********************************************************

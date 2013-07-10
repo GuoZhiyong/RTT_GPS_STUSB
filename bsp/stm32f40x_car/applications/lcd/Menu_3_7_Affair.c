@@ -173,9 +173,9 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_3_InforInteract;
 			pMenuItem->show();
 			CounterBack=0;
@@ -183,7 +183,7 @@ static void keypress(unsigned int key)
 			Menu_Affair=0;
 			Affair_scree=1;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if(Menu_Affair==0)
 				{
 //bitter:				Event_Read();//¶Á³öÊÂ¼þ
@@ -221,7 +221,7 @@ static void keypress(unsigned int key)
 					#endif
 				}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if(Menu_Affair==1)
 				{
 				Affair_scree--;
@@ -230,7 +230,7 @@ static void keypress(unsigned int key)
 				Dis_Affair(Affair_scree);
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if(Menu_Affair==1)
 				{
 				Affair_scree++;
@@ -240,7 +240,6 @@ static void keypress(unsigned int key)
 				}
 			break;
 		}
- KeyValue=0;
 }
 
 

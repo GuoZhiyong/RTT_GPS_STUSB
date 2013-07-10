@@ -10,10 +10,10 @@
 #include "jt808_gps.h"
 
 
-#define KeyValueMenu    1
-#define KeyValueOk      2
-#define KeyValueUP      3
-#define KeyValueDown    4
+#define KEY_MENU    0x1
+#define KEY_OK      0x2
+#define KEY_UP      0x4
+#define KEY_DOWN    0x8
 
 //(1) 文本信息          开始Page 6800-6899   100 page
 //(2) 事件设置          开始Page 6900-6949    50 page

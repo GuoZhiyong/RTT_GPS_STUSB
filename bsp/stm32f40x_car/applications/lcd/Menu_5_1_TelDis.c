@@ -37,9 +37,9 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-	switch(KeyValue)
+	switch(key)
 		{
-		case KeyValueMenu:
+		case KEY_MENU:
 			pMenuItem=&Menu_5_other;
 			pMenuItem->show();
 			CounterBack=0;
@@ -47,7 +47,7 @@ static void keypress(unsigned int key)
 			Menu_TelText=0;
             TelText_scree=0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			/*if(Menu_TelText==0)
 				{
 				//PhoneBook_Read();
@@ -62,7 +62,7 @@ static void keypress(unsigned int key)
 				Dis_TelText(1);
 				}
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if(Menu_TelText==2)
 				{
 				TelText_scree--;
@@ -71,7 +71,7 @@ static void keypress(unsigned int key)
 				Dis_TelText(TelText_scree);
 				}
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if(Menu_TelText==2)
 				{
 				TelText_scree++;
@@ -81,7 +81,6 @@ static void keypress(unsigned int key)
 				}
 			break;
 		}
- KeyValue=0;
 }
 
 

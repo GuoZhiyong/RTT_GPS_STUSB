@@ -68,9 +68,9 @@ static void show( void )
 /**/
 static void keypress( unsigned int key )
 {
-	switch( KeyValue )
+	switch( key )
 	{
-		case KeyValueMenu:
+		case KEY_MENU:
 			if( comfirmation_flag == 4 )
 			{
 				pMenuItem = &Menu_1_Idle;
@@ -84,7 +84,7 @@ static void keypress( unsigned int key )
 			CarBrandCol_Cou		= 1;
 			comfirmation_flag	= 0;
 			break;
-		case KeyValueOk:
+		case KEY_OK:
 			if( col_screen == 1 )
 			{
 				col_screen			= 2;
@@ -158,7 +158,7 @@ static void keypress( unsigned int key )
 			}
 
 			break;
-		case KeyValueUP:
+		case KEY_UP:
 			if( col_screen == 1 )
 			{
 				CarBrandCol_Cou--;
@@ -183,7 +183,7 @@ static void keypress( unsigned int key )
 			}
 
 			break;
-		case KeyValueDown:
+		case KEY_DOWN:
 			if( col_screen == 1 )
 			{
 				CarBrandCol_Cou++;
@@ -209,7 +209,6 @@ static void keypress( unsigned int key )
 
 			break;
 	}
-	KeyValue = 0;
 }
 
 /**/
