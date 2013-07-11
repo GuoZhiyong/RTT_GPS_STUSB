@@ -478,5 +478,21 @@ int df_read( uint32_t addr, uint16_t size )
 
 FINSH_FUNCTION_EXPORT( df_read, read from serial flash );
 
+
+void df_format(uint16_t start_addr,uint16_t sectors)
+{
+	uint16_t i;
+	uint32_t addr=start_addr;
+	rt_sem_take(&sem_dataflash,RT_TICK_PER_SECOND*2);
+	for(i=0;i<sectors;i++)
+	{
+		sst25_erase_4k(addr);
+		addr+=4096;
+
+	}
+	rt_sem_release(&sem_dataflash);
+}
+FINSH_FUNCTION_EXPORT( df_format, format serial flash );
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 

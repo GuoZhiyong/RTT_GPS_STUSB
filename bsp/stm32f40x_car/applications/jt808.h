@@ -356,10 +356,15 @@ rt_err_t jt808_add_tx( uint8_t linkno,
 
 void jt808_add_tx_end( JT808_TX_NODEDATA* pnodedata );
 
+/*通用应答*/
+rt_err_t jt808_tx_0x0001(uint16_t seq, uint16_t id, uint8_t res );
+
 
 #define jt808_tx( id, info, len ) jt808_add_tx( 1, SINGLE_CMD, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
 
+/*专用应答*/
 #define jt808_tx_ack( id, info, len ) jt808_add_tx( 1, SINGLE_ACK, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
+
 
 #endif
 

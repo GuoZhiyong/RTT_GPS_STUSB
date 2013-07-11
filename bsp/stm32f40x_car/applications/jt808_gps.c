@@ -391,7 +391,7 @@ void process_gps( void )
 /*生成要上报的数据*/
 #if 1
 
-	if( ( gps_datetime[5] % 600 ) == 0 )
+	if( ( gps_datetime[5] % 60 ) == 0 )
 	{
 		err = jt808_tx( 0x0200, (uint8_t*)&gps_baseinfo,28 );
 		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );
@@ -440,6 +440,7 @@ uint8_t process_rmc( uint8_t * pinfo )
 			buf[count]		= 0;
 			continue;
 		}
+		
 		commacount++;
 		switch( commacount )
 		{
@@ -459,7 +460,6 @@ uint8_t process_rmc( uint8_t * pinfo )
 				hour	= i;
 				min		= ( buf[2] - 0x30 ) * 10 + ( buf[3] - 0x30 );
 				sec		= ( buf[4] - 0x30 ) * 10 + ( buf[5] - 0x30 );
-				//rt_kprintf( "hour=%02x,min=%02x,sec=%02x\r\n", hour, min, sec );
 				break;
 			case 2: /*A_V*/
 				if( buf[0] == 'A' )
@@ -711,35 +711,12 @@ uint8_t process_gga( uint8_t * pinfo )
 				break;
 
 			case 3: /*N_S处理*/
-				if( buf[0] == 'N' )
-				{
-					jt808_status &= ~0x02;
-				} else if( buf[0] == 'S' )
-				{
-					jt808_status |= 0x02;
-				}else
-				{
-					return 3;
-				}
-				break;
+					break;
 
 			case 4: /*经度处理*/
-				if( count < 11 )
-				{
-					return 4;
-				}
+
 				break;
 			case 5: /*E_W处理*/
-				if( buf[0] == 'E' )
-				{
-					jt808_status &= ~0x04;
-				} else if( buf[0] == 'W' )
-				{
-					jt808_status |= 0x04;
-				}else
-				{
-					return 5;
-				}
 				break;
 			case 6: /*定位类型*/
 				break;

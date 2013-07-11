@@ -317,7 +317,7 @@ rt_err_t Cam_jt808_0x801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_de
 	}else
 	{
 		pnodedata				= nodedata;
-		pnodedata->multipacket	= 1;
+		pnodedata->multipacket	= MULTI_CMD;
 	}
 	nodedata->head_id=0x0801;
 

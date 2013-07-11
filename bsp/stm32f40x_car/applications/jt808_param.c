@@ -558,4 +558,15 @@ void apn( char *s )
 
 FINSH_FUNCTION_EXPORT( apn, set apn );
 
+
+void ipport( char *ip,uint16_t port )
+{
+	param_put_str(0x13,ip);
+	param_put_int(0x18,port);
+	param_save();
+}
+
+FINSH_FUNCTION_EXPORT( ipport, set ipport );
+
+
 /************************************** The End Of File **************************************/

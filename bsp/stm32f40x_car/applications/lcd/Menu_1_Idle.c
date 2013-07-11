@@ -263,7 +263,7 @@ static void keypress( unsigned int key )
 			OK_Counter	= 0;
 
 			CounterBack = 0;
-			UpAndDown	= 1; //
+			UpAndDown	= 1; 
 
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );

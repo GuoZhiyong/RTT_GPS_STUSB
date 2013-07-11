@@ -129,7 +129,7 @@ static JT808_MSG_STATE jt808_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t 
 	id	= ( *( msg + 2 ) << 8 ) | *( msg + 3 );
 	res = *( msg + 4 );
 
-	rt_kprintf( "%d>CENT_ACK id=%04x seq=%04x res=%d\r\n", rt_tick_get( ), id, seq, res );
+	//rt_kprintf( "%d>CENT_ACK id=%04x seq=%04x res=%d\r\n", rt_tick_get( ), id, seq, res );
 	switch( id )        // 判断对应终端消息的ID做区分处理
 	{
 		case 0x0200:    //	对应位置消息的应答
@@ -186,7 +186,7 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
 {
 	JT808_TX_NODEDATA * pnodedata;
 
-	if( fMultiPacket )
+	if( fMultiPacket>SINGLE_ACK)
 	{
 		pnodedata = rt_malloc( sizeof( JT808_TX_NODEDATA ) + sizeof( JT808_MSG_HEAD_EX ) + datasize );
 	} else
@@ -203,7 +203,7 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
 	pnodedata->state		= IDLE;
 	pnodedata->head_id		= id;
 	pnodedata->retry		= 0;
-	if( fMultiPacket )
+	if( fMultiPacket>SINGLE_ACK )
 	{
 		pnodedata->max_retry	= 1;
 		pnodedata->timeout		= RT_TICK_PER_SECOND * 3;
@@ -248,7 +248,7 @@ JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA *pnodedata,
 	pdata[11]	= pnodedata->head_sn & 0xff;
 
 	memcpy( pdata + 4, mobile, 6 );
-	if( pnodedata->multipacket )            /*多包数据*/
+	if( pnodedata->multipacket>SINGLE_ACK)            /*多包数据*/
 	{
 		pdata[2] += 0x20;
 		memcpy( pdata + 16, pinfo, len );   /*填充用户数据*/
@@ -284,7 +284,7 @@ void node_datalen( JT808_TX_NODEDATA* pnodedata, uint16_t datalen )
 	pdata_head[2]		= datalen >> 8;
 	pdata_head[3]		= datalen & 0xFF;
 	pnodedata->msg_len	= datalen + 12; /*缺省是单包*/
-	if( pnodedata->multipacket )        /*多包数据*/
+	if( pnodedata->multipacket>SINGLE_ACK )        /*多包数据*/
 	{
 		pdata_head[12]	= pnodedata->packet_num >> 8;
 		pdata_head[13]	= pnodedata->packet_num & 0xFF;
@@ -307,7 +307,7 @@ void node_datalen( JT808_TX_NODEDATA* pnodedata, uint16_t datalen )
 ***********************************************************/
 uint8_t* node_msg_body( JT808_TX_NODEDATA* pnodedata )
 {
-	if( pnodedata->multipacket )
+	if( pnodedata->multipacket>SINGLE_ACK )
 	{
 		return pnodedata->tag_data + 16;
 	} else
@@ -352,42 +352,26 @@ rt_err_t jt808_add_tx( uint8_t linkno,
 /*
    终端通用应答
  */
-static rt_err_t jt808_tx_0x0001( uint8_t linkno, uint16_t seq, uint16_t id, uint8_t res )
+rt_err_t jt808_tx_0x0001(uint16_t seq, uint16_t id, uint8_t res )
 {
 	uint8_t				* pdata;
 	JT808_TX_NODEDATA	* pnodedata;
-	uint8_t				buf [256];
 	uint8_t				* p;
 	uint16_t			len;
-
-	pnodedata = rt_malloc( sizeof( JT808_TX_NODEDATA ) );
+	uint8_t				buf[5];
+	
+	pnodedata=node_begin(1,SINGLE_ACK,0x0001,-1,5);
 	if( pnodedata == NULL )
 	{
-		return -RT_ERROR;
+		return RT_ENOMEM;
 	}
-	pnodedata->state			= IDLE;
-	pnodedata->retry			= 0;
-	pnodedata->cb_tx_timeout	= jt808_tx_timeout;
-	pnodedata->cb_tx_response	= jt808_tx_response;
-
-	pdata = rt_malloc( 5 + 12 );
-	if( pdata == NULL )
-	{
-		rt_free( pnodedata );
-		return -RT_ERROR;
-	}
-
-//	jt808_add_msg_head(pdata,0x0001,0x0005);
-	p		= pdata + 12;
-	*p++	= ( seq >> 8 );
-	*p++	= ( seq & 0xff );
-	*p++	= ( id >> 8 );
-	*p++	= ( id & 0xff );
-	*p		= res;
-
-	pnodedata->msg_len = len;
-	msglist_append( list_jt808_tx, pnodedata );
-	tx_seq++;
+	buf[0]	= ( seq >> 8 );
+	buf[1]	= ( seq & 0xff );
+	buf[2]	= ( id >> 8 );
+	buf[3]	= ( id & 0xff );
+	buf[4]		= res;
+	node_data(pnodedata,buf,5,jt808_tx_timeout,jt808_tx_response,RT_NULL);
+	node_end(pnodedata);
 }
 
 /*
@@ -490,7 +474,7 @@ static int handle_rx_0x8103( uint8_t linkno, uint8_t *pmsg )
 		}
 	}
 	/*返回通用应答*/
-	jt808_tx_0x0001( linkno, seq, id, res );
+	jt808_tx_0x0001( seq, id, res );
 	return 1;
 }
 
@@ -622,6 +606,7 @@ static int handle_rx_0x8202( uint8_t linkno, uint8_t *pmsg )
 /*文本信息下发*/
 static int handle_rx_0x8300( uint8_t linkno, uint8_t *pmsg )
 {
+	jt808_misc_0x8300(pmsg);
 	return 1;
 }
 
@@ -888,84 +873,6 @@ void cb_socket_close( uint8_t cid )
    20130625 会有粘包的情况
 
  */
-
-#if 0
-uint16_t jt808_rx_proc( uint8_t * pinfo )
-{
-	uint8_t		* psrc;
-	uint16_t	len;
-	uint8_t		linkno;
-	uint16_t	i, id;
-	uint8_t		flag_find	= 0;
-	uint8_t		fcs			= 0;
-	uint16_t	ret;
-
-	linkno	= pinfo [0];
-	len		= ( pinfo [1] << 8 ) | pinfo [2];
-
-/*去转义，还是直接在pinfo上操作*/
-	len = jt808_decode_fcs( pinfo + 3, len );
-	if( len == 0 )
-	{
-		rt_kprintf( ">jt808_decode_fcs error\r\n" );
-		return 1;
-	}
-/*显示解码后的信息*/
-#if 0
-	rt_kprintf( "\r\n>dump start(%d)\r\nhead>", len );
-	psrc = pinfo + 3; /*跳过前面的len和0x7e*/
-	rt_kprintf( "%02x%02x ", *( psrc + 0 ), *( psrc + 1 ) );
-	rt_kprintf( "%02x%02x ", *( psrc + 2 ), *( psrc + 3 ) );
-	for( i = 0; i < 6; i++ )
-	{
-		rt_kprintf( "%02x", *( psrc + 4 + i ) );
-	}
-	rt_kprintf( " %02x%02x ", *( psrc + 10 ), *( psrc + 11 ) );
-	rt_kprintf( "\r\nbody>" );
-
-	psrc = pinfo + 15;
-	for( i = 0; i < ( len - 12 ); i++ )
-	{
-		if( i % 16 == 0 )
-		{
-			rt_kprintf( "\r\n" );
-		}
-		rt_kprintf( "%02x ", *psrc++ );
-	}
-	rt_kprintf( "\r\n>dump end\r\n" );
-#endif
-
-/*直接处理收到的信息，根据ID分发，直接分发消息*/
-
-	psrc	= pinfo + 3;
-	id		= ( *psrc << 8 ) | *( psrc + 1 );
-
-	for( i = 0; i < sizeof( handle_rx_msg ) / sizeof( HANDLE_JT808_RX_MSG ); i++ )
-	{
-		if( id == handle_rx_msg [i].id )
-		{
-			handle_rx_msg [i].func( linkno, psrc );
-			flag_find = 1;
-		}
-	}
-	if( !flag_find )
-	{
-		handle_rx_default( linkno, psrc );
-	}
-}
-
-#endif
-
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
 uint16_t jt808_rx_proc( uint8_t * pinfo )
 {
 	uint8_t		* psrc, *pdst, *pdata;
@@ -993,9 +900,10 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 		{
 			if( count )         /*有数据*/
 			{
-				rt_kprintf( "count=%d,fcs=%d\r\n", count, fcs );
+				
 				if( fcs == 0 )  /*数据正确*/
 				{
+					*psrc=0;  /*20120711 置为字符串结束标志*/
 					id = ( ( *pdata ) << 8 ) | *( pdata + 1 );
 					for( i = 0; i < sizeof( handle_rx_msg ) / sizeof( HANDLE_JT808_RX_MSG ); i++ )
 					{
@@ -1010,6 +918,10 @@ uint16_t jt808_rx_proc( uint8_t * pinfo )
 						handle_rx_default( linkno, pdata );
 						flag_find = 0;
 					}
+				}
+				else
+				{
+					rt_kprintf( "count=%d,fcs err=%d\r\n", count, fcs );
 				}
 			}
 			fcs		= 0;
@@ -1222,7 +1134,7 @@ static void jt808_socket_proc( void )
 	state = gsmstate( GSM_STATE_GET );
 	if( state == GSM_IDLE )
 	{
-		//gsmstate( GSM_POWERON );                /*开机登网*/
+		gsmstate( GSM_POWERON );                /*开机登网*/
 		return;
 	}
 /*控制登网*/

@@ -18,12 +18,12 @@
 #include "stm32f4xx.h"
 #include "jt808.h"
 
-#define BIT_STATUS_ACC	0x01
-#define BIT_STATUS_GPS	0x02
-#define BIT_STATUS_NS	0x04
-#define BIT_STATUS_EW	0x08
+#define BIT_STATUS_ACC	0x00000001
+#define BIT_STATUS_GPS	0x00000002
+#define BIT_STATUS_NS	0x00000004
+#define BIT_STATUS_EW	0x00000008
 
-#define BIT_ALARM_EMG 0x01
+#define BIT_ALARM_EMG 0x00000001
 
 /*基本位置信息,因为字节对齐的方式，还是使用数组方便*/
 typedef __packed struct _gps_baseinfo

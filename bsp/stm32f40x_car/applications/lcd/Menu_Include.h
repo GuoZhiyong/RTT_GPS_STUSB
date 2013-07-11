@@ -8,6 +8,7 @@
 #include "jt808.h"
 #include "jt808_param.h"
 #include "jt808_gps.h"
+#include "jt808_misc.h"
 
 
 #define KEY_MENU    0x1

@@ -15,6 +15,7 @@
 #define _H_JT808_MISC_
 
 #include "stm32f4xx.h"
+#include "jt808.h"
 
 //------- 文本信息 --------
 typedef struct _TEXT_INFO
@@ -144,6 +145,25 @@ extern u8				Duomeiti_sdFlag;
 
 extern Avrg_MintSpeed	Avrgspd_Mint;
 extern u8				avgspd_Mint_Wr; // 填写每分钟平均速度记录下标
+
+
+
+
+typedef __packed struct
+{
+	uint32_t	id;                                     /*单增序号*/
+	MYTIME		datetime;                               /*收到的时间*/
+	uint8_t		len;                                    /*长度，人为截短到最大256-9*/
+	uint8_t 	body[256-9];							/*截短后收到的信息*/
+}TEXTMSG;
+
+
+
+
+
+extern uint8_t textmsg_count;
+void jt808_misc_0x8300( uint8_t *pmsg );
+void jt808_textmsg_get( uint8_t index, TEXTMSG* pout );
 
 
 void jt808_misc_init(void);
