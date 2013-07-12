@@ -268,6 +268,7 @@ struct _tbl_id_lookup
 	ID_LOOKUP( 0x0117, TYPE_BYTE | 8 ), //uint8_t		 id_0x0117[8];	 /*0x0117 其他CAN 总线 ID 单独采集设置*/
 	ID_LOOKUP( 0x0118, TYPE_BYTE | 8 ), //uint8_t		 id_0x0118[8];	 /*0x0118 其他CAN 总线 ID 单独采集设置*/
 	ID_LOOKUP( 0x0119, TYPE_BYTE | 8 ), //uint8_t		 id_0x0119[8];	 /*0x0119 其他CAN 总线 ID 单独采集设置*/
+
 	ID_LOOKUP( 0xF000, TYPE_STR ),      //uint8_t		 id_0x0119[8];	 /*0x0119 其他CAN 总线 ID 单独采集设置*/
 	ID_LOOKUP( 0xF001, TYPE_STR ),      /*0xF001 终端型号 20byte*/
 	ID_LOOKUP( 0xF002, TYPE_STR ),      /*0xF002 终端ID 7byte*/
@@ -275,8 +276,14 @@ struct _tbl_id_lookup
 	ID_LOOKUP( 0xF004, TYPE_BYTE ),     /*0xF004 终端类型*/
 	ID_LOOKUP( 0xF005, TYPE_STR ),      /*0xF005 车辆标识,VIN*/
 	ID_LOOKUP( 0xF006, TYPE_STR ),      /*0xF006 车辆标识,车牌号*/
+	ID_LOOKUP( 0xF007, TYPE_BYTE ),     /*0xF007 车牌颜色*/
+	ID_LOOKUP( 0xF008, TYPE_STR ),      /*0xF008 驾驶员姓名*/
+	ID_LOOKUP( 0xF009, TYPE_STR ),      /*0xF009 驾驶证号码*/
+	ID_LOOKUP( 0xF00A, TYPE_STR ),      /*0xF008 车辆类型*/
+
 	ID_LOOKUP( 0xF010, TYPE_STR ),      /*0xF010 软件版本号*/
 	ID_LOOKUP( 0xF011, TYPE_STR ),      /*0xF011 硬件版本号*/
+	ID_LOOKUP( 0x0020, TYPE_WORD ),     /*0xF020 总里程*/
 };
 
 
@@ -373,7 +380,6 @@ void param_put_int( uint16_t id, uint32_t value )
 
 FINSH_FUNCTION_EXPORT( param_put_int, modify param );
 
-
 /*写入字符串*/
 static void param_put_str( uint16_t id, uint8_t* value )
 {
@@ -392,7 +398,7 @@ static void param_put_str( uint16_t id, uint8_t* value )
 }
 
 FINSH_FUNCTION_EXPORT( param_put_str, modify param );
-
+#if 0
 /*读取参数,返回参数类型参数*/
 uint8_t param_get( uint16_t id, uint8_t* value )
 {
@@ -439,6 +445,8 @@ uint8_t param_get( uint16_t id, uint8_t* value )
 	}
 	return 0;
 }
+
+#endif
 
 /*读取参数*/
 uint32_t param_get_int( uint16_t id )
@@ -559,14 +567,223 @@ void apn( char *s )
 FINSH_FUNCTION_EXPORT( apn, set apn );
 
 
-void ipport( char *ip,uint16_t port )
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void ipport( char *ip, uint16_t port )
 {
-	param_put_str(0x13,ip);
-	param_put_int(0x18,port);
-	param_save();
+	param_put_str( 0x13, ip );
+	param_put_int( 0x18, port );
+	param_save( );
 }
 
 FINSH_FUNCTION_EXPORT( ipport, set ipport );
 
+/*应答*/
+static JT808_MSG_STATE jt808_0x8104_response( JT808_TX_NODEDATA * pnodedata, uint8_t *pmsg )
+{
+	pnodedata->retry++;
+	if( pnodedata->retry >= pnodedata->max_retry )
+	{
+		return WAIT_DELETE;
+	}
+	return vdr_08_12_fill_data( pnodedata );
+}
+
+/*超时后的处理函数*/
+static JT808_MSG_STATE jt808_0x8104_timeout( JT808_TX_NODEDATA * pnodedata )
+{
+	pnodedata->retry++;
+	if( pnodedata->retry >= pnodedata->max_retry )
+	{
+		if( vdr_08_12_fill_data( pnodedata ) == 0 )
+		{
+			return WAIT_DELETE;
+		}
+		return IDLE;
+	}
+	return IDLE;
+}
+
+static uint16_t id_get = 1; /*保存当前发送的id*/
+
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+uint16_t get_param_and_fill_buf( uint8_t* pbuf )
+{
+	uint16_t	i;
+	uint8_t		*p;
+	uint16_t	count = 0;
+
+	for( i = id_get; i < sizeof( tbl_id_lookup ) / sizeof( struct _tbl_id_lookup ); i++ )
+	{
+		*pbuf++ = ( tbl_id_lookup[i].id ) >> 24;
+		*pbuf++ = ( tbl_id_lookup[i].id ) >> 16;
+		*pbuf++ = ( tbl_id_lookup[i].id ) >> 8;
+		*pbuf++ = ( tbl_id_lookup[i].id ) & 0xFF;
+		count	+= 4;
+
+		if( tbl_id_lookup[i].type == TYPE_DWORD )
+		{
+			p		= tbl_id_lookup[i].val;
+			*pbuf++ = 4;
+			*pbuf++ = p[3];
+			*pbuf++ = p[2];
+			*pbuf++ = p[1];
+			*pbuf++ = p[0];
+			count	+= 5;
+		}
+
+		if( tbl_id_lookup[i].type == TYPE_WORD )
+		{
+			p		= tbl_id_lookup[i].val;
+			*pbuf++ = 2;
+			*pbuf++ = p[1];
+			*pbuf++ = p[0];
+			count	+= 3;
+		}
+
+		if( tbl_id_lookup[i].type == TYPE_BYTE )
+		{
+			p		= tbl_id_lookup[i].val;
+			*pbuf++ = 1;
+			*pbuf++ = *p++;
+			count	+= 2;
+		}
+		if( tbl_id_lookup[i].type == TYPE_STR )
+		{
+			p		= tbl_id_lookup[i].val;
+			*pbuf++ = strlen( p );
+			memcpy( pbuf, p, strlen( p ) );
+			count	+= ( strlen( p ) + 1 );
+			pbuf	+=  strlen( p );
+		}
+		if( tbl_id_lookup[i].type == TYPE_CAN )
+		{
+			*pbuf++ = 8;
+			p		= tbl_id_lookup[i].val;
+			memcpy( pbuf, p, 8 );
+			count	+= 9;
+			pbuf	+= 8;
+		}
+		if( count > 512 )
+		{
+			break;
+		}
+	}
+	id_get = i;
+	return count;
+}
+
+/*上报所有终端参数*/
+void jt808_param_0x8104( uint8_t *pmsg )
+{
+	JT808_TX_NODEDATA	* pnodedata;
+	//uint16_t			seq = ( pmsg[10] << 8 ) | pmsg[11];
+	uint8_t				* puserdata;
+
+	uint16_t			id;
+	uint8_t				buf[600];
+	uint8_t				*p;
+	uint16_t			param_size=0;
+	uint16_t			param_count=0;
+	uint16_t			i,count;
+
+	pnodedata = node_begin( 1, MULTI_ACK, 0x0104, -1, 600 );
+	if( pnodedata == RT_NULL )
+	{
+		return;
+	}
+
+	memset( buf, 0, sizeof( buf ) );
+	/*计算总数和总大小，不统计0x0000和0xFxxx的*/
+	
+	for( i = 1; i < sizeof( tbl_id_lookup ) / sizeof( struct _tbl_id_lookup ) - 1; i++ )
+	{
+		if( tbl_id_lookup[i].id >= 0xF000 )
+		{
+			continue;
+		}
+		param_count++;
+		switch( tbl_id_lookup[i].type )
+		{
+			case TYPE_DWORD:
+				param_size += 9;
+				break;
+			case TYPE_WORD:
+				param_size += 7;
+				break;
+			case  TYPE_BYTE:
+				param_size += 6;
+				break;
+			case TYPE_STR:
+				param_size += ( strlen( tbl_id_lookup[i].val ) + 5 );
+				break;
+			case TYPE_CAN:
+				param_size += 13;
+				break;
+		}
+	}
+	rt_kprintf( "\r\ntotal count=%d size=%d\r\n", param_count,param_size );
+	pnodedata->packet_num	= ( param_size + 511 ) / 512; /*默认512分包*/
+	pnodedata->packet_no	= 1;
+	rt_kprintf( "\r\npacket_num=%d \r\n", pnodedata->packet_num );
+
+	count = get_param_and_fill_buf( buf );
+	rt_kprintf( "\r\ncount=%d id_get=%d\r\n", count, id_get );
+
+	for( i = 0; i < count; i++ )
+	{
+		if( ( i % 16 ) == 0 )
+		{
+			rt_kprintf( "\r\n" );
+		}
+		rt_kprintf( "%02x ", buf[i] );
+	}
+}
+
+FINSH_FUNCTION_EXPORT_ALIAS( jt808_param_0x8104, param, desc );
+
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void jt808_param_0x8106( uint8_t *pmsg )
+{
+	JT808_TX_NODEDATA	* pnodedata;
+	uint16_t			seq = ( pmsg[10] << 8 ) | pmsg[11];
+	uint8_t				* puserdata;
+
+	if( pnodedata == RT_NULL )
+	{
+		return;
+	}
+
+	pnodedata = node_begin( 1, MULTI_ACK, 0x0104, -1, 600 );
+	if( pnodedata == RT_NULL )
+	{
+		return;
+	}
+}
 
 /************************************** The End Of File **************************************/

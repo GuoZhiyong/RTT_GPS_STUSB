@@ -391,7 +391,7 @@ void process_gps( void )
 /*生成要上报的数据*/
 #if 1
 
-	if( ( gps_datetime[5] % 60 ) == 0 )
+	if( ( gps_datetime[5] % 600 ) == 0 )
 	{
 		err = jt808_tx( 0x0200, (uint8_t*)&gps_baseinfo,28 );
 		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );
