@@ -19,8 +19,7 @@ static TEXTMSG	textmsg;                /*传递进来的信息，包含TEXTMSG_HEAD*/
 static uint8_t	item_pos		= 0;    /*当前要访问的*/
 static uint8_t	item_pos_read	= 0xff; /*当前已读取的*/
 
-static uint8_t	line_pos	= 0;        /*当前行号*/
-static uint8_t	total_lines = 0;
+static uint8_t	line_pos = 0;           /*当前行号*/
 
 /*查看模式*/
 #define VIEW_ITEM	0
@@ -29,14 +28,10 @@ static uint8_t	total_lines = 0;
 uint8_t view_mode = VIEW_ITEM;
 
 /*最多支持32行记录每一行开始的位置*/
-uint8_t split_lines_pos[32];
-uint8_t split_lines_count=0;
+uint8_t split_lines_pos[32][2];
+uint8_t split_lines_count = 0;
 
-
-/*
-   对内容进行分行，以20个ASC或<CR>作为换行符
-   记录每一行的首位置，返回总行数
- */
+/*内容分隔为行，记录行首、行尾地址*/
 uint8_t split_content( void )
 {
 	uint8_t count;
@@ -46,7 +41,7 @@ uint8_t split_content( void )
 	int		nbfields	= 0;
 	uint8_t start_of_field;
 
-	memset( split_lines_pos, 0, 32 );
+	memset( split_lines_pos, 0, 64 );
 
 	p = textmsg.body;
 	/*剔除开始的不可见*/
@@ -58,7 +53,7 @@ uint8_t split_content( void )
 
 	start_of_field	= pos;
 	count			= 0;
-	for(; pos < textmsg.len; pos++ )
+	for(; pos < textmsg.len - 1; ++pos )
 	{
 		if( *p < 0x20 )
 		{
@@ -66,123 +61,67 @@ uint8_t split_content( void )
 			p++;
 		}else if( *p > 0x7F )   /*要增加2个*/
 		{
-			if( count == 19 )   /*不够了*/
+			if( count == 9 )    /*不够了*/
 			{
-				linebreak = 1;
+				count = 10;
 			}else
 			{
-				p		+= 2;
-				count	+= 2;
+				p++;
+				count++;
 			}
 		}else
 		{
 			p++;
 			count++;
 		}
-		if(( linebreak )||(count==20))
+		if( ( linebreak ) || ( count == 10 ) )
 		{
-			if( count ) /*有数据*/
+			if( linebreak ) /*截短*/
 			{
-				split_lines_pos[nbfields] = start_of_field;
+				if( count )
+				{
+					split_lines_pos[nbfields][0]	= start_of_field;
+					split_lines_pos[nbfields][1]	= pos - 1;
+					nbfields++;
+				}
+			}else //if( count ) /*有数据*/
+			{
+				split_lines_pos[nbfields][0]	= start_of_field;
+				split_lines_pos[nbfields][1]	= pos;
 				nbfields++;
 			}
-			start_of_field = pos + 1;
-			count=0;
-			linebreak=0;
+			start_of_field	= pos + 1;
+			count			= 0;
+			linebreak		= 0;
 		}
 	}
-	return nbfields+1;
+	split_lines_pos[nbfields][0]	= start_of_field;   /*记录结束的位置*/
+	split_lines_pos[nbfields][1]	= pos - 1;          /*记录结束的位置*/
+	return nbfields + 1;
 }
 
-/*
-   获取字符串内容,并分行
-   指定源为ptextmsg,
-   行号
-
-   返回截获的长度
- */
-static uint8_t get_line( uint8_t line_no, uint8_t *pout )
+/**/
+uint8_t get_line( uint8_t pos, uint8_t *pout )
 {
-	uint8_t count;
-	uint8_t * p;
-	uint8_t * pdst		= pout;
-	uint8_t line_curr	= 0;
-
-	uint8_t buf[30]; /*最长20个字节*/
-	uint8_t len = 0;
-
-	uint8_t linebreak = 0;
-
-	/*内部分行*/
-	p		= textmsg.body;
-	pdst	= buf;
-	count	= 0;
-	while( len < textmsg.len )
+	uint8_t		* pdst = pout;
+	signed char len;
+	uint8_t		from, to;
+	from	= split_lines_pos[pos][0];
+	to		= split_lines_pos[pos][1];
+	len		= to - from + 1;
+	if( len > 0 )
 	{
-		if( linebreak )                     /*到了分行*/
-		{
-			if( count )                     /*有数据*/
-			{
-				if( line_curr == line_no )  /*是需要的行*/
-				{
-					memcpy( pout, buf, count );
-					return count;
-				}
-				line_curr++;
-			}
-			count		= 0;                /*重新开始找*/
-			pdst		= buf;
-			linebreak	= 0;
-		}
-
-		if( *p < 0x20 )                     /*应该判断回车换行的操作*/
-		{
-			linebreak = 1;
-			len++;
-			p++;
-		}else if( *p > 0x7F )               /*要增加2个*/
-		{
-			if( count == 19 )               /*不够了*/
-			{
-				linebreak = 1;
-			}else
-			{
-				*pdst++ = *p++;
-				*pdst++ = *p++;
-				count	+= 2;
-				if( count == 20 )
-				{
-					linebreak = 1;
-				}
-			}
-		}else
-		{
-			*pdst++ = *p++;
-			count++;
-			len++;
-			if( count == 20 )
-			{
-				linebreak = 1;
-			}
-		}
+		memcpy( pdst, textmsg.body + from, len );
 	}
-	if( count )                     /*结尾还有*/
-	{
-		if( line_curr == line_no )  /*是需要的行*/
-		{
-			memcpy( pout, buf, count );
-			return count;
-		}
-	}
-	return 0;
+	pdst[len] = '\0';
+	return len;
 }
 
 /*
-   显示item 12个字节的头
-   //	uint16_t	mn;         /*幻数 TEXT 0x5445
-   //	uint32_t	id;        /*单增序号
-   //	MYTIME		datetime;  /*收到的时间
-   //	uint8_t	len;       /*长度
+   显示item 9个字节的头
+   uint32_t	id;        单增序号
+   MYTIME		datetime;  收到的时间
+   uint8_t	len;       长度
 
    第11字节是flag,
    数据从第12字节开始，汉字 12x12 每行10个 ASC 0612 每行 20个
@@ -208,8 +147,16 @@ static void display_item( )
 	if( item_pos_read != item_pos ) /*有变化，要读*/
 	{
 		jt808_textmsg_get( item_pos, &textmsg );
-		item_pos_read = item_pos;
-		split_lines_count=split_content();
+		item_pos_read		= item_pos;
+		split_lines_count	= split_content( );
+#if 1
+		rt_kprintf( "split_lines_count=%d\r\n", split_lines_count );
+		for( len = 0; len < split_lines_count; len++ )
+		{
+			ret = get_line( len, buf1 );
+			rt_kprintf( "\r\nid=%d len=%d>%s", len, ret, buf1 );
+		}
+#endif
 	}
 
 	lcd_fill( 0 );
@@ -235,19 +182,18 @@ static void display_item( )
 static void display_detail( void )
 {
 	uint8_t buf1[32], buf2[32];
-	uint8_t len1, len2;
+	int8_t	len1, len2;
 	lcd_fill( 0 );
-	len1	= get_line( line_pos, buf1 );
-	len2	= get_line( line_pos + 1, buf2 );
-	if( len1 )
+	if( line_pos < split_lines_count )
 	{
+		len1 = get_line( line_pos, buf1 );
 		lcd_text12( 0, 4, buf1, len1, LCD_MODE_SET );
 	}
-	if( len2 )
+	if( (line_pos+1) < split_lines_count )
 	{
+		len2 = get_line( line_pos + 1, buf2 );
 		lcd_text12( 0, 16, buf2, len2, LCD_MODE_SET );
 	}
-
 	lcd_update_all( );
 }
 
@@ -263,6 +209,7 @@ static void show( void )
 	uint8_t res;
 	item_pos		= 0;
 	item_pos_read	= 0xff;
+	view_mode=VIEW_ITEM;
 	display_item( );
 }
 
@@ -285,6 +232,7 @@ static void keypress( unsigned int key )
 				display_item( );
 			}else
 			{
+				line_pos=0;    /*重新显示*/
 				display_detail( );
 			}
 			break;
@@ -308,11 +256,17 @@ static void keypress( unsigned int key )
 		case KEY_DOWN:
 			if( view_mode == VIEW_ITEM )
 			{
-				item_pos++;
+				if( item_pos < textmsg_count - 1 )
+				{
+					item_pos++;
+				}
 				display_item( );
 			}else
 			{
-				line_pos += 2;
+				if( line_pos < split_lines_count - 2 ) /*一次变化两行*/
+				{
+					line_pos += 2;
+				}
 				display_detail( );
 			}
 			break;

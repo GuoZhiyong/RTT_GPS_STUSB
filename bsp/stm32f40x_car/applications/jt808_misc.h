@@ -45,15 +45,6 @@ typedef struct _CENTER_ASK
 	uint8_t		ASK_answer[30]; // 候选答案
 }CENTRE_ASK;
 
-//------ 事件  -------
-typedef struct _EVENT           //  name: event
-{
-	uint8_t Event_ID;           //  事件ID
-	uint8_t Event_Len;          //  事件长度
-	uint8_t Event_Effective;    //  事件是否有效，   1 为要显示  0
-	uint8_t Event_Str[20];      //  事件内容
-}EVENT;
-
 //----- 信息 ----
 typedef struct _MSG_BROADCAST   // name: msg_broadcast
 {
@@ -119,8 +110,8 @@ extern MSG_TEXT		TEXT_Obj_8[8], TEXT_Obj_8bak[8];
 extern CENTRE_ASK ASK_Centre;                       // 中心提问
 
 //------- 事件 ----
-extern EVENT	EventObj;                           // 事件
-extern EVENT	EventObj_8[8];                      // 事件
+//extern EVENT	EventObj;                           // 事件
+//extern EVENT	EventObj_8[8];                      // 事件
 
 //------  信息点播  ---
 extern MSG_BRODCAST MSG_BroadCast_Obj;              // 信息点播
@@ -146,28 +137,34 @@ extern u8				Duomeiti_sdFlag;
 extern Avrg_MintSpeed	Avrgspd_Mint;
 extern u8				avgspd_Mint_Wr; // 填写每分钟平均速度记录下标
 
-
-
-
 typedef __packed struct
 {
-	uint32_t	id;                                     /*单增序号*/
-	MYTIME		datetime;                               /*收到的时间*/
-	uint8_t		len;                                    /*长度，人为截短到最大256-9*/
-	uint8_t 	body[256-9];							/*截短后收到的信息*/
+	uint32_t	id;                     /*单增序号*/
+	MYTIME		datetime;               /*收到的时间*/
+	uint8_t		len;                    /*长度，人为截短到最大256-9*/
+	uint8_t		body[256 - 9];          /*截短后收到的信息*/
 }TEXTMSG;
 
 
-
-
+/*
+   事件:设置在4k的buffer中
+ */
+typedef __packed struct
+{
+	uint8_t flag;                       /*标志*/
+	uint8_t id;                         /*事件ID*/
+	uint8_t len;                        /*事件长度*/
+	uint8_t body[32-3];                   /*事件内容*/
+}EVENT;
 
 extern uint8_t textmsg_count;
 void jt808_misc_0x8300( uint8_t *pmsg );
+
+
 void jt808_textmsg_get( uint8_t index, TEXTMSG* pout );
 
 
-void jt808_misc_init(void);
-
+void jt808_misc_init( void );
 
 
 #endif

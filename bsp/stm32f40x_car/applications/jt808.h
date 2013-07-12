@@ -328,6 +328,11 @@ extern uint8_t mobile[6];
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 
 
+rt_size_t tts_write( char* info,uint16_t len );
+rt_size_t at( char *sinfo );
+
+
+
 JT808_TX_NODEDATA * node_begin( uint8_t linkno,
                                 JT808_MSG_TYPE fMultiPacket,    /*是否为多包*/
                                 uint16_t id,
