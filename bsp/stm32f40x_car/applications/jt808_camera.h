@@ -15,11 +15,12 @@
  ***********************************************************/
 
 
-rt_err_t Cam_jt808_0x801(JT808_TX_NODEDATA *nodedata,u32 mdeia_id ,u8 media_delete);
-rt_err_t Cam_jt808_0x800(u32 mdeia_id ,u8 media_delete);
+rt_err_t Cam_jt808_0x0801(JT808_TX_NODEDATA *nodedata,u32 mdeia_id ,u8 media_delete);
+rt_err_t Cam_jt808_0x0800(u32 mdeia_id ,u8 media_delete);
 rt_err_t Cam_jt808_0x8801(uint8_t linkno,uint8_t *pmsg);
 rt_err_t Cam_jt808_0x8802(uint8_t linkno,uint8_t *pmsg);
 rt_err_t Cam_jt808_0x8803(uint8_t linkno,uint8_t *pmsg);
+rt_err_t Cam_jt808_0x8805( uint8_t linkno, uint8_t *pmsg );
 
 #endif
 /************************************** The End Of File **************************************/

@@ -138,30 +138,13 @@ static void keypress(unsigned int key)
 }
    
 
-static void timetick(unsigned int systick)
-{
-   CounterBack++;
-   if(CounterBack!=MaxBankIdleTime)
-	   return;
-   else
-	   {
-	   pMenuItem=&Menu_1_Idle;
-	   pMenuItem->show();
-	   CounterBack=0;
-
-	   Menu_Logout=0;
-	   LogInorOut_screen=0;
-	   LogInorOut=0;//	1:МјШЈ	 2:зЂВс
-	   }
-}
-
 MENUITEM    Menu_3_8_LogOut=
 {
    "МјШЈзЂВс",
-   8,
+   8,0,
    &show,
    &keypress,
-   &timetick,
+   &timetick_default,
    &msg,
    (void*)0
 };

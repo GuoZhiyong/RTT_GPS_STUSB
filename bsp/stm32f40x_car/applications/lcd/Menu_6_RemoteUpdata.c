@@ -82,7 +82,7 @@ else if(ISP_Updata_Flag==2)
 MENUITEM	Menu_6_RemoteUpdata=
 {
 "Ô¶³ÌÉý¼¶",
-	8,
+	8,0,
 	&show,
 	&keypress,
 	&timetick,

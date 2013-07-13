@@ -303,6 +303,12 @@ void jt808_misc_0x8401( uint8_t *pmsg )
 {
 }
 
+
+void jt808_misc_0x8500( uint8_t *pmsg )
+{
+}
+
+
 /*
    遍历当前的记录
    256字节一个block

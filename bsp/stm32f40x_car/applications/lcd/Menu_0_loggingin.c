@@ -197,7 +197,7 @@ static void timetick( unsigned int systick )
 MENUITEM Menu_0_loggingin =
 {
 	"≥µ¡æ…Ë÷√",
-	8,
+	8,0,
 	&show,
 	&keypress,
 	&timetick,

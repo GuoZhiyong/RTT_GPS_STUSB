@@ -243,27 +243,14 @@ static void keypress(unsigned int key)
 }
 
 
-static void timetick(unsigned int systick)
-{
-CounterBack++;
-if(CounterBack!=MaxBankIdleTime)
-	return;
-else
-	{
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-	CounterBack=0;
-	}
-}
-
 
 MENUITEM	Menu_3_7_Affair=
 {
     "事件信息",
-	8,
+	8,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

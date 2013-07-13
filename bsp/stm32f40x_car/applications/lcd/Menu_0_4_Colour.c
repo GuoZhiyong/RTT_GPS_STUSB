@@ -231,7 +231,7 @@ static void timetick( unsigned int systick )
 MENUITEM Menu_0_4_Colour =
 {
 	"≥µ¡æ—’…´…Ë÷√",
-	12,
+	12,0,
 	&show,
 	&keypress,
 	&timetick,

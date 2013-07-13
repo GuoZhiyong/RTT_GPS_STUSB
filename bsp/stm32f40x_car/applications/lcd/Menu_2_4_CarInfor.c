@@ -158,35 +158,15 @@ static void keypress( unsigned int key )
 
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void timetick( unsigned int systick )
-{
-	Cent_To_Disp( );
-	CounterBack++;
-	if( CounterBack != MaxBankIdleTime )
-	{
-		return;
-	}
-	CounterBack = 0;
-	pMenuItem	= &Menu_1_Idle;
-	pMenuItem->show( );
-}
+
 
 MENUITEM Menu_2_4_CarInfor =
 {
 	"车辆信息查看",
-	12,
+	12,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

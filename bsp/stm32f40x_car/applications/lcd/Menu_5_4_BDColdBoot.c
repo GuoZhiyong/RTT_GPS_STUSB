@@ -54,26 +54,13 @@ static void keypress(unsigned int key)
 }
 
 
-static void timetick(unsigned int systick)
-{
-	Cent_To_Disp(); 
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime*5)
-		return;
-	CounterBack=0;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-	
-      RertartGps_screen=0;
-}
-
 MENUITEM	Menu_5_4_bdColdBoot=
 {
 "±±¶·Ä£¿éÀäÆô¶¯",
-	14,
+	14,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

@@ -159,6 +159,13 @@ typedef __packed struct
 
 extern uint8_t textmsg_count;
 void jt808_misc_0x8300( uint8_t *pmsg );
+void jt808_misc_0x8301( uint8_t *pmsg );
+void jt808_misc_0x8302( uint8_t *pmsg );
+void jt808_misc_0x8303( uint8_t *pmsg );
+void jt808_misc_0x8304( uint8_t *pmsg );
+void jt808_misc_0x8400( uint8_t *pmsg );
+void jt808_misc_0x8401( uint8_t *pmsg );
+void jt808_misc_0x8500( uint8_t *pmsg );
 
 
 void jt808_textmsg_get( uint8_t index, TEXTMSG* pout );

@@ -62,28 +62,15 @@ switch(key)
 
 	
 
-static void timetick(unsigned int systick)
-{
-
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
-		return;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-	CounterBack=0;					
-
-	CarMulTrans_screen=0;
-
-}
 
 
 MENUITEM	Menu_3_5_MultimediaTrans=
 {
 "多媒体事件上传",
-	14,
+	14,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

@@ -37,28 +37,14 @@ static void keypress(unsigned int key)
 }
 
 
-static void timetick(unsigned int systick)
-{
-       Cent_To_Disp();
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime*5)
-		return;
-	CounterBack=0;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-
-
-
-}
-
 
 MENUITEM	Menu_5_7_Version=
 {
 "∞Ê±æœ‘ æ",
-	8,
+	8,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

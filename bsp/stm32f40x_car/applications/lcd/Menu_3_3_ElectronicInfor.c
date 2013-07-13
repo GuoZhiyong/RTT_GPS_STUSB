@@ -58,10 +58,10 @@ static void timetick(unsigned int systick)
 MENUITEM	Menu_3_3_ElectronicInfor=
 {
     "电子运单发送",
-	12,
+	12,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

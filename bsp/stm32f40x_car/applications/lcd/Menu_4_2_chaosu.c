@@ -161,46 +161,14 @@ static void keypress(unsigned int key)
 }
 
 
-static void timetick(unsigned int systick)
-{
-   if(expsp_Flag==1)//超速驾驶记录
-		{
-		ChaoSuNumScreen=0;//显示速度第几屏的序号
-		expsp_Flag=3;//不LCD_MODE_SET能再此清0，还要进入下一级菜单
-		lcd_fill(0);
-		lcd_text12(0,10,"按确认键查看超速记录",20,LCD_MODE_SET);
-		lcd_update_all();
-		}
-	else if(expsp_Flag==2)//无超速驾驶记录
-		{
-		expsp_Flag=0;
-		lcd_fill(0);
-		lcd_text12(18,10,"无超速驾驶记录",14,LCD_MODE_SET);
-		lcd_update_all();
-		}
-
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
-		return;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-	CounterBack=0;
-	
-	ErrorRecord=0;//疲劳超速记录错误清0
-	StartDisTiredExpspeed=0;
-	expsp_Flag=0;//查看超速报警记录过程标志清0;
-	ChaoScreen=1;
-}
-
-
 
 MENUITEM	Menu_4_2_chaosu=
 {   
     "超速驾驶查看",
-    12,
+    12,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

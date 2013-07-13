@@ -73,6 +73,13 @@ extern uint32_t	gps_sec_count;		/*gps秒脉冲输出*/
 extern uint32_t	utc_now;
 extern MYTIME mytime_now;
 
+extern uint16_t jt808_8202_track_interval;  /*jt808_8202 临时位置跟踪控制*/
+extern uint32_t jt808_8202_track_duration;
+
+extern uint32_t	jt808_8203_manual_ack_seq;	/*人工确认报警的标识位 0,3,20,21,22,27,28*/
+extern uint16_t	jt808_8203_manual_ack_value;
+
+
 void gps_rx( uint8_t * pinfo, uint16_t length );
 
 

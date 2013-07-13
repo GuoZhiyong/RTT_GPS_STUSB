@@ -21,8 +21,7 @@ rt_err_t vdr_rx_gps(void);
 rt_err_t vdr_init( void );
 
 void vdr_rx_8700(uint8_t *pmsg);
-
-
+void vdr_rx_8701(uint8_t *pmsg);
 
 
 #endif

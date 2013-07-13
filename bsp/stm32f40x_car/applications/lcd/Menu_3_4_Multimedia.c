@@ -121,24 +121,14 @@ switch(key)
 }
 
 
-static void timetick(unsigned int systick)
-{
-    CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
-		return;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-	CounterBack=0;
-
-}
 
 MENUITEM	Menu_3_4_Multimedia=
 {
 	"发送多媒体数据",
-	14,
+	14,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

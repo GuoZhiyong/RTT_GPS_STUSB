@@ -14,54 +14,40 @@
 #include "Menu_Include.h"
 #include <string.h>
 #include "sed1520.h"
-static u8 signal_counter = 0;
+
+#include "jt808_auxio.h"
+
+char* caption[10]={"紧急","启动","输入","远光","车门","喇叭","左转","右转","刹车","雨刷"};
+
+static uint32_t tick_last=0;
 
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+static void draw(void)
+{
+	uint8_t i;
+	lcd_fill(0);
+	for(i=0;i<5;i++)
+	{
+		lcd_text12(i*24,4,caption[i],4,PIN_IN[i].value*2+1);  // SET=1 INVERT=3
+		lcd_text12(i*24,20,caption[i+5],4,PIN_IN[i+5].value*2+1);  // SET=1 INVERT=3
+	}
+	lcd_update_all();
+}
+
+
+/**/
 static void msg( void *p )
 {
-	char	*pinfor;
-	char	len = 0;
 
-	pinfor	= (char*)p;
-	len		= strlen( pinfor );
-
-	lcd_fill( 0 );
-	lcd_text12( 0, 10, pinfor, len, LCD_MODE_SET );
-	lcd_update_all( );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void show( void )
 {
-	msg( XinhaoStatus );
+	draw();
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void keypress( unsigned int key )
 {
 	switch( key )
@@ -72,47 +58,20 @@ static void keypress( unsigned int key )
 			CounterBack = 0;
 			break;
 		default:	
-			msg( XinhaoStatus );
+			draw();
 			break;
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void timetick( unsigned int systick )
-{
-	signal_counter++;
-	if( signal_counter >= 10 )
-	{
-		signal_counter = 0;
-		msg( XinhaoStatus );
-	}
 
-	CounterBack++;
-	if( CounterBack != MaxBankIdleTime )
-	{
-		return;
-	}
-	CounterBack = 0;
-
-	pMenuItem = &Menu_1_Idle;
-	pMenuItem->show( );
-}
 
 MENUITEM Menu_2_1_Status8 =
 {
 	"信号线状态",
-	10,
+	10,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

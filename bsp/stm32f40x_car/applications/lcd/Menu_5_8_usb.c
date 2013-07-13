@@ -292,29 +292,14 @@ static void keypress(unsigned int key)
 }
 	
 
-static void timetick(unsigned int systick)
-{   
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime*5)
-		return;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-    CounterBack=0;
-
-	DataOutStartFlag=0;
-	DataOutStartFlag=0;
-	OUT_DataCounter=0;
-	DataOutInFlag=0;
-}
-
 
 MENUITEM	Menu_5_8_Usb=
 {
 	"USBÊý¾Ý",
-	7,
+	7,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

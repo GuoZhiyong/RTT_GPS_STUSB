@@ -124,30 +124,14 @@ static void keypress(unsigned int key)
 }
 
 
-static void timetick(unsigned int systick)
-{
-    Cent_To_Disp();
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime*5)
-		return;
-	CounterBack=0;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-
-	can_screen=0;
-	can_counter=1;
-	can_ID_counter=0;
-	
-}
-
 
 MENUITEM	Menu_5_5_can=
 {
 "CAN²ÎÊý²éÑ¯",
-	11,
+	11,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

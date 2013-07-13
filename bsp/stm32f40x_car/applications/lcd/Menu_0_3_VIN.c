@@ -131,7 +131,7 @@ static void timetick(unsigned int systick)
 MENUITEM	Menu_0_3_vin=
 {
 "VIN…Ë÷√",
-	7,
+	7,0,
 	&show,
 	&keypress,
 	&timetick,

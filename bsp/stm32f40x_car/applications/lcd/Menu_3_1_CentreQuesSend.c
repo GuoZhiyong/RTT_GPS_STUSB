@@ -233,38 +233,14 @@ static void keypress( unsigned int key )
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void timetick( unsigned int systick )
-{
-	CounterBack++;
-	if( CounterBack != MaxBankIdleTime )
-	{
-		return;
-	} else
-	{
-		pMenuItem = &Menu_1_Idle;
-		pMenuItem->show( );
-
-		CounterBack = 0;
-		memset( &DIS_QUESTION_INFOR_temp, 0, sizeof( DIS_QUESTION_INFOR_temp ) );
-	}
-}
 
 MENUITEM Menu_3_1_CenterQuesSend =
 {
 	"中心提问消息",
-	12,
+	12,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

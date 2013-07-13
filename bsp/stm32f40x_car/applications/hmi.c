@@ -136,19 +136,22 @@ struct rt_thread thread_hmi;
 static void rt_thread_entry_hmi( void* parameter )
 {
 	uint32_t key;
+	
 	key_lcd_port_init( );
 	lcd_init( );
 
 	pMenuItem = &Menu_1_Idle;
 	pMenuItem->show( );
+	pMenuItem->tick=rt_tick_get( );
 	while( 1 )
 	{
-		pMenuItem->timetick( rt_tick_get( ) );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
 		key = keycheck( );
 		if( key )
 		{
+			pMenuItem->tick=rt_tick_get( );
 			pMenuItem->keypress( key );         //每个子菜单的 按键检测  时钟源50ms timer
 		}
+		pMenuItem->timetick( rt_tick_get( ) );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
 		rt_thread_delay( RT_TICK_PER_SECOND/20);	/*50ms调用一次*/
 	}
 }

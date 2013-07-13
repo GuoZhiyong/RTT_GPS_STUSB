@@ -151,27 +151,15 @@ static void keypress(unsigned int key)
 }
 
 
-static void timetick(unsigned int systick)
-{
-    CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
-		return;
-
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-
-	CounterBack=0;
-    memset(&DIS_DRIVER_inform_temp,0,sizeof(DIS_DRIVER_inform_temp));
-}
 
 
 MENUITEM	Menu_2_5_DriverInfor=
 {	
 	"驾驶员信息查看",
-    14,
+    14,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

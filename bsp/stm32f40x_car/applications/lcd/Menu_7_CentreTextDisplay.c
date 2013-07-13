@@ -139,27 +139,14 @@ unsigned char CurrentDisplen=0;
 }
 
 
-static void timetick(unsigned int systick)
-{
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
-		return;
-	else
-		{
-		pMenuItem=&Menu_1_Idle;
-		pMenuItem->show();
-		CounterBack=0;
-		}
-}
-
 
 MENUITEM	Menu_7_CentreTextDisplay=
 {
     "中心下发消息",
-	12,
+	12,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

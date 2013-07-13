@@ -187,6 +187,7 @@ MENUITEM Menu_0_0_password =
 {
 	"ÃÜÂëÉèÖÃ",
 	8,
+	0,
 	&show,
 	&keypress,
 	&timetick,

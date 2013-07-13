@@ -300,6 +300,7 @@ MENUITEM	Menu_0_1_license=
 {
 	"³µÅÆºÅ",
 	6,
+	0,
 	&show,
 	&keypress,
 	&timetick,

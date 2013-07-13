@@ -226,28 +226,15 @@ static void keypress( unsigned int key )
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void timetick( unsigned int systick )
-{
-
-}
 
 
 MENUITEM Menu_5_3_bdupgrade =
 {
 	"±±¶·Éý¼¶",
-	8,
+	8,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

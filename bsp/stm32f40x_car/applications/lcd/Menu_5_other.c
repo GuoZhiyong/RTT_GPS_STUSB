@@ -72,25 +72,13 @@ switch(key)
 }
 
 
-static void timetick(unsigned int systick)
-{
-
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
-		return;
-	CounterBack=0;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-}
-
-
 MENUITEM	Menu_5_other=
 {
     "其他信息",
-	8,
+	8,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

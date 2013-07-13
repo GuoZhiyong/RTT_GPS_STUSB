@@ -1368,7 +1368,7 @@ void Cam_response_ok( struct _Style_Cam_Requset_Para *para,uint32_t pic_id )
 {
  if( para->SendPhoto )
  	{
- 	Cam_jt808_0x800( pic_id, !para->SavePhoto );
+ 	Cam_jt808_0x0800( pic_id, !para->SavePhoto );
  	}
 }
 

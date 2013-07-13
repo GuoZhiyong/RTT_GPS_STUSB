@@ -273,27 +273,15 @@ static void keypress( unsigned int key )
 	}
 }
 
-/**/
-static void timetick( unsigned int systick )
-{
-	CounterBack++;
-	if( CounterBack != MaxBankIdleTime )
-	{
-		return;
-	} else
-	{
-		pMenuItem = &Menu_1_Idle;
-		pMenuItem->show( );
-	}
-}
+
 
 MENUITEM Menu_2_3_CentreTextStor =
 {
 	"文本消息查看",
-	12,
+	12,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

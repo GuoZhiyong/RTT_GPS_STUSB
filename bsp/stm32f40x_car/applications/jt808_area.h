@@ -22,6 +22,8 @@ rt_err_t area_jt808_0x8605(uint8_t linkno,uint8_t *pmsg);
 rt_err_t area_jt808_0x8606(uint8_t linkno,uint8_t *pmsg);
 rt_err_t area_jt808_0x8607(uint8_t linkno,uint8_t *pmsg);
 
+/*计算两点间距离*/
+u32 dis_Point2Point( s32 Lati_1, s32 Longi_1, s32 Lati_2, s32 Longi_2 );
 
 void area_init(void);
 void area_process(void);

@@ -130,34 +130,14 @@ static void keypress( unsigned int key )
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void timetick( unsigned int systick )
-{
-	CounterBack++;
-	if( CounterBack != MaxBankIdleTime )
-	{
-		return;
-	}
-	pMenuItem = &Menu_1_Idle;
-	pMenuItem->show( );
-	CounterBack = 0;
-}
 
 MENUITEM Menu_2_InforCheck =
 {
 	"查看信息",
-	8,
+	8,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

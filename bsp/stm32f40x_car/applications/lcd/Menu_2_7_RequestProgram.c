@@ -378,27 +378,14 @@ else
   }
 	  
   
-  static void timetick(unsigned int systick)
-  {
-  CounterBack++;
-  if(CounterBack!=MaxBankIdleTime)
-	  return;
-  else
-	  {
-	  pMenuItem=&Menu_1_Idle;
-	  pMenuItem->show();
-	  CounterBack=0;
-	  }
-  }
-  
   
   MENUITEM	  Menu_2_7_RequestProgram=
   {
 	  "信息点播查看",
-	  12,
+	  12,0,
 	  &show,
 	  &keypress,
-	  &timetick,
+	  &timetick_default,
 	  &msg,
 	  (void*)0
   };

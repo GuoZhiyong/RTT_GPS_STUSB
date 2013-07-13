@@ -226,6 +226,7 @@ MENUITEM	Menu_0_2_CarType=
 {
     "车辆类型设置",
 	12,
+	0,
 	&show,
 	&keypress,
 	&timetick,

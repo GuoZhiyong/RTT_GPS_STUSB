@@ -15,8 +15,6 @@ uint32_t hmi_status;
 
 
 
-unsigned char XinhaoStatus[20]={"信号线状态:00000000"};
-
 unsigned int  tzxs_value=6000;
 unsigned char send_data[10];
 MB_SendDataType mb_senddata;
@@ -215,4 +213,21 @@ for(i=0;i<chaosuCounter;i++)
 		ErrorRecord=2;
 	}
 }
+
+
+
+
+
+
+/*add by bitter*/
+/*检查是否回到主界面*/
+void timetick_default(unsigned int tick)
+{
+	if( (tick-pMenuItem->tick)>= 100*10 )
+	{
+		pMenuItem = &Menu_1_Idle;
+		pMenuItem->show( );
+	}	
+}
+
 

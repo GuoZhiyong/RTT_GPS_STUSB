@@ -101,26 +101,15 @@ switch(key)
 	}
 }
 
-static void timetick(unsigned int systick)
-{
-    CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
-		return;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-	CounterBack=0;
-
-}
-
 
 MENUITEM	Menu_3_2_FullorEmpty= 
 {
 
     "³µÁ¾×´Ì¬·¢ËÍ",
-    12,
+    12,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

@@ -165,47 +165,14 @@ unsigned char tired_num=0;
 }
 
 
-static void timetick(unsigned int systick)
-{
-	if(tire_Flag==1)//疲劳驾驶记录
-		{
-		PiLaoNumScreen=0;//显示速度第几屏的序号
-		tire_Flag=3;//不能再此清0，还要进入下一级菜单
-		lcd_fill(0);
-		//疲劳16
-		lcd_text12(0,10,"按确认键查看疲劳记录",20,LCD_MODE_SET);
-		lcd_update_all();
-		}
-	else if(tire_Flag==2)//无疲劳驾驶记录
-		{
-		tire_Flag=0;
-		lcd_fill(0);
-		lcd_text12(18,10,"无疲劳驾驶记录",14,LCD_MODE_SET);
-		lcd_update_all();
-		}
-
-
-	CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)
-		return;
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-    CounterBack=0;
-	
-	ErrorRecord=0;//疲劳超速记录错误清0
-	StartDisTiredExpspeed=0;
-	tire_Flag=0;//查看疲劳报警记录过程标志清0;
-	PiLaoSreen=1;
-}
-
 
 MENUITEM	Menu_4_1_pilao=
 {
     "疲劳驾驶查看",
-	12,
+	12,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

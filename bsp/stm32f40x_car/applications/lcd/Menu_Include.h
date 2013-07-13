@@ -43,9 +43,10 @@ typedef void (*MSG)(void *p);
 
 
 
-typedef  __packed struct _menuitem{
+typedef   struct _menuitem{
 	char *caption;			/*菜单项的文字信息*/
 	unsigned char len;
+	uint32_t	tick;		/*最近一次有按键的时刻*/
 	SHOW show;				/*显示时调用，初始化显示*/
 	KEYPRESS keypress;		/*发生按键时调用*/
 	TIMETICK timetick;		/*向其提供系统tick，比如返回待机画面*/
@@ -53,7 +54,7 @@ typedef  __packed struct _menuitem{
 	struct _menuitem *parent;	   
 }MENUITEM; 
 
-typedef __packed struct _menuitem * PMENUITEM; 
+typedef struct _menuitem * PMENUITEM; 
 
 
 
@@ -106,7 +107,6 @@ unsigned char CheckOut;
 unsigned char End[3];
 }DispMailBoxInfor;
 
-extern unsigned char XinhaoStatus[20];
 
 extern unsigned int  tzxs_value;
 extern unsigned char send_data[10];
@@ -246,6 +246,13 @@ extern void ReadEXspeed(unsigned char NumExspeed);
 extern void Dis_pilao(unsigned char *p);
 extern void Dis_chaosu(unsigned char *p);
 extern unsigned char Fetch_15minSpeed(unsigned char Num15);
+
+
+
+
+
+/*add by bitter*/
+void timetick_default(unsigned int tick);
 
 #endif
 

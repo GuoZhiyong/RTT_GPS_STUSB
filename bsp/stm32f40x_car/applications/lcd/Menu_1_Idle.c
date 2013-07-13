@@ -363,7 +363,7 @@ static void timetick( unsigned int systick )
 MENUITEM Menu_1_Idle =
 {
 	"´ý»ú½çÃæ",
-	8,
+	8,0,
 	&show,
 	&keypress,
 	&timetick,

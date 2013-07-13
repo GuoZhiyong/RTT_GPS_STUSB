@@ -152,36 +152,14 @@ static void keypress( unsigned int key )
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void timetick( unsigned int systick )
-{
-	Cent_To_Disp( );
-
-	CounterBack++;
-	if( CounterBack != MaxBankIdleTime )
-	{
-		return;
-	}
-	CounterBack = 0;
-	pMenuItem	= &Menu_1_Idle;
-	pMenuItem->show( );
-}
 
 MENUITEM Menu_2_8_DnsIpDisplay =
 {
 	"DNSœ‘ æ",
-	7,
+	7,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

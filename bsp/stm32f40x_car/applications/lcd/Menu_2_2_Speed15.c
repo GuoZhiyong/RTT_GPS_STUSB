@@ -335,31 +335,15 @@ static void keypress( unsigned int key )
 	}
 }
 
-/**/
-static void timetick( unsigned int systick )
-{
-	Cent_To_Disp( );
-	CounterBack++;
-	if( CounterBack != MaxBankIdleTime )
-	{
-		return;
-	}
-	pMenuItem = &Menu_1_Idle;
-	pMenuItem->show( );
-	CounterBack = 0;
 
-	CheckSpeedFlag	= 0;
-	Speed_15minFlag = 0;
-	ReadSpeedFlag	= 0;
-}
 
 MENUITEM Menu_2_2_Speed15 =
 {
 	"停车前15min速度",
-	15,
+	15,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

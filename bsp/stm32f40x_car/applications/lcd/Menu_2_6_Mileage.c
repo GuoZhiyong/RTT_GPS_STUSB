@@ -49,27 +49,15 @@ switch(key)
 	}
 }
 
-static void timetick(unsigned int systick)
-{
-    CounterBack++;
-	if(CounterBack!=MaxBankIdleTime)  // 界面显示超时时退回到待机界面
-		return;
-	
-	pMenuItem=&Menu_1_Idle;
-	pMenuItem->show();
-	
-	CounterBack=0;
-
-}
 
 
 MENUITEM	Menu_2_6_Mileage=
 {
 	"里程信息查看",
-	12,
+	12,0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

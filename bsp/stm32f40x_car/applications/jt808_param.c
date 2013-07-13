@@ -25,7 +25,7 @@
 
 JT808_PARAM jt808_param =
 {
-	0x13070904,                             /*0x0000 版本*/
+	0x13071300,                             /*0x0000 版本*/
 	5,                                      /*0x0001 心跳发送间隔*/
 	5,                                      /*0x0002 TCP应答超时时间*/
 	3,                                      /*0x0003 TCP超时重传次数*/
@@ -107,16 +107,16 @@ JT808_PARAM jt808_param =
 	0,                                      /*0x0101 CAN 总线通道 1 上传时间间隔(s)，0 表示不上传*/
 	0,                                      /*0x0102 CAN 总线通道 2 采集时间间隔(ms)，0 表示不采集*/
 	0,                                      /*0x0103 CAN 总线通道 2 上传时间间隔(s)，0 表示不上传*/
-	{ 0,		   0  },                    /*0x0110 CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0111 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0112 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0113 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0114 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0115 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0116 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0117 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0118 其他CAN 总线 ID 单独采集设置*/
-	{ 0,		   0  },                    /*0x0119 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0110 CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0111 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0112 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0113 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0114 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0115 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0116 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0117 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0118 其他CAN 总线 ID 单独采集设置*/
+	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0119 其他CAN 总线 ID 单独采集设置*/
 	"70420",                                /*0xF000 制造商ID*/
 	"TW703-BD",                             /*0xF001 终端型号*/
 	"1234567",                              /*0xF002 终端ID*/
@@ -585,44 +585,9 @@ void ipport( char *ip, uint16_t port )
 
 FINSH_FUNCTION_EXPORT( ipport, set ipport );
 
-/*应答*/
-static JT808_MSG_STATE jt808_0x8104_response( JT808_TX_NODEDATA * pnodedata, uint8_t *pmsg )
-{
-	pnodedata->retry++;
-	if( pnodedata->retry >= pnodedata->max_retry )
-	{
-		return WAIT_DELETE;
-	}
-	return vdr_08_12_fill_data( pnodedata );
-}
-
-/*超时后的处理函数*/
-static JT808_MSG_STATE jt808_0x8104_timeout( JT808_TX_NODEDATA * pnodedata )
-{
-	pnodedata->retry++;
-	if( pnodedata->retry >= pnodedata->max_retry )
-	{
-		if( vdr_08_12_fill_data( pnodedata ) == 0 )
-		{
-			return WAIT_DELETE;
-		}
-		return IDLE;
-	}
-	return IDLE;
-}
-
 static uint16_t id_get = 1; /*保存当前发送的id*/
 
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/*读参数数据*/
 uint16_t get_param_and_fill_buf( uint8_t* pbuf )
 {
 	uint16_t	i;
@@ -670,7 +635,7 @@ uint16_t get_param_and_fill_buf( uint8_t* pbuf )
 			*pbuf++ = strlen( p );
 			memcpy( pbuf, p, strlen( p ) );
 			count	+= ( strlen( p ) + 1 );
-			pbuf	+=  strlen( p );
+			pbuf	+= strlen( p );
 		}
 		if( tbl_id_lookup[i].type == TYPE_CAN )
 		{
@@ -689,19 +654,55 @@ uint16_t get_param_and_fill_buf( uint8_t* pbuf )
 	return count;
 }
 
+/*应答*/
+static JT808_MSG_STATE jt808_0x8104_response( JT808_TX_NODEDATA * pnodedata, uint8_t *pmsg )
+{
+	pnodedata->retry++;
+	if( pnodedata->retry >= pnodedata->max_retry )
+	{
+		return WAIT_DELETE;
+	}
+	return vdr_08_12_fill_data( pnodedata );
+}
+
+/*超时后的处理函数*/
+static JT808_MSG_STATE jt808_0x8104_timeout( JT808_TX_NODEDATA * pnodedata )
+{
+	uint8_t		buf[600];
+	uint16_t	count;
+
+	if( pnodedata->multipacket )                            /*多包*/
+	{
+		if( pnodedata->packet_num == pnodedata->packet_no ) /*已经发送了所有包*/
+		{
+			return WAIT_DELETE;
+		}
+		count = get_param_and_fill_buf( buf );              /*字节填数据*/
+		rt_kprintf( "\r\ncount=%d id_get=%d\r\n", count, id_get );
+		node_data( pnodedata, buf, count, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL );
+		pnodedata->packet_no++;
+		if( pnodedata->packet_no == pnodedata->packet_num ) /*达到最后一包*/
+		{
+			pnodedata->timeout = RT_TICK_PER_SECOND * 10;
+		}
+		return IDLE;
+	}else
+	{
+		return WAIT_DELETE;
+	}
+}
+
 /*上报所有终端参数*/
 void jt808_param_0x8104( uint8_t *pmsg )
 {
 	JT808_TX_NODEDATA	* pnodedata;
-	//uint16_t			seq = ( pmsg[10] << 8 ) | pmsg[11];
-	uint8_t				* puserdata;
-
+	uint8_t				* pdata;
 	uint16_t			id;
 	uint8_t				buf[600];
 	uint8_t				*p;
-	uint16_t			param_size=0;
-	uint16_t			param_count=0;
-	uint16_t			i,count;
+	uint16_t			param_size	= 0;
+	uint16_t			param_count = 0;
+	uint16_t			i, count;
 
 	pnodedata = node_begin( 1, MULTI_ACK, 0x0104, -1, 600 );
 	if( pnodedata == RT_NULL )
@@ -711,7 +712,7 @@ void jt808_param_0x8104( uint8_t *pmsg )
 
 	memset( buf, 0, sizeof( buf ) );
 	/*计算总数和总大小，不统计0x0000和0xFxxx的*/
-	
+
 	for( i = 1; i < sizeof( tbl_id_lookup ) / sizeof( struct _tbl_id_lookup ) - 1; i++ )
 	{
 		if( tbl_id_lookup[i].id >= 0xF000 )
@@ -738,52 +739,128 @@ void jt808_param_0x8104( uint8_t *pmsg )
 				break;
 		}
 	}
-	rt_kprintf( "\r\ntotal count=%d size=%d\r\n", param_count,param_size );
-	pnodedata->packet_num	= ( param_size + 511 ) / 512; /*默认512分包*/
+	rt_kprintf( "\r\ntotal count=%d size=%d\r\n", param_count, param_size );
+	pnodedata->packet_num	= ( param_size + 511 ) / 512;   /*默认512分包*/
 	pnodedata->packet_no	= 1;
 	rt_kprintf( "\r\npacket_num=%d \r\n", pnodedata->packet_num );
 
-	count = get_param_and_fill_buf( buf );
+	id_get	= 1;
+	count	= get_param_and_fill_buf( buf + 3 );            /*空出三个字节，填写应答流水号参数总数*/
 	rt_kprintf( "\r\ncount=%d id_get=%d\r\n", count, id_get );
 
-	for( i = 0; i < count; i++ )
-	{
-		if( ( i % 16 ) == 0 )
-		{
-			rt_kprintf( "\r\n" );
-		}
-		rt_kprintf( "%02x ", buf[i] );
-	}
+	buf[0]	= pmsg[10];
+	buf[1]	= pmsg[11];
+	buf[2]	= param_count;
+	node_data( pnodedata, buf, count + 3, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL );
+	pnodedata->tag_data[12] = pnodedata->packet_num >> 8;
+	pnodedata->tag_data[13] = pnodedata->packet_num & 0xFF;
+	pnodedata->tag_data[14] = pnodedata->packet_no >> 8;
+	pnodedata->tag_data[15] = pnodedata->packet_no & 0xFF;
+
+	node_end( pnodedata );
 }
 
 FINSH_FUNCTION_EXPORT_ALIAS( jt808_param_0x8104, param, desc );
 
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/*分项查询，只应答单包*/
 void jt808_param_0x8106( uint8_t *pmsg )
 {
 	JT808_TX_NODEDATA	* pnodedata;
-	uint16_t			seq = ( pmsg[10] << 8 ) | pmsg[11];
-	uint8_t				* puserdata;
+	uint8_t				* pdata;
+	uint32_t			id;
+	uint8_t				buf[600];
+	uint8_t				* pbuf;
+	uint8_t				*p;
+	uint16_t			param_size	= 0;
+	uint16_t			param_count = 0;
+	uint16_t			i, count;
 
+	memset( buf, 0, sizeof( buf ) );
+	/*计算总数和总大小，不统计0x0000和0xFxxx的*/
+	pdata	= pmsg + 13;    /*指向数据区*/
+	count	= 0;
+	pbuf	= buf + 3;      /*空出三个字节，填写应答流水号参数总数*/
+	for( param_count = 0; param_count < pmsg[12]; param_count++ )
+	{
+		id	= *pdata++ << 24;
+		id	|= *pdata++ << 16;
+		id	|= *pdata++ << 8;
+		id	|= *pdata++ & 0xFF;
+
+		for( i = 1; i < sizeof( tbl_id_lookup ) / sizeof( struct _tbl_id_lookup ) - 1; i++ )
+		{
+			if( tbl_id_lookup[i].id == id )
+			{
+				*pbuf++ = id >> 24;
+				*pbuf++ = id >> 16;
+				*pbuf++ = id >> 8;
+				*pbuf++ = id & 0xFF;
+				count	+= 4;
+
+				if( tbl_id_lookup[i].type == TYPE_DWORD )
+				{
+					p		= tbl_id_lookup[i].val;
+					*pbuf++ = 4;
+					*pbuf++ = p[3];
+					*pbuf++ = p[2];
+					*pbuf++ = p[1];
+					*pbuf++ = p[0];
+					count	+= 5;
+				}
+
+				if( tbl_id_lookup[i].type == TYPE_WORD )
+				{
+					p		= tbl_id_lookup[i].val;
+					*pbuf++ = 2;
+					*pbuf++ = p[1];
+					*pbuf++ = p[0];
+					count	+= 3;
+				}
+
+				if( tbl_id_lookup[i].type == TYPE_BYTE )
+				{
+					p		= tbl_id_lookup[i].val;
+					*pbuf++ = 1;
+					*pbuf++ = *p++;
+					count	+= 2;
+				}
+				if( tbl_id_lookup[i].type == TYPE_STR )
+				{
+					p		= tbl_id_lookup[i].val;
+					*pbuf++ = strlen( p );
+					memcpy( pbuf, p, strlen( p ) );
+					count	+= ( strlen( p ) + 1 );
+					pbuf	+= strlen( p );
+				}
+				if( tbl_id_lookup[i].type == TYPE_CAN )
+				{
+					*pbuf++ = 8;
+					p		= tbl_id_lookup[i].val;
+					memcpy( pbuf, p, 8 );
+					count	+= 9;
+					pbuf	+= 8;
+				}
+				if( count > 512 )
+				{
+					break;
+				}
+			}
+		}
+	}
+	rt_kprintf( "\r\ntotal count=%d size=%d\r\n", param_count, param_size );
+
+	pnodedata = node_begin( 1, SINGLE_ACK, 0x0104, -1, 600 );
 	if( pnodedata == RT_NULL )
 	{
 		return;
 	}
 
-	pnodedata = node_begin( 1, MULTI_ACK, 0x0104, -1, 600 );
-	if( pnodedata == RT_NULL )
-	{
-		return;
-	}
+	buf[0]				= pmsg[10];
+	buf[1]				= pmsg[11];
+	buf[2]				= param_count;
+	pnodedata->timeout	= RT_TICK_PER_SECOND * 5;
+	node_data( pnodedata, buf, count + 3, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL );
+	node_end( pnodedata );
 }
 
 /************************************** The End Of File **************************************/

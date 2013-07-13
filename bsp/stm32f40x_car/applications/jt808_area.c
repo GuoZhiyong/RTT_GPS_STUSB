@@ -158,7 +158,7 @@ double Cal_Longi_Distance( u32 latitude )
 	double	pi = 3.1415926;
 
 	tempd	= latitude;
-	dy		= ( tempd / 1000000 / 180 ) * pi;
+	dy		= ( tempd / 1000000.0 / 180.0 ) * pi;
 	dx		= JLENGH * cos( dy );
 	//sprintf(tempbuf,"\r\n dx=%f\r\n",dx);
 	//rt_kprintf(tempbuf);
@@ -274,8 +274,6 @@ u32 dis_Point2Point( s32 Lati_1, s32 Longi_1, s32 Lati_2, s32 Longi_2 )
 	s32		temps32data;
 	double	tempd1, tempd2;
 
-	rt_kprintf( "\r\n Lati_1= %d,Longi_1= %d,Lati_2= %d,Longi_2= %d", Lati_1, Longi_1, Lati_2, Longi_2 );
-
 	temps32data = abs( Lati_1 + Lati_2 );
 	tempd1		= Cal_Longi_Distance( temps32data / 2 );
 	tempd1		*= abs( Longi_1 - Longi_2 );
@@ -288,7 +286,7 @@ u32 dis_Point2Point( s32 Lati_1, s32 Longi_1, s32 Lati_2, s32 Longi_2 )
 	tempd1	*= tempd1;
 
 	temps32data = sqrt( tempd1 + tempd2 );
-	rt_kprintf( "dis = %d", temps32data );
+	//rt_kprintf( "\r\n (%d,%d)->(%d,%d) dis = %d", Lati_1, Longi_1, Lati_2, Longi_2 , temps32data );
 	return (u32)temps32data;
 }
 

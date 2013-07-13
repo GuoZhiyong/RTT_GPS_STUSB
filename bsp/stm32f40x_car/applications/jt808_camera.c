@@ -153,7 +153,7 @@ static JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
 	switch( cmd_id )
 	{
 		case 0x800:                                             /*超时以后，直接上报数据*/
-			Cam_jt808_0x801( nodedata, p_para->Data_ID, p_para->Delete );
+			Cam_jt808_0x0801( nodedata, p_para->Data_ID, p_para->Delete );
 			break;
 		case 0x801:                                             /*上报图片数据*/
 			if( nodedata->packet_no == nodedata->packet_num )   /*都上报完了，还超时*/
@@ -181,7 +181,7 @@ static JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
   *修改日期:
   *修改描述:
 *********************************************************************************/
-static JT808_MSG_STATE Cam_jt808_0x801_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
+static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
 {
 	JT808_TX_NODEDATA		* iterdata = nodedata;
 	TypePicMultTransPara	* p_para;
@@ -258,7 +258,7 @@ static JT808_MSG_STATE Cam_jt808_0x801_response( JT808_TX_NODEDATA * nodedata, u
 }
 
 /*********************************************************************************
-  *函数名称:rt_err_t Cam_jt808_0x801(u32 mdeia_id ,u8 media_delete)
+  *函数名称:rt_err_t Cam_jt808_0x0801(u32 mdeia_id ,u8 media_delete)
   *功能描述:添加一个多媒体图片到发送列表中
   *输 入:	mdeia_id	:照片id
    media_delete:照片传送结束后是否删除标记，非0表示删除
@@ -271,7 +271,7 @@ static JT808_MSG_STATE Cam_jt808_0x801_response( JT808_TX_NODEDATA * nodedata, u
   *修改日期:
   *修改描述:
 *********************************************************************************/
-rt_err_t Cam_jt808_0x801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_delete )
+rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_delete )
 {
 	u16						i;
 	u32						TempAddress;
@@ -321,18 +321,39 @@ rt_err_t Cam_jt808_0x801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_de
 	}
 	nodedata->head_id=0x0801;
 
-	pnodedata->cb_tx_response	= Cam_jt808_0x801_response;
+	pnodedata->cb_tx_response	= Cam_jt808_0x0801_response;
 	pnodedata->cb_tx_timeout	= Cam_jt808_timeout;
 	Cam_add_tx_pic_getdata( pnodedata );
 
-	if( nodedata = RT_NULL )
+	if( nodedata ==RT_NULL )
 	{
 		node_end( pnodedata );
 	}
 	return RT_EOK;
 }
 
-FINSH_FUNCTION_EXPORT( Cam_jt808_0x801, Cam_jt808_0x801 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*********************************************************************************
@@ -348,7 +369,7 @@ FINSH_FUNCTION_EXPORT( Cam_jt808_0x801, Cam_jt808_0x801 );
   *修改日期:
   *修改描述:
 *********************************************************************************/
-static JT808_MSG_STATE Cam_jt808_0x800_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
+static JT808_MSG_STATE Cam_jt808_0x0800_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
 {
 	JT808_TX_NODEDATA		* iterdata = nodedata;
 	TypePicMultTransPara	* p_para;
@@ -372,9 +393,6 @@ static JT808_MSG_STATE Cam_jt808_0x800_response( JT808_TX_NODEDATA * nodedata, u
 		    ( msg[4] == 0 ) )
 		{
 			p_para = nodedata->user_para;
-			Cam_jt808_0x801( nodedata, p_para->Data_ID, p_para->Delete );
-
-
 			/*
 			   p_para = nodedata->user_para;
 			   rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
@@ -422,7 +440,7 @@ static JT808_MSG_STATE Cam_jt808_0x800_response( JT808_TX_NODEDATA * nodedata, u
   *修改日期:
   *修改描述:
 *********************************************************************************/
-rt_err_t Cam_jt808_0x800( u32 mdeia_id, u8 media_delete )
+rt_err_t Cam_jt808_0x0800( u32 mdeia_id, u8 media_delete )
 {
 	u8						ptempbuf[32];
 	u16						datalen = 0;
@@ -473,7 +491,7 @@ rt_err_t Cam_jt808_0x800( u32 mdeia_id, u8 media_delete )
 	node_data( pnodedata,
 	           ptempbuf, datalen,
 	           Cam_jt808_timeout,
-	           Cam_jt808_0x800_response,
+	           Cam_jt808_0x0800_response,
 	           p_para );
 	node_end( pnodedata );
 
@@ -513,7 +531,7 @@ void Cam_jt808_0x8801_cam_ok( struct _Style_Cam_Requset_Para *para, uint32_t pic
 
 	if( para->SendPhoto )
 	{
-		Cam_jt808_0x801( RT_NULL, pic_id, !para->SavePhoto );
+		Cam_jt808_0x0801( RT_NULL, pic_id, !para->SavePhoto );
 	}
 }
 
@@ -797,11 +815,20 @@ rt_err_t Cam_jt808_0x8803( uint8_t linkno, uint8_t *pmsg )
 		TempAddress = buf_to_data( ptempbuf, 4 );
 		ptempbuf	+= 4;
 		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
-		Cam_jt808_0x801( RT_NULL, TempPackageHead.Data_ID, media_delete );
+		Cam_jt808_0x0801( RT_NULL, TempPackageHead.Data_ID, media_delete );
 	}
 	rt_sem_release( &sem_dataflash );
 	rt_free( ptempbuf );
 	return RT_EOK;
 }
+
+
+
+rt_err_t Cam_jt808_0x8805( uint8_t linkno, uint8_t *pmsg )
+{
+
+
+}
+
 
 /************************************** The End Of File **************************************/
