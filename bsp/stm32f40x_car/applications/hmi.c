@@ -140,6 +140,9 @@ static void rt_thread_entry_hmi( void* parameter )
 	key_lcd_port_init( );
 	lcd_init( );
 
+	memset(hmi_15min_speed,0x0,sizeof(hmi_15min_speed));
+	hmi_15min_speed_curr=0;
+	
 	pMenuItem = &Menu_1_Idle;
 	pMenuItem->show( );
 	pMenuItem->tick=rt_tick_get( );

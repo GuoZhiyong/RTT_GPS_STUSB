@@ -154,7 +154,7 @@ typedef __packed struct
 	uint8_t flag;                       /*标志*/
 	uint8_t id;                         /*事件ID*/
 	uint8_t len;                        /*事件长度*/
-	uint8_t body[32-3];                   /*事件内容*/
+	uint8_t body[64-3];                   /*事件内容*/
 }EVENT;
 
 extern uint8_t textmsg_count;

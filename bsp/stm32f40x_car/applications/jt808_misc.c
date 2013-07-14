@@ -26,9 +26,15 @@
 #define EVENT_SECTORS	1
 #define EVENT_END		( EVENT_START + EVENT_SECTORS * 4096 )
 
+/*中心提问*/
 #define ASK_START	( EVENT_END )
 #define ASK_SECTORS 2
 #define ASK_END		( ASK_START + ASK_SECTORS * 4096 )
+
+/*信息点播*/
+#define INFO_ONDEMAND_START		( ASK_END )
+#define INFO_ONDEMAND_SECTORS	1
+#define INFO_ONDEMAND_END		( INFO_ONDEMAND_START + INFO_ONDEMAND_SECTORS * 4096 )
 
 uint32_t	textmsg_curr_addr;  /*当前写入最新数据的消息地址*/
 uint32_t	textmsg_curr_id;
@@ -165,65 +171,224 @@ void jt808_misc_0x8300( uint8_t *pmsg )
 	jt808_tx_0x0001( seq, id, 0x0 );
 }
 
-/*遍历所有元素，执行操作*/
-void foreach_event( uint8_t *pdata )
+#if 0
+
+typedef  void (*VISIT_FUNC)( EVENT*, void * );
+
+/*事件排序*/
+void event_sort( EVENT* pevent, void *ctx )
 {
-	uint32_t	i;
-	EVENT		*pevent;
+}
 
-	for( i = 0; i < 128; i++ )
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void event_update_modify( EVENT* pevent, void *ctx )
+{
+	uint8_t* pinfo = (uint8_t*)ctx;
+
+	if( pevent->id == pinfo[0] )
 	{
-		pevent = (EVENT*)( pdata + 32 * i );
-
-		if( pdata[i] == 'E' )
+		if( pinfo[1] < ( 64 - 3 ) )
 		{
 		}
 	}
 }
 
-/*收到中心下发的0x8300信息*/
+/*事件删除*/
+void event_delete( EVENT* pevent, void *ctx )
+{
+	uint8_t* pinfo = (uint8_t*)ctx;
+	if( pevent->id == pinfo[0] )
+	{
+		memset( pevent, 0xff, sizeof( EVENT ) );
+	}
+}
+
+/*遍历事件并执行操作*/
+void foreach_event( uint8_t *peventbuf, VISIT_FUNC visit, void *ctx )
+{
+	uint8_t		*pinfo = peventbuf;
+	uint32_t	i;
+	EVENT		*pevent;
+	for( i = 0; i < 4096; i += 64 )
+	{
+		pevent = (EVENT*)( pinfo + i );
+		if( pevent->flag == 'E' )
+		{
+			visit( pevent, ctx );
+		}
+	}
+}
+
+#endif
+
+
+/*
+   通过id查找事件
+   如果找到了，返回找到的地址
+   没找到，返回第一个可用的地址，如果没有可用，返回0xFFFF
+ */
+uint8_t event_find_by_id( uint8_t *peventbuf, uint8_t id, uint16_t *addr )
+{
+	uint8_t		*pinfo = peventbuf;
+	uint32_t	i;
+	EVENT		*pevent;
+
+	*addr = 0xFFFF;
+	for( i = 0; i < 4096; i += 64 )
+	{
+		pevent = (EVENT*)( pinfo + i );
+		if( pevent->flag == 'E' )
+		{
+			if( pevent->id == id )
+			{
+				*addr = i;
+				return 1;
+			}
+		}else /*第一个可用的地址*/
+		{
+			if( *addr == 0xFFFF )
+			{
+				*addr = i;
+			}
+		}
+	}
+	return 0;
+}
+
+/*收到中心下发的0x8301信息*/
 void jt808_misc_0x8301( uint8_t *pmsg )
 {
 	uint8_t		type	= pmsg[12];
 	uint16_t	id		= ( ( pmsg[0] << 8 ) | pmsg[1] );
 	uint16_t	seq		= ( ( pmsg[10] << 8 ) | pmsg[11] );
-	uint16_t	len		= ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
-	uint8_t		* ptts, *p, *psrc;
-	uint16_t	i;
-	uint8_t		*pevent;
-	uint8_t		res = 0;
+	uint16_t	i, j;
+	uint8_t		* pdata;
+	//uint8_t		*pevtbuf;
+	uint8_t		count, res = 0, len = 0;
+	uint16_t	addr;
+	uint16_t	tmpbuf[64];
 
-	pevent = rt_malloc( 4096 );
-	if( pevent == RT_NULL )
+#if 0
+	pevtbuf = rt_malloc( 4096 );
+	if( pevtbuf == RT_NULL )
 	{
 		res = 1;
 		goto lbl_end_8301;
 	}
+#endif
+	uint8_t pevtbuf[4096];
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	sst25_read( EVENT_START, pevent, 4096 );
+	sst25_read( EVENT_START, pevtbuf, 4096 );
 
-	if( type == 0 ) /*删除现在所有事件*/
+	if( type == 0 )                                 /*删除现在所有事件*/
 	{
 		sst25_erase_4k( EVENT_START );
-	}
-	if( type == 1 ) /*更新事件*/
+		goto lbl_end_8301;
+	}else if( type == 4 )                           /*删除特定事件*/
 	{
-	}
-	if( type == 2 ) /*追加事件*/
+		pdata = pmsg + 14;
+		for( count = 0; count < pmsg[13]; count++ ) /*事件总数*/
+		{
+			if( event_find_by_id( pevtbuf, *pdata, &addr ) )
+			{
+				memset( pevtbuf + addr, 0xff, sizeof( EVENT ) );
+			}
+			pdata++;
+		}
+	}else /*1.更新 2 追加 3 修改 凡是id一样的就更新，没有的就增加*/
 	{
+		pdata = pmsg + 14;
+		for( count = 0; count < pmsg[13]; count++ ) /*事件总数*/
+		{
+			len = pdata[1];
+			event_find_by_id( pevtbuf, *pdata, &addr );
+			if( addr != 0xFFFF ) /*不管找到没找到，反正有个可用的地址*/
+			{
+				if( len > 63 )
+				{
+					len = 63;
+				}
+				pevtbuf[addr] = 'E';
+				memcpy( pevtbuf + addr + 1, pdata, len );
+			}
+			pdata += ( len + 2 );
+		}
 	}
-	if( type == 3 ) /*修改事件*/
+/*重新整理,去除空闲的*/
+	addr	= 0xFFFF;               /*第一个为空的地址*/
+	count	= 0;                    /*记录数*/
+	for( i = 0; i < 4096; i += 64 )
 	{
+		if( pevtbuf[i] == 'E' )     /*是有效地址*/
+		{
+			count++;
+			if( addr != 0xFFFF )    /*有空的*/
+			{
+				memcpy( pevtbuf + addr, pevtbuf + i, sizeof( EVENT ) );
+				memset( pevtbuf + i, 0xFF, sizeof( EVENT ) );
+				addr = i;           /*成为新的未用的*/
+			}
+		}else /*没有用的地址*/
+		{
+			if( addr == 0xFFFF )
+			{
+				addr = i;
+			}
+		}
 	}
-	if( type == 4 ) /*删除特定事件*/
-	{
-	}
-	rt_sem_release( &sem_dataflash );
 
-/*返回应答*/
+
+/*排序
+   for(int i = 0;i<cnt;i++)
+   {
+   for(j=0;j<cnt-1;j++)
+   {
+        if(a[j]>a[j+1])
+        {
+               tmp = a[j];
+               a[j] = a[j+1];
+               a[j+1] = tmp;
+     }
+   }
+   }
+ */
+	for( i = 0; i < count; i++ )
+	{
+		for( j = 0; j < ( count - 1 ); j++ )
+		{
+			if( pevtbuf[j * 64 + 1] > pevtbuf[j * 64 + 65] )
+			{
+				memcpy( tmpbuf, pevtbuf + j * 64, 64 );
+				memcpy( pevtbuf + j * 64 + 1, pevtbuf + j * 64 + 65, 64 );
+				memcpy( pevtbuf + j * 64 + 65, tmpbuf, 64 );
+			}
+		}
+	}
+	sst25_write_back( EVENT_START, pevtbuf, 4096 );
+
 lbl_end_8301:
-	jt808_tx_0x0001( seq, id, res );
+	rt_sem_release( &sem_dataflash );
+	jt808_tx_0x0001( seq, id, res ); /*返回应答*/
+}
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+uint8_t jt808_event_init( void )
+{
 }
 
 /*要保存一下吗?*/
@@ -274,9 +439,151 @@ void jt808_misc_0x8302( uint8_t *pmsg )
 	jt808_tx_0x0001( seq, id, 0x0 );
 }
 
+/**/
+uint8_t info_find_by_id( uint8_t *peventbuf, uint8_t id, uint16_t *addr )
+{
+	uint8_t		*pinfo = peventbuf;
+	uint32_t	i;
+	EVENT		*pevent;
+
+	*addr = 0xFFFF;
+	for( i = 0; i < 4096; i += 64 )
+	{
+		pevent = (EVENT*)( pinfo + i );
+		if( pevent->flag == 'I' )
+		{
+			if( pevent->id == id )
+			{
+				*addr = i;
+				return 1;
+			}
+		}else /*第一个可用的地址*/
+		{
+			if( *addr == 0xFFFF )
+			{
+				*addr = i;
+			}
+		}
+	}
+	return 0;
+}
+
+
 /*信息点播菜单设置*/
 void jt808_misc_0x8303( uint8_t *pmsg )
 {
+	uint8_t		type	= pmsg[12];
+	uint16_t	id		= ( ( pmsg[0] << 8 ) | pmsg[1] );
+	uint16_t	seq		= ( ( pmsg[10] << 8 ) | pmsg[11] );
+	uint16_t	i, j;
+	uint8_t		* pdata;
+	//uint8_t		*pevtbuf;
+	uint8_t		count, res = 0, len = 0;
+	uint16_t	addr;
+	uint16_t	tmpbuf[64];
+
+#if 0
+	pevtbuf = rt_malloc( 4096 );
+	if( pevtbuf == RT_NULL )
+	{
+		res = 1;
+		goto lbl_end_8301;
+	}
+#endif
+	uint8_t pevtbuf[4096];
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	sst25_read( INFO_ONDEMAND_START, pevtbuf, 4096 );
+
+	if( type == 0 )                                 /*删除现在所有事件*/
+	{
+		sst25_erase_4k( INFO_ONDEMAND_START );
+		goto lbl_end_8303;
+	}else if( type == 4 )                           /*删除特定事件*/
+	{
+		pdata = pmsg + 14;
+		for( count = 0; count < pmsg[13]; count++ ) /*事件总数*/
+		{
+			if( info_find_by_id( pevtbuf, *pdata, &addr ) )
+			{
+				memset( pevtbuf + addr, 0xff, sizeof( EVENT ) );
+			}
+			pdata++;
+		}
+	}else /*1.更新 2 追加 3 修改 凡是id一样的就更新，没有的就增加*/
+	{
+		pdata = pmsg + 14;
+		for( count = 0; count < pmsg[13]; count++ ) /*事件总数*/
+		{
+			len = pdata[1];
+			info_find_by_id( pevtbuf, *pdata, &addr );
+			if( addr != 0xFFFF ) /*不管找到没找到，反正有个可用的地址*/
+			{
+				if( len > 63 )
+				{
+					len = 63;
+				}
+				pevtbuf[addr] = 'E';
+				memcpy( pevtbuf + addr + 1, pdata, len );
+			}
+			pdata += ( len + 2 );
+		}
+	}
+	/*重新整理,去除空闲的*/
+	addr	= 0xFFFF;               /*第一个为空的地址*/
+	count	= 0;                    /*记录数*/
+	for( i = 0; i < 4096; i += 64 )
+	{
+		if( pevtbuf[i] == 'I' )     /*是有效地址*/
+		{
+			count++;
+			if( addr != 0xFFFF )    /*有空的*/
+			{
+				memcpy( pevtbuf + addr, pevtbuf + i, sizeof( EVENT ) );
+				memset( pevtbuf + i, 0xFF, sizeof( EVENT ) );
+				addr = i;           /*成为新的未用的*/
+			}
+		}else /*没有用的地址*/
+		{
+			if( addr == 0xFFFF )
+			{
+				addr = i;
+			}
+		}
+	}
+
+
+	/*排序
+	   for(int i = 0;i<cnt;i++)
+	   {
+	   for(j=0;j<cnt-1;j++)
+	   {
+	   if(a[j]>a[j+1])
+	   {
+	      tmp = a[j];
+	      a[j] = a[j+1];
+	      a[j+1] = tmp;
+	   }
+	   }
+	   }
+	 */
+	for( i = 0; i < count; i++ )
+	{
+		for( j = 0; j < ( count - 1 ); j++ )
+		{
+			if( pevtbuf[j * 64 + 1] > pevtbuf[j * 64 + 65] )
+			{
+				memcpy( tmpbuf, pevtbuf + j * 64, 64 );
+				memcpy( pevtbuf + j * 64 + 1, pevtbuf + j * 64 + 65, 64 );
+				memcpy( pevtbuf + j * 64 + 65, tmpbuf, 64 );
+			}
+		}
+	}
+	sst25_write_back( INFO_ONDEMAND_START, pevtbuf, 4096 );
+
+lbl_end_8303:
+	rt_sem_release( &sem_dataflash );
+	jt808_tx_0x0001( seq, id, res ); /*返回应答*/
 }
 
 /*信息服务*/
@@ -290,12 +597,11 @@ void jt808_misc_0x8400( uint8_t *pmsg )
 	uint8_t		dialbuf[32];
 	uint8_t		flag	= pmsg[12];
 	uint16_t	len		= ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
-	strcpy(dialbuf,"ATD");
-	strncpy(dialbuf+3,&pmsg[13],len-1);
-	strcat(dialbuf,";\r\n");
-	GPIO_ResetBits( GPIOD, GPIO_Pin_9 );             /*开功放*/
-	at(dialbuf);
-	
+	strcpy( dialbuf, "ATD" );
+	strncpy( dialbuf + 3, &pmsg[13], len - 1 );
+	strcat( dialbuf, ";\r\n" );
+	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
+	at( dialbuf );
 }
 
 /*设置电话本*/
@@ -303,11 +609,17 @@ void jt808_misc_0x8401( uint8_t *pmsg )
 {
 }
 
-
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 void jt808_misc_0x8500( uint8_t *pmsg )
 {
 }
-
 
 /*
    遍历当前的记录
@@ -321,7 +633,7 @@ uint8_t jt808_textmsg_init( void )
 	uint32_t	id = 0;
 	uint8_t		buf[16];
 
-	textmsg_curr_addr	= TEXTMSG_END;               /*指向最后*/
+	textmsg_curr_addr	= TEXTMSG_END; /*指向最后*/
 	textmsg_curr_id		= 0;
 	textmsg_count		= 0;
 
@@ -352,6 +664,7 @@ uint8_t jt808_phonebook_init( void )
 void jt808_misc_init( void )
 {
 	jt808_textmsg_init( );
+	jt808_event_init( );
 }
 
 /************************************** The End Of File **************************************/

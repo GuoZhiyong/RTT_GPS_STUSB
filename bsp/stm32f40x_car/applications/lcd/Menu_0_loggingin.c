@@ -181,15 +181,7 @@ static void keypress( unsigned int key )
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/* */
 static void timetick( unsigned int systick )
 {
 }

@@ -1,63 +1,74 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #include "Menu_Include.h"
 #include <string.h>
 #include <stdlib.h>
 #include "sed1520.h"
+#include "jt808.h"
+#include "jt808_gps.h"
 
-
-unsigned char licheng_sum[18]={"总里程:000000 KM"};
-
-static void msg( void *p)
+/**/
+static void msg( void *p )
 {
 }
-static void show(void)
+
+/**/
+static void show( void )
 {
-	unsigned long DisKm=0;
+	uint8_t buf[32];
 
-	DisKm=jt808_param.id_0xF020/1000;//单位:m
-
-	licheng_sum[7] =DisKm%1000000/100000+0x30;
-	licheng_sum[8] =DisKm%100000/10000+0x30;
-	licheng_sum[9] =DisKm%10000/1000+0x30;
-	licheng_sum[10]=DisKm%1000/100+0x30;
-	licheng_sum[11]=DisKm%100/10+0x30;
-	licheng_sum[12]=DisKm%10+0x30; 
-	
-    //ultoa(DisKm,licheng_sum,10);
-
-	lcd_fill(0);
-	lcd_text12(0, 3,(char *)Dis_date,20,LCD_MODE_SET);
-	lcd_text12(0,18,(char *)licheng_sum,16,LCD_MODE_SET);
-	lcd_update_all();
+	lcd_fill( 0 );
+	sprintf( buf, "20%02d/%02d/%02d %02d:%02d:%02d",
+	         YEAR( mytime_now ),
+	         MONTH( mytime_now ),
+	         DAY( mytime_now ),
+	         HOUR( mytime_now ),
+	         MINUTE( mytime_now ),
+	         SEC( mytime_now ) );
+	lcd_text12( 0, 3, (char*)buf, sizeof( buf ), LCD_MODE_SET );
+	sprintf( buf, "总里程:%d 公里", jt808_param.id_0xF020 / 1000 );
+	lcd_text12( 0, 18, (char*)buf, sizeof( buf ), LCD_MODE_SET );
+	lcd_update_all( );
 }
 
-
-static void keypress(unsigned int key)
+/**/
+static void keypress( unsigned int key )
 {
-switch(key)
+	switch( key )
 	{
-	case KEY_MENU:
-		pMenuItem=&Menu_2_InforCheck;
-		pMenuItem->show();
-		CounterBack=0;
-		break;
-	case KEY_OK:
-		break;
-	case KEY_UP:
-		break;
-	case KEY_DOWN:
-		break;
+		case KEY_MENU:
+			pMenuItem = &Menu_2_InforCheck;
+			pMenuItem->show( );
+			CounterBack = 0;
+			break;
+		case KEY_OK:
+			break;
+		case KEY_UP:
+			break;
+		case KEY_DOWN:
+			break;
 	}
 }
 
-
-
-MENUITEM	Menu_2_6_Mileage=
+MENUITEM Menu_2_6_Mileage =
 {
 	"里程信息查看",
-	12,0,
+	12,				  0,
 	&show,
 	&keypress,
 	&timetick_default,
 	&msg,
 	(void*)0
 };
+/************************************** The End Of File **************************************/

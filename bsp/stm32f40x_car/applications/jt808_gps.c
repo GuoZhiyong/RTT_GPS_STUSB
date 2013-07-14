@@ -24,6 +24,7 @@
 #include "rtc.h"
 
 #include "jt808_auxio.h"
+#include "menu_include.h"
 
 #include "vdr.h"
 #include "math.h"
@@ -222,16 +223,8 @@ static __inline unsigned long linux_mktime( unsigned int year, unsigned int mon,
 	           ) * 60 + min         /**//* now have minutes */
 	         ) * 60 + sec;          /**//* finally seconds */
 }
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+#if 0
+/**/
 static double gpsToRad( GPSPoint point )
 {
 	return point.sign * ( point.deg + ( point.min + point.sec / 60.0 ) / 60.0 ) * 3.141592654 / 180.0;
@@ -262,6 +255,7 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 	double	centralAngle = atan( sqrt( part1 + part2 ) / part3 );
 	return 6371.01 * 1000.0 * centralAngle;                                 //Return Distance in meter
 }
+#endif
 
 /*超速、超速预警判断*/
 void do_overspeed_check( void )
@@ -295,12 +289,35 @@ void do_overspeed_check( void )
 	}
 }
 
+/*hmi 最近15min平均速度*/
+static void process_hmi_15min_speed(void)
+{
+	static uint8_t hmi_15min_speed_count=0;	/*分钟内的秒计数*/
+	static uint32_t hmi_15min_speed_sum=0;	/*速度累加和*/
+	if((mytime_now&0xFFFFFFC0)!=hmi_15min_speed[hmi_15min_speed_curr].time) /*新时刻,精确到分钟*/
+	{
+		if(hmi_15min_speed[hmi_15min_speed_curr].time!=0) /*是要覆盖*/
+		{
+			//hmi_15min_speed[hmi_15min_speed_curr].speed=hmi_15min_speed_sum/hmi_15min_speed_count;
+			hmi_15min_speed_curr++;
+			hmi_15min_speed_curr%=15;
+			hmi_15min_speed_sum=0;
+			hmi_15min_speed_count=0;
+		}
+	}
+	hmi_15min_speed[hmi_15min_speed_curr].time=mytime_now&0xFFFFFFC0;
+	hmi_15min_speed_sum+=gps_speed;
+	hmi_15min_speed_count++;
+	hmi_15min_speed[hmi_15min_speed_curr].speed=hmi_15min_speed_sum/hmi_15min_speed_count; /*随时更新*/
+
+}
+
 /*
    处理gps信息,有多种条件组合，上报
    此时已收到争取的
  */
 
-void process_gps( void )
+static void process_gps_report( void )
 {
 	uint32_t	i, tmp;
 	uint8_t		flag_send = 0;    /*默认不上报*/
@@ -457,7 +474,7 @@ void process_gps( void )
    返回处理的字段数，如果正确的话
  */
 
-uint8_t process_rmc( uint8_t * pinfo )
+static uint8_t process_rmc( uint8_t * pinfo )
 {
 	//检查数据完整性,执行数据转换
 	uint8_t		year = 0, mon = 0, day = 0, hour = 0, min = 0, sec = 0, fDateModify = 0;
@@ -840,9 +857,10 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		gps_sec_count++;
 		if( process_rmc( psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确，并不判断定位与否*/
 		{
+			process_hmi_15min_speed();  /*最近15分钟平均速度*/
 			vdr_rx_gps( );              /*行车记录仪数据处理*/
-			area_process( );
-			process_gps( );             /*处理GPS信息*/
+			area_process( );			/*区域线路告警*/
+			process_gps_report( );      /*处理GPSs上报信息*/
 		}
 	}
 

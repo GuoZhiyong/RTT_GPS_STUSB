@@ -27,6 +27,29 @@ u8	password_icon[]		= { 0x0C, 0x06, 0xFF, 0x06, 0x0C };
 DECL_BMP( 8, 5, password_icon );
 
 
+unsigned char			inputbox_empty[] = {
+	0x08,                                                                       /*[********]*/
+	0x04,                                                                       /*[*      *]*/
+	0xfe,                                                                       /*[*      *]*/
+	0x00,                                                                       /*[*      *]*/
+	0xfe,                                                                       /*[*      *]*/
+	0x40,                                                                       /*[*      *]*/
+	0x20,                                                                       /*[*      *]*/
+	0x00,                                                                       /*[********]*/
+};
+
+unsigned char			inputbox_full[] = {
+	0x08,                                                                       /*[********]*/
+	0x04,                                                                       /*[*      *]*/
+	0xfe,                                                                       /*[* **** *]*/
+	0x00,                                                                       /*[* **** *]*/
+	0xfe,                                                                       /*[* **** *]*/
+	0x40,                                                                       /*[* **** *]*/
+	0x20,                                                                       /*[*      *]*/
+	0x00,                                                                       /*[********]*/
+};
+
+
 /**/
 void password_Set( u8 par )
 {
@@ -47,7 +70,7 @@ static void msg( void *p )
 {
 }
 
-/**/
+/*√‹¬Î ‰»Î*/
 static void show( void )
 {
 	CounterBack			= 0;
@@ -59,15 +82,7 @@ static void show( void )
 
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/*∞¥º¸ºÏ≤È*/
 static void keypress( unsigned int key )
 {
 	switch( key )
@@ -155,15 +170,7 @@ static void keypress( unsigned int key )
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void timetick( unsigned int systick )
 {
 	CounterBack++;

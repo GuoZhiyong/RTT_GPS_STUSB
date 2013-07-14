@@ -67,7 +67,7 @@ void Display_driver( u8 drivercar )
 			#endif
 			lcd_update_all( );
 			break;
-		case 3:                                                                     //  ³µÁ¾ID
+		case 3:                                                  //  ³µÁ¾ID
 			lcd_fill( 0 );
 			memcpy( vech_ID + 7, jt808_param.id_0xF005 + 3, 12 );
 			lcd_text12( 0, 3, (char*)vech_ID, 19, LCD_MODE_SET );
@@ -126,9 +126,6 @@ static void keypress( unsigned int key )
 		case KEY_MENU:
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );
-			CounterBack = 0;
-
-			updown_flag = 0;
 			break;
 		case KEY_OK:
 			updown_flag = 1;

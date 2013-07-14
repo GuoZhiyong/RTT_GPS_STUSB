@@ -972,7 +972,6 @@ void vdr_08_12_get_ready( uint8_t vdr_id, MYTIME start, MYTIME end, uint16_t tot
 
 FINSH_FUNCTION_EXPORT_ALIAS( vdr_08_12_get_ready, vdr_get, get_vdr_data );
 
-
 /*
    初始化记录区数据
    因为是属于固定时间段存储的

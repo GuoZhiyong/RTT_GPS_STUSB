@@ -7,7 +7,7 @@
 
 
 
-uint32_t hmi_status;
+
 
 
 
@@ -220,6 +220,15 @@ for(i=0;i<chaosuCounter;i++)
 
 
 /*add by bitter*/
+#include "jt808.h"
+#include "jt808_gps.h"
+
+uint32_t hmi_status;
+
+HMI_15MIN_SPEED hmi_15min_speed[15];
+uint8_t hmi_15min_speed_curr=0;
+
+
 /*检查是否回到主界面*/
 void timetick_default(unsigned int tick)
 {
