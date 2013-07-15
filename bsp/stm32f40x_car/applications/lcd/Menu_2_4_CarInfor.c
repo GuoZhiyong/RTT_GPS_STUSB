@@ -104,6 +104,7 @@ static void msg( void *p )
 ***********************************************************/
 static void show( void )
 {
+	pMenuItem->tick=rt_tick_get();
 	lcd_fill( 0 );
 	lcd_text12( 24, 3, "车辆信息查看", 12, LCD_MODE_SET );
 	lcd_text12( 24, 19, "查看请按选择", 12, LCD_MODE_SET );

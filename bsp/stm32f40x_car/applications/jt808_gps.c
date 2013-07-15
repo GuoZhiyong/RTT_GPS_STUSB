@@ -186,7 +186,7 @@ static void cb_tmr_gps( void* parameter )
 			period_acc_on++;
 			if( ( period_acc_on % 100 ) == 0 )
 			{
-				rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
+				//rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
 			}
 			if( period_acc_on >= jt808_param.id_0x0057 )
 			{
@@ -197,7 +197,7 @@ static void cb_tmr_gps( void* parameter )
 			period_acc_off++;
 			if( ( period_acc_off % 100 ) == 0 )
 			{
-				rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
+				//rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
 			}
 		}
 	}
@@ -452,7 +452,7 @@ static void process_gps_report( void )
 /*生成要上报的数据*/
 #if 1
 
-	if( ( gps_datetime[5] % 600 ) == 0 )
+	if(gps_datetime[5] == 0 )
 	{
 		err = jt808_tx( 0x0200, buf, 28 + alarm_length );
 		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );

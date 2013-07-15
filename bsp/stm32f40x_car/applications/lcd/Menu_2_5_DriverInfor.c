@@ -67,6 +67,8 @@ static void msg( void *p)
 }
 static void show(void)
 {
+	pMenuItem->tick=rt_tick_get();
+
 	Dis_DriverInfor(1,1);
 	DIS_DRIVER_inform_temp.DIS_SELECT_check_send=1;
 	DIS_DRIVER_inform_temp.DIS_ENTER_check_send=1;

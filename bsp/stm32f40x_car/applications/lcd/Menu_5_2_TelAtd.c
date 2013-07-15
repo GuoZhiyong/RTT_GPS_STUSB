@@ -41,6 +41,8 @@ static void msg( void *p )
 ***********************************************************/
 static void show( void )
 {
+	pMenuItem->tick=rt_tick_get();
+
 	lcd_fill( 0 );
 	lcd_text12( 36, 10, "Ò»¼ü»Ø²¦", 8, LCD_MODE_SET );
 	lcd_update_all( );

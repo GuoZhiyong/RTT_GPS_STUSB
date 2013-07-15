@@ -27,6 +27,8 @@ static void msg( void *p)
 }
 static void show(void)
 {
+	pMenuItem->tick=rt_tick_get();
+
 	record_sel(1);
 	Record_screen=1;
 	Record_StartEnd=1;

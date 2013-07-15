@@ -13,6 +13,7 @@ static void show(void)
 	#if NEED_TODO
 concuss_step=JT808Conf_struct.concuss_step;
 	#endif
+		pMenuItem->tick=rt_tick_get();
 concuss_dis[9]=concuss_step/10+'0';
 concuss_dis[10]=concuss_step%10+'0';
 lcd_fill(0);

@@ -116,6 +116,8 @@ static void msg( void *p )
 ***********************************************************/
 static void show( void )
 {
+	pMenuItem->tick=rt_tick_get();
+
 	lcd_fill( 0 );
 	lcd_text12( 24, 3, "查看设置信息", 12, LCD_MODE_SET );
 	lcd_text12( 30, 18, "请按确认键", 10, LCD_MODE_SET );

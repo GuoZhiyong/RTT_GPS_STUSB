@@ -5,6 +5,8 @@ static void msg( void *p)
 }
 static void show(void)
 {
+	pMenuItem->tick=rt_tick_get();
+
 	lcd_fill(0);
 	lcd_text12(0,10,"按确认键发送电子运单",20,LCD_MODE_SET);
 	lcd_update_all();

@@ -27,18 +27,19 @@ static void msg( void *p )
 static void show( void )
 {
 	uint8_t buf[32];
+	pMenuItem->tick=rt_tick_get();
 
 	lcd_fill( 0 );
-	sprintf( buf, "20%02d/%02d/%02d %02d:%02d:%02d",
+	sprintf( buf, "20%02d/%02d/%02d %02d:%02d",
 	         YEAR( mytime_now ),
 	         MONTH( mytime_now ),
 	         DAY( mytime_now ),
 	         HOUR( mytime_now ),
-	         MINUTE( mytime_now ),
-	         SEC( mytime_now ) );
-	lcd_text12( 0, 3, (char*)buf, sizeof( buf ), LCD_MODE_SET );
-	sprintf( buf, "总里程:%d 公里", jt808_param.id_0xF020 / 1000 );
-	lcd_text12( 0, 18, (char*)buf, sizeof( buf ), LCD_MODE_SET );
+	         MINUTE( mytime_now ));
+	lcd_text12( 0, 4, (char*)buf, strlen( buf ), LCD_MODE_SET );
+	
+	sprintf( buf, "总里程:%06d 公里", jt808_param.id_0xF020 / 1000 );
+	lcd_text12( 0, 16, (char*)buf, strlen( buf ), LCD_MODE_SET );
 	lcd_update_all( );
 }
 
@@ -50,7 +51,6 @@ static void keypress( unsigned int key )
 		case KEY_MENU:
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );
-			CounterBack = 0;
 			break;
 		case KEY_OK:
 			break;

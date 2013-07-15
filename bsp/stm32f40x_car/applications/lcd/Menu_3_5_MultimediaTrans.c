@@ -9,6 +9,8 @@ static void msg( void *p)
 }
 static void show(void)
 {
+	pMenuItem->tick=rt_tick_get();
+
 	lcd_fill(0);
 	lcd_text12(20,3,"多媒体事件上传",14,LCD_MODE_SET);
 	lcd_update_all();

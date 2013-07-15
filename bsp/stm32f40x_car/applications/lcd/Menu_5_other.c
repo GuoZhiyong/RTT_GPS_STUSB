@@ -37,6 +37,8 @@ static void msg( void *p)
 }
 static void show(void)
 {
+	pMenuItem->tick=rt_tick_get();
+
     menu_pos=0;
 	menuswitch();
 }

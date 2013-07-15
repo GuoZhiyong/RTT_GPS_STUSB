@@ -31,10 +31,10 @@ void onemg( uint8_t value )
 {
 	if( value )
 	{
-		jt808_alarm |= BIT_ALARM_EMG;
+		jt808_alarm &= ~BIT_ALARM_EMG;
 	} else
 	{
-		jt808_alarm &= ~BIT_ALARM_EMG;
+		jt808_alarm |= BIT_ALARM_EMG;
 	}
 }
 

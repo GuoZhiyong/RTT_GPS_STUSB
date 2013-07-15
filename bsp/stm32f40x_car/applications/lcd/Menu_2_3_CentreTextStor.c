@@ -207,6 +207,7 @@ static void show( void )
 {
 	uint8_t *pinfo;
 	uint8_t res;
+	pMenuItem->tick=rt_tick_get();
 	item_pos		= 0;
 	item_pos_read	= 0xff;
 	view_mode=VIEW_ITEM;

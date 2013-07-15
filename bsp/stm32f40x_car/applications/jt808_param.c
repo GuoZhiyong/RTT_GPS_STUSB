@@ -587,7 +587,10 @@ FINSH_FUNCTION_EXPORT( ipport, set ipport );
 
 static uint16_t id_get = 1; /*保存当前发送的id*/
 
-/*读参数数据*/
+
+/*
+   读参数数据
+ */
 uint16_t get_param_and_fill_buf( uint8_t* pbuf )
 {
 	uint16_t	i;
@@ -596,6 +599,10 @@ uint16_t get_param_and_fill_buf( uint8_t* pbuf )
 
 	for( i = id_get; i < sizeof( tbl_id_lookup ) / sizeof( struct _tbl_id_lookup ); i++ )
 	{
+		if( tbl_id_lookup[i].id >= 0xF000 )
+		{
+			continue;
+		}
 		*pbuf++ = ( tbl_id_lookup[i].id ) >> 24;
 		*pbuf++ = ( tbl_id_lookup[i].id ) >> 16;
 		*pbuf++ = ( tbl_id_lookup[i].id ) >> 8;
@@ -654,42 +661,62 @@ uint16_t get_param_and_fill_buf( uint8_t* pbuf )
 	return count;
 }
 
-/*应答*/
+/*填充数据*/
+void jt808_0x8104_fill_data( JT808_TX_NODEDATA *pnodedata )
+{
+	uint8_t		buf[600];
+	uint16_t	count;
+
+	id_get++;
+	count = get_param_and_fill_buf( buf );              /*字节填数据*/
+	rt_kprintf( "\r\ncount=%d id_get=%d\r\n", count, id_get );
+
+	pnodedata->packet_no++;
+	if( pnodedata->packet_no == pnodedata->packet_num ) /*达到最后一包*/
+	{
+		pnodedata->timeout = RT_TICK_PER_SECOND * 10;
+	}
+	memcpy( pnodedata->tag_data + 16, buf, count );
+	pnodedata->retry		= 0;
+	pnodedata->msg_len		= count + 16;
+	pnodedata->tag_data[2]	= 0x20 + ( count >> 8 );
+	pnodedata->tag_data[3]	= count & 0xFF;
+	pnodedata->tag_data[12] = pnodedata->packet_num >> 8;
+	pnodedata->tag_data[13] = pnodedata->packet_num & 0xFF;
+	pnodedata->tag_data[14] = pnodedata->packet_no >> 8;
+	pnodedata->tag_data[15] = pnodedata->packet_no & 0xFF;
+	pnodedata->state=IDLE;
+}
+
+/*应答
+   天津中心会收到应答
+ */
 static JT808_MSG_STATE jt808_0x8104_response( JT808_TX_NODEDATA * pnodedata, uint8_t *pmsg )
 {
-	pnodedata->retry++;
-	if( pnodedata->retry >= pnodedata->max_retry )
+	if( pnodedata->packet_num == pnodedata->packet_no ) /*已经发送了所有包*/
 	{
+		rt_kprintf("0x8104_response_delete\r\n");
+		pnodedata->state=ACK_OK;
 		return WAIT_DELETE;
 	}
-	return vdr_08_12_fill_data( pnodedata );
+	rt_kprintf("0x8104_response_idle\r\n");
+	jt808_0x8104_fill_data( pnodedata );
+	return IDLE;
 }
 
 /*超时后的处理函数*/
 static JT808_MSG_STATE jt808_0x8104_timeout( JT808_TX_NODEDATA * pnodedata )
 {
-	uint8_t		buf[600];
-	uint16_t	count;
 
-	if( pnodedata->multipacket )                            /*多包*/
+	if( pnodedata->packet_num == pnodedata->packet_no ) /*已经发送了所有包*/
 	{
-		if( pnodedata->packet_num == pnodedata->packet_no ) /*已经发送了所有包*/
-		{
-			return WAIT_DELETE;
-		}
-		count = get_param_and_fill_buf( buf );              /*字节填数据*/
-		rt_kprintf( "\r\ncount=%d id_get=%d\r\n", count, id_get );
-		node_data( pnodedata, buf, count, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL );
-		pnodedata->packet_no++;
-		if( pnodedata->packet_no == pnodedata->packet_num ) /*达到最后一包*/
-		{
-			pnodedata->timeout = RT_TICK_PER_SECOND * 10;
-		}
-		return IDLE;
-	}else
-	{
+		rt_kprintf("0x8104_timeout_delete\r\n");
+		pnodedata->state=ACK_OK;
 		return WAIT_DELETE;
 	}
+	rt_kprintf("0x8104_timeout_idle\r\n");
+	jt808_0x8104_fill_data( pnodedata );
+	return IDLE;
 }
 
 /*上报所有终端参数*/
@@ -739,7 +766,7 @@ void jt808_param_0x8104( uint8_t *pmsg )
 				break;
 		}
 	}
-	rt_kprintf( "\r\ntotal count=%d size=%d\r\n", param_count, param_size );
+	rt_kprintf( "\r\ntotal param_count=%d size=%d\r\n", param_count, param_size );
 	pnodedata->packet_num	= ( param_size + 511 ) / 512;   /*默认512分包*/
 	pnodedata->packet_no	= 1;
 	rt_kprintf( "\r\npacket_num=%d \r\n", pnodedata->packet_num );
@@ -756,7 +783,6 @@ void jt808_param_0x8104( uint8_t *pmsg )
 	pnodedata->tag_data[13] = pnodedata->packet_num & 0xFF;
 	pnodedata->tag_data[14] = pnodedata->packet_no >> 8;
 	pnodedata->tag_data[15] = pnodedata->packet_no & 0xFF;
-
 	node_end( pnodedata );
 }
 

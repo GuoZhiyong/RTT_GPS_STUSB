@@ -75,6 +75,8 @@ static void msg( void *p )
 ***********************************************************/
 static void show( void )
 {
+	pMenuItem->tick=rt_tick_get();
+
 	#if NEED_TODO
 	//Api_RecordNum_Read( ask_quesstion, 1, (u8*)&ASK_Centre, sizeof( ASK_Centre ) );
 	if( ASK_Centre.ASK_SdFlag == 1 )

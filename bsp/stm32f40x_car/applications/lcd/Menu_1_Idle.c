@@ -19,7 +19,6 @@
 #include "sed1520.h"
 
 static uint32_t			lasttick;
-
 unsigned char			dispstat		= 0;
 unsigned int			reset_firstset	= 0;
 
@@ -183,15 +182,7 @@ void GPSGPRS_Status( void )
 #endif
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 void  Disp_Idle( void )
 {
 	char	buf_datetime[22];
@@ -213,31 +204,14 @@ void  Disp_Idle( void )
 	lcd_bitmap( 8, 3, &BMP_gsm_3, LCD_MODE_SET );
 	GPSGPRS_Status( );
 	lcd_update_all( );
-	lasttick		= rt_tick_get( );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void msg( void *p )
 {
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void show( void )
 {
 	Disp_Idle( );

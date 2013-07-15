@@ -30,6 +30,8 @@ static void msg( void *p)
 }
 static void show(void)
 {
+	pMenuItem->tick=rt_tick_get();
+
 	Multimedia(1);
 }
 

@@ -15,6 +15,7 @@ static void msg( void *p)
 }
 static void show(void)
 	{
+		pMenuItem->tick=rt_tick_get();
 	lcd_fill(0);
 	lcd_text12(20,3,"您有一条新消息",14,LCD_MODE_SET);
 	lcd_text12(26,19,"按确认键查看",12,LCD_MODE_SET);

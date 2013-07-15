@@ -19,8 +19,6 @@
 
 char* caption[10]={"紧急","启动","输入","远光","车门","喇叭","左转","右转","刹车","雨刷"};
 
-static uint32_t tick_last=0;
-
 
 static void draw(void)
 {
@@ -44,6 +42,7 @@ static void msg( void *p )
 /**/
 static void show( void )
 {
+	pMenuItem->tick=rt_tick_get();
 	draw();
 }
 
@@ -64,6 +63,12 @@ static void keypress( unsigned int key )
 }
 
 
+static void timetick(unsigned int tick)
+{
+	draw();
+	timetick_default(tick);
+}
+
 
 MENUITEM Menu_2_1_Status8 =
 {
@@ -71,7 +76,7 @@ MENUITEM Menu_2_1_Status8 =
 	10,0,
 	&show,
 	&keypress,
-	&timetick_default,
+	&timetick,
 	&msg,
 	(void*)0
 };

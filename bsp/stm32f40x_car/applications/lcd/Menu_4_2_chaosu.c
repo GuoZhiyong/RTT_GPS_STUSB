@@ -42,6 +42,8 @@ static void msg( void *p)
 }
 static void show(void)
 {
+	pMenuItem->tick=rt_tick_get();
+
 ErrorRecord=0;//疲劳超速记录错误清0
 StartDisTiredExpspeed=0;
 expsp_Flag=0;//查看疲劳超速报警记录过程标志清0;

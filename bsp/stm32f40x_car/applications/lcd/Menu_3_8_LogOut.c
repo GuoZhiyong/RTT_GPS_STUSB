@@ -34,6 +34,7 @@ static void msg( void *p)
 }
 static void show(void)
    {
+   	pMenuItem->tick=rt_tick_get();
    confirm_login(1);
    LogInorOut_screen=1;
    LogInorOut=1;

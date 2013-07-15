@@ -252,6 +252,8 @@ extern unsigned char Fetch_15minSpeed(unsigned char Num15);
 
 
 /*add by bitter*/
+
+#include <rtthread.h>
 typedef __packed struct 
 {
 	MYTIME time;

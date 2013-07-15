@@ -45,11 +45,11 @@ static void display( void )
 		{
 			hour=HOUR(hmi_15min_speed[pos].time);
 			minute=MINUTE(hmi_15min_speed[pos].time);
-			sprintf( (char*)t, "[%02d] %02d:%02d %02dkmh",display_row+i, hour,minute, hmi_15min_speed[pos].speed );
+			sprintf( (char*)t, "[%02d] %02d:%02d %02dkmh",display_row+i+1, hour,minute, hmi_15min_speed[pos].speed );
 		}
 		else
 		{
-			sprintf( (char*)t, "[%02d] --:-- --",display_row+i);
+			sprintf( (char*)t, "[%02d] --:-- --",display_row+i+1);
 		}
 		lcd_text12( 10, i*11, (char*)t, strlen(t), LCD_MODE_SET );
 	}
@@ -64,6 +64,7 @@ static void msg( void *p )
 /**/
 static void show( void )
 {
+	pMenuItem->tick=rt_tick_get();
 	display_row = 0;
 	display( );
 }

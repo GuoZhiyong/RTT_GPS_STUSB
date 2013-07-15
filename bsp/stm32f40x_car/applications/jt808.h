@@ -153,9 +153,9 @@ typedef enum
 typedef enum
 {
 	SINGLE_CMD = 0,
-	SINGLE_ACK,
-	MULTI_CMD,
-	MULTI_ACK
+	SINGLE_ACK=1,
+	MULTI_CMD=2,
+	MULTI_ACK=3
 }JT808_MSG_TYPE;
 
 typedef __packed struct
