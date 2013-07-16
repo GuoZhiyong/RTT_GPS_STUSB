@@ -465,9 +465,14 @@ void jt808_misc_0x8302( uint8_t *pmsg )
 	uint8_t		*p;
 	uint16_t	ask_len = 0;
 	uint16_t	pos;
+	
+	jt808_center_ask_put( pmsg );	
 	if( flag & 0x01 )                       /*紧急，直接弹出*/
 	{
-		jt808_center_ask_put( pmsg );
+		Menu_3_1_CenterQuesSend.parent=pMenuItem;
+		pMenuItem=&Menu_3_1_CenterQuesSend;
+		pMenuItem->show();
+
 	}
 	if( flag & 0x08 )                       /*TTS播报，分隔一下,*/
 	{
@@ -475,7 +480,7 @@ void jt808_misc_0x8302( uint8_t *pmsg )
 		ask_len = pmsg[13];                 /*问题内容长度*/
 		tts_write( pmsg + 14, ask_len );    /*问题*/
 		tts_write( "请选择", 6 );
-		pos = 14 + ask_len;  /*指向答案项*/
+		pos = 2 + ask_len;  /*指向答案项，注意偏移开始地址，类型+长度*/
 		rt_kprintf("pos=%d len=%d\r\n",pos,len);
 		while( pos < len )
 		{
@@ -726,7 +731,7 @@ void jt808_center_ask_init( void )
 	uint32_t	id = 0;
 	uint8_t		buf[16];
 
-	center_ask_curr_addr	= TEXTMSG_END; /*指向最后*/
+	center_ask_curr_addr	= CENTER_ASK_END; /*指向最后*/
 	center_ask_curr_id		= 0;
 	center_ask_count		= 0;
 

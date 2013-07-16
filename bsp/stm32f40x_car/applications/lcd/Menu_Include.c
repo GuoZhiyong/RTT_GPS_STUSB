@@ -308,4 +308,92 @@ void timetick_default( unsigned int tick )
 	}
 }
 
+
+
+
+/*内容分隔为行，记录行首、行尾地址*/
+uint8_t split_content( uint8_t *pinfo,uint16_t len,DISP_ROW *display_rows)
+{
+	uint8_t count;
+	uint8_t pos = 0;
+	uint8_t * p;
+	uint8_t row = 0;
+
+	uint8_t start = 0;
+
+	DISP_ROW* disp_row=display_rows;
+
+	p		= pinfo;
+	count	= 0;
+	pos		= 0;
+
+	while( pos < len )
+	{
+		if( *p < 0x20 ) /*控制字符，换行*/
+		{
+			if( count ) /*有数据*/
+			{
+				disp_row->start = start;
+				disp_row->count = count;
+				count				= 0;
+				disp_row++;
+				row++;
+			}
+			pos++;
+			p++;
+		}else
+		{
+			if( count == 0 )
+			{
+				start = pos;
+			}
+			if( *p > 0x7F ) /*汉字*/
+			{
+				if( count == 19 )
+				{
+					disp_row->start = start;
+					disp_row->count = count;
+					count				= 0;
+					disp_row++;
+					row++;
+					start = pos;
+				}
+				pos		+= 2; /*需要增加两个*/
+				p		+= 2;
+				count	+= 2;
+			}else
+			{
+				count++;
+				pos++;
+				p++;
+			}
+			if( count == 20 ) /*正好*/
+			{
+				disp_row->start = start;
+				disp_row->count = count;
+				row++;
+				disp_row++;
+				count = 0;
+			}
+		}
+		if( row > 31 )
+		{
+			break;
+		}
+	}
+
+	if( count )
+	{
+		disp_row->start = start;
+		disp_row->count = count;
+		row++;
+	}
+	return row;
+}
+
+
+
+
+
+
 /************************************** The End Of File **************************************/

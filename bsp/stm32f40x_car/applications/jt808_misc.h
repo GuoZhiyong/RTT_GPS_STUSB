@@ -189,6 +189,8 @@ void jt808_misc_0x8500( uint8_t *pmsg );
 
 
 void jt808_textmsg_get( uint8_t index, TEXTMSG* pout );
+void jt808_center_ask_get( uint8_t index, CENTER_ASK* pout );
+
 
 uint8_t jt808_event_get(void);
 

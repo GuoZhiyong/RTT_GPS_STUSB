@@ -29,7 +29,7 @@ static uint8_t	count, pos;
 ***********************************************************/
 static void display( void )
 {
-	uint8_t buf[32];
+	char buf[32];
 	EVENT* evt;
 	uint8_t index=pos&0xFE;	/*¶ÔÆëµ½Å¼ÊýÒ³*/
 	lcd_fill( 0 );

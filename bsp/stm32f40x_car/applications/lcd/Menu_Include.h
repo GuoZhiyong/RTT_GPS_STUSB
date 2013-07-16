@@ -254,16 +254,27 @@ extern unsigned char Fetch_15minSpeed(unsigned char Num15);
 /*add by bitter*/
 
 #include <rtthread.h>
+
+
 typedef __packed struct 
 {
 	MYTIME time;
 	uint8_t speed;
 }HMI_15MIN_SPEED;
 
+typedef struct
+{
+	uint16_t attrib;
+	uint8_t start;
+	uint8_t count;
+}DISP_ROW;	/*œ‘ æ––*/
+
 extern HMI_15MIN_SPEED hmi_15min_speed[15];
 extern uint8_t hmi_15min_speed_curr;
 
 void timetick_default(unsigned int tick);
+uint8_t split_content( uint8_t *pinfo,uint16_t len,DISP_ROW *display_rows);
+
 
 #endif
 

@@ -18,119 +18,90 @@
 
 //-----  提问 ------
 
-static CENTER_ASK	center_ask;         /*传递进来的信息*/
-static uint8_t	item_pos		= 0;    /*当前要访问的*/
-static uint8_t	item_pos_read	= 0xff; /*当前已读取的*/
-
-static uint8_t	line_pos = 0;           /*当前行号*/
-
 /*查看模式*/
 #define VIEW_ITEM	0
 #define VIEW_DETAIL 0xFF
 
-static uint8_t view_mode = VIEW_ITEM;
+static CENTER_ASK	center_ask;             /*传递进来的信息*/
+static uint8_t		item_pos		= 0;    /*当前要访问的*/
+static uint8_t		item_pos_read	= 0xff; /*当前已读取的*/
 
-/*最多支持32行记录每一行开始的位置*/
-static uint8_t split_lines_pos[32][2];
-static uint8_t split_lines_count = 0;
+static uint8_t		line_pos = 0;           /*当前行号*/
 
+static uint8_t		view_mode = VIEW_ITEM;
 
-/*内容分隔为行，记录行首、行尾地址*/
-static uint8_t split_content( void )
+struct _stu_question
 {
-	uint8_t count;
-	uint8_t pos = 0;
-	uint8_t	* p;
-	int		nbfields	= 0;
-
-	uint8_t start = 0;
-
-	memset( split_lines_pos, 0, 64 );
-
-	p		= center_ask.body;
-	count	= 0;
-	pos		= 0;
-	while( pos < center_ask.len )
+	char	len;                            /*问题长度*/
+	char	* question;                     /*问题*/
+	char	ans_count;                      /*候选个数*/
+	struct
 	{
-		if( *p < 0x20 )
+		char	id;                         /*候选id*/
+		char	len;                        /*候选答案长度*/
+		char	* ans;                      /*候选答案*/
+	} ans[5];
+}				question;
+
+static DISP_ROW disp_row[32];
+static uint8_t	split_lines_count = 0;
+
+
+/*分析提问信息*/
+uint8_t analy_question( void )
+{
+	uint8_t		*p;
+	uint8_t		len;
+	uint8_t		count;
+	uint8_t		rows=0;
+	uint8_t		i = 0;
+	uint8_t		ans_id;
+	uint16_t	ans_len;
+
+	uint16_t	pos, end;
+
+	/*问题部分*/
+	len		= center_ask.body[0];
+	p		= center_ask.body + 1;
+	count	= split_content( p, len, disp_row );
+	for( i = 0; i < count; i++ )
+	{
+		disp_row[i].attrib = 0x8000;
+	}
+	rt_kprintf( "1.count=%d\r\n", count );
+	rows += count;
+
+	end = center_ask.len;
+	
+	pos =  1 + len;        /*所有的偏移都是相对于body计算的，所以要调整*/
+	/*候选答案列表，*/
+	while( pos < end )
+	{
+		p		= center_ask.body + pos;  /*一个字节的id,和长度(2bytes)*/
+		ans_id	= *p++;
+		ans_len = ( *p++ ) << 8;
+		ans_len |= *p++;
+		count	= split_content( p, ans_len, disp_row + rows );
+		for( i = rows; i < rows + count; i++ )
 		{
-			if( count ) /*有数据*/
-			{
-				split_lines_pos[nbfields][0]	= start;
-				split_lines_pos[nbfields][1]	= pos - 1;
-				nbfields++;
-				count = 0;
-			}
-			pos++;
-			p++;
-		}else
-		{
-			if( count == 0 )        /*重新设置开始*/
-			{
-				start = pos;
-			}
-			if( *p > 0x7F ) /*有可能是汉字的开始或结束*/
-			{
-				if( count == 9 )    /*不够满行,生成一个新行*/
-				{
-					split_lines_pos[nbfields][0]	= start;
-					split_lines_pos[nbfields][1]	= pos - 1;
-					nbfields++;
-					start=pos;		/*另开一行*/
-				}
-				pos+=2;  /*需要增加两个*/
-				p+=2;
-				count+=2;
-				if(count==10)
-				{
-					split_lines_pos[nbfields][0]	= start;
-					split_lines_pos[nbfields][1]	= pos-1;
-					nbfields++;
-					count=0;
-				}	
-			
-			}else
-			{
-				count++;
-				if( count == 10 ) /*正好*/
-				{
-					split_lines_pos[nbfields][0]	= start;
-					split_lines_pos[nbfields][1]	= pos;
-					nbfields++;
-					count = 0;
-				}
-				pos++;
-				p++;
-			}
+			disp_row[i].attrib = ans_id;
+			disp_row[i].start+=(pos+3);
 		}
+		rows	+= count;
+		pos		+= ( 3 + ans_len );
+		rt_kprintf( "count=%d rows=%d pos=%d\r\n", count, rows, pos );
 	}
 
-	if( count )
-	{
-		split_lines_pos[nbfields][0]	= start;
-		split_lines_pos[nbfields][1]	= pos-1;
-		return nbfields + 1;
-	}else
-	{
-		return nbfields;
-	}
+	return rows;
 }
 
 /**/
 static uint8_t get_line( uint8_t pos, char *pout )
 {
 	char		* pdst = pout;
-	signed char len;
-	uint8_t		from, to;
-	from	= split_lines_pos[pos][0];
-	to		= split_lines_pos[pos][1];
-	len		= to - from + 1;
-	if( len > 0 )
-	{
-		memcpy( pdst, center_ask.body + from, len );
-	}
-	pdst[len] = '\0';
-	return len;
+	memcpy( pdst, center_ask.body+disp_row[pos].start, disp_row[pos].count );
+	pdst[disp_row[pos].count] = '\0';
+	return disp_row[pos].count;
 }
 
 /*
@@ -145,7 +116,7 @@ static uint8_t get_line( uint8_t pos, char *pout )
  */
 static void display_item( )
 {
-	char buf1[32], buf2[32];
+	char	buf1[32], buf2[32];
 	uint8_t len, ret;
 
 	if( center_ask_count == 0 )
@@ -163,16 +134,8 @@ static void display_item( )
 	if( item_pos_read != item_pos ) /*有变化，要读*/
 	{
 		jt808_center_ask_get( item_pos, &center_ask );
-		item_pos_read		= item_pos;
-		split_lines_count	= split_content( );
-#if 1
-		rt_kprintf( "split_lines_count=%d\r\n", split_lines_count );
-		for( len = 0; len < split_lines_count; len++ )
-		{
-			ret = get_line( len, buf1 );
-			rt_kprintf( "\r\nid=%d len=%d>%s", len, ret, buf1 );
-		}
-#endif
+		item_pos_read = item_pos;
+		split_lines_count=analy_question( );
 	}
 
 	lcd_fill( 0 );
@@ -197,7 +160,7 @@ static void display_item( )
 /*显示详细内容*/
 static void display_detail( void )
 {
-	char buf1[32], buf2[32];
+	char	buf1[32], buf2[32];
 	int8_t	len1, len2;
 	lcd_fill( 0 );
 	if( line_pos < split_lines_count )
@@ -288,7 +251,7 @@ static void keypress( unsigned int key )
 MENUITEM Menu_3_1_CenterQuesSend =
 {
 	"中心提问消息",
-	12,0,
+	12,				  0,
 	&show,
 	&keypress,
 	&timetick_default,
