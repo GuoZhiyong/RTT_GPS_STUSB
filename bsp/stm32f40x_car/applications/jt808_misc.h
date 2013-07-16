@@ -176,6 +176,8 @@ typedef __packed struct
 
 
 extern uint8_t textmsg_count;
+extern uint8_t center_ask_count;
+
 void jt808_misc_0x8300( uint8_t *pmsg );
 void jt808_misc_0x8301( uint8_t *pmsg );
 void jt808_misc_0x8302( uint8_t *pmsg );

@@ -16,6 +16,7 @@
 #include "jt808.h"
 #include "jt808_gps.h"
 #include "sst25.h"
+#include "menu_include.h"
 
 #define TEXTMSG_START		0x3B3000
 #define TEXTMSG_SECTORS		2
@@ -136,12 +137,17 @@ void jt808_misc_0x8300( uint8_t *pmsg )
 	uint16_t	len		= ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
 	uint8_t		* ptts, *p, *psrc;
 	uint16_t	i;
+	jt808_textmsg_put( pmsg );
+	
 	if( flag & 0x01 )   /*紧急，直接弹出*/
 	{
+		Menu_2_3_CentreTextStor.parent=pMenuItem;
+		pMenuItem=&Menu_2_3_CentreTextStor;
+		pMenuItem->show();
 	}
 	if( flag & 0x04 )   /*终端显示器显示,指示有未读信息*/
 	{
-		jt808_textmsg_put( pmsg );
+		
 	}
 	if( flag & 0x08 )   /*TTS播报*/
 	{

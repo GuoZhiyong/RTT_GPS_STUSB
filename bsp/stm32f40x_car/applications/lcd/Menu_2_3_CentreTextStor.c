@@ -25,86 +25,15 @@ static uint8_t	line_pos = 0;           /*当前行号*/
 #define VIEW_ITEM	0
 #define VIEW_DETAIL 0xFF
 
-uint8_t view_mode = VIEW_ITEM;
+static uint8_t view_mode = VIEW_ITEM;
 
 /*最多支持32行记录每一行开始的位置*/
-uint8_t split_lines_pos[32][2];
-uint8_t split_lines_count = 0;
+static uint8_t split_lines_pos[32][2];
+static uint8_t split_lines_count = 0;
 
-#if 0
-/*内容分隔为行，记录行首、行尾地址*/
-uint8_t split_content( void )
-{
-	uint8_t count;
-	uint8_t pos = 0;
-	char	* p;
-	uint8_t linebreak	= 0;
-	int		nbfields	= 0;
-	uint8_t start_of_field;
-
-	memset( split_lines_pos, 0, 64 );
-
-	p = textmsg.body;
-	/*剔除开始的不可见*/
-	while( *p < 0x20 )
-	{
-		p++;
-		pos++;
-	}
-
-	start_of_field	= pos;
-	count			= 0;
-	for(; pos < textmsg.len - 1; ++pos )
-	{
-		if( *p < 0x20 )
-		{
-			linebreak = 1;
-			p++;
-		}else if( *p > 0x7F )   /*要增加2个*/
-		{
-			if( count == 9 )    /*不够了*/
-			{
-				count = 10;
-			}else
-			{
-				p++;
-				count++;
-			}
-		}else
-		{
-			p++;
-			count++;
-		}
-		if( ( linebreak ) || ( count == 10 ) )
-		{
-			if( linebreak ) /*截短*/
-			{
-				if( count )
-				{
-					split_lines_pos[nbfields][0]	= start_of_field;
-					split_lines_pos[nbfields][1]	= pos - 1;
-					nbfields++;
-				}
-			}else //if( count ) /*有数据*/
-			{
-				split_lines_pos[nbfields][0]	= start_of_field;
-				split_lines_pos[nbfields][1]	= pos;
-				nbfields++;
-			}
-			start_of_field	= pos + 1;
-			count			= 0;
-			linebreak		= 0;
-		}
-	}
-	split_lines_pos[nbfields][0]	= start_of_field;   /*记录结束的位置*/
-	split_lines_pos[nbfields][1]	= pos - 1;          /*记录结束的位置*/
-	return nbfields + 1;
-}
-
-#endif
 
 /*内容分隔为行，记录行首、行尾地址*/
-uint8_t split_content( void )
+static uint8_t split_content( void )
 {
 	uint8_t count;
 	uint8_t pos = 0;
@@ -185,7 +114,7 @@ uint8_t split_content( void )
 }
 
 /**/
-uint8_t get_line( uint8_t pos, char *pout )
+static uint8_t get_line( uint8_t pos, char *pout )
 {
 	char		* pdst = pout;
 	signed char len;
