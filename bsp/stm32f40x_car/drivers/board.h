@@ -92,6 +92,7 @@ void rt_hw_usart_init(void);
 /* SD Card init function */
 void rt_hw_msd_init(void);
 
+void usbh_init(void);
 
 
 

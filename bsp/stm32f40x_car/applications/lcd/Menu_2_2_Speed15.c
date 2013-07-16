@@ -11,6 +11,7 @@
  *     <author>  <time>   <version >   <desc>
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
+#include <string.h>
 #include "Menu_Include.h"
 #include "sed1520.h"
 
@@ -27,7 +28,7 @@ display_row     0  =>    hmi_15min_speed_curr
 static void display( void )
 {
 	unsigned char t[50];
-	uint8_t i,pos,row,hour,minute;	
+	uint8_t i,pos,hour,minute;	
 	
 	lcd_fill( 0 );
 
@@ -51,7 +52,7 @@ static void display( void )
 		{
 			sprintf( (char*)t, "[%02d] --:-- --",display_row+i+1);
 		}
-		lcd_text12( 10, i*11, (char*)t, strlen(t), LCD_MODE_SET );
+		lcd_text12( 10, i*11, (char*)t, strlen((char*)t), LCD_MODE_SET );
 	}
 	lcd_update_all( );
 }

@@ -26,7 +26,7 @@ static void msg( void *p )
 /**/
 static void show( void )
 {
-	uint8_t buf[32];
+	char buf[32];
 	pMenuItem->tick=rt_tick_get();
 
 	lcd_fill( 0 );

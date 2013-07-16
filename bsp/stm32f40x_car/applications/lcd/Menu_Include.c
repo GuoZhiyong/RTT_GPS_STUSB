@@ -312,7 +312,7 @@ void timetick_default( unsigned int tick )
 
 
 /*内容分隔为行，记录行首、行尾地址*/
-uint8_t split_content( uint8_t *pinfo,uint16_t len,DISP_ROW *display_rows)
+uint8_t split_content( uint8_t *pinfo,uint16_t len,DISP_ROW *display_rows,uint8_t bytes_per_row)
 {
 	uint8_t count;
 	uint8_t pos = 0;
@@ -349,7 +349,7 @@ uint8_t split_content( uint8_t *pinfo,uint16_t len,DISP_ROW *display_rows)
 			}
 			if( *p > 0x7F ) /*汉字*/
 			{
-				if( count == 19 )
+				if( count == (bytes_per_row-1))
 				{
 					disp_row->start = start;
 					disp_row->count = count;
@@ -367,7 +367,7 @@ uint8_t split_content( uint8_t *pinfo,uint16_t len,DISP_ROW *display_rows)
 				pos++;
 				p++;
 			}
-			if( count == 20 ) /*正好*/
+			if( count == bytes_per_row) /*正好*/
 			{
 				disp_row->start = start;
 				disp_row->count = count;

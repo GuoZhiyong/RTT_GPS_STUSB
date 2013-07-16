@@ -72,13 +72,16 @@ static uint8_t				mb_tts_pool[MB_TTS_POOL_SIZE];
 static struct rt_mailbox	mb_at_tx;
 static uint8_t				mb_at_tx_pool[MB_AT_TX_POOL_SIZE];
 
+#if 0
 #define MB_VOICE_POOL_SIZE 32
 static struct rt_mailbox	mb_voice;
 static uint8_t				mb_voice_pool[MB_VOICE_POOL_SIZE];
 
+
 #define MB_SMS_POOL_SIZE 32
 static struct rt_mailbox	mb_sms;
 static uint8_t				mb_sms_pool[MB_SMS_POOL_SIZE];
+#endif
 
 static uint16_t				tx_seq = 0;             /*发送序号*/
 
@@ -123,10 +126,8 @@ static JT808_MSG_STATE jt808_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t 
 {
 	uint8_t		* msg = pmsg + 12;
 	uint16_t	id;
-	uint16_t	seq;
 	uint8_t		res;
 
-	seq = ( *msg << 8 ) | *( msg + 1 );
 	id	= ( *( msg + 2 ) << 8 ) | *( msg + 3 );
 	res = *( msg + 4 );
 
@@ -282,6 +283,7 @@ JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA *pnodedata,
 	{
 		pnodedata->cb_tx_response = cb_tx_response;
 	}
+	return pnodedata;
 }
 
 /*修整发送数据的信息长度*/
@@ -339,7 +341,7 @@ void node_end( JT808_TX_NODEDATA* pnodedata )
 * Return:
 * Others:
 ***********************************************************/
-rt_err_t jt808_add_tx( uint8_t linkno,
+void jt808_add_tx( uint8_t linkno,
                        JT808_MSG_TYPE fMultiPacket,         /*是否为多包*/
                        uint16_t id,
                        int32_t seq,
@@ -355,6 +357,7 @@ rt_err_t jt808_add_tx( uint8_t linkno,
 	pnodedata = node_begin( linkno, fMultiPacket, id, seq, len );
 	node_data( pnodedata, pinfo, len, cb_tx_timeout, cb_tx_response, userpara );
 	msglist_append( list_jt808_tx, pnodedata );
+	
 }
 
 /*
@@ -362,10 +365,8 @@ rt_err_t jt808_add_tx( uint8_t linkno,
  */
 rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res )
 {
-	uint8_t				* pdata;
 	JT808_TX_NODEDATA	* pnodedata;
-	uint8_t				* p;
-	uint16_t			len;
+
 	uint8_t				buf[5];
 
 	pnodedata = node_begin( 1, SINGLE_ACK, 0x0001, -1, 5 );
@@ -380,6 +381,7 @@ rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res )
 	buf[4]	= res;
 	node_data( pnodedata, buf, 5, jt808_tx_timeout, jt808_tx_response, RT_NULL );
 	node_end( pnodedata );
+	return RT_EOK;
 }
 
 /*
@@ -392,11 +394,9 @@ static int handle_rx_0x8001( uint8_t linkno, uint8_t *pmsg )
 
 	uint16_t			id;
 	uint16_t			seq;
-	uint8_t				res;
 /*跳过消息头12byte*/
 	seq = ( *( pmsg + 12 ) << 8 ) | *( pmsg + 13 );
 	id	= ( *( pmsg + 14 ) << 8 ) | *( pmsg + 15 );
-	res = *( pmsg + 16 );
 
 	/*单条处理*/
 	iter		= list_jt808_tx->first;
@@ -411,6 +411,7 @@ static int handle_rx_0x8001( uint8_t linkno, uint8_t *pmsg )
 /*补传分包请求*/
 static int handle_rx_0x8003( uint8_t linkno, uint8_t *pmsg )
 {
+	return 1;
 }
 
 /* 监控中心对终端注册消息的应答*/
@@ -435,7 +436,7 @@ static int handle_rx_0x8100( uint8_t linkno, uint8_t *pmsg )
 	{
 		if( res == 0 )
 		{
-			strncpy( jt808_param.id_0xF003, msg + 3, body_len - 3 );
+			strncpy( jt808_param.id_0xF003, (char*)msg + 3, body_len - 3 );
 			iterdata->state = ACK_OK;
 			jt808_state		= AUTH;
 		}
@@ -498,7 +499,6 @@ static int handle_rx_0x8104( uint8_t linkno, uint8_t *pmsg )
 static int handle_rx_0x8105( uint8_t linkno, uint8_t *pmsg )
 {
 	uint8_t		cmd;
-	uint8_t		* cmd_arg;
 	uint16_t	seq = ( pmsg[10] << 8 ) | pmsg[11];
 
 	cmd = *( pmsg + 12 );
@@ -844,7 +844,7 @@ HANDLE_JT808_RX_MSG handle_rx_msg[] =
 	DECL_JT808_RX_HANDLE( 0x8104 ), //	查询终端参数
 	DECL_JT808_RX_HANDLE( 0x8105 ), // 终端控制
 	DECL_JT808_RX_HANDLE( 0x8106 ), // 查询指定终端参数
-	DECL_JT808_RX_HANDLE( 0x8106 ), /*查询终端属性,应答 0x0107*/
+	DECL_JT808_RX_HANDLE( 0x8107 ), /*查询终端属性,应答 0x0107*/
 	DECL_JT808_RX_HANDLE( 0x8201 ), // 位置信息查询    位置信息查询消息体为空
 	DECL_JT808_RX_HANDLE( 0x8202 ), // 临时位置跟踪控制
 	DECL_JT808_RX_HANDLE( 0x8203 ), /*人工确认报警信息*/
@@ -914,15 +914,14 @@ void cb_socket_close( uint8_t cid )
    20130625 会有粘包的情况
 
  */
-uint16_t jt808_rx_proc( uint8_t * pinfo )
+void jt808_rx_proc( uint8_t * pinfo )
 {
 	uint8_t		* psrc, *pdst, *pdata;
-	uint16_t	total_len, len;
+	uint16_t	total_len;
 	uint8_t		linkno;
 	uint16_t	i, id;
 	uint8_t		flag_find	= 0;
 	uint8_t		fcs			= 0;
-	uint16_t	ret;
 	uint16_t	count;
 	uint8_t		fstuff = 0;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              /*是否字节填充*/
 
@@ -1060,7 +1059,6 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 {
 	MsgListNode			* pnode		= ( MsgListNode* )node;
 	JT808_TX_NODEDATA	* pnodedata = ( JT808_TX_NODEDATA* )( pnode->data );
-	int					i;
 	rt_err_t			ret;
 
 	if( node == RT_NULL )
@@ -1129,6 +1127,7 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 	{
 		return WAIT_DELETE;
 	}
+	return IDLE;
 }
 
 /*
@@ -1232,12 +1231,12 @@ static void jt808_socket_proc( void )
 					memcpy( buf + 9, jt808_param.id_0xF001, 20 );   /*终端型号*/
 					memcpy( buf + 29, jt808_param.id_0xF002, 7 );   /*终端ID*/
 					buf[36] = jt808_param.id_0xF004;
-					strcpy( buf + 37, jt808_param.id_0xF005 );      /*车辆表示或VIN*/
+					strcpy( (char*)buf + 37, jt808_param.id_0xF005 );      /*车辆表示或VIN*/
 					jt808_tx( 0x0100, buf, 37 + strlen( jt808_param.id_0xF005 ) );
 					jt808_state = WAIT;
 					break;
 				case AUTH:
-					jt808_tx( 0x0102, jt808_param.id_0xF003, strlen( jt808_param.id_0xF003 ) );
+					jt808_tx( 0x0102, (uint8_t*)(jt808_param.id_0xF003), strlen( jt808_param.id_0xF003 ) );
 					jt808_state = WAIT;
 					break;
 				case REPORT:
@@ -1366,9 +1365,8 @@ void jt808_tts_proc( void )
 void jt808_at_tx_proc( void )
 {
 	rt_err_t	ret;
-	rt_size_t	len;
 	uint8_t		*pinfo, *p;
-	uint8_t		c;
+
 	T_GSM_STATE oldstate;
 
 /*gsm在处理其他命令*/
@@ -1389,10 +1387,8 @@ void jt808_at_tx_proc( void )
 	}
 
 	gsmstate( GSM_AT_SEND );
-
-	len = ( *pinfo << 8 ) | ( *( pinfo + 1 ) );
 	p	= pinfo + 2;
-	ret = gsm_send( p, RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 5, 1 );
+	ret = gsm_send( (char*)p, RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 5, 1 );
 	rt_kprintf( "at_tx=%d\r\n", ret );
 	rt_free( pinfo );
 	gsmstate( oldstate );
@@ -1411,13 +1407,10 @@ struct rt_thread thread_jt808;
 static void rt_thread_entry_jt808( void * parameter )
 {
 	rt_err_t			ret;
-	int					i;
 	uint8_t				* pstr;
 
 	MsgListNode			* iter;
 	JT808_TX_NODEDATA	* pnodedata;
-
-	int					j = 0xaabbccdd;
 
 	jt808_misc_init( );
 	jt808_gps_init( );
@@ -1474,7 +1467,6 @@ static void rt_thread_entry_jt808( void * parameter )
 /**/
 void bkpsram_init( void )
 {
-	u16 uwIndex, uwErrorIndex = 0;
 
 	/* Enable the PWR APB1 Clock Interface */
 	RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
@@ -1577,7 +1569,7 @@ void bkpsram_wr( u32 addr, char *psrc )
 	char pstr[128];
 	memset( pstr, 0, sizeof( pstr ) );
 	memcpy( pstr, psrc, strlen( psrc ) );
-	bkpsram_write( addr, pstr, strlen( pstr ) + 1 );
+	bkpsram_write( addr, (uint8_t*)pstr, strlen( pstr ) + 1 );
 }
 
 FINSH_FUNCTION_EXPORT( bkpsram_wr, write from backup sram );
@@ -1585,7 +1577,7 @@ FINSH_FUNCTION_EXPORT( bkpsram_wr, write from backup sram );
 /**/
 void bkpsram_rd( u32 addr )
 {
-	char pstr[128];
+	uint8_t pstr[128];
 	bkpsram_read( addr, pstr, sizeof( pstr ) );
 	rt_kprintf( "\r\n str=%s\r\n", pstr );
 }
@@ -1672,6 +1664,7 @@ rt_size_t tts_write( char* info, uint16_t len )
 rt_err_t tts( char *s )
 {
 	tts_write( s, strlen( s ) );
+	return RT_EOK;
 }
 
 FINSH_FUNCTION_EXPORT( tts, tts send );

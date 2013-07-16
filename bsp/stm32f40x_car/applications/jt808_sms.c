@@ -56,11 +56,11 @@ typedef  struct
 	u8	SMS_Style;                                  // 消息类型，1为pdu，0为text
 	u8	SMS_delayCounter;                           // 短信延时器
 	u8	SMS_waitCounter;                            ///短信等待
-	u8	SMSAtSend[45];                              //短信AT命令寄存器
+	char	SMSAtSend[45];                              //短信AT命令寄存器
 
-	u8				SMS_destNum[15];                //  发送短息目的号码
-	u8				SMS_sendFlag;                   //  短息发送标志位
-	u8				SMS_sd_Content[PHONEMAXSTR];    // 短息发送内容
+	char				SMS_destNum[15];                //  发送短息目的号码
+	char				SMS_sendFlag;                   //  短息发送标志位
+	char				SMS_sd_Content[PHONEMAXSTR];    // 短息发送内容
 	u8				SMS_rx_Content[PHONEMAXSTR];    // 短息接收内容
 	SMS_RX_STATE	rx_state;                       //接收状态
 	SMS_TX_STATE	tx_state;                       //发送状态
@@ -105,7 +105,7 @@ static int StringFind( const char* string, const char* find, int number )
 	}
 	count = pos - string;
 	return count;
-#ifdef 0
+#if 0
 	while( number > 0 )
 	{
 		/*定义查找到的字符位置的指针，以便临时指针进行遍历*/
@@ -1609,115 +1609,9 @@ u8 SMS_rx_pro( char *psrc, u16 len )
   *修改日期:
   *修改描述:
 *********************************************************************************/
-void SMS_Process_old( void )
-{
-	u16				ContentLen = 0;
-	u16				i, j, k;
-	char			*pstrTemp;
-	SMS_Send_Msg	*pmsg = RT_NULL;
-
-	if( SMS_Service.SMS_waitCounter )
-	{
-		return;
-	}
-	//-----------  短信处理相关 --------------------------------------------------------
-	//---------------------------------
-	if( SMS_Service.SMS_read ) // 读取短信
-	{
-		memset( SMS_Service.SMSAtSend, 0, sizeof( SMS_Service.SMSAtSend ) );
-		sprintf( SMS_Service.SMSAtSend, "AT+CMGR=%d\r\n", SMS_Service.SMIndex );
-		rt_kprintf( "%s", SMS_Service.SMSAtSend );
-		at( ( char* )SMS_Service.SMSAtSend );
-		SMS_Service.SMS_read--;
-		SMS_Service.SMS_waitCounter = 3;
-	}
-	//-------------------------------
-	//       发送短息确认
-	else if( SMS_Service.SMS_sendFlag == 1 )
-	{
-		//#ifdef SMS_TYPE_PDU
-		if( SMS_Service.SMS_Style == 1 )
-		{
-			memset( SMS_Service.SMSAtSend, 0, sizeof( SMS_Service.SMSAtSend ) );
-			///申请600字节空间
-			pstrTemp = rt_malloc( 400 );
-			memset( pstrTemp, 0, 400 );
-			///将字符串格式的目的电话号码设置为PDU格式的号码
-			SetPhoneNumToPDU( SMS_Service.Sms_Info.TPA, SMS_Service.SMS_destNum, sizeof( SMS_Service.Sms_Info.TPA ) );
-			///生成PDU格式短信内容
-			ContentLen = AnySmsEncode_NoCenter( SMS_Service.Sms_Info.TPA, GSM_UCS2, SMS_Service.SMS_sd_Content, strlen( SMS_Service.SMS_sd_Content ), pstrTemp );
-			//ContentLen=strlen(pstrTemp);
-			///添加短信尾部标记"esc"
-			pstrTemp[ContentLen] = 0x1A; // message  end
-			//////
-			sprintf( ( char* )SMS_Service.SMSAtSend, "AT+CMGS=%d\r\n", ( ContentLen - 2 ) / 2 );
-			rt_kprintf( "%s", SMS_Service.SMSAtSend );
-			at( ( char* )SMS_Service.SMSAtSend );
-			rt_thread_delay( 50 );
-			//////
-			//rt_kprintf("%s",pstrTemp);
-			SMS_SendConsoleStr( pstrTemp );
-			at( ( char* )pstrTemp, ContentLen + 1 );
-			rt_free( pstrTemp );
-			pstrTemp = RT_NULL;
-		}
-		//#else
-		else
-		{
-			memset( SMS_Service.SMSAtSend, 0, sizeof( SMS_Service.SMSAtSend ) );
-			strcpy( ( char* )SMS_Service.SMSAtSend, "AT+CMGS=\"" );
-			//strcat(SMS_Service.SMSAtSend,"8613820554863");// Debug
-			strcat( SMS_Service.SMSAtSend, SMS_Service.SMS_destNum );
-			strcat( SMS_Service.SMSAtSend, "\"\r\n" );
-
-			rt_kprintf( "\r\n%s", SMS_Service.SMSAtSend );
-			at( ( char* )SMS_Service.SMSAtSend );
-
-			rt_thread_delay( 50 );
-			ContentLen								= strlen( SMS_Service.SMS_sd_Content );
-			SMS_Service.SMS_sd_Content [ContentLen] = 0x1A; // message  end
-			rt_kprintf( "%s", SMS_Service.SMS_sd_Content );
-			at( ( char* )SMS_Service.SMS_sd_Content, ContentLen + 1 );
-		}
-		//#endif
-		SMS_Service.SMS_sendFlag	= 0;                    // clear
-		SMS_Service.SMS_waitCounter = 3;
-	}
-
-
-	/*
-	   else if(SMS_Service.SMS_delALL==1)	  //删除短信
-	   {
-	   memset(SMS_Service.SMSAtSend,0,sizeof(SMS_Service.SMSAtSend));
-	   ///
-	   //sprintf(SMS_Service.SMSAtSend,"AT+CMGD=%d\r\n",SMS_Service.SMIndex);
-	   sprintf(SMS_Service.SMSAtSend,"AT+CMGD=0,4\r\n",SMS_Service.SMIndex);
-	   rt_kprintf("%s",SMS_Service.SMSAtSend);
-	   ///
-	   at( ( char * )SMS_Service.SMSAtSend );
-	   SMS_Service.SMS_delALL=0;
-	   SMS_Service.SMS_waitCounter=3;
-	   }
-	 */
-}
-
-/*********************************************************************************
-  *函数名称:void SMS_protocol(u8 *instr,u16 len)
-  *功能描述:短信处理函数，这个函数需要在一个线程里面调用，进行相关处理(短信读取，删除和自动发送相关)
-  *输    入:none
-  *输    出:none
-  *返 回 值:none
-  *作    者:白养民
-  *创建日期:2013-05-29
-  *---------------------------------------------------------------------------------
-  *修 改 人:
-  *修改日期:
-  *修改描述:
-*********************************************************************************/
 void SMS_Process( void )
 {
 	u16				ContentLen = 0;
-	u16				i, j, k;
 	char			*pstrTemp;
 	SMS_Send_Msg	*pmsg = RT_NULL;
 	static uint32_t rx_tick;
@@ -1835,10 +1729,10 @@ void SMS_Process( void )
 		{
 			rt_kprintf( "\r\n  短息来源号码:%s", SMS_Service.SMS_destNum );
 			rt_kprintf( "\r\n 短信收到消息: " );
-			rt_kprintf( SMS_Service.SMS_rx_Content );
+			rt_kprintf( "%s",SMS_Service.SMS_rx_Content );
 			if( strncmp( (char*)SMS_Service.SMS_rx_Content, "TW703#", 6 ) == 0 )                                        //短信修改UDP的IP和端口
 			{
-				ContentLen = strlen( SMS_Service.SMS_rx_Content );
+				ContentLen = strlen( (char*)(SMS_Service.SMS_rx_Content) );
 				//-----------  自定义 短息设置修改 协议 ----------------------------------
 				SMS_protocol( SMS_Service.SMS_rx_Content + 5, ContentLen - 5, SMS_ACK_msg );
 			}
@@ -1850,7 +1744,7 @@ void SMS_Process( void )
 		{
 			memset( SMS_Service.SMSAtSend, 0, sizeof( SMS_Service.SMSAtSend ) );
 			//sprintf(SMS_Service.SMSAtSend,"AT+CMGD=%d\r\n",SMS_Service.SMIndex);	///删除指定短信
-			sprintf( SMS_Service.SMSAtSend, "AT+CMGD=0,4\r\n" ); ///删除所有短信
+			strcpy( SMS_Service.SMSAtSend, "AT+CMGD=0,4\r\n" ); ///删除所有短信
 			rt_kprintf( "%s", SMS_Service.SMSAtSend );
 			SMS_Service.rx_state = SMS_RX_IDLE;
 			break;

@@ -95,7 +95,7 @@ struct _sect_info
 	{ 'B', VDR_11_START, VDR_11_SECTORS, 64,  64,  50,	10, VDR_11_SECTORS, 64,	 },
 	{ 'C', VDR_12_START, VDR_12_SECTORS, 128, 32,  25,	20, VDR_12_SECTORS, 128, },
 };
-
+#if 0
 /*生成UTC时间*/
 static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, uint32_t hour, uint32_t min, uint32_t sec )
 {
@@ -106,7 +106,7 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
 	}
 	return ( ( ( (unsigned long)( year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day ) + year * 365 - 719499 ) * 24 + hour * 60 + min ) * 60 + sec );
 }
-
+#endif
 
 
 uint8_t vdr_signal_status = 0x01; /*行车记录仪的状态信号*/
@@ -300,18 +300,7 @@ static MYTIME mytime_from_buf( uint8_t* buf )
 	return MYDATETIME( year, month, day, hour, minute, sec );
 }
 
-/*把时间存到buffer中  4byte=>6byte*/
-static void mytime_to_buf( MYTIME time, uint8_t* buf )
-{
-	uint8_t *psrc = buf;
 
-	*psrc++ = HEX2BCD( YEAR( time ) );
-	*psrc++ = HEX2BCD( MONTH( time ) );
-	*psrc++ = HEX2BCD( DAY( time ) );
-	*psrc++ = HEX2BCD( HOUR( time ) );
-	*psrc++ = HEX2BCD( MINUTE( time ) );
-	*psrc	= HEX2BCD( SEC( time ) );
-}
 
 typedef __packed struct _vdr_08_userdata
 {
@@ -435,7 +424,6 @@ void vdr_08_put( MYTIME datetime, uint8_t speed, uint8_t status )
 void vdr_09_put( MYTIME datetime )
 {
 	uint8_t		buf[16];
-	uint32_t	i;
 	uint32_t	addr;
 	uint8_t		minute;
 
@@ -484,7 +472,6 @@ void vdr_10_put( MYTIME datetime )
 {
 	uint32_t	i, j;
 	uint32_t	addr;
-	uint8_t		minute;
 	uint8_t		buf[234 + 4]; /*保存要写入的信息*/
 	uint8_t		* pdata;
 
@@ -537,11 +524,11 @@ rt_err_t vdr_rx_gps( void )
 {
 	uint32_t	datetime;
 	uint8_t		year, month, day, hour, minute, sec;
-	uint32_t	i, j;
-	uint8_t		buf[128];
-	uint8_t		*pbkpsram;
+
 
 #ifdef TEST_BKPSRAM
+		uint8_t		buf[128];
+	uint8_t		*pbkpsram;
 /*上电后，有要写入的历史数据 08*/
 	if( *(__IO uint8_t*)( BKPSRAM_BASE ) == 1 )
 	{
@@ -557,7 +544,7 @@ rt_err_t vdr_rx_gps( void )
 
 	if( ( jt808_status & BIT_STATUS_GPS ) == 0 ) /*未定位*/
 	{
-		return;
+		return RT_EOK;
 	}
 
 	year	= gps_datetime[0];
@@ -644,8 +631,7 @@ rt_err_t vdr_rx_gps( void )
  */
 MYTIME vdr_08_12_init( uint8_t vdr_id, uint8_t format )
 {
-	uint32_t	addr, addr_max = 0xFFFFFFFF;
-	uint8_t		find = 0;
+	uint32_t	addr;
 	uint8_t		buf[32];
 	MYTIME		mytime_curr = 0;
 	MYTIME		mytime_ret	= 0x0;
@@ -698,7 +684,6 @@ uint8_t vdr_08_12_fill_data( JT808_TX_NODEDATA *pnodedata )
 	uint8_t			*pdata;
 	VDR_USERDATA	* puserdata;
 	uint32_t		addr;
-	MYTIME			mytime;
 	uint8_t			fcs			= 0;
 	uint16_t		rec_count	= 0;
 	uint8_t			id;
@@ -1034,7 +1019,7 @@ void vdr_rx_8700( uint8_t * pmsg )
 			buf[0]	= seq >> 8;
 			buf[1]	= seq & 0xff;
 			buf[2]	= cmd;
-			sprintf( buf + 3, "\x55\x7A\x02\x00\x06\x00%6s", gps_baseinfo.datetime );
+			sprintf( (char*)(buf + 3), "\x55\x7A\x02\x00\x06\x00%6s", gps_baseinfo.datetime );
 			//jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 15, buf, RT_NULL, RT_NULL );
 			jt808_tx( 0x0700, buf, 15 );
 

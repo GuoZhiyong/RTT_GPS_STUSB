@@ -13,7 +13,7 @@
  ***********************************************************/
 
 #include <stdio.h>
-
+#include <string.h>
 #include "stm32f4xx.h"
 #include <board.h>
 #include <rtthread.h>
@@ -164,7 +164,6 @@ static void rt_thread_entry_hmi( void* parameter )
 /**/
 void hmi_init( void )
 {
-	rt_thread_t tid;
 	rt_thread_init( &thread_hmi,
 	                "hmi",
 	                rt_thread_entry_hmi,

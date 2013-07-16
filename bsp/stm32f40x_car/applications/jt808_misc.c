@@ -62,14 +62,11 @@ uint8_t		textmsg_count = 0;
    要不要保证一包信息在一个扇区内，不会跨扇区保存
    在这里面，借用了info头部来存储TEXTMSG_HEAD,这样回写更方便
  */
-uint8_t jt808_textmsg_put( uint8_t* pinfo )
+void jt808_textmsg_put( uint8_t* pinfo )
 {
 	uint8_t		* psrc	= pinfo;
 	uint16_t	len		= ( ( ( psrc[2] << 8 ) | psrc[3] ) & 0x3FF ) - 1; /*有个标志字节*/
-	uint8_t		flag	= psrc[12];
 
-	uint32_t	addr;
-	uint8_t		count, count_need;
 
 	TEXTMSG		textmsg;
 
@@ -135,8 +132,6 @@ void jt808_misc_0x8300( uint8_t *pmsg )
 	uint16_t	id		= ( ( pmsg[0] << 8 ) | pmsg[1] );
 	uint16_t	seq		= ( ( pmsg[10] << 8 ) | pmsg[11] );
 	uint16_t	len		= ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
-	uint8_t		* ptts, *p, *psrc;
-	uint16_t	i;
 	jt808_textmsg_put( pmsg );
 	
 	if( flag & 0x01 )   /*紧急，直接弹出*/
@@ -151,7 +146,7 @@ void jt808_misc_0x8300( uint8_t *pmsg )
 	}
 	if( flag & 0x08 )   /*TTS播报*/
 	{
-		tts_write( pmsg + 13, len - 1 );
+		tts_write( (char*)(pmsg + 13), len - 1 );
 	}
 	if( flag & 0x10 )   /*广告屏*/
 	{
@@ -370,6 +365,7 @@ lbl_end_8301:
 ***********************************************************/
 uint8_t jt808_event_init( void )
 {
+	return RT_EOK;
 }
 
 
@@ -384,14 +380,10 @@ uint8_t		center_ask_count = 0;
    要不要保证一包信息在一个扇区内，不会跨扇区保存
    在这里面，借用了info头部来存储TEXTMSG_HEAD,这样回写更方便
  */
-uint8_t jt808_center_ask_put( uint8_t* pinfo )
+void jt808_center_ask_put( uint8_t* pinfo )
 {
 	uint8_t		* psrc	= pinfo;
 	uint16_t	len		= ( ( ( psrc[2] << 8 ) | psrc[3] ) & 0x3FF ) - 1; /*有个标志字节*/
-	uint8_t		flag	= psrc[12];
-
-	uint32_t	addr;
-	uint8_t		count, count_need;
 
 	CENTER_ASK		center_ask_msg;
 
@@ -423,6 +415,7 @@ uint8_t jt808_center_ask_put( uint8_t* pinfo )
 	{
 		center_ask_count++;
 	}
+	//	return RT_EOK;
 }
 
 /*
@@ -458,8 +451,6 @@ void jt808_center_ask_get( uint8_t index, CENTER_ASK* pout )
 void jt808_misc_0x8302( uint8_t *pmsg )
 {
 	uint8_t		flag	= pmsg[12];
-	uint16_t	id		= ( ( pmsg[0] << 8 ) | pmsg[1] );
-	uint16_t	seq		= ( ( pmsg[10] << 8 ) | pmsg[11] );
 	uint16_t	len		= ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
 	uint16_t	ans_len = 0;
 	uint8_t		*p;
@@ -478,7 +469,7 @@ void jt808_misc_0x8302( uint8_t *pmsg )
 	{
 		tts_write( "中心下发提问", 12 );
 		ask_len = pmsg[13];                 /*问题内容长度*/
-		tts_write( pmsg + 14, ask_len );    /*问题*/
+		tts_write( (char*)(pmsg + 14), ask_len );    /*问题*/
 		tts_write( "请选择", 6 );
 		pos = 2 + ask_len;  /*指向答案项，注意偏移开始地址，类型+长度*/
 		rt_kprintf("pos=%d len=%d\r\n",pos,len);
@@ -491,7 +482,7 @@ void jt808_misc_0x8302( uint8_t *pmsg )
 			p[2]	= ',';
 			pos		= pos + ans_len + 3;    /*加3是因为答案ID和答案内容长度没有计算*/
 		}
-		tts_write( pmsg + 14 + ask_len, len - ask_len - 2 );
+		tts_write((char*) (pmsg + 14 + ask_len), len - ask_len - 2 );
 	}
 	if( flag & 0x10 )                       /*广告屏*/
 	{
@@ -540,20 +531,17 @@ void jt808_misc_0x8303( uint8_t *pmsg )
 	uint16_t	seq		= ( ( pmsg[10] << 8 ) | pmsg[11] );
 	uint16_t	i, j;
 	uint8_t		* pdata;
-	//uint8_t		*pevtbuf;
+	uint8_t		*pevtbuf;
 	uint8_t		count, res = 0, len = 0;
 	uint16_t	addr;
 	uint16_t	tmpbuf[64];
 
-#if 0
 	pevtbuf = rt_malloc( 4096 );
 	if( pevtbuf == RT_NULL )
 	{
 		res = 1;
-		goto lbl_end_8301;
+		goto lbl_end_8303;
 	}
-#endif
-	uint8_t pevtbuf[4096];
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
 	sst25_read( INFO_ONDEMAND_START, pevtbuf, 4096 );
@@ -637,8 +625,8 @@ void jt808_misc_0x8303( uint8_t *pmsg )
 			if( pevtbuf[j * 64 + 1] > pevtbuf[j * 64 + 65] )
 			{
 				memcpy( tmpbuf, pevtbuf + j * 64, 64 );
-				memcpy( pevtbuf + j * 64 + 1, pevtbuf + j * 64 + 65, 64 );
-				memcpy( pevtbuf + j * 64 + 65, tmpbuf, 64 );
+				memcpy( pevtbuf + j * 64, pevtbuf + j * 64 + 64, 64 );
+				memcpy( pevtbuf + j * 64 + 64, tmpbuf, 64 );
 			}
 		}
 	}
@@ -657,11 +645,10 @@ void jt808_misc_0x8304( uint8_t *pmsg )
 /*电话回拨*/
 void jt808_misc_0x8400( uint8_t *pmsg )
 {
-	uint8_t		dialbuf[32];
-	uint8_t		flag	= pmsg[12];
+	char		dialbuf[64];
 	uint16_t	len		= ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
 	strcpy( dialbuf, "ATD" );
-	strncpy( dialbuf + 3, &pmsg[13], len - 1 );
+	strncpy( dialbuf + 3, (char*)(pmsg+13), len - 1 );
 	strcat( dialbuf, ";\r\n" );
 	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
 	at( dialbuf );

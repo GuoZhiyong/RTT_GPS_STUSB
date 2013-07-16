@@ -748,11 +748,11 @@ rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 		datalen += 28;
 	}
 	rt_sem_release( &sem_dataflash );
-	ret = jt808_tx_ack( 0x802, pdestbuf, datalen );
+	jt808_tx_ack( 0x802, pdestbuf, datalen );
 
 	rt_free( ptempbuf );
 	rt_free( pdestbuf );
-	return ret;
+	return RT_EOK;
 }
 
 /*********************************************************************************

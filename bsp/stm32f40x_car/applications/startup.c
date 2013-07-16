@@ -18,7 +18,7 @@
 
 #include "stm32f4xx.h"
 #include "board.h"
-
+#include "jt808.h"
 /**
  * @addtogroup STM32
  */
@@ -65,12 +65,6 @@ void assert_failed(u8* file, u32 line)
  */
 void rtthread_startup(void)
 {
-	char buf[128];
-	char *psrc;
-	char *pdst=RT_NULL;
-	int i,linkno,infolen;
-
-
 	/* init board */
 	rt_hw_board_init();
 
@@ -97,20 +91,15 @@ void rtthread_startup(void)
 
 	rt_kprintf("\r\nrcc.csr=%08x",RCC->CSR);
 
-/*
-	sprintf(buf,"%s","%IPDATA:1,3,\"123\"");
-
-	psrc=buf;
-	pdst=buf;
-	rt_kprintf("buf=%s\r\n",psrc);
-	i = sscanf( psrc, "%%IPDATA:%d,%d,%s", &linkno, &infolen, pdst );
-	rt_kprintf("\r\ni=%d,linkno=%d,infolen=%d,pdst=%s\r\n",i,linkno,infolen,pdst);
-*/	
 	/* init application */
+	mma8451_driver_init( );
+	printer_driver_init( );
+	usbh_init( );
+	spi_sd_init( );
 	sst25_init(); /*在此初始化,gsm才能读取参数，放在app_thread中不会先执行*/
 	rtc_init();
 	timestamp();
-	rt_application_init();
+	//rt_application_init();
 	RS485_init();
 	gps_init();
 	gsm_init();

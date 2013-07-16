@@ -1,6 +1,6 @@
 #include "Menu_Include.h"
 #include "sed1520.h"
-
+#include "jt808_gps.h"
 
 u8 RertartGps_screen=0;
 

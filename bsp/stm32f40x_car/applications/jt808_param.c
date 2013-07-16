@@ -136,7 +136,7 @@ JT808_PARAM jt808_param =
 #define FLAG_DISABLE_REPORT_INVALID 1       /*设备非法*/
 #define FLAG_DISABLE_REPORT_AREA	2       /*区域内禁止上报*/
 
-static uint32_t flag_disable_report = 0;    /*禁止上报的标志位*/
+//static uint32_t flag_disable_report = 0;    /*禁止上报的标志位*/
 
 /*保存参数到serialflash*/
 void param_save( void )
@@ -391,7 +391,7 @@ static void param_put_str( uint16_t id, uint8_t* value )
 		if( id == tbl_id_lookup[i].id )
 		{
 			p = tbl_id_lookup[i].val;
-			strncpy( p, (char*)value, 32 );
+			strncpy( (char*)p, (char*)value, 32 );
 			break;
 		}
 	}
@@ -463,9 +463,10 @@ uint32_t param_get_int( uint16_t id )
 			val |= ( ( *p++ ) << 8 );
 			val |= ( ( *p++ ) << 16 );
 			val |= ( ( *p ) << 24 );
-			return val;
+			break;
 		}
 	}
+	return val;
 }
 
 /***********************************************************
@@ -480,7 +481,6 @@ uint32_t param_get_int( uint16_t id )
 void param_print( void )
 {
 	int			i, id;
-	int			type;
 	uint8_t		*p;
 	uint32_t	val = 0;
 
@@ -559,7 +559,7 @@ void param_dump( void )
 FINSH_FUNCTION_EXPORT( param_dump, dump param );
 
 /*手动设置apn*/
-void apn( char *s )
+void apn( uint8_t *s )
 {
 	param_put_str( 0x0010, s );
 }
@@ -576,7 +576,7 @@ FINSH_FUNCTION_EXPORT( apn, set apn );
 * Return:
 * Others:
 ***********************************************************/
-void ipport( char *ip, uint16_t port )
+void ipport( uint8_t *ip, uint16_t port )
 {
 	param_put_str( 0x13, ip );
 	param_put_int( 0x18, port );
@@ -639,10 +639,10 @@ uint16_t get_param_and_fill_buf( uint8_t* pbuf )
 		if( tbl_id_lookup[i].type == TYPE_STR )
 		{
 			p		= tbl_id_lookup[i].val;
-			*pbuf++ = strlen( p );
-			memcpy( pbuf, p, strlen( p ) );
-			count	+= ( strlen( p ) + 1 );
-			pbuf	+= strlen( p );
+			*pbuf++ = strlen( (char*)p );
+			memcpy( pbuf, p, strlen( (char*)p ) );
+			count	+= ( strlen( (char*)p ) + 1 );
+			pbuf	+= strlen( (char*)p );
 		}
 		if( tbl_id_lookup[i].type == TYPE_CAN )
 		{
@@ -723,10 +723,10 @@ static JT808_MSG_STATE jt808_0x8104_timeout( JT808_TX_NODEDATA * pnodedata )
 void jt808_param_0x8104( uint8_t *pmsg )
 {
 	JT808_TX_NODEDATA	* pnodedata;
-	uint8_t				* pdata;
-	uint16_t			id;
+//	uint8_t				* pdata;
+//	uint16_t			id;
 	uint8_t				buf[600];
-	uint8_t				*p;
+//	uint8_t				*p;
 	uint16_t			param_size	= 0;
 	uint16_t			param_count = 0;
 	uint16_t			i, count;
@@ -759,7 +759,7 @@ void jt808_param_0x8104( uint8_t *pmsg )
 				param_size += 6;
 				break;
 			case TYPE_STR:
-				param_size += ( strlen( tbl_id_lookup[i].val ) + 5 );
+				param_size += ( strlen( (char*)(tbl_id_lookup[i].val) ) + 5 );
 				break;
 			case TYPE_CAN:
 				param_size += 13;
@@ -853,10 +853,10 @@ void jt808_param_0x8106( uint8_t *pmsg )
 				if( tbl_id_lookup[i].type == TYPE_STR )
 				{
 					p		= tbl_id_lookup[i].val;
-					*pbuf++ = strlen( p );
-					memcpy( pbuf, p, strlen( p ) );
-					count	+= ( strlen( p ) + 1 );
-					pbuf	+= strlen( p );
+					*pbuf++ = strlen( (char*)p );
+					memcpy( pbuf, p, strlen( (char*)p ) );
+					count	+= ( strlen( (char*)p ) + 1 );
+					pbuf	+= strlen( (char*)p );
 				}
 				if( tbl_id_lookup[i].type == TYPE_CAN )
 				{

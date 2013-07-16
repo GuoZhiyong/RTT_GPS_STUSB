@@ -19,6 +19,9 @@
 
 #include "msglist.h"
 #include "m66.h"
+#include "sst25.h"
+#include "jt808_area.h"
+
 
 #define NEED_TODO	0
 
@@ -325,6 +328,9 @@ typedef __packed struct _jt808_tx_nodedata
 
 extern uint8_t mobile[6];
 
+
+void jt808_init( void );
+
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 
 
@@ -349,7 +355,7 @@ JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA * pnodedata,
 void node_end( JT808_TX_NODEDATA* pnodedata );
 
 
-rt_err_t jt808_add_tx( uint8_t linkno,
+void jt808_add_tx( uint8_t linkno,
                        JT808_MSG_TYPE fMultiPacket, /*是否为多包*/
                        uint16_t id,
                        int32_t seq,

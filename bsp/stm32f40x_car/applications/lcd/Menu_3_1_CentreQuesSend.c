@@ -46,15 +46,14 @@ struct _stu_question
 static DISP_ROW disp_row[32];
 static uint8_t	split_lines_count = 0;
 
-
 /*分析提问信息*/
 uint8_t analy_question( void )
 {
 	uint8_t		*p;
 	uint8_t		len;
 	uint8_t		count;
-	uint8_t		rows=0;
-	uint8_t		i = 0;
+	uint8_t		rows	= 0;
+	uint8_t		i		= 0;
 	uint8_t		ans_id;
 	uint16_t	ans_len;
 
@@ -63,7 +62,7 @@ uint8_t analy_question( void )
 	/*问题部分*/
 	len		= center_ask.body[0];
 	p		= center_ask.body + 1;
-	count	= split_content( p, len, disp_row );
+	count	= split_content( p, len, disp_row ,20);
 	for( i = 0; i < count; i++ )
 	{
 		disp_row[i].attrib = 0x8000;
@@ -72,20 +71,20 @@ uint8_t analy_question( void )
 	rows += count;
 
 	end = center_ask.len;
-	
-	pos =  1 + len;        /*所有的偏移都是相对于body计算的，所以要调整*/
+
+	pos = 1 + len;                          /*所有的偏移都是相对于body计算的，所以要调整*/
 	/*候选答案列表，*/
 	while( pos < end )
 	{
-		p		= center_ask.body + pos;  /*一个字节的id,和长度(2bytes)*/
+		p		= center_ask.body + pos;    /*一个字节的id,和长度(2bytes)*/
 		ans_id	= *p++;
 		ans_len = ( *p++ ) << 8;
 		ans_len |= *p++;
-		count	= split_content( p, ans_len, disp_row + rows );
+		count	= split_content( p, ans_len, disp_row + rows ,16);
 		for( i = rows; i < rows + count; i++ )
 		{
-			disp_row[i].attrib = ans_id;
-			disp_row[i].start+=(pos+3);
+			disp_row[i].attrib	= ans_id;
+			disp_row[i].start	+= ( pos + 3 );
 		}
 		rows	+= count;
 		pos		+= ( 3 + ans_len );
@@ -98,8 +97,8 @@ uint8_t analy_question( void )
 /**/
 static uint8_t get_line( uint8_t pos, char *pout )
 {
-	char		* pdst = pout;
-	memcpy( pdst, center_ask.body+disp_row[pos].start, disp_row[pos].count );
+	char * pdst = pout;
+	memcpy( pdst, center_ask.body + disp_row[pos].start, disp_row[pos].count );
 	pdst[disp_row[pos].count] = '\0';
 	return disp_row[pos].count;
 }
@@ -117,7 +116,7 @@ static uint8_t get_line( uint8_t pos, char *pout )
 static void display_item( )
 {
 	char	buf1[32], buf2[32];
-	uint8_t len, ret;
+	uint8_t len;
 
 	if( center_ask_count == 0 )
 	{
@@ -134,8 +133,8 @@ static void display_item( )
 	if( item_pos_read != item_pos ) /*有变化，要读*/
 	{
 		jt808_center_ask_get( item_pos, &center_ask );
-		item_pos_read = item_pos;
-		split_lines_count=analy_question( );
+		item_pos_read		= item_pos;
+		split_lines_count	= analy_question( );
 	}
 
 	lcd_fill( 0 );
@@ -148,11 +147,11 @@ static void display_item( )
 	         MINUTE( center_ask.datetime ) );
 
 	line_pos	= 0; /**/
-	len			= get_line( 0, buf2 );
+	//len			= get_line( 0, buf2 );
 	if( len )
 	{
 		lcd_text12( 0, 4, buf1, strlen( buf1 ), LCD_MODE_SET );
-		lcd_text12( 0, 16, buf2, len, LCD_MODE_SET );
+		lcd_text12( 0, 16, center_ask.body+disp_row[0].start, disp_row[0].count, LCD_MODE_SET );
 	}
 	lcd_update_all( );
 }
@@ -160,18 +159,26 @@ static void display_item( )
 /*显示详细内容*/
 static void display_detail( void )
 {
-	char	buf1[32], buf2[32];
-	int8_t	len1, len2;
+	char	buf[32];
+	int8_t	len;
+	uint8_t i, col = 4;
 	lcd_fill( 0 );
-	if( line_pos < split_lines_count )
+	for( i = line_pos; i < line_pos + 2; i++ )
 	{
-		len1 = get_line( line_pos, buf1 );
-		lcd_text12( 0, 4, buf1, len1, LCD_MODE_SET );
-	}
-	if( ( line_pos + 1 ) < split_lines_count )
-	{
-		len2 = get_line( line_pos + 1, buf2 );
-		lcd_text12( 0, 16, buf2, len2, LCD_MODE_SET );
+		if( line_pos < split_lines_count )
+		{
+			if(disp_row[i].attrib>=0x8000)
+			{
+				lcd_text12( 0, col, center_ask.body+disp_row[i].start, disp_row[i].count, LCD_MODE_SET );
+			}
+			else
+			{
+				len=sprintf(buf,"%02d. ",disp_row[i].attrib);
+				strncpy(buf,center_ask.body+disp_row[i].start, disp_row[i].count)l
+				
+			}
+			col += 12;
+		}
 	}
 	lcd_update_all( );
 }

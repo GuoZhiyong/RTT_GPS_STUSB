@@ -24,6 +24,7 @@
 #include "rtc.h"
 
 #include "jt808_auxio.h"
+#include "jt808_area.h"
 #include "menu_include.h"
 
 #include "vdr.h"
@@ -119,7 +120,7 @@ static uint32_t gps_longi_last	= 0;
 /*保存gps基本位置信息*/
 GPS_BASEINFO	gps_baseinfo;
 /*gps的状态*/
-GPS_STATUS		gps_status = { 3, 0, 0, 0 };
+GPS_STATUS		gps_status = { MODE_BDGPS, 0, 0, 0 };
 
 
 /*
@@ -320,12 +321,9 @@ static void process_hmi_15min_speed(void)
 
 static void process_gps_report( void )
 {
-	uint32_t	i, tmp;
+	uint32_t	tmp;
 	uint8_t		flag_send = 0;    /*默认不上报*/
-	rt_err_t	err;
-	uint8_t		*pdata;
-
-	uint8_t		*palarmdata;
+	uint8_t		*palarmdata=RT_NULL;
 	uint16_t	alarm_length;
 	uint32_t	alarm_bits;
 
@@ -356,7 +354,7 @@ static void process_gps_report( void )
 		if(jt808_8202_track_counter>=jt808_8202_track_interval)
 		{
 			jt808_8202_track_counter=0;
-			err = jt808_tx( 0x0200, buf, 28 + alarm_length );
+			jt808_tx( 0x0200, buf, 28 + alarm_length );
 			if( jt808_8202_track_duration > jt808_8202_track_interval )
 			{
 				jt808_8202_track_duration -= jt808_8202_track_interval;
@@ -453,15 +451,15 @@ static void process_gps_report( void )
 
 	jt808_status_last = jt808_status;
 
-	//if(flag_send==0) return;
+	if(flag_send==0) return;
 
 /*生成要上报的数据*/
 #if 1
 
 	if(gps_datetime[5] == 0 )
 	{
-		err = jt808_tx( 0x0200, buf, 28 + alarm_length );
-		rt_kprintf( "%d>add gps report=%d\r\n", rt_tick_get( ), err );
+		jt808_tx( 0x0200, buf, 28 + alarm_length );
+		rt_kprintf( "%d>add gps report\r\n", rt_tick_get( ));
 	}
 #endif
 }
@@ -487,16 +485,13 @@ static uint8_t process_rmc( uint8_t * pinfo )
 	uint32_t	degrees, minutes;
 	uint8_t		commacount = 0, count = 0;
 
-	uint32_t	lati, longi;
-	uint16_t	speed_10x;
-	uint16_t	cog;                /*course over ground*/
+	uint32_t	lati=0, longi=0;
+	uint16_t	speed_10x=0;
+	uint16_t	cog=0;                /*course over ground*/
 
-	uint8_t		wait_dot_find;      /*确定信息中 dot .的位置*/
 	uint8_t		i;
 	uint8_t		buf[20];
 	uint8_t		*psrc = pinfo + 6;  /*指向开始位置 $GNRMC,074001.00,A,3905.291037,N,11733.138255,E,0.1,,171212,,,A*655220.9*3F0E*/
-
-	uint8_t		tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
 /*因为自增了一次，所以从pinfo+6开始*/
 	while( *psrc++ )
@@ -733,7 +728,6 @@ static uint8_t process_rmc( uint8_t * pinfo )
 				}
 
 				return 0;
-				break;
 		}
 		count	= 0;
 		buf[0]	= 0;
@@ -753,8 +747,6 @@ static uint8_t process_rmc( uint8_t * pinfo )
 uint8_t process_gga( uint8_t * pinfo )
 {
 	//检查数据完整性,执行数据转换
-	uint32_t	degrees, minutes;
-	uint32_t	lati, longi;
 	uint8_t		NoSV;
 	uint8_t		i;
 	uint8_t		buf[20];
@@ -808,7 +800,7 @@ uint8_t process_gga( uint8_t * pinfo )
 				break;
 			case 8: /*HDOP*/
 				return 0;
-				break;
+
 			case 9: /*MSL Altitute*/
 				altitute = 0;
 				for( i = 0; i < count; i++ )
@@ -823,7 +815,6 @@ uint8_t process_gga( uint8_t * pinfo )
 				gps_baseinfo.altitude	= altitute;
 				gps_alti				= altitute;
 				return 0;
-				break;
 		}
 		count	= 0;
 		buf[0]	= 0;
@@ -844,7 +835,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 
 {
 	char * psrc;
-	psrc				= pinfo;
+	psrc				= (char*)pinfo;
 	*( psrc + length )	= 0;
 	/*是否输出原始信息*/
 	if( gps_status.Raw_Output )
@@ -854,14 +845,14 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 
 	if( ( strncmp( psrc, "$GNGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$BDGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$GPGGA,", 7 ) == 0 ) )
 	{
-		process_gga( psrc );
+		process_gga( (uint8_t*)psrc );
 	}
 
 	//if( ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) )
 	if( strncmp( psrc + 3, "RMC,", 4 ) == 0 )
 	{
 		gps_sec_count++;
-		if( process_rmc( psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确，并不判断定位与否*/
+		if( process_rmc( (uint8_t*)psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确，并不判断定位与否*/
 		{
 			process_hmi_15min_speed();  /*最近15分钟平均速度*/
 			vdr_rx_gps( );              /*行车记录仪数据处理*/

@@ -270,7 +270,7 @@ static void display_item( )
 		jt808_textmsg_get( item_pos, &textmsg );
 		item_pos_read		= item_pos;
 		//split_lines_count	= split_content( );		
-		split_lines_count= split_content(textmsg.body,textmsg.len,disp_row);
+		split_lines_count= split_content(textmsg.body,textmsg.len,disp_row,20);
 #if 1
 		rt_kprintf( "split_lines_count=%d\r\n", split_lines_count );
 		for( len = 0; len < split_lines_count; len++ )

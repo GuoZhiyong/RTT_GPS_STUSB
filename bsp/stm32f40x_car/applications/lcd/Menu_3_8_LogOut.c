@@ -42,8 +42,7 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
-     u8  Reg_buf[40];
-	 
+ 
    switch(key)
 	   {
 	   case KEY_MENU:
