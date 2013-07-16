@@ -75,6 +75,8 @@ extern MYTIME mytime_now;
 
 extern uint16_t jt808_8202_track_interval;  /*jt808_8202 临时位置跟踪控制*/
 extern uint32_t jt808_8202_track_duration;
+extern uint16_t	jt808_8202_track_counter;	
+
 
 extern uint32_t	jt808_8203_manual_ack_seq;	/*人工确认报警的标识位 0,3,20,21,22,27,28*/
 extern uint16_t	jt808_8203_manual_ack_value;

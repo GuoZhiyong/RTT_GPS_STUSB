@@ -1,258 +1,142 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #include "Menu_Include.h"
 #include <stdio.h>
 #include <string.h>
 #include "sed1520.h"
 
-unsigned char Menu_Affair=0;
-unsigned char Affair_scree=1;
+static uint8_t	count, pos;
 
-
-//------- 事件 ----
-/*typedef struct _EVENT
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void display( void )
 {
-  unsigned char Event_ID;   //  事件ID
-  unsigned char Event_Len;  //  事件长度
-  unsigned char Event_Effective; //  事件是否有效，   1 为要显示  0     
-  unsigned char Event_Str[20];  //  事件内容
-}EVENT; 
-
-EVENT          EventObj;    // 事件   
-EVENT          EventObj_8[8]; // 事件 
-
-*/
-
-void SendAffairMeun(unsigned char screen,unsigned char SendOK)
-{
-	#if NEED_TODO
-if(SendOK==1)
+	uint8_t buf[32];
+	EVENT* evt;
+	uint8_t index=pos&0xFE;	/*对齐到偶数页*/
+	lcd_fill( 0 );
+	if( count == 0 )
 	{
-	if(EventObj_8[screen-1].Event_Effective)
-		{
-		lcd_fill(0);
-		lcd_text12(30,5,"发送成功",8,LCD_MODE_INVERT);
-		lcd_update_all();
-		}
+		//lcd_text12( ( 122 - 6 * 12 ) / 2, 18, "[无事件信息]", 6*12,LCD_MODE_SET );
+		strcpy(buf,"[无事件信息]");
+		lcd_text12( ( 122 - 6 * 12 ) / 2, 18, buf, strlen(buf),LCD_MODE_SET );
 	}
-else
+	else
 	{
-	if((screen>=1)&&(screen<=8))
+		evt=(EVENT*)(event_buf+64*index);
+		sprintf(buf,"%02d %s",evt->id,evt->body);
+		lcd_text12(0,4,buf,strlen(buf),3-(pos&0x01)*2);  /*SET=1 INVERT=3*/
+		if((index+1)<count)
 		{
-		if(EventObj_8[screen-1].Event_Effective)
-			{
-			lcd_fill(0);
-			lcd_text12(15,5,(char *)EventObj_8[screen-1].Event_Str,EventObj_8[screen-1].Event_Len,LCD_MODE_INVERT);
-			lcd_update_all();
-			}
-		}
+			evt=(EVENT*)(event_buf+64*index+64);
+			sprintf(buf,"%02d %s",evt->id,evt->body);
+			lcd_text12(0,18,buf,strlen(buf),(pos&0x01)*2+1);  /*SET=1 INVERT=3*/
+		}	
 	}
-	#endif
+	lcd_update_all( );
 }
 
-
-void Dis_Affair(unsigned char screen)
-{
-	#if NEED_TODO
-lcd_fill(0);
-switch(screen)
-	{
-	case 1:
-		lcd_text12(0,0,"1.",2,LCD_MODE_SET);
-		if(EventObj_8[0].Event_Effective)
-			lcd_text12(15,0,(char *)EventObj_8[0].Event_Str,EventObj_8[0].Event_Len,LCD_MODE_INVERT);
-		else
-			lcd_text12(15,0,"无",2,LCD_MODE_INVERT);	
-		lcd_text12(0,16,"2.",2,LCD_MODE_SET);
-		if(EventObj_8[1].Event_Effective)
-			lcd_text12(15,16,(char *)EventObj_8[1].Event_Str,EventObj_8[1].Event_Len,LCD_MODE_SET);
-		else
-			lcd_text12(15,16,"无",2,LCD_MODE_SET);
-		break;
-		
-	case 2:
-		lcd_text12(0,0,"1.",2,LCD_MODE_SET);
-		if(EventObj_8[0].Event_Effective)
-			lcd_text12(15,0,(char *)EventObj_8[0].Event_Str,EventObj_8[0].Event_Len,LCD_MODE_SET);
-		else
-			lcd_text12(15,0,"无",2,LCD_MODE_SET);
-		lcd_text12(0,16,"2.",2,LCD_MODE_SET);
-		if(EventObj_8[1].Event_Effective)
-			lcd_text12(15,16,(char *)EventObj_8[1].Event_Str,EventObj_8[1].Event_Len,LCD_MODE_INVERT);
-		else
-			lcd_text12(15,16,"无",2,LCD_MODE_INVERT); 
-		break;
-	case 3:
-		lcd_text12(0,0,"3.",2,LCD_MODE_SET);
-		if(EventObj_8[2].Event_Effective)
-			lcd_text12(15,0,(char *)EventObj_8[2].Event_Str,EventObj_8[2].Event_Len,LCD_MODE_INVERT);
-		else
-			lcd_text12(15,0,"无",2,LCD_MODE_INVERT);
-		lcd_text12(0,16,"4.",2,LCD_MODE_SET);
-		if(EventObj_8[3].Event_Effective)
-			lcd_text12(15,16,(char *)EventObj_8[3].Event_Str,EventObj_8[3].Event_Len,LCD_MODE_SET);
-		else
-			lcd_text12(15,16,"无",2,LCD_MODE_SET);
-		break;
-	case 4: 
-		lcd_text12(0,0,"3.",2,LCD_MODE_SET);
-		if(EventObj_8[2].Event_Effective)
-			lcd_text12(15,0,(char *)EventObj_8[2].Event_Str,EventObj_8[2].Event_Len,LCD_MODE_SET);
-		else
-			lcd_text12(15,0,"无",2,LCD_MODE_SET);
-		lcd_text12(0,16,"4.",2,LCD_MODE_SET);
-		if(EventObj_8[3].Event_Effective)
-			lcd_text12(15,16,(char *)EventObj_8[3].Event_Str,EventObj_8[3].Event_Len,LCD_MODE_INVERT);
-		else
-			lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
-		break;
-	case 5:
-		lcd_text12(0,0,"5.",2,LCD_MODE_SET);
-		if(EventObj_8[4].Event_Effective)
-			lcd_text12(15,0,(char *)EventObj_8[4].Event_Str,EventObj_8[4].Event_Len,LCD_MODE_INVERT);
-		else
-			lcd_text12(15,0,"无",2,LCD_MODE_INVERT);
-		lcd_text12(0,16,"6.",2,LCD_MODE_SET);
-		if(EventObj_8[5].Event_Effective)
-			lcd_text12(15,16,(char *)EventObj_8[5].Event_Str,EventObj_8[5].Event_Len,LCD_MODE_SET);
-		else
-			lcd_text12(15,16,"无",2,LCD_MODE_SET);
-		break;
-	case 6:
-		lcd_text12(0,0,"5.",2,LCD_MODE_SET);
-		if(EventObj_8[4].Event_Effective)
-			lcd_text12(15,0,(char *)EventObj_8[4].Event_Str,EventObj_8[4].Event_Len,LCD_MODE_SET);
-		else
-			lcd_text12(15,0,"无",2,LCD_MODE_SET);
-		lcd_text12(0,16,"6.",2,LCD_MODE_SET);
-		if(EventObj_8[5].Event_Effective)
-			lcd_text12(15,16,(char *)EventObj_8[5].Event_Str,EventObj_8[5].Event_Len,LCD_MODE_SET);
-		else
-			lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
-		break;
-	case 7:
-		lcd_text12(0,0,"7.",2,LCD_MODE_SET);
-		if(EventObj_8[6].Event_Effective)
-			lcd_text12(15,0,(char *)EventObj_8[6].Event_Str,EventObj_8[6].Event_Len,LCD_MODE_INVERT);
-		else
-			lcd_text12(15,0,"无",2,LCD_MODE_INVERT);
-		lcd_text12(0,16,"8.",2,LCD_MODE_SET);
-		if(EventObj_8[7].Event_Effective)
-			lcd_text12(15,16,(char *)EventObj_8[7].Event_Str,EventObj_8[7].Event_Len,LCD_MODE_SET);
-		else
-			lcd_text12(15,16,"无",2,LCD_MODE_SET);
-		break;
-	case 8:
-		lcd_text12(0,0,"7.",2,LCD_MODE_SET);
-		if(EventObj_8[6].Event_Effective)
-			lcd_text12(15,0,(char *)EventObj_8[6].Event_Str,EventObj_8[6].Event_Len,LCD_MODE_SET);
-		else
-			lcd_text12(15,0,"无",2,LCD_MODE_SET);
-		lcd_text12(0,16,"8.",2,LCD_MODE_SET);
-		if(EventObj_8[7].Event_Effective)
-			lcd_text12(15,16,(char *)EventObj_8[7].Event_Str,EventObj_8[7].Event_Len,LCD_MODE_INVERT);
-		else
-			lcd_text12(15,16,"无",2,LCD_MODE_INVERT);
-		
-		break;
-	default :
-		break;	
-	}
-	#endif
-lcd_update_all();
-}
-
-static void msg( void *p)
+/**/
+static void msg( void *p )
 {
 }
-static void show(void)
-	{
-		pMenuItem->tick=rt_tick_get();
-	lcd_fill(0);
-	lcd_text12(36,3,"事件设置",8,LCD_MODE_SET);
-	lcd_text12(24,18,"按确认键查看",12,LCD_MODE_SET);
-	lcd_update_all();
-	}
 
-static void keypress(unsigned int key)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void show( void )
 {
-	switch(key)
-		{
+	pMenuItem->tick = rt_tick_get( );
+	count			= jt808_event_get();
+	rt_kprintf("count=%d\r\n",count);
+	pos				= 0;
+	display( );
+}
+
+/**/
+static void keypress( unsigned int key )
+{
+	uint8_t buf[32];
+	switch( key )
+	{
 		case KEY_MENU:
-			pMenuItem=&Menu_3_InforInteract;
-			pMenuItem->show();
-			CounterBack=0;
-
-			Menu_Affair=0;
-			Affair_scree=1;
+			if( event_buf!= RT_NULL )
+			{
+				rt_free( event_buf );
+				event_buf=RT_NULL;
+			}
+			pMenuItem = &Menu_3_InforInteract;
+			pMenuItem->show( );
 			break;
-		case KEY_OK:
-			if(Menu_Affair==0)
-				{
-//bitter:				Event_Read();//读出事件
-				Dis_Affair(1);
-				Menu_Affair=1;
-				}
-			else if(Menu_Affair==1)
-				{
-					#if NEED_TODO
-				if(EventObj_8[Affair_scree-1].Event_Effective)
-					{
-					Menu_Affair=2;
-					//将选中的序号数据显示发送的界面
-					SendAffairMeun(Affair_scree,0);
-					}
-					#endif
-				}
-			else if(Menu_Affair==2)
-				{
-					#if NEED_TODO
-				if(EventObj_8[Affair_scree-1].Event_Effective)
-					{
-
-					//------------	发送事件ID相关	----------------
-					EventObj.Event_ID=Affair_scree;
-					//SD_ACKflag.f_CurrentEventACK_0301H=1; 
-					//返回事件信息菜单
-					Menu_Affair=0;
-					Affair_scree=1;
-					
-					//发送出去的界面
-					SendAffairMeun(Affair_scree,1);
-					
-					}
-					#endif
-				}
+		case KEY_OK:  /*事件报告*/
+			buf[0]=((EVENT*)(event_buf+pos*64))->id;
+			jt808_tx(0x0301,buf,1);
 			break;
 		case KEY_UP:
-			if(Menu_Affair==1)
-				{
-				Affair_scree--;
-				if(Affair_scree<=1)
-					Affair_scree=1;
-				Dis_Affair(Affair_scree);
-				}
+			if( pos )
+			{
+				pos--;
+			}
+			display( );
 			break;
 		case KEY_DOWN:
-			if(Menu_Affair==1)
-				{
-				Affair_scree++;
-				if(Affair_scree>=8)
-					Affair_scree=8;
-				Dis_Affair(Affair_scree);
-				}
+			if( pos < (count-1) )
+			{
+				pos++;
+			}
+			display( );
 			break;
-		}
+	}
 }
 
-
-
-MENUITEM	Menu_3_7_Affair=
+/*检查是否回到主界面*/
+void timetick( unsigned int tick )
 {
-    "事件信息",
-	8,0,
+	if( ( tick - pMenuItem->tick ) >= 100 * 10 )
+	{
+		if( event_buf != RT_NULL )
+		{
+			rt_free(event_buf );
+			event_buf=RT_NULL;
+		}
+		pMenuItem = &Menu_1_Idle;
+		pMenuItem->show( );
+	}
+}
+
+MENUITEM Menu_3_7_Affair =
+{
+	"事件信息",
+	8,		   0,
 	&show,
 	&keypress,
-	&timetick_default,
+	&timetick,
 	&msg,
 	(void*)0
 };
 
+/************************************** The End Of File **************************************/

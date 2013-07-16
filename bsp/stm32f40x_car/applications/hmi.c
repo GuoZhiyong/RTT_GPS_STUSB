@@ -84,10 +84,12 @@ static uint32_t  keycheck( void )
 		}
 	}
 	tmp_key = keys[0].status | keys[1].status | keys[2].status | keys[3].status;
+	#if 0
 	if( tmp_key )
 	{
 		rt_kprintf( "%04x\r\n", tmp_key );
 	}
+	#endif
 	return ( tmp_key );
 }
 

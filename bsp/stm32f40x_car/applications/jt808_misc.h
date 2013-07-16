@@ -141,9 +141,23 @@ typedef __packed struct
 {
 	uint32_t	id;                     /*单增序号*/
 	MYTIME		datetime;               /*收到的时间*/
+	uint8_t		flag;					/*已读，未读*/
 	uint8_t		len;                    /*长度，人为截短到最大256-9*/
-	uint8_t		body[256 - 9];          /*截短后收到的信息*/
+	uint8_t		body[256 - 10];          /*截短后收到的信息*/
 }TEXTMSG;
+
+
+
+typedef __packed struct
+{
+	uint32_t	id;                     /*单增序号*/
+	MYTIME		datetime;               /*收到的时间*/
+	uint8_t     flag;					/*已回答，未回答*/
+	uint8_t		len;                    /*长度，人为截短到最大256-9*/
+	uint8_t		body[256 - 10];          /*截短后收到的信息*/
+}CENTER_ASK;
+
+
 
 
 /*
@@ -157,6 +171,10 @@ typedef __packed struct
 	uint8_t body[64-3];                   /*事件内容*/
 }EVENT;
 
+
+
+
+
 extern uint8_t textmsg_count;
 void jt808_misc_0x8300( uint8_t *pmsg );
 void jt808_misc_0x8301( uint8_t *pmsg );
@@ -169,6 +187,12 @@ void jt808_misc_0x8500( uint8_t *pmsg );
 
 
 void jt808_textmsg_get( uint8_t index, TEXTMSG* pout );
+
+uint8_t jt808_event_get(void);
+
+extern uint8_t* event_buf;
+
+
 
 
 void jt808_misc_init( void );

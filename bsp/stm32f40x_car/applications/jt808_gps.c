@@ -66,6 +66,7 @@ uint32_t		gps_second_count = 0;               /*gps秒语句输出*/
 
 uint16_t		jt808_8202_track_interval	= 0;    /*jt808_8202 临时位置跟踪控制*/
 uint32_t		jt808_8202_track_duration	= 0;
+uint16_t		jt808_8202_track_counter;		
 
 uint32_t		jt808_8203_manual_ack_seq=0;	/*人工确认报警的标识位 0,3,20,21,22,27,28*/
 uint16_t		jt808_8203_manual_ack_value=0;
@@ -351,14 +352,19 @@ static void process_gps_report( void )
 /*中心追踪,直接上报，并返回*/
 	if( jt808_8202_track_duration ) /*要追踪*/
 	{
-		err = jt808_tx( 0x0200, buf, 28 + alarm_length );
-		if( jt808_8202_track_duration > jt808_8202_track_interval )
+		jt808_8202_track_counter++;	
+		if(jt808_8202_track_counter>=jt808_8202_track_interval)
 		{
-			jt808_8202_track_duration -= jt808_8202_track_interval;
-		}else
-		{
-			jt808_8202_track_duration = 0;
-		}
+			jt808_8202_track_counter=0;
+			err = jt808_tx( 0x0200, buf, 28 + alarm_length );
+			if( jt808_8202_track_duration > jt808_8202_track_interval )
+			{
+				jt808_8202_track_duration -= jt808_8202_track_interval;
+			}else
+			{
+				jt808_8202_track_duration = 0;
+			}
+		}	
 		return;
 	}
 /*计算距离*/

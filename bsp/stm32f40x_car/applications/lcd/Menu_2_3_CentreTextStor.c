@@ -31,6 +31,7 @@ uint8_t view_mode = VIEW_ITEM;
 uint8_t split_lines_pos[32][2];
 uint8_t split_lines_count = 0;
 
+#if 0
 /*内容分隔为行，记录行首、行尾地址*/
 uint8_t split_content( void )
 {
@@ -100,10 +101,93 @@ uint8_t split_content( void )
 	return nbfields + 1;
 }
 
-/**/
-uint8_t get_line( uint8_t pos, uint8_t *pout )
+#endif
+
+/*内容分隔为行，记录行首、行尾地址*/
+uint8_t split_content( void )
 {
-	uint8_t		* pdst = pout;
+	uint8_t count;
+	uint8_t pos = 0;
+	uint8_t	* p;
+	int		nbfields	= 0;
+
+	uint8_t start = 0;
+
+	memset( split_lines_pos, 0, 64 );
+
+	p		= textmsg.body;
+	count	= 0;
+	pos		= 0;
+	while( pos < textmsg.len )
+	{
+		if( *p < 0x20 )
+		{
+			if( count ) /*有数据*/
+			{
+				split_lines_pos[nbfields][0]	= start;
+				split_lines_pos[nbfields][1]	= pos - 1;
+				nbfields++;
+				count = 0;
+			}
+			pos++;
+			p++;
+		}else
+		{
+			if( count == 0 )        /*重新设置开始*/
+			{
+				start = pos;
+			}
+			if( *p > 0x7F ) /*有可能是汉字的开始或结束*/
+			{
+				if( count == 9 )    /*不够满行,生成一个新行*/
+				{
+					split_lines_pos[nbfields][0]	= start;
+					split_lines_pos[nbfields][1]	= pos - 1;
+					nbfields++;
+					start=pos;		/*另开一行*/
+				}
+				pos+=2;  /*需要增加两个*/
+				p+=2;
+				count+=2;
+				if(count==10)
+				{
+					split_lines_pos[nbfields][0]	= start;
+					split_lines_pos[nbfields][1]	= pos-1;
+					nbfields++;
+					count=0;
+				}	
+			
+			}else
+			{
+				count++;
+				if( count == 10 ) /*正好*/
+				{
+					split_lines_pos[nbfields][0]	= start;
+					split_lines_pos[nbfields][1]	= pos;
+					nbfields++;
+					count = 0;
+				}
+				pos++;
+				p++;
+			}
+		}
+	}
+
+	if( count )
+	{
+		split_lines_pos[nbfields][0]	= start;
+		split_lines_pos[nbfields][1]	= pos-1;
+		return nbfields + 1;
+	}else
+	{
+		return nbfields;
+	}
+}
+
+/**/
+uint8_t get_line( uint8_t pos, char *pout )
+{
+	char		* pdst = pout;
 	signed char len;
 	uint8_t		from, to;
 	from	= split_lines_pos[pos][0];
@@ -129,7 +213,7 @@ uint8_t get_line( uint8_t pos, uint8_t *pout )
  */
 static void display_item( )
 {
-	uint8_t buf1[32], buf2[32];
+	char buf1[32], buf2[32];
 	uint8_t len, ret;
 
 	if( textmsg_count == 0 )
@@ -181,7 +265,7 @@ static void display_item( )
 /*显示详细内容*/
 static void display_detail( void )
 {
-	uint8_t buf1[32], buf2[32];
+	char buf1[32], buf2[32];
 	int8_t	len1, len2;
 	lcd_fill( 0 );
 	if( line_pos < split_lines_count )
@@ -189,7 +273,7 @@ static void display_detail( void )
 		len1 = get_line( line_pos, buf1 );
 		lcd_text12( 0, 4, buf1, len1, LCD_MODE_SET );
 	}
-	if( (line_pos+1) < split_lines_count )
+	if( ( line_pos + 1 ) < split_lines_count )
 	{
 		len2 = get_line( line_pos + 1, buf2 );
 		lcd_text12( 0, 16, buf2, len2, LCD_MODE_SET );
@@ -205,35 +289,30 @@ static void msg( void *p )
 /*显示中心下发信息*/
 static void show( void )
 {
-	uint8_t *pinfo;
-	uint8_t res;
-	pMenuItem->tick=rt_tick_get();
+	pMenuItem->tick = rt_tick_get( );
 	item_pos		= 0;
 	item_pos_read	= 0xff;
-	view_mode=VIEW_ITEM;
+	view_mode		= VIEW_ITEM;
 	display_item( );
 }
 
 /*按键处理，分为ITEM和DETAIL两种方式查看*/
 static void keypress( unsigned int key )
 {
-	u8	CurrentDisplen	= 0;
-	u8	i				= 0;
-
 	switch( key )
 	{
 		case KEY_MENU:
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );
 			break;
-		case KEY_OK: /*查看模式切换*/
+		case KEY_OK:            /*查看模式切换*/
 			view_mode ^= 0xFF;
 			if( view_mode == VIEW_ITEM )
 			{
 				display_item( );
 			}else
 			{
-				line_pos=0;    /*重新显示*/
+				line_pos = 0;   /*重新显示*/
 				display_detail( );
 			}
 			break;
@@ -274,12 +353,10 @@ static void keypress( unsigned int key )
 	}
 }
 
-
-
 MENUITEM Menu_2_3_CentreTextStor =
 {
 	"文本消息查看",
-	12,0,
+	12,				  0,
 	&show,
 	&keypress,
 	&timetick_default,
