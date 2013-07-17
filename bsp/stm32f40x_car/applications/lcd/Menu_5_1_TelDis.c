@@ -1,94 +1,132 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #include "Menu_Include.h"
 #include "sed1520.h"
 
-unsigned char Menu_TelText=0;
-unsigned char TelText_scree=0;
+static uint8_t	count;
+static uint8_t	pos;
 
-unsigned char Tel_num_code[10][2]={"0","1","2","3","4","5","6","7","8","9"};
-
-
-
-void Dis_TelText(unsigned char screen)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void phonebook_display( void )
+{
+	uint8_t *p;
+	uint8_t len_tel,len_man;
+	char buf[32];
+	lcd_fill( 0 );
+	if( count == 0 )
 	{
-	lcd_fill(0);
-	lcd_text12(0,3,(char *)Tel_num_code[screen],1,LCD_MODE_SET);
-#if NEED_TODO
-		if(PhoneBook_8[screen-1].Effective_Flag)
-		{
-		lcd_text12(15,3,(char*)PhoneBook_8[screen-1].UserStr,strlen((char*)PhoneBook_8[screen-1].UserStr),LCD_MODE_SET);
-		lcd_text12(40,19,(char *)PhoneBook_8[screen-1].NumberStr,strlen((char*)PhoneBook_8[screen-1].NumberStr),LCD_MODE_SET);
-		}
-	else
-		lcd_text12(50,19,"Null",4, LCD_MODE_SET);
-#endif	
-	lcd_update_all();
+		lcd_fill( 0 );
+		lcd_text12( ( 122 - 12 * 6 ) >> 1, 14, "[电话本为空]", 12, LCD_MODE_SET );
+	}else
+	{
+		p =  phonebook_buf + pos * 64 ;  /*开始是一个'P'*/
+		len_tel=p[2];
+		len_man=p[len_tel+3];
+		memset(buf,0,32);
+		sprintf(buf,"[%02d] ",pos);
+		if(len_man>14)
+		{	
+			len_man=14;
+		}	
+		strncpy(buf+5,(char*)( p+len_tel+4 ),len_man);
+	lcd_text12( 0, 4, buf, strlen(buf), LCD_MODE_SET );
+		lcd_text12( 0, 18, (char*)( p+3 ), len_tel, LCD_MODE_SET );
+		
 	}
+	lcd_update_all( );
+}
 
-static void msg( void *p)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void msg( void *p )
 {
 }
-static void show(void)
-	{
-		pMenuItem->tick=rt_tick_get();
-	lcd_fill(0);
-	lcd_text12(20,10,"电话本记录查看",14,LCD_MODE_SET);
-	lcd_update_all();
-	Menu_TelText=1;
-	}
 
-static void keypress(unsigned int key)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void show( void )
 {
-	switch(key)
-		{
-		case KEY_MENU:
-			pMenuItem=&Menu_5_other;
-			pMenuItem->show();
-			CounterBack=0;
+	pMenuItem->tick = rt_tick_get( );
+	count			= jt808_phonebook_get( );
+	pos				= 0;
+	phonebook_display( );
+}
 
-			Menu_TelText=0;
-            TelText_scree=0;
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void keypress( unsigned int key )
+{
+	switch( key )
+	{
+		case KEY_MENU:
+			pMenuItem = &Menu_5_other;
+			pMenuItem->show( );
 			break;
 		case KEY_OK:
-			/*if(Menu_TelText==0)
-				{
-				//PhoneBook_Read();
-				Menu_TelText=1;
-				}
-			else */
-			if(Menu_TelText==1)
-				{
-//bitter:				PhoneBook_Read();
-				Menu_TelText=2;
-				TelText_scree=1;
-				Dis_TelText(1);
-				}
+
+
 			break;
 		case KEY_UP:
-			if(Menu_TelText==2)
-				{
-				TelText_scree--;
-				if(TelText_scree<=1)
-					TelText_scree=1;
-				Dis_TelText(TelText_scree);
-				}
+			if( pos )
+			{
+				pos--;
+				phonebook_display( );
+			}
 			break;
 		case KEY_DOWN:
-			if(Menu_TelText==2)
-				{
-				TelText_scree++;
-				if(TelText_scree>=8)
-					TelText_scree=8;
-				Dis_TelText(TelText_scree);
-				}
+			if( pos < count - 1 )
+			{
+				pos++;
+				phonebook_display( );
+			}
 			break;
-		}
+	}
 }
 
-
-MENUITEM	Menu_5_1_TelDis=
+MENUITEM Menu_5_1_TelDis =
 {
-    "电话本查看",
-	10,0,
+	"电话本查看",
+	10,				  0,
 	&show,
 	&keypress,
 	&timetick_default,
@@ -96,4 +134,4 @@ MENUITEM	Menu_5_1_TelDis=
 	(void*)0
 };
 
-
+/************************************** The End Of File **************************************/

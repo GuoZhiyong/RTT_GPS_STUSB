@@ -275,7 +275,7 @@ extern uint8_t hmi_15min_speed_curr;
 void timetick_default(unsigned int tick);
 uint8_t split_content( uint8_t *pinfo,uint16_t len,DISP_ROW *display_rows,uint8_t bytes_per_row);
 
-
+uint8_t my_strncpy(char* dst,char* src,uint8_t len);
 
 #endif
 

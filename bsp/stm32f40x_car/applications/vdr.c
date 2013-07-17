@@ -1006,22 +1006,22 @@ void vdr_rx_8700( uint8_t * pmsg )
 			buf[2]	= cmd;
 			memcpy( buf + 3, "\x55\x7A\x00\x00\x02\x00\x12\x00", 8 );
 			//jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 11, buf, RT_NULL, RT_NULL );
-			jt808_tx( 0x0700, buf, 11 );
+			jt808_tx_ack( 0x0700, buf, 11 );
 			break;
 		case 1:
 			buf[0]	= seq >> 8;
 			buf[1]	= seq & 0xff;
 			buf[2]	= cmd;
-			memcpy( buf + 3, "\x55\x7A\x01\x00\x12\x00120221123456789\x00\x00\x00\x00", 25 );
+			memcpy( buf + 3, "\x55\x7A\x01\x00\x12\x00""120221123456789\x00\x00\x00\x00", 25 );
 			//jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 28, buf, RT_NULL, RT_NULL );
-			jt808_tx( 0x0700, buf, 28 );
+			jt808_tx_ack( 0x0700, buf, 28 );
 		case 2: /*行车记录仪时间*/
 			buf[0]	= seq >> 8;
 			buf[1]	= seq & 0xff;
 			buf[2]	= cmd;
 			sprintf( (char*)(buf + 3), "\x55\x7A\x02\x00\x06\x00%6s", gps_baseinfo.datetime );
 			//jt808_add_tx_data_single( 1, TERMINAL_ACK, 0x0700, 15, buf, RT_NULL, RT_NULL );
-			jt808_tx( 0x0700, buf, 15 );
+			jt808_tx_ack( 0x0700, buf, 15 );
 
 		case 3:
 			break;

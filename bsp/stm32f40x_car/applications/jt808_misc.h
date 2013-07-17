@@ -141,23 +141,20 @@ typedef __packed struct
 {
 	uint32_t	id;                     /*单增序号*/
 	MYTIME		datetime;               /*收到的时间*/
-	uint8_t		flag;					/*已读，未读*/
+	uint8_t		flag;                   /*已读，未读*/
 	uint8_t		len;                    /*长度，人为截短到最大256-9*/
-	uint8_t		body[256 - 10];          /*截短后收到的信息*/
+	uint8_t		body[256 - 10];         /*截短后收到的信息*/
 }TEXTMSG;
-
-
 
 typedef __packed struct
 {
 	uint32_t	id;                     /*单增序号*/
 	MYTIME		datetime;               /*收到的时间*/
-	uint8_t     flag;					/*已回答，未回答*/
+	uint8_t		seq[2];                 /*收到的流水号，应答用*/
+	uint8_t		flag;                   /*已回答，未回答*/
 	uint8_t		len;                    /*长度，人为截短到最大256-9*/
-	uint8_t		body[256 - 10];          /*截短后收到的信息*/
+	uint8_t		body[256 - 12];         /*截短后收到的信息*/
 }CENTER_ASK;
-
-
 
 
 /*
@@ -168,35 +165,58 @@ typedef __packed struct
 	uint8_t flag;                       /*标志*/
 	uint8_t id;                         /*事件ID*/
 	uint8_t len;                        /*事件长度*/
-	uint8_t body[64-3];                   /*事件内容*/
+	uint8_t body[64 - 3];               /*事件内容*/
 }EVENT;
 
 
+/*
+   电话簿:设置在4k的buffer中
+ */
+typedef __packed struct
+{
+	uint8_t flag;						/*记录头标志 'P'*/
+	uint8_t body[63];
+}PHONEBOOK;
 
-
-
-extern uint8_t textmsg_count;
-extern uint8_t center_ask_count;
+extern uint8_t	textmsg_count;
+extern uint8_t	center_ask_count;
 
 void jt808_misc_0x8300( uint8_t *pmsg );
+
+
 void jt808_misc_0x8301( uint8_t *pmsg );
+
+
 void jt808_misc_0x8302( uint8_t *pmsg );
+
+
 void jt808_misc_0x8303( uint8_t *pmsg );
+
+
 void jt808_misc_0x8304( uint8_t *pmsg );
+
+
 void jt808_misc_0x8400( uint8_t *pmsg );
+
+
 void jt808_misc_0x8401( uint8_t *pmsg );
+
+
 void jt808_misc_0x8500( uint8_t *pmsg );
 
 
-void jt808_textmsg_get( uint8_t index, TEXTMSG* pout );
-void jt808_center_ask_get( uint8_t index, CENTER_ASK* pout );
+uint32_t jt808_textmsg_get( uint8_t index, TEXTMSG* pout );
 
 
-uint8_t jt808_event_get(void);
+uint32_t jt808_center_ask_get( uint8_t index, CENTER_ASK* pout );
+
+
+uint8_t jt808_event_get( void );
+uint8_t jt808_phonebook_get( void );
+
 
 extern uint8_t* event_buf;
-
-
+extern uint8_t* phonebook_buf;
 
 
 void jt808_misc_init( void );

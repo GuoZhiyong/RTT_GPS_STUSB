@@ -80,9 +80,6 @@ static TypeDF_PICPara			DF_PicParameter;						///FLASH存储的图片信息
 struct rt_messagequeue mq_Cam;
 /* 消息队列中用到的放置消息的内存池*/
 static char msgpool_cam[256];
-
-static char CamTestBuf[2000];
-
 extern MsgList* list_jt808_tx;
 
 
@@ -432,7 +429,6 @@ void LongInt_To_Times(u32 timer_int, T_TIMES *T)
 uint16_t data_to_buf( uint8_t * pdest, uint32_t data, uint8_t width )
 {
 	u8 *buf;
-	u8 i;
 	buf=pdest;
 
 	switch( width )
@@ -1231,21 +1227,6 @@ void readpic(u16 id)
  tempPara.PhotoTotal=1;
  tempPara.SavePhoto=1;
  tempPara.TiggerStyle=0;
- pbuf=rt_malloc(1024);
- rt_kprintf("\r\n拍照数据:\r\n");
- for(i=0;i<100;i++)
- 	{
- 	if(RT_EOK==Cam_Flash_RdPic(pbuf,&len,id,i))
- 		{
-		Hex_To_Ascii(pbuf,CamTestBuf,len);
-		rt_kprintf(CamTestBuf);
- 		}
-	else
-		{
-		break;
-		}
- 	}
- rt_free(pbuf);
 }
 FINSH_FUNCTION_EXPORT( readpic, readpic);
 
@@ -1526,9 +1507,6 @@ u8 Camera_Process(void)
 				}
 				///保存数据
 				Cam_Flash_WrPic(uart2_rx,uart2_rx_wr,&pack_head);
-				Hex_To_Ascii(uart2_rx,CamTestBuf,uart2_rx_wr);
-				rt_kprintf("\r\n拍照数据:\r\n");
-				rt_kprintf("%s\r\n",CamTestBuf);
 				rt_kprintf("\r\n%d>CAM%d photo %d bytes",rt_tick_get()*10,Current_Cam_Para.Para.Channel_ID,cam_photo_size);
 				uart2_rx_wr=0;
 			}

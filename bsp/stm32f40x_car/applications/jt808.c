@@ -1412,6 +1412,7 @@ static void rt_thread_entry_jt808( void * parameter )
 	MsgListNode			* iter;
 	JT808_TX_NODEDATA	* pnodedata;
 
+	GPIO_SetBits( GPIOD, GPIO_Pin_9 );	/*¹Ø¹¦·Å*/
 	jt808_misc_init( );
 	jt808_gps_init( );
 

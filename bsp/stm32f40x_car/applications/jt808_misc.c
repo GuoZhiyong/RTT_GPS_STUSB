@@ -37,6 +37,11 @@
 #define INFO_ONDEMAND_SECTORS	1
 #define INFO_ONDEMAND_END		( INFO_ONDEMAND_START + INFO_ONDEMAND_SECTORS * 4096 )
 
+/*电话簿*/
+#define PHONEBOOK_START		( INFO_ONDEMAND_END )
+#define PHONEBOOK_SECTORS	1
+#define PHONEBOOK_END		( PHONEBOOK_START + PHONEBOOK_SECTORS * 4096 )
+
 #if 0
 struct _sector_info
 {
@@ -104,7 +109,7 @@ void jt808_textmsg_put( uint8_t* pinfo )
    返回值 0:没找到
     1:找到
  */
-void jt808_textmsg_get( uint8_t index, TEXTMSG* pout )
+uint32_t jt808_textmsg_get( uint8_t index, TEXTMSG* pout )
 {
 	uint8_t		count;
 	uint32_t	addr;
@@ -121,6 +126,7 @@ void jt808_textmsg_get( uint8_t index, TEXTMSG* pout )
 	}
 	sst25_read( addr, (uint8_t*)pout, 256 );
 	rt_sem_release( &sem_dataflash );
+	return addr;
 }
 
 /*收到中心下发的0x8300信息*/
@@ -389,9 +395,11 @@ void jt808_center_ask_put( uint8_t* pinfo )
 	center_ask_curr_id++;
 	center_ask_msg.id		= center_ask_curr_id;
 	center_ask_msg.datetime = mytime_now;
-	if( len > ( 256 - 10 ) )
+	center_ask_msg.seq[0]	= pinfo[10];
+	center_ask_msg.seq[1]	= pinfo[11];
+	if( len > ( 256 - 12 ) )
 	{
-		len = 256 - 10;
+		len = 256 - 12;
 	}
 	center_ask_msg.len	= len;
 	center_ask_msg.flag = 1; /*未回答*/
@@ -411,10 +419,9 @@ void jt808_center_ask_put( uint8_t* pinfo )
 /*
    读取一条文本信息
    以当前为基准，偏移的记录数
-   返回值 0:没找到
-    1:找到
+   返回值 当前读到的地址，便于操作后更新
  */
-void jt808_center_ask_get( uint8_t index, CENTER_ASK* pout )
+uint32_t jt808_center_ask_get( uint8_t index, CENTER_ASK* pout )
 {
 	uint8_t		count;
 	uint32_t	addr;
@@ -431,6 +438,7 @@ void jt808_center_ask_get( uint8_t index, CENTER_ASK* pout )
 	}
 	sst25_read( addr, (uint8_t*)pout, 256 );
 	rt_sem_release( &sem_dataflash );
+	return addr;
 }
 
 /*
@@ -466,7 +474,7 @@ void jt808_misc_0x8302( uint8_t *pmsg )
 			ans_len = ( p[1] << 8 ) | p[2];         /*答案长度*/
 			memset( buf, 0, 255 );
 			i = sprintf( buf, "%d,", ans_id );
-			strncpy( buf + i, p + 3, ans_len );
+			strncpy( buf + i, (char*)( p + 3 ), ans_len );
 			tts_write( buf, ans_len + i );
 
 			pos = pos + ans_len + 3;                /*加3是因为答案ID和答案内容长度没有计算*/
@@ -524,7 +532,8 @@ void jt808_misc_0x8303( uint8_t *pmsg )
 	uint16_t	i, j;
 	uint8_t		* pdata;
 	uint8_t		*pevtbuf;
-	uint8_t		count, res = 0, len = 0;
+	uint8_t		count, res = 0;
+	uint16_t	len = 0;
 	uint16_t	addr;
 	uint16_t	tmpbuf[64];
 
@@ -553,23 +562,39 @@ void jt808_misc_0x8303( uint8_t *pmsg )
 			}
 			pdata++;
 		}
-	}else /*1.更新 2 追加 3 修改 凡是id一样的就更新，没有的就增加*/
+	}else if( type == 1 )                           /*1.更新 删除已有的，追加新的*/
+	{
+		memset( pevtbuf, 0, 4096 );
+		pdata = pmsg + 14;
+		for( count = 0; count < pmsg[13]; count++ ) /*事件总数*/
+		{
+			len = ( pdata[1] << 8 ) | pdata[2];
+			if( len > 62 )                          /*截短，空出尾部的0*/
+			{
+				len = 62;
+			}
+			pevtbuf[count * 64] = 'I';
+			memcpy( pevtbuf + count * 64 + 1, pdata, len );
+			pdata += ( len + 3 );
+		}
+	}else /* 2 追加 3 修改 凡是id一样的就更新，没有的就增加*/
 	{
 		pdata = pmsg + 14;
 		for( count = 0; count < pmsg[13]; count++ ) /*事件总数*/
 		{
 			len = pdata[1];
+			len = ( pdata[1] << 8 ) | pdata[2];
 			info_find_by_id( pevtbuf, *pdata, &addr );
 			if( addr != 0xFFFF ) /*不管找到没找到，反正有个可用的地址*/
 			{
-				if( len > 63 )
+				if( len > 62 )
 				{
-					len = 63;
+					len = 62;
 				}
-				pevtbuf[addr] = 'E';
+				pevtbuf[addr] = 'I';
 				memcpy( pevtbuf + addr + 1, pdata, len );
 			}
-			pdata += ( len + 2 );
+			pdata += ( len + 3 );
 		}
 	}
 	/*重新整理,去除空闲的*/
@@ -634,6 +659,47 @@ void jt808_misc_0x8304( uint8_t *pmsg )
 {
 }
 
+uint8_t* phonebook_buf;
+
+
+uint8_t jt808_phonebook_get(void)
+{
+	uint8_t		count = 0;
+	uint8_t		buf[16];
+	uint32_t	addr;
+
+	if( phonebook_buf != RT_NULL )
+	{
+		rt_free( phonebook_buf );
+	}
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	for( addr = PHONEBOOK_START; addr < PHONEBOOK_END; addr += 64 )
+	{
+		sst25_read( addr, buf, 16 );
+		if( buf[0] == 'P' )
+		{
+			count++;
+		}else
+		{
+			break;
+		}
+	}
+
+	if( count )
+	{
+		phonebook_buf = rt_malloc( count * 64 );
+		if( phonebook_buf == RT_NULL )
+		{
+			count = 0;
+		}else
+		{
+			sst25_read( PHONEBOOK_START, phonebook_buf, count * 64 );
+		}
+	}
+	rt_sem_release( &sem_dataflash );
+	return count;
+}
+
 /*电话回拨*/
 void jt808_misc_0x8400( uint8_t *pmsg )
 {
@@ -649,6 +715,128 @@ void jt808_misc_0x8400( uint8_t *pmsg )
 /*设置电话本*/
 void jt808_misc_0x8401( uint8_t *pmsg )
 {
+	uint8_t		type	= pmsg[12];
+	uint16_t	id		= ( ( pmsg[0] << 8 ) | pmsg[1] );
+	uint16_t	seq		= ( ( pmsg[10] << 8 ) | pmsg[11] );
+	uint16_t	i;
+	uint8_t		* pdata;
+	uint8_t		*pbuf;
+	uint8_t		count, res = 0;
+	uint16_t	len = 0;
+	uint16_t	addr;
+	uint8_t		len_phone, len_contact;
+
+	pbuf = rt_malloc( 4096 );
+	if( pbuf == RT_NULL )
+	{
+		res = 1;
+		goto lbl_end_8401;
+	}
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	sst25_read( PHONEBOOK_START, pbuf, 4096 );
+
+	if( type == 0 )                                 /*删除现在所有事件*/
+	{
+		sst25_erase_4k( PHONEBOOK_START );
+		goto lbl_end_8401;
+	}else if( type == 1 )                           /*1.更新 删除已有的，追加新的*/
+	{
+		memset( pbuf, 0, 4096 );
+		pdata = pmsg + 14;
+		for( count = 0; count < pmsg[13]; count++ ) /*联系人总数*/
+		{
+			len_phone	= pdata[1];
+			len_contact = pdata[len_phone + 2];
+			len			= len_phone + len_contact + 3;
+			if( len > 62 )
+			{
+				len = 62;
+			}
+			pbuf[count * 64] = 'P';
+			memcpy( pbuf + count * 64 + 1, pdata, len );
+			pdata += ( len_phone + len_contact + 3 );
+		}
+	}else if( type == 2 )                           /* 2 追加 3 修改 凡是id一样的就更新，没有的就增加*/
+	{
+		pdata = pmsg + 14;
+		for( count = 0; count < pmsg[13]; count++ ) /*事件总数*/
+		{
+			len_phone	= pdata[1];
+			len_contact = pdata[len_phone + 2];
+			len			= len_phone + len_contact + 3;
+			if( len > 62 )
+			{
+				len = 62;
+			}
+
+			for( i = 0; i < 4096; i += 64 )
+			{
+				if( pbuf[i] != 'P' ) /*是有效地址*/
+				{
+					pbuf[i] = 'P';
+					memcpy( pbuf + i + 1, pdata, len );
+					break;
+				}
+			}
+
+			pdata += ( len_phone + len_contact + 3 );
+		}
+	}else if( type == 3 )                           /* 3 修改以联系人为索引*/
+	{
+		pdata = pmsg + 14;
+		for( count = 0; count < pmsg[13]; count++ ) /*事件总数*/
+		{
+			len_phone	= pdata[1];
+			len_contact = pdata[len_phone + 2];
+			len			= len_phone + len_contact + 3;
+			if( len > 62 )
+			{
+				len = 62;
+			}
+
+			for( i = 0; i < 4096; i += 64 )
+			{
+				if(strncmp((char*)(pdata+len_phone+3),(char*)(pbuf+len_phone+4),len_contact)==0)
+				{
+					pbuf[i] = 'P';
+					memcpy( pbuf + i + 1, pdata, len );
+					break;
+				}
+			}
+			pdata += ( len_phone + len_contact + 3 );
+		}
+	}
+	
+	/*重新整理,去除空闲的*/
+	addr	= 0xFFFF;               /*第一个为空的地址*/
+	count	= 0;                    /*记录数*/
+	for( i = 0; i < 4096; i += 64 )
+	{
+		if( pbuf[i] == 'P' )        /*是有效地址*/
+		{
+			count++;
+			if( addr != 0xFFFF )    /*有空的*/
+			{
+				memcpy( pbuf + addr, pbuf + i, 64 );
+				memset( pbuf + i, 0xFF, 64 );
+				addr = i;           /*成为新的未用的*/
+			}
+		}else /*没有用的地址*/
+		{
+			if( addr == 0xFFFF )
+			{
+				addr = i;
+			}
+		}
+	}
+
+	sst25_write_back( PHONEBOOK_START, pbuf, 4096 );
+
+lbl_end_8401:
+	rt_sem_release( &sem_dataflash );
+	rt_free( pbuf );
+	jt808_tx_0x0001( seq, id, res ); /*返回应答*/
 }
 
 /***********************************************************
@@ -728,8 +916,6 @@ void jt808_center_ask_init( void )
 			}
 		}
 	}
-
-	rt_kprintf("dddd=%x,dddd=%x\r\n",CENTER_ASK_START,center_ask_curr_addr);
 	rt_sem_release( &sem_dataflash );
 }
 

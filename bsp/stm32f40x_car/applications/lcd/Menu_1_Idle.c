@@ -188,7 +188,7 @@ void  Disp_Idle( void )
 	char	buf_datetime[22];
 	char	buf_speed[20];
 
-	sprintf( buf_datetime, "20%02d/%02d/%02d  %02d:%02d:%02d",
+	sprintf( buf_datetime, "20%02d/%02d/%02d %02d:%02d:%02d",
 	         gps_datetime[0],
 	         gps_datetime[1],
 	         gps_datetime[2],

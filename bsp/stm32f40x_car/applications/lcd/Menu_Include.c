@@ -391,7 +391,20 @@ uint8_t split_content( uint8_t *pinfo,uint16_t len,DISP_ROW *display_rows,uint8_
 	return row;
 }
 
-
+/*拷贝n个字符到dst中，遇到\0 和不可见字符结束*/
+uint8_t my_strncpy(char* dst,char* src,uint8_t len)
+{
+	char* pdst=dst;
+	char* psrc=src;
+	uint8_t count=0;
+	while(len--)
+	{
+		if(*psrc<0x20) break;
+		*pdst++=*psrc++;
+		count++;
+	}
+	return count;
+}
 
 
 
