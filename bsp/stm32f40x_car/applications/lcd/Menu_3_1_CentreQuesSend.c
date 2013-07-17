@@ -28,7 +28,8 @@ static uint8_t		item_pos_read	= 0xff; /*当前已读取的*/
 
 static uint8_t		line_pos = 0;           /*当前行号*/
 
-static uint8_t		view_mode = VIEW_ITEM;
+static uint8_t		view_mode	= VIEW_ITEM;
+static uint16_t		attr		= 0xffff;   /*记录当前选中的问题*/
 
 struct _stu_question
 {
@@ -62,12 +63,14 @@ uint8_t analy_question( void )
 	/*问题部分*/
 	len		= center_ask.body[0];
 	p		= center_ask.body + 1;
-	count	= split_content( p, len, disp_row ,20);
+	count	= split_content( p, len, disp_row, 20 );
 	for( i = 0; i < count; i++ )
 	{
-		disp_row[i].attrib = 0x8000;
+		disp_row[i].attrib	= 0x8000;
+		disp_row[i].start	+= 1; /*跳出开始 长度*/
+		rt_kprintf( "i=%d attr=%04x start=%d count=%d\r\n", i, disp_row[i].attrib, disp_row[i].start, disp_row[i].count );
 	}
-	rt_kprintf( "1.count=%d\r\n", count );
+
 	rows += count;
 
 	end = center_ask.len;
@@ -77,20 +80,23 @@ uint8_t analy_question( void )
 	while( pos < end )
 	{
 		p		= center_ask.body + pos;    /*一个字节的id,和长度(2bytes)*/
-		ans_id	= *p++;
-		ans_len = ( *p++ ) << 8;
-		ans_len |= *p++;
-		count	= split_content( p, ans_len, disp_row + rows ,16);
+		ans_id	= p[0];
+		ans_len = ( p[1] << 8 ) | p[2];
+		p[0]	= ans_id / 10 + 0x30;       /*重新解释一下,是否使用自己的递增序号*/
+		p[1]	= ans_id % 10 + 0x30;
+		p[2]	= '.';
+		count	= split_content( p, ans_len + 3, disp_row + rows, 20 );
 		for( i = rows; i < rows + count; i++ )
 		{
-			disp_row[i].attrib	= ans_id;
-			disp_row[i].start	+= ( pos + 3 );
+			disp_row[i].attrib = ans_id;
+			//disp_row[i].start	+= ( pos + 3 );
+			//disp_row[i].count-=3;
+			disp_row[i].start += pos;
+			rt_kprintf( "i=%d attr=%04x start=%d count=%d\r\n", i, disp_row[i].attrib, disp_row[i].start, disp_row[i].count );
 		}
 		rows	+= count;
 		pos		+= ( 3 + ans_len );
-		rt_kprintf( "count=%d rows=%d pos=%d\r\n", count, rows, pos );
 	}
-
 	return rows;
 }
 
@@ -146,12 +152,12 @@ static void display_item( )
 	         HOUR( center_ask.datetime ),
 	         MINUTE( center_ask.datetime ) );
 
-	line_pos	= 0; /**/
-	//len			= get_line( 0, buf2 );
+	line_pos	= 0;                                                                                /**/
+	attr		= 0xFFFF;                                                                           /*当前没有选中的问题*/
 	if( len )
 	{
 		lcd_text12( 0, 4, buf1, strlen( buf1 ), LCD_MODE_SET );
-		lcd_text12( 0, 16, center_ask.body+disp_row[0].start, disp_row[0].count, LCD_MODE_SET );
+		lcd_text12( 0, 16, center_ask.body + disp_row[0].start, disp_row[0].count, LCD_MODE_SET );  /*问题*/
 	}
 	lcd_update_all( );
 }
@@ -161,25 +167,45 @@ static void display_detail( void )
 {
 	char	buf[32];
 	int8_t	len;
-	uint8_t i, col = 4;
+	uint8_t i;
+
+	i = line_pos & 0xFE;                /*对齐到偶数行上*/
+
 	lcd_fill( 0 );
-	for( i = line_pos; i < line_pos + 2; i++ )
+
+	if( disp_row[i].attrib >= 0x8000 )  /*问题*/
 	{
-		if( line_pos < split_lines_count )
+		lcd_text12( 0, 4, center_ask.body + disp_row[i].start, disp_row[i].count, LCD_MODE_SET );
+	}else /*答案*/
+	{
+		if(( line_pos == i )||(attr==disp_row[i].attrib))             /*还没有选择*/
 		{
-			if(disp_row[i].attrib>=0x8000)
-			{
-				lcd_text12( 0, col, center_ask.body+disp_row[i].start, disp_row[i].count, LCD_MODE_SET );
-			}
-			else
-			{
-				len=sprintf(buf,"%02d. ",disp_row[i].attrib);
-				strncpy(buf,center_ask.body+disp_row[i].start, disp_row[i].count)l
-				
-			}
-			col += 12;
+			lcd_text12( 0, 4, center_ask.body + disp_row[i].start, disp_row[i].count, LCD_MODE_INVERT );
+			attr=disp_row[i].attrib;
+		}else
+		{
+			lcd_text12( 0, 4, center_ask.body + disp_row[i].start, disp_row[i].count, LCD_MODE_SET );
 		}
 	}
+	i++;
+	if( i < split_lines_count - 1 )
+	{
+		if( disp_row[i].attrib >= 0x8000 )  /*问题*/
+		{
+			lcd_text12( 0, 16, center_ask.body + disp_row[i].start, disp_row[i].count, LCD_MODE_SET );
+		}else /*答案*/
+		{
+			if(( line_pos == i )||(attr==disp_row[i].attrib))             /*还没有选择*/
+			{
+				lcd_text12( 0, 16, center_ask.body + disp_row[i].start, disp_row[i].count, LCD_MODE_INVERT );
+				attr=disp_row[i].attrib;
+			}else
+			{
+				lcd_text12( 0, 16, center_ask.body + disp_row[i].start, disp_row[i].count, LCD_MODE_SET );
+			}
+		}
+	}
+
 	lcd_update_all( );
 }
 
@@ -204,8 +230,15 @@ static void keypress( unsigned int key )
 	switch( key )
 	{
 		case KEY_MENU:
-			pMenuItem = &Menu_2_InforCheck;
-			pMenuItem->show( );
+			if( view_mode == VIEW_ITEM )
+			{
+				pMenuItem = &Menu_2_InforCheck;
+				pMenuItem->show( );
+			}else
+			{
+				display_item( );
+			}
+
 			break;
 		case KEY_OK:            /*查看模式切换*/
 			view_mode ^= 0xFF;
@@ -228,9 +261,9 @@ static void keypress( unsigned int key )
 				display_item( );
 			}else
 			{
-				if( line_pos > 1 )
+				if( line_pos > 0 )
 				{
-					line_pos -= 2;
+					line_pos--;
 				}
 				display_detail( );
 			}
@@ -245,9 +278,12 @@ static void keypress( unsigned int key )
 				display_item( );
 			}else
 			{
-				if( line_pos < split_lines_count - 2 ) /*一次变化两行*/
+				if( line_pos == 0 )
 				{
-					line_pos += 2;
+					if( line_pos < split_lines_count - 1 )
+					{
+						line_pos++;
+					}
 				}
 				display_detail( );
 			}

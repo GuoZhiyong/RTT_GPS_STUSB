@@ -29,14 +29,13 @@
 
 /*中心提问*/
 #define CENTER_ASK_START	( EVENT_END )
-#define CENTER_ASK_SECTORS 2
+#define CENTER_ASK_SECTORS	2
 #define CENTER_ASK_END		( CENTER_ASK_START + CENTER_ASK_SECTORS * 4096 )
 
 /*信息点播*/
 #define INFO_ONDEMAND_START		( CENTER_ASK_END )
 #define INFO_ONDEMAND_SECTORS	1
 #define INFO_ONDEMAND_END		( INFO_ONDEMAND_START + INFO_ONDEMAND_SECTORS * 4096 )
-
 
 #if 0
 struct _sector_info
@@ -52,10 +51,10 @@ struct _sector_info
 };
 #endif
 
-
 uint32_t	textmsg_curr_addr;  /*当前写入最新数据的消息地址*/
 uint32_t	textmsg_curr_id;
 uint8_t		textmsg_count = 0;
+
 
 /*
    文本信息保存
@@ -65,15 +64,14 @@ uint8_t		textmsg_count = 0;
 void jt808_textmsg_put( uint8_t* pinfo )
 {
 	uint8_t		* psrc	= pinfo;
-	uint16_t	len		= ( ( ( psrc[2] << 8 ) | psrc[3] ) & 0x3FF ) - 1; /*有个标志字节*/
-
+	uint16_t	len		= ( ( ( psrc[2] << 8 ) | psrc[3] ) & 0x3FF ) - 1;   /*有个标志字节*/
 
 	TEXTMSG		textmsg;
 
 	memset( (uint8_t*)&textmsg, 0, 256 );
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	textmsg_curr_addr += 256; /*定位到下一个*/
+	textmsg_curr_addr += 256;                                               /*定位到下一个*/
 	if( textmsg_curr_addr >= TEXTMSG_END )
 	{
 		textmsg_curr_addr = TEXTMSG_START;
@@ -85,8 +83,8 @@ void jt808_textmsg_put( uint8_t* pinfo )
 	{
 		len = 256 - 10;
 	}
-	textmsg.len = len;
-	textmsg.flag=1;    /*未读*/
+	textmsg.len		= len;
+	textmsg.flag	= 1; /*未读*/
 
 /*保存记录,跳出开始的标志位*/
 	memcpy( textmsg.body, pinfo + 13, len );
@@ -133,20 +131,19 @@ void jt808_misc_0x8300( uint8_t *pmsg )
 	uint16_t	seq		= ( ( pmsg[10] << 8 ) | pmsg[11] );
 	uint16_t	len		= ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
 	jt808_textmsg_put( pmsg );
-	
+
 	if( flag & 0x01 )   /*紧急，直接弹出*/
 	{
-		Menu_2_3_CentreTextStor.parent=pMenuItem;
-		pMenuItem=&Menu_2_3_CentreTextStor;
-		pMenuItem->show();
+		Menu_2_3_CentreTextStor.parent	= pMenuItem;
+		pMenuItem						= &Menu_2_3_CentreTextStor;
+		pMenuItem->show( );
 	}
 	if( flag & 0x04 )   /*终端显示器显示,指示有未读信息*/
 	{
-		
 	}
 	if( flag & 0x08 )   /*TTS播报*/
 	{
-		tts_write( (char*)(pmsg + 13), len - 1 );
+		tts_write( (char*)( pmsg + 13 ), len - 1 );
 	}
 	if( flag & 0x10 )   /*广告屏*/
 	{
@@ -158,12 +155,8 @@ void jt808_misc_0x8300( uint8_t *pmsg )
 	jt808_tx_0x0001( seq, id, 0x0 );
 }
 
-
-
 /*本来想用指向指针的指针来传递参数 ;-( */
 uint8_t* event_buf = RT_NULL;
-
-
 
 
 /*
@@ -291,9 +284,9 @@ void jt808_misc_0x8301( uint8_t *pmsg )
 				{
 					len = 62;
 				}
-				memset(pevtbuf+addr,0,64);
+				memset( pevtbuf + addr, 0, 64 );
 				pevtbuf[addr] = 'E';
-				memcpy( pevtbuf + addr + 1, pdata, len+2 );
+				memcpy( pevtbuf + addr + 1, pdata, len + 2 );
 			}
 			pdata += ( len + 2 );
 		}
@@ -343,7 +336,7 @@ void jt808_misc_0x8301( uint8_t *pmsg )
 			if( pevtbuf[j * 64 + 1] > pevtbuf[j * 64 + 65] )
 			{
 				memcpy( tmpbuf, pevtbuf + j * 64, 64 );
-				memcpy( pevtbuf + j * 64 , pevtbuf + j * 64 + 64, 64 );
+				memcpy( pevtbuf + j * 64, pevtbuf + j * 64 + 64, 64 );
 				memcpy( pevtbuf + j * 64 + 64, tmpbuf, 64 );
 			}
 		}
@@ -368,9 +361,7 @@ uint8_t jt808_event_init( void )
 	return RT_EOK;
 }
 
-
-
-uint32_t	center_ask_curr_addr;  /*当前写入最新数据的消息地址*/
+uint32_t	center_ask_curr_addr; /*当前写入最新数据的消息地址*/
 uint32_t	center_ask_curr_id;
 uint8_t		center_ask_count = 0;
 
@@ -383,27 +374,27 @@ uint8_t		center_ask_count = 0;
 void jt808_center_ask_put( uint8_t* pinfo )
 {
 	uint8_t		* psrc	= pinfo;
-	uint16_t	len		= ( ( ( psrc[2] << 8 ) | psrc[3] ) & 0x3FF ) - 1; /*有个标志字节*/
+	uint16_t	len		= ( ( ( psrc[2] << 8 ) | psrc[3] ) & 0x3FF ) - 1;   /*有个标志字节*/
 
-	CENTER_ASK		center_ask_msg;
+	CENTER_ASK	center_ask_msg;
 
 	memset( (uint8_t*)&center_ask_msg, 0, 256 );
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
-	center_ask_curr_addr += 256; /*定位到下一个*/
+	center_ask_curr_addr += 256;                                            /*定位到下一个*/
 	if( center_ask_curr_addr >= CENTER_ASK_END )
 	{
 		center_ask_curr_addr = CENTER_ASK_START;
 	}
 	center_ask_curr_id++;
-	center_ask_msg.id			= center_ask_curr_id;
-	center_ask_msg.datetime	= mytime_now;
-	if( len > ( 256 - 10) )
+	center_ask_msg.id		= center_ask_curr_id;
+	center_ask_msg.datetime = mytime_now;
+	if( len > ( 256 - 10 ) )
 	{
 		len = 256 - 10;
 	}
-	center_ask_msg.len = len;
-	center_ask_msg.flag=1;   /*未回答*/
+	center_ask_msg.len	= len;
+	center_ask_msg.flag = 1; /*未回答*/
 
 /*保存记录,跳出开始的标志位*/
 	memcpy( center_ask_msg.body, pinfo + 13, len );
@@ -415,7 +406,6 @@ void jt808_center_ask_put( uint8_t* pinfo )
 	{
 		center_ask_count++;
 	}
-	//	return RT_EOK;
 }
 
 /*
@@ -443,7 +433,6 @@ void jt808_center_ask_get( uint8_t index, CENTER_ASK* pout )
 	rt_sem_release( &sem_dataflash );
 }
 
-
 /*
    提问下发
    有提问应答
@@ -455,42 +444,45 @@ void jt808_misc_0x8302( uint8_t *pmsg )
 	uint16_t	ans_len = 0;
 	uint8_t		*p;
 	uint16_t	ask_len = 0;
+	uint16_t	ans_id	= 0;
 	uint16_t	pos;
-	
-	jt808_center_ask_put( pmsg );	
-	if( flag & 0x01 )                       /*紧急，直接弹出*/
-	{
-		Menu_3_1_CenterQuesSend.parent=pMenuItem;
-		pMenuItem=&Menu_3_1_CenterQuesSend;
-		pMenuItem->show();
+	char		buf[255];
+	uint8_t		i;
 
-	}
-	if( flag & 0x08 )                       /*TTS播报，分隔一下,*/
+	jt808_center_ask_put( pmsg );
+
+	if( flag & 0x08 )                               /*TTS播报，分隔一下,*/
 	{
 		tts_write( "中心下发提问", 12 );
-		ask_len = pmsg[13];                 /*问题内容长度*/
-		tts_write( (char*)(pmsg + 14), ask_len );    /*问题*/
+		ask_len = pmsg[13];                         /*问题内容长度*/
+		tts_write( (char*)( pmsg + 14 ), ask_len ); /*问题*/
 		tts_write( "请选择", 6 );
-		pos = 2 + ask_len;  /*指向答案项，注意偏移开始地址，类型+长度*/
-		rt_kprintf("pos=%d len=%d\r\n",pos,len);
+		pos = 2 + ask_len;                          /*指向答案项，注意偏移开始地址，类型+长度*/
+		rt_kprintf( "pos=%d len=%d\r\n", pos, len );
 		while( pos < len )
 		{
-			p		= pmsg + pos;           /*指向候选答案列表*/
-			p[0]	= p[0] + 0x30;          /*答案ID变为可播报的*/
-			ans_len = ( p[1] << 8 ) | p[2]; /*答案长度*/
-			p[1]	= ',';                  /*替换为逗号，可播报*/
-			p[2]	= ',';
-			pos		= pos + ans_len + 3;    /*加3是因为答案ID和答案内容长度没有计算*/
+			p		= pmsg + 12 + pos;              /*指向候选答案列表*/
+			ans_id	= p[0];                         /*答案ID变为可播报的*/
+			ans_len = ( p[1] << 8 ) | p[2];         /*答案长度*/
+			memset( buf, 0, 255 );
+			i = sprintf( buf, "%d,", ans_id );
+			strncpy( buf + i, p + 3, ans_len );
+			tts_write( buf, ans_len + i );
+
+			pos = pos + ans_len + 3;                /*加3是因为答案ID和答案内容长度没有计算*/
 		}
-		tts_write((char*) (pmsg + 14 + ask_len), len - ask_len - 2 );
+		//tts_write( (char*)( pmsg + 14 + ask_len ), len - ask_len - 2 );
 	}
-	if( flag & 0x10 )                       /*广告屏*/
+	if( flag & 0x01 )                               /*紧急，直接弹出*/
+	{
+		Menu_3_1_CenterQuesSend.parent	= pMenuItem;
+		pMenuItem						= &Menu_3_1_CenterQuesSend;
+		pMenuItem->show( );
+	}
+	if( flag & 0x10 )                               /*广告屏*/
 	{
 	}
-
 }
-
-
 
 uint8_t* info_buffer;
 
@@ -646,9 +638,9 @@ void jt808_misc_0x8304( uint8_t *pmsg )
 void jt808_misc_0x8400( uint8_t *pmsg )
 {
 	char		dialbuf[64];
-	uint16_t	len		= ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
+	uint16_t	len = ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
 	strcpy( dialbuf, "ATD" );
-	strncpy( dialbuf + 3, (char*)(pmsg+13), len - 1 );
+	strncpy( dialbuf + 3, (char*)( pmsg + 13 ), len - 1 );
 	strcat( dialbuf, ";\r\n" );
 	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
 	at( dialbuf );
@@ -705,7 +697,6 @@ void jt808_textmsg_init( void )
 	rt_sem_release( &sem_dataflash );
 }
 
-
 /*
    遍历当前的记录
    256字节一个block
@@ -737,18 +728,17 @@ void jt808_center_ask_init( void )
 			}
 		}
 	}
+
+	rt_kprintf("dddd=%x,dddd=%x\r\n",CENTER_ASK_START,center_ask_curr_addr);
 	rt_sem_release( &sem_dataflash );
 }
-
-
 
 /*初始化吧*/
 void jt808_misc_init( void )
 {
-	jt808_center_ask_init();
+	jt808_center_ask_init( );
 	jt808_textmsg_init( );
 	jt808_event_init( );
-
 }
 
 /************************************** The End Of File **************************************/

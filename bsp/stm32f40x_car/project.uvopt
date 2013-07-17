@@ -87,8 +87,8 @@
         <TargetDlgDllArguments>-pCM4</TargetDlgDllArguments>
       </DllOpt>
       <DebugOpt>
-        <uSim>0</uSim>
-        <uTrg>1</uTrg>
+        <uSim>1</uSim>
+        <uTrg>0</uTrg>
         <sLdApp>1</sLdApp>
         <sGomain>1</sGomain>
         <sRbreak>1</sRbreak>
@@ -106,7 +106,7 @@
         <tRtrace>0</tRtrace>
         <sRunDeb>0</sRunDeb>
         <sLrtime>1</sLrtime>
-        <nTsel>7</nTsel>
+        <nTsel>5</nTsel>
         <sDll></sDll>
         <sDllPa></sDllPa>
         <sDlgDll></sDlgDll>
@@ -202,7 +202,7 @@
 
   <Group>
     <GroupName>Applications</GroupName>
-    <tvExp>0</tvExp>
+    <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -452,10 +452,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>5</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>7</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <TopLine>713</TopLine>
+      <CurrentLine>729</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808_misc.c</PathWithFileName>
       <FilenameWithoutPath>jt808_misc.c</FilenameWithoutPath>
@@ -1614,8 +1614,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>295</TopLine>
+      <CurrentLine>304</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\src\timer.c</PathWithFileName>
       <FilenameWithoutPath>timer.c</FilenameWithoutPath>
@@ -1638,8 +1638,8 @@
       <Focus>0</Focus>
       <ColumnNumber>6</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>125</TopLine>
+      <CurrentLine>144</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\libcpu\arm\cortex-m4\cpuport.c</PathWithFileName>
       <FilenameWithoutPath>cpuport.c</FilenameWithoutPath>
@@ -2066,7 +2066,7 @@
 
   <Group>
     <GroupName>lcd</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -2220,9 +2220,9 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>73</ColumnNumber>
+      <ColumnNumber>47</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>258</TopLine>
+      <TopLine>269</TopLine>
       <CurrentLine>273</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_2_3_CentreTextStor.c</PathWithFileName>
@@ -2332,10 +2332,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>53</ColumnNumber>
+      <ColumnNumber>11</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>168</TopLine>
-      <CurrentLine>176</CurrentLine>
+      <TopLine>165</TopLine>
+      <CurrentLine>170</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_3_1_CentreQuesSend.c</PathWithFileName>
       <FilenameWithoutPath>Menu_3_1_CentreQuesSend.c</FilenameWithoutPath>
@@ -2428,10 +2428,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>23</ColumnNumber>
+      <ColumnNumber>3</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>3</TopLine>
-      <CurrentLine>4</CurrentLine>
+      <TopLine>28</TopLine>
+      <CurrentLine>43</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_3_7_Affair.c</PathWithFileName>
       <FilenameWithoutPath>Menu_3_7_Affair.c</FilenameWithoutPath>
@@ -2716,10 +2716,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>75</ColumnNumber>
+      <ColumnNumber>14</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>8</TopLine>
-      <CurrentLine>9</CurrentLine>
+      <TopLine>411</TopLine>
+      <CurrentLine>421</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\SED1520.c</PathWithFileName>
       <FilenameWithoutPath>SED1520.c</FilenameWithoutPath>
