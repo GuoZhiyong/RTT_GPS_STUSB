@@ -591,6 +591,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_misc.c</FilePath>
             </File>
+            <File>
+              <FileName>jt808_gps_pack.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_gps_pack.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -67,10 +67,10 @@ uint32_t		gps_second_count = 0;               /*gps秒语句输出*/
 
 uint16_t		jt808_8202_track_interval	= 0;    /*jt808_8202 临时位置跟踪控制*/
 uint32_t		jt808_8202_track_duration	= 0;
-uint16_t		jt808_8202_track_counter;		
+uint16_t		jt808_8202_track_counter;
 
-uint32_t		jt808_8203_manual_ack_seq=0;	/*人工确认报警的标识位 0,3,20,21,22,27,28*/
-uint16_t		jt808_8203_manual_ack_value=0;
+uint32_t		jt808_8203_manual_ack_seq	= 0;    /*人工确认报警的标识位 0,3,20,21,22,27,28*/
+uint16_t		jt808_8203_manual_ack_value = 0;
 
 
 /*
@@ -103,13 +103,14 @@ struct
 	uint8_t		datetime_end[6];
 	uint16_t	speed;
 	uint8_t		duration;                           /*持续时间*/
-}			rectangle;
+} rectangle;
+
 
 uint32_t	gps_lati;
 uint32_t	gps_longi;
 uint16_t	gps_speed;
 
-uint16_t	gps_cog;                                /*course over ground*/
+uint16_t	gps_cog;                    /*course over ground*/
 uint16_t	gps_alti;
 uint8_t		gps_datetime[6];
 
@@ -225,6 +226,7 @@ static __inline unsigned long linux_mktime( unsigned int year, unsigned int mon,
 	           ) * 60 + min         /**//* now have minutes */
 	         ) * 60 + sec;          /**//* finally seconds */
 }
+
 #if 0
 /**/
 static double gpsToRad( GPSPoint point )
@@ -255,8 +257,9 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 	double	part3 = sin( latFromRad ) * sin( latToRad ) + cos( latFromRad ) * cos( latToRad ) * cos( lngDiff );
 	//double centralAngle = atan2( sqrt(part1 + part2) / part3 );
 	double	centralAngle = atan( sqrt( part1 + part2 ) / part3 );
-	return 6371.01 * 1000.0 * centralAngle;                                 //Return Distance in meter
+	return 6371.01 * 1000.0 * centralAngle;                     //Return Distance in meter
 }
+
 #endif
 
 /*超速、超速预警判断*/
@@ -292,26 +295,25 @@ void do_overspeed_check( void )
 }
 
 /*hmi 最近15min平均速度*/
-static void process_hmi_15min_speed(void)
+static void process_hmi_15min_speed( void )
 {
-	static uint8_t hmi_15min_speed_count=0;	/*分钟内的秒计数*/
-	static uint32_t hmi_15min_speed_sum=0;	/*速度累加和*/
-	if((mytime_now&0xFFFFFFC0)!=hmi_15min_speed[hmi_15min_speed_curr].time) /*新时刻,精确到分钟*/
+	static uint8_t	hmi_15min_speed_count	= 0;                                    /*分钟内的秒计数*/
+	static uint32_t hmi_15min_speed_sum		= 0;                                    /*速度累加和*/
+	if( ( mytime_now & 0xFFFFFFC0 ) != hmi_15min_speed[hmi_15min_speed_curr].time ) /*新时刻,精确到分钟*/
 	{
-		if(hmi_15min_speed[hmi_15min_speed_curr].time!=0) /*是要覆盖*/
+		if( hmi_15min_speed[hmi_15min_speed_curr].time != 0 )                       /*是要覆盖*/
 		{
 			//hmi_15min_speed[hmi_15min_speed_curr].speed=hmi_15min_speed_sum/hmi_15min_speed_count;
 			hmi_15min_speed_curr++;
-			hmi_15min_speed_curr%=15;
-			hmi_15min_speed_sum=0;
-			hmi_15min_speed_count=0;
+			hmi_15min_speed_curr	%= 15;
+			hmi_15min_speed_sum		= 0;
+			hmi_15min_speed_count	= 0;
 		}
 	}
-	hmi_15min_speed[hmi_15min_speed_curr].time=mytime_now&0xFFFFFFC0;
-	hmi_15min_speed_sum+=gps_speed;
+	hmi_15min_speed[hmi_15min_speed_curr].time	= mytime_now & 0xFFFFFFC0;
+	hmi_15min_speed_sum							+= gps_speed;
 	hmi_15min_speed_count++;
-	hmi_15min_speed[hmi_15min_speed_curr].speed=hmi_15min_speed_sum/hmi_15min_speed_count; /*随时更新*/
-
+	hmi_15min_speed[hmi_15min_speed_curr].speed = hmi_15min_speed_sum / hmi_15min_speed_count; /*随时更新*/
 }
 
 /*
@@ -322,8 +324,8 @@ static void process_hmi_15min_speed(void)
 static void process_gps_report( void )
 {
 	uint32_t	tmp;
-	uint8_t		flag_send = 0;    /*默认不上报*/
-	uint8_t		*palarmdata=RT_NULL;
+	uint8_t		flag_send	= 0; /*默认不上报*/
+	uint8_t		*palarmdata = RT_NULL;
 	uint16_t	alarm_length;
 	uint32_t	alarm_bits;
 
@@ -338,7 +340,7 @@ static void process_gps_report( void )
 
 /*区域路线处理*/
 	alarm_bits = area_get_alarm( palarmdata, &alarm_length );
-	if( alarm_bits )  /*有告警*/
+	if( alarm_bits ) /*有告警*/
 	{
 		memcpy( buf + 28, palarmdata, alarm_length );
 		flag_send = 1;
@@ -350,10 +352,10 @@ static void process_gps_report( void )
 /*中心追踪,直接上报，并返回*/
 	if( jt808_8202_track_duration ) /*要追踪*/
 	{
-		jt808_8202_track_counter++;	
-		if(jt808_8202_track_counter>=jt808_8202_track_interval)
+		jt808_8202_track_counter++;
+		if( jt808_8202_track_counter >= jt808_8202_track_interval )
 		{
-			jt808_8202_track_counter=0;
+			jt808_8202_track_counter = 0;
 			jt808_tx( 0x0200, buf, 28 + alarm_length );
 			if( jt808_8202_track_duration > jt808_8202_track_interval )
 			{
@@ -362,7 +364,7 @@ static void process_gps_report( void )
 			{
 				jt808_8202_track_duration = 0;
 			}
-		}	
+		}
 		return;
 	}
 /*计算距离*/
@@ -451,15 +453,18 @@ static void process_gps_report( void )
 
 	jt808_status_last = jt808_status;
 
-	if(flag_send==0) return;
+	if( flag_send == 0 )
+	{
+		return;
+	}
 
 /*生成要上报的数据*/
 #if 1
 
-	if(gps_datetime[5] == 0 )
+	if( gps_datetime[5] == 0 )
 	{
 		jt808_tx( 0x0200, buf, 28 + alarm_length );
-		rt_kprintf( "%d>add gps report\n", rt_tick_get( ));
+		rt_kprintf( "%d>add gps report\n", rt_tick_get( ) );
 	}
 #endif
 }
@@ -485,9 +490,9 @@ static uint8_t process_rmc( uint8_t * pinfo )
 	uint32_t	degrees, minutes;
 	uint8_t		commacount = 0, count = 0;
 
-	uint32_t	lati=0, longi=0;
-	uint16_t	speed_10x=0;
-	uint16_t	cog=0;                /*course over ground*/
+	uint32_t	lati		= 0, longi = 0;
+	uint16_t	speed_10x	= 0;
+	uint16_t	cog			= 0;    /*course over ground*/
 
 	uint8_t		i;
 	uint8_t		buf[20];
@@ -523,12 +528,12 @@ static uint8_t process_rmc( uint8_t * pinfo )
 				min		= ( buf[2] - 0x30 ) * 10 + ( buf[3] - 0x30 );
 				sec		= ( buf[4] - 0x30 ) * 10 + ( buf[5] - 0x30 );
 				break;
-			case 2:                 /*A_V*/
-				if( buf[0] != 'A' ) /*未定位*/
+			case 2:                         /*A_V*/
+				if( buf[0] != 'A' )         /*未定位*/
 				{
-					jt808_status &= ~BIT_STATUS_GPS;
-					gps_lati_last=0;		/*从新计算距离*/
-					gps_longi_last=0;
+					jt808_status	&= ~BIT_STATUS_GPS;
+					gps_lati_last	= 0;    /*从新计算距离*/
+					gps_longi_last	= 0;
 					return 2;
 				}
 				jt808_status |= BIT_STATUS_GPS;
@@ -852,12 +857,12 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	if( strncmp( psrc + 3, "RMC,", 4 ) == 0 )
 	{
 		gps_sec_count++;
-		if( process_rmc( (uint8_t*)psrc ) == 0 )  /*处理正确的RMC信息,判断格式正确，并不判断定位与否*/
+		if( process_rmc( (uint8_t*)psrc ) == 0 )    /*处理正确的RMC信息,判断格式正确，并不判断定位与否*/
 		{
-			process_hmi_15min_speed();  /*最近15分钟平均速度*/
-			vdr_rx_gps( );              /*行车记录仪数据处理*/
-			area_process( );			/*区域线路告警*/
-			process_gps_report( );      /*处理GPSs上报信息*/
+			process_hmi_15min_speed( );             /*最近15分钟平均速度*/
+			vdr_rx_gps( );                          /*行车记录仪数据处理*/
+			area_process( );                        /*区域线路告警*/
+			process_gps_report( );                  /*处理GPSs上报信息*/
 		}
 	}
 
