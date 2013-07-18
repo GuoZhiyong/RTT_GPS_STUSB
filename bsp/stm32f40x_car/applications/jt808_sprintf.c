@@ -292,7 +292,7 @@ static int pack(char **out, const char *format, va_list args )
 	register int width;
 	register int pc = 0;
 
-	rt_kprintf("\r\npack format>%s\r\n",format);
+	rt_kprintf("\npack format>%s\n",format);
 
 	for (; *format != 0; ++format) {
 		if (*format == '%') {
@@ -439,5 +439,10 @@ int main(void)
  * -3: -3   left justif.
  * -3:   -3 right justif.
  */
+
+
+uint
+
+
 
 #endif

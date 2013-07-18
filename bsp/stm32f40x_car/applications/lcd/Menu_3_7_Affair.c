@@ -72,7 +72,7 @@ static void show( void )
 {
 	pMenuItem->tick = rt_tick_get( );
 	count			= jt808_event_get();
-	rt_kprintf("count=%d\r\n",count);
+	rt_kprintf("count=%d\n",count);
 	pos				= 0;
 	display( );
 }

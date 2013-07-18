@@ -1,13 +1,13 @@
 /************************************************************
  * Copyright (C), 2008-2012,
- * FileName:		// 文件名
- * Author:			// 作者
- * Date:			// 日期
- * Description:		// 模块描述
- * Version:			// 版本信息
- * Function List:	// 主要函数及其功能
- *     1. -------
- * History:			// 历史修改记录
+ * FileName:		// 	camera.c
+ * Author:			// 	baiyangmin
+ * Date:			// 	2013-07-08
+ * Description:		// 	拍照功能的实现，包括有:拍照，存储，以及相关接口函数，该文件实现了文件jt808_camera.c的拍照部分驱动功能
+ * Version:			// 	V0.01
+ * Function List:	// 	主要函数及其功能
+ *     1. -------		
+ * History:			// 	历史修改记录
  *     <author>  <time>   <version >   <desc>
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
@@ -80,38 +80,10 @@ static TypeDF_PICPara			DF_PicParameter;						///FLASH存储的图片信息
 struct rt_messagequeue mq_Cam;
 /* 消息队列中用到的放置消息的内存池*/
 static char msgpool_cam[256];
+
+static char CamTestBuf[2000];
+
 extern MsgList* list_jt808_tx;
-
-
-
-
-
-/*********************************************************************************
-*函数名称:static void delay_us( const uint32_t usec )
-*功能描述:延时函数，延时单位为us
-*输 入:	usec	:延时时间，单位为us
-*输 出:none 
-*返 回 值:none
-*作 者:白养民
-*创建日期:2013-06-3
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
-*********************************************************************************/
-static void delay_us( const uint32_t usec )
-{
-	__IO uint32_t	count	= 0;
-	const uint32_t	utime	= ( 168 * usec / 7 );
-	do
-	{
-		if( ++count > utime )
-		{
-			return;
-		}
-	}
-	while( 1 );
-}
 
 /*********************************************************************************
 *函数名称:u8 HEX_to_BCD(u8 HEX)
@@ -316,7 +288,7 @@ u8 Get_Month_Day(u8 month,u8 leapyear)
  		day=31;
 		break;
 	default :
-		nop;
+		day=0;
  	}
   return day;
 }
@@ -339,7 +311,7 @@ u8 Get_Month_Day(u8 month,u8 leapyear)
 u32 Times_To_LongInt(T_TIMES *T)
 {
  u32 timer_int,hour;
- u16 i,minute,second;
+ u16 minute,second;
  hour=BCD_to_HEX(T->hours);
  minute=BCD_to_HEX(T->minutes);
  second=BCD_to_HEX(T->seconds);
@@ -368,7 +340,7 @@ u32 Times_To_LongInt(T_TIMES *T)
 void LongInt_To_Times(u32 timer_int, T_TIMES *T)
 {
  u32 long_day1,long_day2;
- u16 i,day,leapyear;
+ u16 i,day,leapyear=0;
  long_day2=0;
  long_day1=timer_int/86400;
  for(i=2000;i<2100;i++)
@@ -469,9 +441,8 @@ uint16_t data_to_buf( uint8_t * pdest, uint32_t data, uint8_t width )
 uint32_t buf_to_data( uint8_t * psrc, uint8_t width )
 {
 	u8 i;
-	u8 *buf;
 	u32 outData=0;
-	buf=psrc;
+	
 	for(i=0;i<width;i++)
 		{
 		outData<<=8;
@@ -526,7 +497,7 @@ static u8 Cam_Flash_FirstPicProc(u32 temp_wr_addr)
 {
 	u8 i;
 	u8 ret;
-	u32 TempAddress,u32TempData;
+	u32 TempAddress;
 	TypeDF_PackageHead TempPackageHead;
 
 	if((Cam_Flash_AddrCheck(temp_wr_addr)==(DF_PicParameter.FirstPic.Address&0xFFFFF000))&&(DF_PicParameter.Number))
@@ -586,7 +557,7 @@ static u8 Cam_Flash_FirstPicProc(u32 temp_wr_addr)
 *********************************************************************************/
 static u16 Cam_Flash_InitPara(u8 printf_info)
 {
- u32 TempAddress,u32TempData;
+ u32 TempAddress;
  TypeDF_PackageHead TempPackageHead;
  TypeDF_PackageInfo TempPackageInfo;
  
@@ -861,7 +832,6 @@ u32 Cam_Flash_FindPicID(u32 id,TypeDF_PackageHead *p_head)
 *********************************************************************************/
 rt_err_t Cam_Flash_RdPic(void *pData,u16 *len, u32 id,u8 offset )
 {
-	u16 i;
 	u32 TempAddress;
 	u32 temp_Len;
 	TypeDF_PackageHead TempPackageHead;
@@ -975,12 +945,12 @@ rt_err_t Cam_Flash_TransOkSet(u32 id )
 
 
 /*********************************************************************************
-*函数名称:u16 Cam_Flash_SearchPic(T_TIMES *start_time,T_TIMES *end_time,Style_Cam_Requset_Para *para,u8 *psrc)
+*函数名称:u16 Cam_Flash_SearchPic(T_TIMES *start_time,T_TIMES *end_time,TypeDF_PackageHead *para,u8 *pdest)
 *功能描述:从FLASH中查找指定时间段的图片索引
 *输	入:	start_time	开始时间，
 		end_time		结束时间，
 		para			查找图片的属性
-		para			存储查找到得图片的位置，
+		pdest			存储查找到得图片的位置，每个多媒体图片占用4个字节
 *输	出: u16 类型，表示查找到得图片数量 
 *返 回 值:re_err_t
 *作	者:白养民
@@ -995,7 +965,6 @@ u16 Cam_Flash_SearchPic(T_TIMES *start_time,T_TIMES *end_time,TypeDF_PackageHead
 	u16 i;
 	u32 TempAddress;
 	u32 temp_u32;
-	u32 temp_Len;
 	TypeDF_PackageHead TempPackageHead;
 	u16 ret_num=0;
 	
@@ -1039,6 +1008,38 @@ u16 Cam_Flash_SearchPic(T_TIMES *start_time,T_TIMES *end_time,TypeDF_PackageHead
 	return ret_num;
 }
 
+
+
+
+#if 0
+/*********************************************************************************
+*函数名称:static void delay_us( const uint32_t usec )
+*功能描述:延时函数，延时单位为us
+*输 入:	usec	:延时时间，单位为us
+*输 出:none 
+*返 回 值:none
+*作 者:白养民
+*创建日期:2013-06-3
+*---------------------------------------------------------------------------------
+*修 改 人:
+*修改日期:
+*修改描述:
+*********************************************************************************/
+static void delay_us( const uint32_t usec )
+{
+	__IO uint32_t	count	= 0;
+	const uint32_t	utime	= ( 168 * usec / 7 );
+	do
+	{
+		if( ++count > utime )
+		{
+			return;
+		}
+	}
+	while( 1 );
+}
+
+
 /*********************************************************************************
 *函数名称:static rt_err_t Cam_Device_open( void )
 *功能描述:打开模块供电
@@ -1077,7 +1078,7 @@ static rt_err_t Cam_Devic_close( void )
 	Power_485CH1_OFF;
 	return RT_EOK;
 }
-
+#endif
 
 
 
@@ -1096,7 +1097,6 @@ static rt_err_t Cam_Devic_close( void )
 *********************************************************************************/
 void Cam_Device_init( void )
 {
-	GPIO_InitTypeDef	GPIO_InitStructure;
 	///开电
 	Power_485CH1_ON;
 
@@ -1181,7 +1181,7 @@ void cam_wr_flash(u32 addr,char *psrc)
 	char pstr[128];
 	memset(pstr,0,sizeof(pstr));
 	memcpy(pstr,psrc,strlen(psrc));
-	sst25_write_back(addr,pstr,strlen(pstr)+1);
+	sst25_write_back(addr,(u8 *)pstr,strlen(pstr)+1);
 }
 FINSH_FUNCTION_EXPORT( cam_wr_flash, cam_wr_flash );
 
@@ -1192,7 +1192,7 @@ void cam_wr_flash_ex(u32 addr,char *psrc)
 	memset(pstr,0,sizeof(pstr));
 	memcpy(pstr,psrc,strlen(psrc));
 	sst25_erase_4k(addr);
-	sst25_write_through(addr,pstr,strlen(pstr)+1);
+	sst25_write_through(addr,(u8 *)pstr,strlen(pstr)+1);
 }
 FINSH_FUNCTION_EXPORT( cam_wr_flash_ex, cam_wr_flash_ex );
 
@@ -1226,7 +1226,22 @@ void readpic(u16 id)
  tempPara.PhoteSpace=0;
  tempPara.PhotoTotal=1;
  tempPara.SavePhoto=1;
- tempPara.TiggerStyle=0;
+ tempPara.TiggerStyle=Cam_TRIGGER_PLANTFORM;
+ pbuf=rt_malloc(1024);
+ rt_kprintf("\r\n拍照数据:\r\n");
+ for(i=0;i<100;i++)
+ 	{
+ 	if(RT_EOK==Cam_Flash_RdPic(pbuf,&len,id,i))
+ 		{
+		Hex_To_Ascii(pbuf,(u8 *)CamTestBuf,len);
+		rt_kprintf(CamTestBuf);
+ 		}
+	else
+		{
+		break;
+		}
+ 	}
+ rt_free(pbuf);
 }
 FINSH_FUNCTION_EXPORT( readpic, readpic);
 
@@ -1244,19 +1259,6 @@ void getpicpara(void)
  			DF_PicParameter.LastPic.Len);
 }
 FINSH_FUNCTION_EXPORT( getpicpara, getpicpara);
-
-
-
-
-static bool Cam_Check_Para(Style_Cam_Requset_Para *para)
-{
- if((para->Channel_ID<=15)||(para->Channel_ID==0xFFFF))
- 	{
- 	if(para->PhotoNum < para->PhotoTotal)
-		return  true;
- 	}
- return false;
-}
 
 
 /*********************************************************************************
@@ -1507,6 +1509,9 @@ u8 Camera_Process(void)
 				}
 				///保存数据
 				Cam_Flash_WrPic(uart2_rx,uart2_rx_wr,&pack_head);
+				Hex_To_Ascii(uart2_rx,(u8 *)CamTestBuf,uart2_rx_wr);
+				rt_kprintf("\r\n拍照数据:\r\n");
+				rt_kprintf("%s\r\n",CamTestBuf);
 				rt_kprintf("\r\n%d>CAM%d photo %d bytes",rt_tick_get()*10,Current_Cam_Para.Para.Channel_ID,cam_photo_size);
 				uart2_rx_wr=0;
 			}
@@ -1630,7 +1635,6 @@ void Cam_takepic(u16 id,u8 save,u8 send,Cam_Trigger trige)
  Cam_takepic_ex(id,1,0,save,send,trige);
 }
 FINSH_FUNCTION_EXPORT( Cam_takepic,  para_id_save_send_trige);
-
 
 
 /*********************************************************************************

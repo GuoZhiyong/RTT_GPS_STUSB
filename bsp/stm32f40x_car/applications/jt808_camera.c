@@ -62,7 +62,7 @@ static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 	tempu32data = Cam_Flash_FindPicID( p_para->Data_ID, &TempPackageHead );
 	if( tempu32data == 0xFFFFFFFF )
 	{
-		rt_kprintf( "\r\n 没有找到图片，ID=%d", p_para->Data_ID );
+		rt_kprintf( "\n 没有找到图片，ID=%d", p_para->Data_ID );
 		ret = 0xFFFF; goto FUNC_RET;
 	}
 	pdata = nodedata->tag_data;
@@ -108,7 +108,7 @@ static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 				sst25_read( tempu32data, iterdata->tag_data + wrlen, body_len );
 			}
 			p_para->Pack_Mark[i / 8] &= ~( BIT( i % 8 ) );
-			rt_kprintf( "\r\n cam_get_data ok PAGE=%d\r\n", iterdata->packet_no );
+			rt_kprintf( "\n cam_get_data ok PAGE=%d\n", iterdata->packet_no );
 			ret = iterdata->packet_no;
 			/*调整数据 设置消息头*/
 			pdata[12]			= ( iterdata->packet_num >> 8 );
@@ -123,7 +123,7 @@ static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 			goto FUNC_RET;
 		}
 	}
-	rt_kprintf( "\r\n cam_get_data_false!" );
+	rt_kprintf( "\n cam_get_data_false!" );
 	ret = 0;
 FUNC_RET:
 	rt_sem_release( &sem_dataflash );
@@ -238,7 +238,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 					msg									+= 2;
 					p_para->Pack_Mark[tempu32data / 8]	|= BIT( tempu32data % 8 );
 				}
-				rt_kprintf( "\r\n Cam_jt808_0x801_response\r\n lost_pack=%d", pack_num );
+				rt_kprintf( "\n Cam_jt808_0x801_response\n lost_pack=%d", pack_num );
 				nodedata->retry = 0;
 				return IDLE;
 			}else
@@ -247,7 +247,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 				{
 					//Cam_Flash_DelPic(p_para->Data_ID);
 				}
-				rt_kprintf( "\r\n Cam_add_tx_pic_response_ok!" );
+				rt_kprintf( "\n Cam_add_tx_pic_response_ok!" );
 				return ACK_OK;
 			}
 		}
@@ -527,7 +527,7 @@ void Cam_jt808_0x8801_cam_ok( struct _Style_Cam_Requset_Para *para, uint32_t pic
 		return;
 	}
 	data_to_buf( pdestbuf + datalen, pic_id, 4 ); ///写入应答流水号
-	rt_kprintf( "\r\n Cam_jt808_0x8801_cam_ok" );
+	rt_kprintf( "\n Cam_jt808_0x8801_cam_ok" );
 
 	if( para->SendPhoto )
 	{
@@ -567,13 +567,13 @@ void Cam_jt808_0x8801_cam_end( struct _Style_Cam_Requset_Para *para )
 
 	jt808_tx_ack( 0x805, pdestbuf, datalen );
 
-	rt_kprintf( "\r\n 拍照结束发送808数据:\r\n" );
+	rt_kprintf( "\n 拍照结束发送808数据:\n" );
 	//printer_data_hex( pdestbuf, datalen );
-	rt_kprintf( "\r\n" );
+	rt_kprintf( "\n" );
 
 	rt_free( para->user_para );
 	para->user_para = RT_NULL;
-	rt_kprintf( "\r\nCam_jt808_0x8801_cam_end" );
+	rt_kprintf( "\nCam_jt808_0x8801_cam_end" );
 
 	return;
 }

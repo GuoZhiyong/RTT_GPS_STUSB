@@ -56,7 +56,7 @@ uint8_t analy_question( void )
 	{
 		disp_row[i].attrib	= 0x8000;
 		disp_row[i].start	+= 1;           /*跳出开始 长度*/
-		rt_kprintf( "i=%d attr=%04x start=%d count=%d\r\n", i, disp_row[i].attrib, disp_row[i].start, disp_row[i].count );
+		rt_kprintf( "i=%d attr=%04x start=%d count=%d\n", i, disp_row[i].attrib, disp_row[i].start, disp_row[i].count );
 	}
 
 	rows	+= count;
@@ -79,7 +79,7 @@ uint8_t analy_question( void )
 			//disp_row[i].start	+= ( pos + 3 );
 			//disp_row[i].count-=3;
 			disp_row[i].start += pos;
-			rt_kprintf( "i=%d attr=%04x start=%d count=%d\r\n", i, disp_row[i].attrib, disp_row[i].start, disp_row[i].count );
+			rt_kprintf( "i=%d attr=%04x start=%d count=%d\n", i, disp_row[i].attrib, disp_row[i].start, disp_row[i].count );
 		}
 		rows	+= count;
 		pos		+= ( 3 + ans_len );
@@ -217,7 +217,7 @@ static void keypress( unsigned int key )
 				view_mode = VIEW_DETAIL;
 			}else if( view_mode == VIEW_DETAIL )    /*选择特定的项进行应答*/
 			{
-				rt_kprintf( "line_pos=%d attr=0x%x\r\n", line_pos, disp_row[line_pos].attrib );
+				rt_kprintf( "line_pos=%d attr=0x%x\n", line_pos, disp_row[line_pos].attrib );
 				if( center_ask.flag )
 				{
 					buf[0]	= center_ask.seq[0];

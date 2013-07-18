@@ -31,7 +31,7 @@ static PMENUITEM psubmenu[8] =
 	&Menu_2_5_DriverInfor,      //驾驶员信息
 	&Menu_2_6_Mileage,          //里程信息
 	&Menu_2_7_RequestProgram,   //中心信息点播
-	&Menu_2_8_DnsIpDisplay
+	&Menu_2_8_DnsIpDisplay		//网络信息查看
 };
 
 

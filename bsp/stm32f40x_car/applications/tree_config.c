@@ -16,7 +16,7 @@
 
 __inline static int is_whitespace(const int ch)
 {	
-	return strchr(" \t\r\n", ch) != NULL;
+	return strchr(" \t\n", ch) != NULL;
 }
 
 __inline static int is_alpha(const int ch)

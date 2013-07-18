@@ -135,10 +135,10 @@ static JT808_MSG_STATE jt808_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t 
 	switch( id )            // 判断对应终端消息的ID做区分处理
 	{
 		case 0x0200:        //	对应位置消息的应答
-			rt_kprintf( "\r\nCentre ACK!\r\n" );
+			rt_kprintf( "\nCentre ACK!\n" );
 			break;
 		case 0x0002:        //	心跳包的应答
-			rt_kprintf( "\r\nCentre  Heart ACK!\r\n" );
+			rt_kprintf( "\nCentre  Heart ACK!\n" );
 			break;
 		case 0x0101:        //	终端注销应答
 			break;
@@ -154,13 +154,13 @@ static JT808_MSG_STATE jt808_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t 
 		case 0x0800: // 多媒体事件信息上传
 			break;
 		case 0x0702:
-			rt_kprintf( "\r\n  驾驶员信息上报---中心应答!  \r\n" );
+			rt_kprintf( "\n  驾驶员信息上报---中心应答!  \n" );
 			break;
 		case 0x0701:
-			rt_kprintf( "\r\n	电子运单上报---中心应答!  \r\n");
+			rt_kprintf( "\n	电子运单上报---中心应答!  \n");
 			break;
 		default:
-			rt_kprintf( "\r\nunknown id=%04x\r\n", id );
+			rt_kprintf( "\nunknown id=%04x\n", id );
 			break;
 	}
 	return ACK_OK;
@@ -206,7 +206,7 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
 	{
 		return RT_NULL;
 	}
-	rt_kprintf( "%d>malloc node %p \r\n", rt_tick_get( ), pnodedata );
+	rt_kprintf( "%d>malloc node %p \n", rt_tick_get( ), pnodedata );
 	//memset( pnodedata, 0, sizeof( JT808_TX_NODEDATA ) ); ///绝对不能少，否则系统出错
 	pnodedata->linkno	= linkno;
 	pnodedata->state	= IDLE;
@@ -457,7 +457,7 @@ static int handle_rx_0x8103( uint8_t linkno, uint8_t *pmsg )
 
 	if( *( pmsg + 2 ) >= 0x20 ) /*如果是多包的设置参数*/
 	{
-		rt_kprintf( "\r\n>%s multi packet no support!", __func__ );
+		rt_kprintf( "\n>%s multi packet no support!", __func__ );
 		jt808_tx_0x0001( seq, id, 1 );
 		return 1;
 	}
@@ -474,7 +474,7 @@ static int handle_rx_0x8103( uint8_t linkno, uint8_t *pmsg )
 		param_len	= p[4];
 		res			|= param_put( param_id, param_len, &p[5] );
 		offset		+= ( param_len + 5 );
-		rt_kprintf( "\r\n0x8103>id=%x res=%d \r\n", param_id, res );
+		rt_kprintf( "\n0x8103>id=%x res=%d \n", param_id, res );
 	}
 
 	if( res ) /*有错误*/
@@ -828,7 +828,7 @@ static int handle_rx_0x8A00( uint8_t linkno, uint8_t *pmsg )
 ***********************************************************/
 static int handle_rx_default( uint8_t linkno, uint8_t *pmsg )
 {
-	rt_kprintf( "\r\nunknown!\r\n" );
+	rt_kprintf( "\nunknown!\n" );
 	return 1;
 }
 
@@ -897,7 +897,7 @@ void cb_socket_close( uint8_t cid )
 	if( cid == 1 )
 	{
 		connect_state.server_state = CONNECT_CLOSE;
-		rt_kprintf( "%d>linkno %d close\r\n", rt_tick_get( ), cid );
+		rt_kprintf( "%d>linkno %d close\n", rt_tick_get( ), cid );
 	}
 
 	if( cid == 2 )
@@ -959,7 +959,7 @@ void jt808_rx_proc( uint8_t * pinfo )
 					}
 				}else
 				{
-					rt_kprintf( "count=%d,fcs err=%d\r\n", count, fcs );
+					rt_kprintf( "count=%d,fcs err=%d\n", count, fcs );
 				}
 			}
 			fcs		= 0;
@@ -1105,12 +1105,12 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 			{
 				gsmstate( GSM_POWEROFF );
 			}
-			rt_kprintf( "total_send_error=%d\r\n", total_send_error );
+			rt_kprintf( "total_send_error=%d\n", total_send_error );
 		}
 
 		pnodedata->timeout_tick = rt_tick_get( ) + ( pnodedata->retry + 1 ) * pnodedata->timeout - 30;  /*减30是为了修正*/
 		pnodedata->state		= WAIT_ACK;
-		rt_kprintf( "%d>send retry=%d,timeout=%d\r\n", rt_tick_get( ), pnodedata->retry, pnodedata->timeout * 10 );
+		rt_kprintf( "%d>send retry=%d,timeout=%d\n", rt_tick_get( ), pnodedata->retry, pnodedata->timeout * 10 );
 		return IDLE;
 	}
 
@@ -1389,7 +1389,7 @@ void jt808_at_tx_proc( void )
 	gsmstate( GSM_AT_SEND );
 	p	= pinfo + 2;
 	ret = gsm_send( (char*)p, RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 5, 1 );
-	rt_kprintf( "at_tx=%d\r\n", ret );
+	rt_kprintf( "at_tx=%d\n", ret );
 	rt_free( pinfo );
 	gsmstate( oldstate );
 }
@@ -1449,7 +1449,7 @@ static void rt_thread_entry_jt808( void * parameter )
 		if( jt808_tx_proc( iter ) == WAIT_DELETE )  /*删除该节点*/
 		{
 			pnodedata = ( JT808_TX_NODEDATA* )( iter->data );
-			rt_kprintf( "%d>delete node %p \r\n", rt_tick_get( ), pnodedata );
+			rt_kprintf( "%d>delete node %p \n", rt_tick_get( ), pnodedata );
 			rt_free( pnodedata->user_para );
 			rt_free( pnodedata );                   /*删除节点数据*/
 			list_jt808_tx->first = iter->next;      /*指向下一个*/
@@ -1580,7 +1580,7 @@ void bkpsram_rd( u32 addr )
 {
 	uint8_t pstr[128];
 	bkpsram_read( addr, pstr, sizeof( pstr ) );
-	rt_kprintf( "\r\n str=%s\r\n", pstr );
+	rt_kprintf( "\n str=%s\n", pstr );
 }
 
 FINSH_FUNCTION_EXPORT( bkpsram_rd, read from backup sram );
@@ -1711,7 +1711,7 @@ void reset( uint32_t reason )
 
 /*日志记录时刻重启原因*/
 
-	rt_kprintf( "\r\n%08d reset>reason=%08x", rt_tick_get( ), reason );
+	rt_kprintf( "\n%08d reset>reason=%08x", rt_tick_get( ), reason );
 /*执行重启*/
 	rt_thread_delay( RT_TICK_PER_SECOND * 5 );
 	NVIC_SystemReset( );

@@ -157,7 +157,7 @@ static void keypress( unsigned int key )
 
 MENUITEM Menu_2_8_DnsIpDisplay =
 {
-	"DNSÏÔÊ¾",
+	"ÍøÂçÉèÖÃ",
 	7,0,
 	&show,
 	&keypress,

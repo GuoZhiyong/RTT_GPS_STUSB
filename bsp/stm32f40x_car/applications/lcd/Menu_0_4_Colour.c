@@ -15,12 +15,107 @@
 #include "Menu_Include.h"
 #include "sed1520.h"
 
+#if 1
+
+static char		* color = "蓝色黄色黑色白色其它";
+static uint8_t	index;
+static char		select_color[8];
+static uint8_t  color_set;
+
+/**/
+static void display( void )
+{
+	lcd_fill( 0 );
+
+	lcd_text12( 19, 4, "车牌颜色", 8, LCD_MODE_SET );
+	lcd_text12( 19 + 8 * 6, 4, select_color,  6, LCD_MODE_SET );
+
+	lcd_text12( 0, 18, color, 20, LCD_MODE_SET );
+	lcd_text12( index* 24, 18, color + index * 4, 4, LCD_MODE_INVERT );
+	lcd_update_all();
+}
+
+/**/
+static void msg( void *p )
+{
+}
+
+/**/
+static void show( void )
+{
+	index = 0;
+	color_set=0;
+	memset( select_color, 0x20, 8 );
+	select_color[0] = '[';
+	select_color[5] = ']';
+	select_color[6] = 0;
+	display( );
+}
+
+/**/
+static void keypress( unsigned int key )
+{
+	switch( key )
+	{
+		case KEY_MENU:
+			pMenuItem = &Menu_1_Idle;
+			pMenuItem->show( );
+			break;
+		case KEY_OK:
+			if(color_set==0)
+			{
+				memcpy(select_color+1,color+index*4,4);
+				color_set++;
+				display();
+			}
+			else
+			{
+				lcd_fill(0);
+				lcd_text12(13,14,"车牌颜色设置完成",16,LCD_MODE_SET);
+				lcd_update_all();
+			}
+			break;
+		case KEY_UP:
+			color_set=0;
+			if( index == 0 )
+			{
+				index = 6;
+			}
+			index--;
+			display();
+			break;
+		case KEY_DOWN:
+			color_set=0;
+			index++;
+			index%=5;
+			display();
+			break;
+	}
+}
+
+/**/
+static void timetick( unsigned int systick )
+{
+
+}
+
+MENUITEM Menu_0_4_Colour =
+{
+	"车辆颜色设置",
+	12,			   0,
+	&show,
+	&keypress,
+	&timetick,
+	&msg,
+	(void*)0
+};
+
+#else
 u8				comfirmation_flag	= 0;
 u8				col_screen			= 0;
 u8				CarBrandCol_Cou		= 1;
 
 unsigned char	car_col[13] = { "车牌颜色:蓝色" };
-
 
 /**/
 void car_col_fun( u8 par )
@@ -40,7 +135,7 @@ void car_col_fun( u8 par )
 		memcpy( Menu_VecLogoColor, "白色", 4 ); //   4
 	}else if( par == 5 )
 	{
-		memcpy( Menu_VecLogoColor, "其他", 4 ); 
+		memcpy( Menu_VecLogoColor, "其他", 4 );
 		par = 9;
 	}                                           //   9
 
@@ -121,21 +216,20 @@ static void keypress( unsigned int key )
 				lcd_update_all( );
 
 				//车牌号
-				memset(jt808_param.id_0xF006, 0, 32 );
-				memcpy(jt808_param.id_0xF006,Menu_Car_license,strlen(Menu_Car_license));
+				memset( jt808_param.id_0xF006, 0, 32 );
+				memcpy( jt808_param.id_0xF006, Menu_Car_license, strlen( Menu_Car_license ) );
 				//车辆类型
-				memset(jt808_param.id_0xF008, 0, 32 );
-				memcpy(jt808_param.id_0xF008,Menu_Car_license,strlen(Menu_Car_license));
+				memset( jt808_param.id_0xF008, 0, 32 );
+				memcpy( jt808_param.id_0xF008, Menu_Car_license, strlen( Menu_Car_license ) );
 				//车辆VIN
-				memset(jt808_param.id_0xF005, 0, 32 );
-				memcpy(jt808_param.id_0xF005,Menu_Vin_Code,17);
+				memset( jt808_param.id_0xF005, 0, 32 );
+				memcpy( jt808_param.id_0xF005, Menu_Vin_Code, 17 );
 
 				// 车牌颜色
 				jt808_param.id_0xF007 = Menu_color_num;
-				
+
 				//  存储
-				param_save();
-				
+				param_save( );
 			}else if( comfirmation_flag == 2 )
 			{
 				col_screen			= 0;
@@ -231,12 +325,12 @@ static void timetick( unsigned int systick )
 MENUITEM Menu_0_4_Colour =
 {
 	"车辆颜色设置",
-	12,0,
+	12,			   0,
 	&show,
 	&keypress,
 	&timetick,
 	&msg,
 	(void*)0
 };
-
+#endif
 /************************************** The End Of File **************************************/

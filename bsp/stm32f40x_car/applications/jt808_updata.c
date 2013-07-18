@@ -21,6 +21,10 @@
 #include <finsh.h>
 #include "sst25.h"
 
+#define UPDATA_DEBUG
+
+#define UPDATA_USE_CONTINUE
+
 #define	DF_UpdataAddress_PARA		0x3C000			///图片数据存储开始位置
 #define	DF_UpdataAddress_Start		0x1000			///图片数据存储开始位置
 #define DF_UpdataAddress_End		0x3C000			///图片数据存储结束位置
@@ -43,6 +47,7 @@ typedef  __packed struct
 
 extern uint16_t data_to_buf( uint8_t * pdest, uint32_t data, uint8_t width );
 extern uint32_t buf_to_data( uint8_t * psrc, uint8_t width );
+
 extern void reset( uint32_t reason );
 
 const unsigned int crc_ta_1[256]={ /* CRC 余式表 MODBUS 协议余式表*/
@@ -191,7 +196,7 @@ u8 updata_flash_write_para(STYLE_UPDATA_STATE *para)
 		}
 	else if(i == 5)
 		{
-		rt_kprintf("\r\n 写入升级参数错误!");
+		rt_kprintf("\n 写入升级参数错误!");
 		return 0;
 		}
 	}
@@ -243,7 +248,7 @@ u8 updata_flash_wr_filehead(u8 *pmsg,u16 len)
  tempbuf = rt_malloc(len);
  if(tempbuf == RT_NULL)
  	{
- 	rt_kprintf("\r\n 分配空间错误错误!");
+ 	rt_kprintf("\n 分配空间错误错误!");
  	return 0;
  	}
  for(i=0; i<5; i++)
@@ -258,7 +263,7 @@ u8 updata_flash_wr_filehead(u8 *pmsg,u16 len)
 		}
 	else if(i == 5)
 		{
-		rt_kprintf("\r\n 写入升级文件信息头错误!");
+		rt_kprintf("\n 写入升级文件信息头错误!");
 		rt_free(tempbuf);
 		return 0;
 		}
@@ -277,7 +282,9 @@ u8 updata_flash_wr_filehead(u8 *pmsg,u16 len)
 		}
 	tempAddress += 0x1000;
  	}
- rt_kprintf("\r\n 写入升级文件信息头OK!");
+ #ifdef UPDATA_DEBUG
+ rt_kprintf("\n 写入升级文件信息头OK!");
+ #endif
  return 1;
 }
 
@@ -307,7 +314,7 @@ u8 updata_flash_wr_file(u32 addr,u8 *pmsg,u16 len)
  tempbuf = rt_malloc(len);
  if(tempbuf == RT_NULL)
  	{
- 	rt_kprintf("\r\n 分配空间错误!");
+ 	rt_kprintf("\n 分配空间错误!");
  	return 0;
  	}
  for(i=0; i<5; i++)
@@ -321,7 +328,7 @@ u8 updata_flash_wr_file(u32 addr,u8 *pmsg,u16 len)
 		}
 	else if(i == 5)
 		{
-		rt_kprintf("\r\n 写入升级文件信息错误!");
+		rt_kprintf("\n 写入升级文件信息错误!");
 		rt_free(tempbuf);
 		return 0;
 		}
@@ -336,7 +343,8 @@ u8 updata_flash_wr_file(u32 addr,u8 *pmsg,u16 len)
 *输	入:	file_info	:终端存储的文件信息
 		msg_info	:808消息发送的程序文件信息
 *输	出:	none
-*返 回 值:	u8	0:表示比较失败，不允许升级	1:可以升级，重新加载所有参数	2:之前升级了一半，可以续传升级
+*返 回 值:	u8	0:表示比较失败，不允许升级		1:可以升级，重新加载所有参数	
+				2:之前升级了一半，可以续传升级	3:之前已经升级成，并且和当前版本相同，不需要重复升级
 *作	者:白养民
 *创建日期:2013-06-23
 *---------------------------------------------------------------------------------
@@ -346,8 +354,10 @@ u8 updata_flash_wr_file(u32 addr,u8 *pmsg,u16 len)
 *********************************************************************************/
 u8 updata_comp_file(u8 *file_info,u8 *msg_info)
 {
+ u16 i;
+ STYLE_UPDATA_STATE updata_state;
  ///比较TCB文件头信息是否OK
- if(strncmp(msg_info,"TCB.GPS.01" ,10) != 0)
+ if(strncmp((const char *)msg_info,"TCB.GPS.01" ,10) != 0)
  	{
  	return 0;
  	}
@@ -358,17 +368,37 @@ u8 updata_comp_file(u8 *file_info,u8 *msg_info)
  ///跳过升级标记部分
 
  ///比较从"程序文件格式"到"终端固件版本号"之间的所有部分，必须完全匹配才行
- if(strncmp(msg_info+1,file_info+1,62-1) != 0)
+ if(strncmp((const char *)msg_info+1,(const char *)file_info+1,62-1) != 0)
  	{
  	return 0;
  	}
  
  ///比较从"产品运营商"到"程序长度"之间的所有部分，必须完全匹配才行
- if(strncmp(msg_info+62,file_info+62,86-62) != 0)
+ if(strncmp((const char *)msg_info+62,(const char *)file_info+62,86-62) != 0)
  	{
  	return 1;
  	}
- return 2;
+ 
+ updata_flash_read_para(&updata_state);
+ 
+ for(i=0; i<updata_state.package_total; i++)
+ 	{
+ 	if( updata_state.Pack_Mark[i/8] & (BIT(i%8)) )
+ 		{
+ 		break;
+ 		}
+ 	}
+ if(i == updata_state.package_total )
+ 	{
+ 	///程序之前已经升级成功，不需要重新升级
+ 	///增加用户操作代码
+ 	return 3;
+ 	}
+ #ifdef UPDATA_USE_CONTINUE
+ return 2;	///目前不支持续传功能，所以只返回1
+ #else
+ return 1;
+ #endif
 }
 
 
@@ -464,7 +494,8 @@ u8 updata_ack(STYLE_UPDATA_STATE *para,u8 check)
  u32 	tempAddr;
  u32 	tempu32data;
  u32	size;
- 
+
+ ///
  if(JT808_PACKAGE_MAX < 512 )
  	{
 	len = 512;
@@ -497,9 +528,9 @@ u8 updata_ack(STYLE_UPDATA_STATE *para,u8 check)
 			}
  		}
  	}
- if(pbuf[4] == 0 )		///升级成功成功
+ if(pbuf[4] == 0 )		///升级成功
  	{
-	rt_kprintf("\r\n 升级成功成功!");
+	rt_kprintf("\n 升级完成!");
 
 	///对文件进行CRC校验检测
 	tempu32data = 0;
@@ -535,13 +566,15 @@ u8 updata_ack(STYLE_UPDATA_STATE *para,u8 check)
 	else
 		{
 		updata_ack_ok(para->fram_num_first,para->style,1);
-		rt_kprintf("\r\n CRC_错误!");
+		rt_kprintf("\n CRC_错误!");
 		}
  	}
+ #ifdef UPDATA_USE_CONTINUE
  else if(check == 0)		///升级没有成功
  	{
  	jt808_tx_ack(0x8003,pbuf,len);
  	}
+ #endif
  rt_free( pbuf );
  return ret;
 }
@@ -587,7 +620,10 @@ rt_err_t updata_jt808_0x8108(uint8_t linkno,uint8_t *pmsg)
  cur_package_num	= buf_to_data( pmsg + 14, 2 );
  pmsg 		+= 16;
  msg		= pmsg + 16;
- 
+
+ #ifdef UPDATA_DEBUG
+ rt_kprintf("\n 收到程序包,总包数=%4d，包序号=%4d,LEN=%4d",cur_package_total,cur_package_num,msg_len);
+ #endif
  ///非法包
  if((cur_package_num > cur_package_total) || ( cur_package_num == 0 ) || ( cur_package_total <= 1 ) )
  	{
@@ -597,13 +633,13 @@ rt_err_t updata_jt808_0x8108(uint8_t linkno,uint8_t *pmsg)
 
  updata_commit_ack_ok(fram_num);			///通用应答
  
- rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+ rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
  if( cur_package_num == 1)	///第一包
  	{
  	///第一包处理
 	style	= msg[0];
 	
-	if( strncmp(msg+1,"70420",5) )			///判断是否712设备程序
+	if( strncmp((const char *)msg+1,"70420",5) )			///判断是否712设备程序
 		{
 		updata_ack_ok(fram_num,style,2);
 		goto UPDATA_ERR;
@@ -617,7 +653,9 @@ rt_err_t updata_jt808_0x8108(uint8_t linkno,uint8_t *pmsg)
 	///获取升级版本号
 	memset(tempbuf,0,sizeof(tempbuf));
 	memcpy(tempbuf,msg+7,msg[6]);
-	rt_kprintf("\r\n 程序升级版本=\"%s\"",tempbuf);
+	#ifdef UPDATA_DEBUG
+	rt_kprintf("\n 程序升级版本=\"%s\"",tempbuf);
+	#endif
 	datalen = msg_len - 7 - msg[6];
 	msg += 7+msg[6];
 
@@ -630,6 +668,9 @@ rt_err_t updata_jt808_0x8108(uint8_t linkno,uint8_t *pmsg)
 	i = updata_comp_file(tempbuf,msg);
 	if(i==0)				///不需要升级，文件比匹配
 		{
+		#ifdef UPDATA_DEBUG
+		rt_kprintf("\n 程序不匹配，升级错误!");
+		#endif
 		updata_ack_ok(fram_num,style,2);
 		goto UPDATA_ERR;
 		}
@@ -649,27 +690,15 @@ rt_err_t updata_jt808_0x8108(uint8_t linkno,uint8_t *pmsg)
 		updata_state.pack_len_first	= datalen;
 		updata_state.style			= style;
 		updata_flash_write_para(&updata_state);
+		
+		#ifdef UPDATA_DEBUG
+		rt_kprintf("\n 程序开始升级!");
+		#endif
 		}
-	else					///续传升级程序
+	#ifdef UPDATA_USE_CONTINUE
+	else if(i == 2)					///续传升级程序
 		{
 		updata_flash_read_para(&updata_state);
-		
-		for(i=0; i<cur_package_total; i++)
-			{
-			if( updata_state.Pack_Mark[i/8] & (BIT(i%8)) )
-				{
-				break;
-				}
-			}
-		if(i == cur_package_total )
-			{
-			///程序之前已经升级成功，不需要重新升级
-			///增加用户操作代码
-			rt_kprintf("\r\n 程序之前已经升级成功!");
-			updata_ack_ok(fram_num,style,2);
-			goto UPDATA_OK;
-			}
-		
 		///判断上位机下发的数据格式是否和之前升级了一半的格式相同，相同就可以继续续传升级，否则只能重新升级
 		if((updata_state.file_size == Tempu32data)&&(updata_state.package_total	== cur_package_total)&&(updata_state.package_size == msg_len) && (updata_state.pack_len_first == datalen))
 			{
@@ -693,20 +722,43 @@ rt_err_t updata_jt808_0x8108(uint8_t linkno,uint8_t *pmsg)
 			}
 		updata_flash_write_para(&updata_state);
 		}
+	#endif
+	else if(i == 3)					///程序升级成功
+		{
+		///程序之前已经升级成功，不需要重新升级
+		///增加用户操作代码
+		#ifdef UPDATA_DEBUG
+		rt_kprintf("\n 程序之前已经升级成功!");
+		#endif
+		updata_ack_ok(fram_num,style,2);
+		goto UPDATA_OK;
+		}
  	}
  else						///其它包
  	{
  	if( cur_package_total != updata_state.package_total )
  		{
- 		updata_ack_ok(updata_state.fram_num_first,updata_state.style,1);			///通用应答
+ 		updata_ack_ok(updata_state.fram_num_first,updata_state.style,1);			///通知取消升级
  		goto UPDATA_ERR;
  		}
-	if( cur_package_num < updata_state.package_total )		///比较后面的数据包是否和第一包的大小相同
+	if( cur_package_num < updata_state.package_total )
 		{
-		if( updata_state.package_size != msg_len )
+		///当前包是第二包，检查第二包大小是否等于第一包大小，如果不相等，则认为第二包大小为分包大小
+		if(( cur_package_num ==2 )&&( updata_state.package_size != msg_len))
 			{
-	 		updata_ack_ok(updata_state.fram_num_first,updata_state.style,1);
-	 		goto UPDATA_ERR;
+			updata_state.package_size = msg_len;
+			updata_flash_write_para(&updata_state);
+			}
+		else		///比较后面的数据包是否和分包大小相同
+			{
+			if( updata_state.package_size != msg_len )
+				{
+				#ifdef UPDATA_DEBUG
+				rt_kprintf("\n 重新修改分包大小=%4d",msg_len);
+				#endif
+		 		updata_ack_ok(updata_state.fram_num_first,updata_state.style,1);
+		 		goto UPDATA_ERR;
+				}
 			}
 		}
 	///其它包处理
@@ -736,8 +788,8 @@ rt_err_t updata_jt808_0x8108(uint8_t linkno,uint8_t *pmsg)
  	return RT_ERROR;
  UPDATA_SUCCESS:
  	rt_sem_release(&sem_dataflash);
-	rt_kprintf("\r\n 程序升级完成，10秒后复位设备。");
-	rt_thread_delay(RT_TICK_PER_SECOND * 10);
+	rt_kprintf("\n 程序升级完成，10秒后复位设备。");
+	rt_thread_delay(RT_TICK_PER_SECOND * 5);
 	reset(1);
  	return RT_EOK;
 }

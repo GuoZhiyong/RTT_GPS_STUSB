@@ -88,7 +88,7 @@ static void keypress( unsigned int key )
 				if( DataLink_Status( ) && ( CallState == CallState_Idle ) ) //电话空闲且在线情况下
 				{
 					Speak_ON;                                               //开启功放
-					rt_kprintf( "\r\n  一键回拨(监听号码)-->普通通话\r\n" );
+					rt_kprintf( "\n  一键回拨(监听号码)-->普通通话\n" );
 				}
 				CallState = CallState_rdytoDialLis;                         // 准备开始拨打监听号码
 #endif

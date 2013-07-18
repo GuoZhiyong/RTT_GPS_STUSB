@@ -43,7 +43,7 @@ switch(key)
 			lcd_text12(7,10,"多媒体事件上传成功",18,LCD_MODE_INVERT);
 			lcd_update_all();
             //置上传多媒体信息的标志
-			rt_kprintf("\r\n -----  多媒体事件上传成功 \r\n");  
+			rt_kprintf("\n -----  多媒体事件上传成功 \n");  
 				#if NEED_TODO
 			MediaObj.Media_Type=0; //图像
 		    MediaObj.Media_totalPacketNum=1;  // 图片总包数

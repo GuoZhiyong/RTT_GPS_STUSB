@@ -53,9 +53,9 @@ extern int __bss_end;
 *******************************************************************************/
 void assert_failed(u8* file, u32 line)
 {
-	rt_kprintf("\n\r Wrong parameter value detected on\r\n");
-	rt_kprintf("       file  %s\r\n", file);
-	rt_kprintf("       line  %d\r\n", line);
+	rt_kprintf("\n\r Wrong parameter value detected on\n");
+	rt_kprintf("       file  %s\n", file);
+	rt_kprintf("       line  %d\n", line);
 
 	while (1) ;
 }
@@ -89,7 +89,7 @@ void rtthread_startup(void)
 	rt_device_init_all();
 
 
-	rt_kprintf("\r\nrcc.csr=%08x",RCC->CSR);
+	rt_kprintf("\nrcc.csr=%08x",RCC->CSR);
 
 	/* init application */
 	mma8451_driver_init( );

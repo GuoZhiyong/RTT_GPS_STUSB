@@ -142,7 +142,7 @@ JT808_PARAM jt808_param =
 void param_save( void )
 {
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
-	rt_kprintf( "parma_save size=%d\r\n", sizeof( jt808_param ) );
+	rt_kprintf( "parma_save size=%d\n", sizeof( jt808_param ) );
 	sst25_write_back( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
 	rt_sem_release( &sem_dataflash );
 }
@@ -164,7 +164,7 @@ void param_load( void )
 	}
 	sst25_read( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "parma ver=%x size=%d\r\n", BYTESWAP4( jt808_param.id_0x0000 ), sizeof( jt808_param ) );
+	rt_kprintf( "parma ver=%x size=%d\n", BYTESWAP4( jt808_param.id_0x0000 ), sizeof( jt808_param ) );
 }
 
 FINSH_FUNCTION_EXPORT( param_load, load param );
@@ -496,23 +496,23 @@ void param_print( void )
 				val |= ( ( *p++ ) << 8 );
 				val |= ( ( *p++ ) << 16 );
 				val |= ( ( *p ) << 24 );
-				rt_kprintf( "\r\nid=%04x value=%08x\r\n", id, val );
+				rt_kprintf( "\nid=%04x value=%08x\n", id, val );
 				break;
 			case TYPE_CAN:
 				val |= ( *p++ );
 				val |= ( ( *p++ ) << 8 );
 				val |= ( ( *p++ ) << 16 );
 				val |= ( ( *p++ ) << 24 );
-				rt_kprintf( "\r\nid=%04x value=%08x", id, val );
+				rt_kprintf( "\nid=%04x value=%08x", id, val );
 				val = 0;
 				val |= ( *p++ );
 				val |= ( ( *p++ ) << 8 );
 				val |= ( ( *p++ ) << 16 );
 				val |= ( ( *p ) << 24 );
-				rt_kprintf( " %08x\r\n", val );
+				rt_kprintf( " %08x\n", val );
 				break;
 			case TYPE_STR:
-				rt_kprintf( "\r\nid=%04x value=%s\r\n", id, p );
+				rt_kprintf( "\nid=%04x value=%s\n", id, p );
 				break;
 		}
 	}
@@ -551,7 +551,7 @@ void param_dump( void )
 			p++;
 		}
 		printbuf[69] = 0;
-		rt_kprintf( "%s\r\n", printbuf );
+		rt_kprintf( "%s\n", printbuf );
 		len -= count;
 	}
 }
@@ -669,7 +669,7 @@ void jt808_0x8104_fill_data( JT808_TX_NODEDATA *pnodedata )
 
 	id_get++;
 	count = get_param_and_fill_buf( buf );              /*字节填数据*/
-	rt_kprintf( "\r\ncount=%d id_get=%d\r\n", count, id_get );
+	rt_kprintf( "\ncount=%d id_get=%d\n", count, id_get );
 
 	pnodedata->packet_no++;
 	if( pnodedata->packet_no == pnodedata->packet_num ) /*达到最后一包*/
@@ -695,11 +695,11 @@ static JT808_MSG_STATE jt808_0x8104_response( JT808_TX_NODEDATA * pnodedata, uin
 {
 	if( pnodedata->packet_num == pnodedata->packet_no ) /*已经发送了所有包*/
 	{
-		rt_kprintf("0x8104_response_delete\r\n");
+		rt_kprintf("0x8104_response_delete\n");
 		pnodedata->state=ACK_OK;
 		return WAIT_DELETE;
 	}
-	rt_kprintf("0x8104_response_idle\r\n");
+	rt_kprintf("0x8104_response_idle\n");
 	jt808_0x8104_fill_data( pnodedata );
 	return IDLE;
 }
@@ -710,11 +710,11 @@ static JT808_MSG_STATE jt808_0x8104_timeout( JT808_TX_NODEDATA * pnodedata )
 
 	if( pnodedata->packet_num == pnodedata->packet_no ) /*已经发送了所有包*/
 	{
-		rt_kprintf("0x8104_timeout_delete\r\n");
+		rt_kprintf("0x8104_timeout_delete\n");
 		pnodedata->state=ACK_OK;
 		return WAIT_DELETE;
 	}
-	rt_kprintf("0x8104_timeout_idle\r\n");
+	rt_kprintf("0x8104_timeout_idle\n");
 	jt808_0x8104_fill_data( pnodedata );
 	return IDLE;
 }
@@ -766,14 +766,14 @@ void jt808_param_0x8104( uint8_t *pmsg )
 				break;
 		}
 	}
-	rt_kprintf( "\r\ntotal param_count=%d size=%d\r\n", param_count, param_size );
+	rt_kprintf( "\ntotal param_count=%d size=%d\n", param_count, param_size );
 	pnodedata->packet_num	= ( param_size + 511 ) / 512;   /*默认512分包*/
 	pnodedata->packet_no	= 1;
-	rt_kprintf( "\r\npacket_num=%d \r\n", pnodedata->packet_num );
+	rt_kprintf( "\npacket_num=%d \n", pnodedata->packet_num );
 
 	id_get	= 1;
 	count	= get_param_and_fill_buf( buf + 3 );            /*空出三个字节，填写应答流水号参数总数*/
-	rt_kprintf( "\r\ncount=%d id_get=%d\r\n", count, id_get );
+	rt_kprintf( "\ncount=%d id_get=%d\n", count, id_get );
 
 	buf[0]	= pmsg[10];
 	buf[1]	= pmsg[11];
@@ -873,7 +873,7 @@ void jt808_param_0x8106( uint8_t *pmsg )
 			}
 		}
 	}
-	rt_kprintf( "\r\ntotal count=%d size=%d\r\n", param_count, param_size );
+	rt_kprintf( "\ntotal count=%d size=%d\n", param_count, param_size );
 
 	pnodedata = node_begin( 1, SINGLE_ACK, 0x0104, -1, 600 );
 	if( pnodedata == RT_NULL )

@@ -276,6 +276,10 @@ static void keypress( unsigned int key )
 				print_rec_flag = 1; //打印标志
 			}
 			break;
+		case KEY_MENU_REPEAT:		/*长按进入设置*/
+			pMenuItem = &Menu_0_0_password;
+			pMenuItem->show( );
+			break;
 	}
 }
 

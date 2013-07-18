@@ -466,7 +466,7 @@ void jt808_misc_0x8302( uint8_t *pmsg )
 		tts_write( (char*)( pmsg + 14 ), ask_len ); /*问题*/
 		tts_write( "请选择", 6 );
 		pos = 2 + ask_len;                          /*指向答案项，注意偏移开始地址，类型+长度*/
-		rt_kprintf( "pos=%d len=%d\r\n", pos, len );
+		rt_kprintf( "pos=%d len=%d\n", pos, len );
 		while( pos < len )
 		{
 			p		= pmsg + 12 + pos;              /*指向候选答案列表*/
@@ -707,7 +707,7 @@ void jt808_misc_0x8400( uint8_t *pmsg )
 	uint16_t	len = ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
 	strcpy( dialbuf, "ATD" );
 	strncpy( dialbuf + 3, (char*)( pmsg + 13 ), len - 1 );
-	strcat( dialbuf, ";\r\n" );
+	strcat( dialbuf, ";\n" );
 	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
 	at( dialbuf );
 }

@@ -94,7 +94,7 @@ void thread_usbout_udisk( void* parameter )
 		if( fd >= 0 )
 			{
 			//msg( "I打开文件成功" );
-			rt_kprintf("\r\n 打开文件成功");
+			rt_kprintf("\n 打开文件成功");
 
 			if(DataOutStartFlag==1)//疑点
 				{
@@ -102,7 +102,7 @@ void thread_usbout_udisk( void* parameter )
 				//Api_DFdirectory_Read(doubt_data,write_da+65,206,0,1);
 				len=271;//65+206
 				size = write( fd,write_da,len);
-				rt_kprintf("\r\n 导出疑点数据记录sizeof= %d ",size);
+				rt_kprintf("\n 导出疑点数据记录sizeof= %d ",size);
 				data_fetch_comp=1;
 				msg("I数据导出完成");
 				//goto end_usbdata_0;
@@ -120,7 +120,7 @@ void thread_usbout_udisk( void* parameter )
 					}
 				len=65+TiredDrv_write*12;
 				size = write( fd,write_da,len);
-				rt_kprintf("\r\n 导出疲劳记录sizeof= %d ",size);
+				rt_kprintf("\n 导出疲劳记录sizeof= %d ",size);
 				data_fetch_comp=1;
 					#endif
 				msg("I数据导出完成");
@@ -141,7 +141,7 @@ void thread_usbout_udisk( void* parameter )
 				len=65+ExpSpdRec_write*13;
 				size = write( fd,write_da,len);
 					#endif
-				rt_kprintf("\r\n 导出超速记录sizeof= %d ",size);
+				rt_kprintf("\n 导出超速记录sizeof= %d ",size);
 					
 				data_fetch_comp=1;
 				msg("I数据导出完成");
@@ -156,7 +156,7 @@ void thread_usbout_udisk( void* parameter )
 				{
 				usb_error=1;
 				msg("EU盘创建文件失败");
-				rt_kprintf( "\r\n创建文件失败" );
+				rt_kprintf( "\n创建文件失败" );
 				break;
 				}
 			}

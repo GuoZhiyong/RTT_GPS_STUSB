@@ -459,7 +459,7 @@ static void process_gps_report( void )
 	if(gps_datetime[5] == 0 )
 	{
 		jt808_tx( 0x0200, buf, 28 + alarm_length );
-		rt_kprintf( "%d>add gps report\r\n", rt_tick_get( ));
+		rt_kprintf( "%d>add gps report\n", rt_tick_get( ));
 	}
 #endif
 }
@@ -724,7 +724,7 @@ static uint8_t process_rmc( uint8_t * pinfo )
 				{
 					date_set( year, mon, day );
 					time_set( hour, min, sec );
-					rt_kprintf( "%d>rtc sync %02d-%02d-%02d %02d:%02d:%02d\r\n", rt_tick_get( ), year, mon, day, hour, min, sec );
+					rt_kprintf( "%d>rtc sync %02d-%02d-%02d %02d:%02d:%02d\n", rt_tick_get( ), year, mon, day, hour, min, sec );
 				}
 
 				return 0;
@@ -840,7 +840,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	/*是否输出原始信息*/
 	if( gps_status.Raw_Output )
 	{
-		rt_kprintf( "%d gps<%s\r\n", rt_tick_get( ), psrc );
+		rt_kprintf( "%d gps<%s\n", rt_tick_get( ), psrc );
 	}
 
 	if( ( strncmp( psrc, "$GNGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$BDGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$GPGGA,", 7 ) == 0 ) )
