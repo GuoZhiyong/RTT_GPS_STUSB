@@ -24,30 +24,9 @@
 
 typedef uint32_t MYTIME;
 
-#define PACK_BYTE( buf, byte ) ( *( buf ) = ( byte ) )
-#define PACK_WORD( buf, word ) \
-    do { \
-		*( ( buf ) )		= ( word ) >> 8; \
-		*( ( buf ) + 1 )	= ( word ) & 0xff; \
-	} \
-    while( 0 )
-
-#define PACK_INT( buf, byte4 ) \
-    do { \
-		*( ( buf ) )		= ( byte4 ) >> 24; \
-		*( ( buf ) + 1 )	= ( byte4 ) >> 16; \
-		*( ( buf ) + 2 )	= ( byte4 ) >> 8; \
-		*( ( buf ) + 3 )	= ( byte4 ) & 0xff; \
-	} while( 0 )
 
 
-/*
-   4MB serial flash 0x400000
- */
-
-static rt_thread_t tid_usb_vdr = RT_NULL;
-
-#define VDR_BASE 0x300000
+#define VDR_BASE 0x310000
 
 #define VDR_08_START	VDR_BASE
 #define VDR_08_SECTORS	100         /*每小时2个sector,保留50小时*/
@@ -72,6 +51,33 @@ static rt_thread_t tid_usb_vdr = RT_NULL;
 #define VDR_13_14_15_START		( VDR_12_START + VDR_12_SECTORS * 4096 )
 #define VDR_13_14_15_SECTORS	1   /*100条 外部供电记录 100条 参数修改记录 10条速度状态日志 */
 #define VDR_13_14_15_END		( VDR_13_14_15_START + VDR_13_14_15_SECTORS * 4096 )
+
+
+
+#define PACK_BYTE( buf, byte ) ( *( buf ) = ( byte ) )
+#define PACK_WORD( buf, word ) \
+    do { \
+		*( ( buf ) )		= ( word ) >> 8; \
+		*( ( buf ) + 1 )	= ( word ) & 0xff; \
+	} \
+    while( 0 )
+
+#define PACK_INT( buf, byte4 ) \
+    do { \
+		*( ( buf ) )		= ( byte4 ) >> 24; \
+		*( ( buf ) + 1 )	= ( byte4 ) >> 16; \
+		*( ( buf ) + 2 )	= ( byte4 ) >> 8; \
+		*( ( buf ) + 3 )	= ( byte4 ) & 0xff; \
+	} while( 0 )
+
+
+/*
+   4MB serial flash 0x400000
+ */
+
+static rt_thread_t tid_usb_vdr = RT_NULL;
+
+
 
 static struct rt_timer tmr_200ms;
 
@@ -109,30 +115,14 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
 #endif
 
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void vdr_pack_byte( uint8_t* buf, uint8_t byte, uint8_t* fcs )
 {
 	*buf	= byte;
 	*fcs	^= byte;
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void vdr_pack_word( uint8_t* buf, uint16_t word, uint8_t* fcs )
 {
 	buf[0]	= ( word >> 8 );
@@ -141,15 +131,7 @@ static void vdr_pack_word( uint8_t* buf, uint16_t word, uint8_t* fcs )
 	*fcs	^= ( word & 0xFF );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void vdr_pack_buf( uint8_t* dst, uint8_t* src, uint16_t len, uint8_t* fcs )
 {
 	uint16_t count = len;

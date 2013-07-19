@@ -182,19 +182,24 @@ void GPSGPRS_Status( void )
 #endif
 }
 
-/**/
+/*
+这里显示gps时间，若gps未定位，时间停走
+可选择 
+rtc时间，需要频繁读取(1秒1次)，如何判断校时
+使用自己的mytime，如何更新(使用系统的1s定时器是否准确)
+*/
 void  Disp_Idle( void )
 {
 	char	buf_datetime[22];
 	char	buf_speed[20];
 
 	sprintf( buf_datetime, "20%02d/%02d/%02d %02d:%02d:%02d",
-	         gps_datetime[0],
-	         gps_datetime[1],
-	         gps_datetime[2],
-	         gps_datetime[3],
-	         gps_datetime[4],
-	         gps_datetime[5] );
+	         YEAR(mytime_now),
+	         MONTH(mytime_now),
+	         DAY(mytime_now),
+	         HOUR(mytime_now),
+	         MINUTE(mytime_now),
+	         SEC(mytime_now) );
 	sprintf( buf_speed, "%3dkm/h   %3d度 ", gps_speed, gps_cog );
 
 	lcd_fill( 0 );

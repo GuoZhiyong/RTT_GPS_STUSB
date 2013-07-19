@@ -25,7 +25,7 @@ char			*car_type2	= "大型中型小型微型";
 
 static int8_t	row = 0, col = 0;
 
-static int8_t	row0_selected, row1_selected;
+static int8_t	row0_selected,row1_selected;
 
 /**/
 static void display( void )
@@ -99,6 +99,8 @@ static void keypress( unsigned int key )
 			}
 			row++;
 			col = 0;
+			invert=1;
+			display();
 			break;
 		case KEY_UP:
 			if( col == 0 )
@@ -120,8 +122,8 @@ static void keypress( unsigned int key )
 static void timetick( unsigned int systick )
 {
 	count++;
-	count %= 20;
-	if( count == 0 ) /*每400ms调用一次*/
+	count %= 10;
+	if( count == 0 ) 
 	{
 		display( );
 	}

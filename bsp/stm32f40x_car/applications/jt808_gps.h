@@ -23,7 +23,10 @@
 #define BIT_STATUS_NS	0x00000004
 #define BIT_STATUS_EW	0x00000008
 
-#define BIT_ALARM_EMG 0x00000001
+#define BIT_ALARM_EMG		0x00000001
+#define BIT_ALARM_GPS_ERR	0x00000010
+#define BIT_ALARM_GPS_OPEN	0x00000020
+#define BIT_ALARM_GPS_SHORT 0x00000040
 
 /*基本位置信息,因为字节对齐的方式，还是使用数组方便*/
 typedef __packed struct _gps_baseinfo
@@ -58,29 +61,27 @@ extern GPS_STATUS	gps_status;
 
 extern GPS_BASEINFO gps_baseinfo;
 
-extern uint32_t		gps_lati;           /*内部，小端 纬度 10-E6度*/
-extern uint32_t		gps_longi;          /*内部，小端 经度 10-E6度*/
-extern uint16_t		gps_speed;          /*速度 kmh*/
-extern uint16_t		gps_cog;            /*对地方向角*/
-extern uint16_t		gps_alti;           /*高度*/
-extern uint8_t		gps_datetime[6];    /*日期时间 hex格式*/
+extern uint32_t		gps_lati;               /*内部，小端 纬度 10-E6度*/
+extern uint32_t		gps_longi;              /*内部，小端 经度 10-E6度*/
+extern uint16_t		gps_speed;              /*速度 kmh*/
+extern uint16_t		gps_cog;                /*对地方向角*/
+extern uint16_t		gps_alti;               /*高度*/
+extern uint8_t		gps_datetime[6];        /*日期时间 hex格式*/
 
 /*告警和状态信息*/
 extern uint32_t jt808_alarm;
 extern uint32_t jt808_status;
 
-extern uint32_t	gps_sec_count;		/*gps秒脉冲输出*/
-extern uint32_t	utc_now;
-extern MYTIME mytime_now;
+extern uint32_t gps_sec_count;              /*gps秒脉冲输出*/
+extern uint32_t utc_now;
+extern MYTIME	mytime_now;
 
 extern uint16_t jt808_8202_track_interval;  /*jt808_8202 临时位置跟踪控制*/
 extern uint32_t jt808_8202_track_duration;
-extern uint16_t	jt808_8202_track_counter;	
+extern uint16_t jt808_8202_track_counter;
 
-
-extern uint32_t	jt808_8203_manual_ack_seq;	/*人工确认报警的标识位 0,3,20,21,22,27,28*/
-extern uint16_t	jt808_8203_manual_ack_value;
-
+extern uint32_t jt808_8203_manual_ack_seq;  /*人工确认报警的标识位 0,3,20,21,22,27,28*/
+extern uint16_t jt808_8203_manual_ack_value;
 
 void gps_rx( uint8_t * pinfo, uint16_t length );
 

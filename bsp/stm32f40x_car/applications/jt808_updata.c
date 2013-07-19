@@ -26,8 +26,8 @@
 #define UPDATA_USE_CONTINUE
 
 #define	DF_UpdataAddress_PARA		0x3C000			///图片数据存储开始位置
-#define	DF_UpdataAddress_Start		0x1000			///图片数据存储开始位置
-#define DF_UpdataAddress_End		0x3C000			///图片数据存储结束位置
+#define	DF_UpdataAddress_Start		0x2000			///图片数据存储开始位置
+#define DF_UpdataAddress_End		0x3D000			///图片数据存储结束位置
 
 #ifndef BIT
 #define BIT(i) ((unsigned long)(1<<i))

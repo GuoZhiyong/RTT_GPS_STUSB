@@ -623,6 +623,7 @@ rt_err_t resp_ETCPIP( char *p, uint16_t len )
 	char	*psrc	= p;
 	char	*pdst	= gsm_param.ip;
 
+	memset(gsm_param.ip,0,15);
 	while( 1 )
 	{
 		if( stage == 0 )

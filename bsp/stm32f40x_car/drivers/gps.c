@@ -51,7 +51,8 @@ static LENGTH_BUF uart5_rxbuf;
 //static uint16_t uart5_rxbuf_wr = 2;
 
 /*gps原始信息数据区定义*/
-#define GPS_RAWINFO_SIZE 2048
+#define GPS_RAWINFO_SIZE 2000
+#define NEMA_SIZE	96			/*NEMA语句的长度*/
 static uint8_t					gps_rawinfo[GPS_RAWINFO_SIZE];
 static struct rt_messagequeue	mq_gps;
 
@@ -190,7 +191,7 @@ void UART5_IRQHandler( void )
 
 		if( ( ch == 0x0a ) && ( last_ch == 0x0d ) ) /*遇到0d 0a 表明结束*/
 		{
-			if( uart5_rxbuf.wr < 124 )
+			if( uart5_rxbuf.wr < NEMA_SIZE)
 			{
 				rt_mq_send( &mq_gps, (void*)&uart5_rxbuf, uart5_rxbuf.wr + 2 );
 			}
@@ -400,11 +401,11 @@ static void rt_thread_entry_gps( void* parameter )
 	rt_tick_t tick_lastrx=rt_tick_get();
 	while( 1 )
 	{
-		res = rt_mq_recv( &mq_gps, (void*)&buf, 124, RT_TICK_PER_SECOND / 20 ); //等待100ms,实际上就是变长的延时,最长100ms
+		res = rt_mq_recv( &mq_gps, (void*)&buf, NEMA_SIZE, RT_TICK_PER_SECOND / 20 ); //等待100ms,实际上就是变长的延时,最长100ms
 		if( res == RT_EOK )                                                     //收到一包数据
 		{
 			tick_lastrx=rt_tick_get();
-			jt808_alarm&=~(1<<4);
+			jt808_alarm&=~BIT_ALARM_GPS_ERR;
 			if( flag_bd_upgrade_uart == 0 )
 			{
 				gps_rx( buf.body, buf.wr );
@@ -417,14 +418,14 @@ static void rt_thread_entry_gps( void* parameter )
 			}
 		}
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
-		if(rt_tick_get()-tick_lastrx>RT_TICK_PER_SECOND*5)
+		if((rt_tick_get()-tick_lastrx)>RT_TICK_PER_SECOND*5)
 		{
 			//rt_kprintf("%d>gps no output\r\n");
-			jt808_alarm|=(1<<4);
-		//	GPIO_ResetBits( GPIOD, GPIO_Pin_10 );  /*off gps*/
-		//	rt_thread_delay(RT_TICK_PER_SECOND);
-		//	GPIO_SetBits( GPIOD, GPIO_Pin_10 );		/*on gps*/
-		//	tick_lastrx=rt_tick_get();
+			jt808_alarm|=BIT_ALARM_GPS_ERR;
+			GPIO_ResetBits( GPIOD, GPIO_Pin_10 );  /*off gps*/
+			rt_thread_delay(RT_TICK_PER_SECOND*3);
+			GPIO_SetBits( GPIOD, GPIO_Pin_10 );		/*on gps*/
+			tick_lastrx=rt_tick_get();
 		}
 	}
 }
@@ -432,7 +433,7 @@ static void rt_thread_entry_gps( void* parameter )
 /*gps设备初始化*/
 void gps_init( void )
 {
-	rt_mq_init( &mq_gps, "mq_gps", &gps_rawinfo[0], 128 - sizeof( void* ), GPS_RAWINFO_SIZE, RT_IPC_FLAG_FIFO );
+	rt_mq_init( &mq_gps, "mq_gps", &gps_rawinfo[0], NEMA_SIZE, GPS_RAWINFO_SIZE, RT_IPC_FLAG_FIFO );
 
 	rt_thread_init( &thread_gps,
 	                "gps",
@@ -723,7 +724,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	dev_gps_write( &dev_gps, 0, "\x40\x10\xC0\x00\x10\x00\x01\xC2\x84\x0D\x0A", 11 );
 	while( 1 )
 	{
-		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, 124, RT_TICK_PER_SECOND * 5 );
+		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
 		if( res == RT_EOK )                                       //收到一包数据
 		{
 			rt_kprintf( "\r\n版本查询\r\n" );
@@ -755,7 +756,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	dev_gps_write( &dev_gps, 0, "\x40\x15\xC0\x00\x01\x00\x01\x92\xD4\x0D\x0A", 11 );
 	while( 1 )
 	{
-		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, 124, RT_TICK_PER_SECOND * 5 );
+		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
 		if( res == RT_EOK )                   //收到一包数据
 		{
 			if( ( uart_buf.wr == 11 ) && ( uart_buf.body[4] == 0x15 ) )
@@ -787,7 +788,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	ch_l = 1;
 	while( ch_l )
 	{
-		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, 124, RT_TICK_PER_SECOND * 10 );
+		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 10 );
 		if( res == RT_EOK )                   //收到一包数据
 		{
 			for( ch_h = 0; ch_h < uart_buf.wr; ch_h++ )
@@ -870,7 +871,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 		ch_l = 1;
 		while( ch_l )
 		{
-			res = rt_mq_recv( &mq_gps, (void*)&uart_buf, 124, RT_TICK_PER_SECOND * 12 );
+			res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 12 );
 			if( res == RT_EOK ) //收到一包数据
 			{
 				for( ch_h = 0; ch_h < uart_buf.wr; ch_h++ )

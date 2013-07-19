@@ -131,6 +131,10 @@ static void key_lcd_port_init( void )
 	GPIO_Init( GPIOE, &GPIO_InitStructure );
 }
 
+
+
+
+
 ALIGN( RT_ALIGN_SIZE )
 static char thread_hmi_stack[2048];
 struct rt_thread thread_hmi;

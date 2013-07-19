@@ -148,6 +148,13 @@ static JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
 	u16					cmd_id;
 	TypePicMultTransPara* p_para;
 
+	nodedata->retry++;
+	if( nodedata->retry >= nodedata->max_retry )
+	{
+		return;
+	}
+
+
 	cmd_id	= nodedata->head_id;
 	p_para	= (TypePicMultTransPara*)( nodedata->user_para );
 	switch( cmd_id )

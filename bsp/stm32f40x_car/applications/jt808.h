@@ -22,7 +22,6 @@
 #include "sst25.h"
 #include "jt808_area.h"
 
-
 #define NEED_TODO	0
 
 
@@ -107,31 +106,6 @@ typedef struct
 	char	interval;   /*持续时间,秒*/
 }GPS_AREA_CIRCLE;
 
-#if 0
-typedef enum
-{
-	T_NODEF = 1,
-	T_BYTE,
-	T_WORD,
-	T_DWORD,
-	T_STRING,
-}PARAM_TYPE;
-
-/*终端参数类型*/
-typedef  struct
-{
-	uint8_t		id;
-	PARAM_TYPE	type;
-	void		* pvalue;
-}PARAM;
-
-/*终端参数类型*/
-typedef __packed struct
-{
-	PARAM_TYPE	type;
-	void		* pvalue;
-}PARAM_BODY;
-#endif
  
 
 typedef enum
@@ -142,16 +116,6 @@ typedef enum
 	WAIT_DELETE,                /*等待删除*/
 } JT808_MSG_STATE;
 
-
-/*
-   typedef enum
-   {
-   TERMINAL_CMD = 1,
-   TERMINAL_ACK,
-   CENTER_CMD,
-   CENTER_ACK
-   }JT808_MSG_TYPE;
- */
 
 typedef enum
 {
@@ -212,93 +176,6 @@ extern struct _connect_state connect_state ;
 /*
    存储jt808发送的相关信息
  */
-#if 0
-typedef __packed struct _jt808_tx_msg_nodedata_old
-{
-/*发送机制相关*/
-	uint8_t			linkno;     /*传输使用的link,包括了协议和远端socket*/
-	JT808_MSG_TYPE	type;       /*发送消息的类型*/
-	JT808_MSG_STATE state;      /*发送状态*/
-	uint32_t		retry;      /*重传次数,递增，递减找不到*/
-	uint32_t		max_retry;  /*最大重传次数*/
-	uint32_t		timeout;    /*超时时间*/
-	uint32_t		tick;       /*发送时间*/
-/*接收的处理判断相关*/
-	void ( *cb_tx_timeout )( __packed struct _jt808_tx_msg_nodedata *pnodedata );
-	void ( *cb_tx_response )( uint8_t linkno, uint8_t *pmsg );
-	uint16_t	head_id;        /*消息ID*/
-	uint16_t	head_sn;        /*消息流水号*/
-/*真实的发送数据*/
-	uint16_t	msg_len;        /*消息长度*/
-	uint8_t		*pmsg;          /*发送消息体,真实的要发送的数据格式，经过转义和FCS后的<7e>为标志*/
-}JT808_TX_MSG_NODEDATA_OLD;
-#endif
-
-#if 0
-typedef __packed struct _jt808_tx_nodedata
-{
-/*发送机制相关*/
-	uint8_t			linkno;                                                 /*传输使用的link,包括了协议和远端socket*/
-	uint8_t			multipacket;                                            /*是不是多包发送*/
-	JT808_MSG_TYPE	type;                                                   /*发送消息的类型*/
-	JT808_MSG_STATE state;                                                  /*发送状态*/
-	uint32_t		retry;                                                  /*重传次数,递增，递减找不到*/
-	uint32_t		max_retry;                                              /*最大重传次数*/
-	uint32_t		timeout;                                                /*超时时间*/
-	uint32_t		tick;                                                   /*发送时间*/
-/*接收的处理判断相关*/
-	void ( *cb_tx_timeout )( __packed struct _jt808_tx_nodedata * thiz );   /*发送超时的处理函数*/
-	void ( *cb_tx_response )( uint8_t linkno, uint8_t *pmsg );              /*收到中心应答的处理函数*/
-	uint16_t	head_id;                                                    /*消息ID*/
-	uint16_t	head_sn;                                                    /*消息流水号*/
-
-/*单包真实的发送数据-消息体*/
-	uint16_t	msg_len;                                                    /*消息长度*/
-	uint8_t		*pmsg;                                                      /*原始信息,需要在发送时转义,因为多包发送时得到的是原始信息。
-	                                                                                                     ，包括808转义和M66的HEX转义，这样，减少RAM使用*/
-/*多包发送的处理*/
-
-
-	/*
-	   提供一个void * 交由用户自己控制
-	   uint8_t		stage;                                                                  //阶段
-	   uint16_t	packet_num;                                                             //总包数
-	   uint16_t	packet_no;                                                              //当前包数
-	   uint32_t	size;                                                                   //总得数据大小
-	   uint32_t	media_id;
-	   uint16_t	seq;
-	   提供一个发送列表数组，按序号表示发送的状态，同时便于将来补传
-	   packet_num指定数组大小，packet_no指示当前要发送的ID
-	 */
-	void *user_data;
-	int ( *get_data )( __packed struct _jt808_tx_nodedata * thiz );         /*获取要发送的信息*/
-}JT808_TX_NODEDATA;
-#endif
-
-#if 0
-typedef __packed struct _jt808_tx_nodedata
-{
-/*发送机制相关*/
-	uint8_t			linkno;                                                                             /*传输使用的link,包括了协议和远端socket*/
-	uint8_t			multipacket;                                                                        /*是不是多包发送*/
-	JT808_MSG_TYPE	type;                                                                               /*发送消息的类型*/
-	JT808_MSG_STATE state;                                                                              /*发送状态*/
-	uint32_t		retry;                                                                              /*重传次数,递增，递减找不到*/
-	uint32_t		max_retry;                                                                          /*最大重传次数*/
-	uint32_t		timeout;                                                                            /*超时时间*/
-	uint32_t		timeout_tick;                                                                       /*达到超时的tick值*/
-	uint16_t		user_size;                                                                          /*分配给用户的大小*/
-/*接收的处理判断相关*/
-	JT808_MSG_STATE ( *cb_tx_timeout )( __packed struct _jt808_tx_nodedata * thiz );                    /*发送超时的处理函数*/
-	JT808_MSG_STATE ( *cb_tx_response )( __packed struct _jt808_tx_nodedata * thiz, uint8_t *pmsg );    /*收到中心应答的处理函数*/
-	uint16_t	head_id;                                                                                /*消息ID*/
-	uint16_t	head_sn;                                                                                /*消息流水号*/
-/*用户数据*/
-	uint16_t	msg_len;                                                                                /*消息长度*/
-	uint8_t		tag_data[1];                                                                            /*变长数组*/
-}JT808_TX_NODEDATA;
-
-#endif
 
 typedef __packed struct _jt808_tx_nodedata
 {
@@ -330,10 +207,7 @@ extern uint8_t mobile[6];
 
 
 void jt808_init( void );
-
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
-
-
 rt_size_t tts_write( char* info,uint16_t len );
 rt_size_t at( char *sinfo );
 
