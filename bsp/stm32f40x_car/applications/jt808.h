@@ -39,7 +39,7 @@
 
 /*for new use*/
 
-#define FLASH_SEM_DELAY	2
+#define FLASH_SEM_DELAY	5
 
 
 
@@ -221,12 +221,12 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
 
 
 JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA * pnodedata,
-                               uint8_t * pinfo, uint16_t len,
-                               JT808_MSG_STATE ( *cb_tx_timeout )( ),
-                               JT808_MSG_STATE ( *cb_tx_response )( ),
-                               void  *userpara );
+                               uint8_t * pinfo, uint16_t len);
 
-void node_end( JT808_TX_NODEDATA* pnodedata );
+void node_end( JT808_TX_NODEDATA* pnodedata,
+               JT808_MSG_STATE ( *cb_tx_timeout )( ),
+               JT808_MSG_STATE ( *cb_tx_response )( ),
+               void  *userpara );
 
 
 void jt808_add_tx( uint8_t linkno,
@@ -239,7 +239,6 @@ void jt808_add_tx( uint8_t linkno,
                        uint8_t * pinfo,
                        void  *userpara );
 
-void jt808_add_tx_end( JT808_TX_NODEDATA* pnodedata );
 
 /*Í¨ÓÃÓ¦´ð*/
 rt_err_t jt808_tx_0x0001(uint16_t seq, uint16_t id, uint8_t res );

@@ -205,7 +205,7 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
 	{
 		return RT_NULL;
 	}
-	rt_kprintf( "%d>malloc node %p \n", rt_tick_get( ), pnodedata );
+	rt_kprintf( "%d>malloc node(%04x) %p \n", rt_tick_get( ), id,pnodedata );
 	//memset( pnodedata, 0, sizeof( JT808_TX_NODEDATA ) ); ///绝对不能少，否则系统出错
 	pnodedata->linkno	= linkno;
 	pnodedata->state	= IDLE;
@@ -240,10 +240,7 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
    向里面填充数据,形成有效的数据
  */
 JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA *pnodedata,
-                               uint8_t* pinfo, uint16_t len,
-                               JT808_MSG_STATE ( *cb_tx_timeout )( ),
-                               JT808_MSG_STATE ( *cb_tx_response )( ),
-                               void  *userpara )
+                               uint8_t* pinfo, uint16_t len )
 {
 	uint8_t* pdata;
 	pdata = pnodedata->tag_data;
@@ -265,22 +262,6 @@ JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA *pnodedata,
 	{
 		memcpy( pdata + 12, pinfo, len );   /*填充用户数据*/
 		pnodedata->msg_len = len + 12;
-	}
-	pnodedata->user_para = userpara;
-
-	if( cb_tx_timeout == RT_NULL )
-	{
-		pnodedata->cb_tx_timeout = jt808_tx_timeout;
-	} else
-	{
-		pnodedata->cb_tx_timeout = cb_tx_timeout;
-	}
-	if( cb_tx_response == RT_NULL )
-	{
-		pnodedata->cb_tx_response = jt808_tx_response;
-	} else
-	{
-		pnodedata->cb_tx_response = cb_tx_response;
 	}
 	return pnodedata;
 }
@@ -305,15 +286,7 @@ void node_datalen( JT808_TX_NODEDATA* pnodedata, uint16_t datalen )
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 uint8_t* node_msg_body( JT808_TX_NODEDATA* pnodedata )
 {
 	if( pnodedata->multipacket > SINGLE_ACK )
@@ -326,8 +299,29 @@ uint8_t* node_msg_body( JT808_TX_NODEDATA* pnodedata )
 }
 
 /*添加到发送列表**/
-void node_end( JT808_TX_NODEDATA* pnodedata )
+void node_end( JT808_TX_NODEDATA* pnodedata,
+               JT808_MSG_STATE ( *cb_tx_timeout )( ),
+               JT808_MSG_STATE ( *cb_tx_response )( ),
+               void  *userpara )
 {
+	pnodedata->user_para = userpara;
+
+	memcpy( pnodedata->tag_data+ 4, mobile, 6 );
+
+	if( cb_tx_timeout == RT_NULL )
+	{
+		pnodedata->cb_tx_timeout = jt808_tx_timeout;
+	} else
+	{
+		pnodedata->cb_tx_timeout = cb_tx_timeout;
+	}
+	if( cb_tx_response == RT_NULL )
+	{
+		pnodedata->cb_tx_response = jt808_tx_response;
+	} else
+	{
+		pnodedata->cb_tx_response = cb_tx_response;
+	}
 	msglist_append( list_jt808_tx, pnodedata );
 }
 
@@ -354,8 +348,12 @@ void jt808_add_tx( uint8_t linkno,
 	JT808_TX_NODEDATA* pnodedata;
 
 	pnodedata = node_begin( linkno, fMultiPacket, id, seq, len );
-	node_data( pnodedata, pinfo, len, cb_tx_timeout, cb_tx_response, userpara );
-	msglist_append( list_jt808_tx, pnodedata );
+	if( pnodedata == RT_NULL )
+	{
+		return;
+	}
+	node_data( pnodedata, pinfo, len );
+	node_end( pnodedata, cb_tx_timeout, cb_tx_response, userpara );
 }
 
 /*
@@ -366,7 +364,7 @@ rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res )
 	JT808_TX_NODEDATA	* pnodedata;
 
 	uint8_t				buf[5];
-
+#if 0
 	pnodedata = node_begin( 1, SINGLE_ACK, 0x0001, -1, 5 );
 	if( pnodedata == NULL )
 	{
@@ -377,8 +375,15 @@ rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res )
 	buf[2]	= ( id >> 8 );
 	buf[3]	= ( id & 0xff );
 	buf[4]	= res;
-	node_data( pnodedata, buf, 5, jt808_tx_timeout, jt808_tx_response, RT_NULL );
-	node_end( pnodedata );
+	node_data( pnodedata, buf, 5,  );
+	node_end( pnodedata,jt808_tx_timeout, jt808_tx_response, RT_NULL );
+#endif
+	buf[0]	= ( seq >> 8 );
+	buf[1]	= ( seq & 0xff );
+	buf[2]	= ( id >> 8 );
+	buf[3]	= ( id & 0xff );
+	buf[4]	= res;
+	jt808_tx_ack(0x0001,buf,5);
 	return RT_EOK;
 }
 
@@ -534,7 +539,7 @@ static int handle_rx_0x8107( uint8_t linkno, uint8_t *pmsg )
 	uint8_t				buf[100];
 	uint8_t				len1, len2;
 	JT808_TX_NODEDATA	*pnodedata;
-
+#if 0
 	pnodedata = node_begin( 1, SINGLE_ACK, 0x0107, -1, 100 );
 	if( pnodedata == RT_NULL )
 	{
@@ -558,6 +563,22 @@ static int handle_rx_0x8107( uint8_t linkno, uint8_t *pmsg )
 
 	node_data( pnodedata, buf, ( 46 + len1 + len2 + 2 ), jt808_tx_timeout, jt808_tx_response, RT_NULL );
 	node_end( pnodedata );
+#endif
+	buf[0]	= jt808_param.id_0xF004 >> 8;
+	buf[1]	= jt808_param.id_0xF004 & 0xFF;
+	memcpy( buf + 2, jt808_param.id_0xF000, 5 );    /*制造商ID*/
+	memcpy( buf + 7, jt808_param.id_0xF001, 20 );   /*终端型号*/
+	memcpy( buf + 27, jt808_param.id_0xF002, 7 );   /*终端ID*/
+	memcpy( buf + 34, "1234567890", 10 );           /*终端ICCID*/
+	len1	= strlen( jt808_param.id_0xF011 );
+	buf[44] = len1;
+	memcpy( buf + 45, jt808_param.id_0xF011, len1 );
+	len2			= strlen( jt808_param.id_0xF010 );
+	buf[45 + len1]	= len2;
+	memcpy( buf + 46 + len1, jt808_param.id_0xF011, len2 );
+	buf[46 + len1 + len2]		= 0x03;
+	buf[46 + len1 + len2 + 1]	= 0x01;
+	jt808_tx_ack(0x0107,buf,( 46 + len1 + len2 + 2 ));
 	return 1;
 }
 
@@ -926,7 +947,7 @@ void jt808_rx_proc( uint8_t * pinfo )
 	uint8_t		flag_find	= 0;
 	uint8_t		fcs			= 0;
 	uint16_t	count;
-	uint8_t		fstuff = 0;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        /*是否字节填充*/
+	uint8_t		fstuff = 0;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            /*是否字节填充*/
 
 	linkno		= pinfo [0];
 	total_len	= ( pinfo [1] << 8 ) | pinfo [2];
@@ -1081,7 +1102,7 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 		{
 			return IDLE;
 		}
-
+		rt_kprintf("\n%d socket>",rt_tick_get());
 		ret = socket_write( pnodedata->linkno, pnodedata->tag_data, pnodedata->msg_len );
 #else
 		do
@@ -1101,12 +1122,12 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 		while( 0 );
 		ret = RT_EOK;
 #endif
-		if( ret != RT_EOK )  /*gsm<ERROR:41 发送数据没有等到模块返回的OK，立刻重发，还是等一段时间再发*/
+		if( ret != RT_EOK )             /*gsm<ERROR:41 发送数据没有等到模块返回的OK，立刻重发，还是等一段时间再发*/
 		{
 			total_send_error++;
-			if( total_send_error> 3 )                                                                /*m66 发送失败,如何处理*/
+			if( total_send_error > 3 )  /*m66 发送失败,如何处理*/
 			{
-				total_send_error=0;
+				total_send_error = 0;
 				gsmstate( GSM_POWEROFF );
 			}
 			rt_kprintf( "total_send_error=%d\n", total_send_error );
@@ -1453,7 +1474,7 @@ static void rt_thread_entry_jt808( void * parameter )
 		if( jt808_tx_proc( iter ) == WAIT_DELETE )  /*删除该节点*/
 		{
 			pnodedata = ( JT808_TX_NODEDATA* )( iter->data );
-			rt_kprintf( "%d>delete node %p \n", rt_tick_get( ), pnodedata );
+			rt_kprintf( "%d>free node(%04x) %p \n", rt_tick_get( ), pnodedata->head_id,pnodedata );
 			rt_free( pnodedata->user_para );
 			rt_free( pnodedata );                   /*删除节点数据*/
 			list_jt808_tx->first = iter->next;      /*指向下一个*/
@@ -1622,7 +1643,7 @@ void jt808_init( void )
 rt_err_t gprs_rx( uint8_t linkno, uint8_t * pinfo, uint16_t length )
 {
 	uint8_t * pmsg;
-	pmsg = rt_malloc( length + 3 );                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   /*包含长度信息*/
+	pmsg = rt_malloc( length + 3 );                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             /*包含长度信息*/
 	if( pmsg != RT_NULL )
 	{
 		pmsg [0]	= linkno;
@@ -1706,7 +1727,7 @@ FINSH_FUNCTION_EXPORT( at, write gsm );
    重启设备
    填充重启原因
  */
-void reset( uint32_t reason )
+void reset( unsigned int reason )
 {
 /*没有发送的数据要保存*/
 

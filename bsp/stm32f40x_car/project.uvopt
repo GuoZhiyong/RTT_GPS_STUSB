@@ -308,10 +308,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>2</ColumnNumber>
+      <ColumnNumber>18</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>17</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808_param.c</PathWithFileName>
       <FilenameWithoutPath>jt808_param.c</FilenameWithoutPath>
@@ -406,8 +406,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <TopLine>743</TopLine>
+      <CurrentLine>792</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808_camera.c</PathWithFileName>
       <FilenameWithoutPath>jt808_camera.c</FilenameWithoutPath>
@@ -468,10 +468,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>3</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>16</CurrentLine>
+      <TopLine>14</TopLine>
+      <CurrentLine>29</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\jt808_gps_pack.c</PathWithFileName>
       <FilenameWithoutPath>jt808_gps_pack.c</FilenameWithoutPath>
@@ -1630,7 +1630,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>297</TopLine>
+      <TopLine>302</TopLine>
       <CurrentLine>304</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\src\timer.c</PathWithFileName>
@@ -1654,7 +1654,7 @@
       <Focus>0</Focus>
       <ColumnNumber>6</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>132</TopLine>
+      <TopLine>127</TopLine>
       <CurrentLine>144</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\libcpu\arm\cortex-m4\cpuport.c</PathWithFileName>
@@ -2108,9 +2108,9 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>2</ColumnNumber>
+      <ColumnNumber>4</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>53</TopLine>
+      <TopLine>58</TopLine>
       <CurrentLine>60</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_0_1_License.c</PathWithFileName>
@@ -2126,7 +2126,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>13</TopLine>
+      <TopLine>27</TopLine>
       <CurrentLine>29</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_0_2_CarType.c</PathWithFileName>
@@ -2142,7 +2142,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>12</TopLine>
+      <TopLine>17</TopLine>
       <CurrentLine>19</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_0_3_VIN.c</PathWithFileName>
@@ -2158,7 +2158,7 @@
       <Focus>0</Focus>
       <ColumnNumber>32</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>5</TopLine>
+      <TopLine>10</TopLine>
       <CurrentLine>12</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\Menu_0_4_Colour.c</PathWithFileName>
@@ -2734,7 +2734,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>416</TopLine>
+      <TopLine>420</TopLine>
       <CurrentLine>422</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\applications\lcd\SED1520.c</PathWithFileName>

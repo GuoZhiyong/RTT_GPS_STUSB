@@ -57,8 +57,8 @@ typedef  __packed struct
 	Style_Cam_Requset_Para	Para;       ///触发当前拍照相关信息
 } Style_Cam_Para;
 
-#define DF_CamAddress_Start 0x40000     ///图片数据存储开始位置
-#define DF_CamAddress_End	0X60000     ///图片数据存储结束位置
+#define DF_CamAddress_Start 0x10D000    ///图片数据存储开始位置
+#define DF_CamAddress_End	0X1D5000    ///图片数据存储结束位置
 #define DF_CamSaveSect		0x400       ///图片数据存储最小间隔
 
 extern rt_device_t _console_device;
@@ -68,7 +68,7 @@ extern u16 Hex_To_Ascii( const u8* pSrc, u8* pDst, u16 nSrcLength );
 const char				CAM_HEAD[] = { "PIC_01" };
 
 static Style_Cam_Para	Current_Cam_Para;
-static TypeDF_PICPara	DF_PicParameter;      ///FLASH存储的图片信息
+static TypeDF_PICPara	DF_PicParameter;  ///FLASH存储的图片信息
 
 /* 消息队列控制块*/
 struct rt_messagequeue	mq_Cam;
@@ -1236,8 +1236,7 @@ FINSH_FUNCTION_EXPORT( readpic, readpic );
 ***********************************************************/
 void getpicpara( void )
 {
-	rt_kprintf( "\n pic Number=%d \n Data_ID_1=%d \n Address_1=%d \n Len_1   =%d \n Data_ID_2=%d \n Address_2=%d \n Len_2   =%d",
-	            DF_PicParameter.Number,
+	rt_kprintf( "\nFirst id=%d(addr=0x%x,len=%d)\nLast id=%d(addr=0x%x,len=%d)",
 	            DF_PicParameter.FirstPic.Data_ID,
 	            DF_PicParameter.FirstPic.Address,
 	            DF_PicParameter.FirstPic.Len,
@@ -1339,6 +1338,9 @@ static u8 Camera_RX_Data( u16 *RxLen )
 	return 0;
 }
 
+#if 1
+
+
 /*********************************************************************************
   *函数名称:void Cam_response_ok( struct _Style_Cam_Requset_Para *para,uint32_t pic_id )
   *功能描述:平台下发拍照命令处理函数的回调函数_单张照片拍照OK
@@ -1379,6 +1381,9 @@ void Cam_response_end( struct _Style_Cam_Requset_Para *para )
 	return;
 }
 
+#endif
+
+
 /*********************************************************************************
   *函数名称:void Camera_Process(void)
   *功能描述:进行照相相关处理(包括有:拍照，存储照片，发送拍照结束指令给808)
@@ -1404,28 +1409,23 @@ u8 Camera_Process( void )
 	switch( Current_Cam_Para.State )
 	{
 		case CAM_NONE:
-		{
 			if( RT_EOK == rt_mq_recv( &mq_Cam, (void*)&Current_Cam_Para.Para, sizeof( Style_Cam_Requset_Para ), RT_WAITING_NO ) )
 			{
 				Current_Cam_Para.State				= CAM_IDLE;
 				Current_Cam_Para.Para.start_tick	= rt_tick_get( );
-				rt_kprintf( "\n收到拍照消息" );
+				//rt_kprintf( "\n收到拍照消息" );
 			}else
 			{
 				return 0;
 			}
-		}
 		case CAM_IDLE:
-		{
 			if( ( rt_tick_get( ) - Current_Cam_Para.Para.start_tick ) >= ( Current_Cam_Para.Para.PhoteSpace * (u32)Current_Cam_Para.Para.PhotoNum ) )
 			{
 				Current_Cam_Para.Retry	= 0;
 				Current_Cam_Para.State	= CAM_START;
 			}
 			break;
-		}
 		case CAM_START:
-		{
 			if( Current_Cam_Para.Retry >= 3 )
 			{
 				Current_Cam_Para.State = CAM_FALSE;
@@ -1440,17 +1440,13 @@ u8 Camera_Process( void )
 			Current_Cam_Para.State		= CAM_RX_PHOTO;
 			Current_Cam_Para.Rx_State	= RX_IDLE;
 			break;
-		}
 		case CAM_GET_PHOTO:
-		{
 			tick = rt_tick_get( );
 			Cam_Read_Cmd( Current_Cam_Para.Para.Channel_ID );
 			Current_Cam_Para.State		= CAM_RX_PHOTO;
 			Current_Cam_Para.Rx_State	= RX_IDLE;
 			break;
-		}
 		case CAM_RX_PHOTO:
-		{
 			if( 1 == Camera_RX_Data( &RxLen ) )
 			{
 				rt_kprintf( "\n接收到拍照数据" );
@@ -1483,16 +1479,6 @@ u8 Camera_Process( void )
 					pack_head.Media_Format	= 0;
 					pack_head.Media_Style	= 0;
 					memcpy( &pack_head.Time, gps_datetime, 6 );
-
-
-					/*
-					   pack_head.Time.years=0x13;
-					   pack_head.Time.months=0x06;
-					   pack_head.Time.days=tick>>24;
-					   pack_head.Time.hours=tick>>16;
-					   pack_head.Time.minutes=tick>>8;
-					   pack_head.Time.seconds=tick;
-					 */
 					memcpy( &pack_head.position, &gps_baseinfo, 28 );
 					pack_head.State = 0xFF;
 					if( Current_Cam_Para.Para.SavePhoto == 0 )
@@ -1511,22 +1497,17 @@ u8 Camera_Process( void )
 				}
 				///保存数据
 				Cam_Flash_WrPic( uart2_rx, uart2_rx_wr, &pack_head );
-#if 0
-				Hex_To_Ascii( uart2_rx, (u8*)CamTestBuf, uart2_rx_wr );
-				rt_kprintf( "\n拍照数据:\n" );
-				rt_kprintf( "%s\n", CamTestBuf );
-				rt_kprintf( "\n%d>CAM%d photo %d bytes", rt_tick_get( ) * 10, Current_Cam_Para.Para.Channel_ID, cam_photo_size );
-#endif
 				uart2_rx_wr = 0;
 			}else if( rt_tick_get( ) - tick > RT_TICK_PER_SECOND * 2 ) ///判读是否超时
 			{
 				Current_Cam_Para.State = CAM_START;
 			}
 			break;
-		}
 		case CAM_OK:
-		{
 			++Current_Cam_Para.Para.PhotoNum;
+			rt_kprintf( "\n拍照成功!" );
+			getpicpara( );
+#if 1
 			if( Current_Cam_Para.Para.cb_response_cam_ok != RT_NULL ) ///调用单张照片拍照成功回调函数
 			{
 				Current_Cam_Para.Para.cb_response_cam_ok( &Current_Cam_Para.Para, pack_head.Data_ID );
@@ -1534,9 +1515,8 @@ u8 Camera_Process( void )
 			{
 				Cam_response_ok( &Current_Cam_Para.Para, pack_head.Data_ID );
 			}
+#endif
 
-			rt_kprintf( "\n拍照成功!" );
-			getpicpara( );
 			if( Current_Cam_Para.Para.PhotoNum >= Current_Cam_Para.Para.PhotoTotal )
 			{
 				Current_Cam_Para.State = CAM_END;   ///拍照任务完成
@@ -1545,31 +1525,24 @@ u8 Camera_Process( void )
 				Current_Cam_Para.State = CAM_IDLE;  ///单张照片拍照完成
 			}
 			break;
-		}
 		case CAM_FALSE:
-		{
 			rt_kprintf( "\n拍照失败!" );
 			Current_Cam_Para.State = CAM_END;
-		}
 		case CAM_END:
-		{
 			rt_kprintf( "\n拍照结束!" );
 			Current_Cam_Para.State = CAM_NONE;
 			if( Current_Cam_Para.Para.cb_response_cam_end != RT_NULL ) ///调用单张照片拍照成功回调函数
 			{
 				Current_Cam_Para.Para.cb_response_cam_end( &Current_Cam_Para.Para );
-				rt_free( Current_Cam_Para.Para.user_para );
-				rt_kprintf( "\nCam_jt808_0x8801_cam_end_free" );
+
 			}else ///默认的回调函数
 			{
 				Cam_response_end( &Current_Cam_Para.Para );
 			}
 			break;
-		}
 		default:
-		{
 			Current_Cam_Para.State = CAM_NONE;
-		}
+			break;
 	}
 	return 1;
 }

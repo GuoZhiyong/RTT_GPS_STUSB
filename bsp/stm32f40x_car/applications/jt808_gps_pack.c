@@ -279,7 +279,7 @@ uint8_t jt808_gps_pack( char *pinfo, uint8_t len )
 		case 'P': i = 1; break;
 		case 'D': i = 2; break;
 		default:
-			rt_kprintf( "unknow\n" );
+			rt_kprintf( "unknow>%s",pinfo );  /*unknow>ÿ$GNRMC,074127.90,V,,,,,,,200713,,,N*6A*/
 			return 0;
 	}
 	switch( p[4] )

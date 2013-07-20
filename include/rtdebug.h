@@ -66,11 +66,13 @@ do                                                                            \
 }                                                                             \
 while (0)
 
+extern void reset( unsigned int reason );
 #define RT_ASSERT(EX)                                                         \
 if (!(EX))                                                                    \
 {                                                                             \
     volatile char dummy = 0;                                                  \
     rt_kprintf("(%s) assert failed at %s:%d \n", #EX, __FUNCTION__, __LINE__);\
+	reset(0xFF );\
     while (dummy == 0);                                                       \
 }
 

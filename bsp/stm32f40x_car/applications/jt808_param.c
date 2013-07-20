@@ -778,12 +778,12 @@ void jt808_param_0x8104( uint8_t *pmsg )
 	buf[0]	= pmsg[10];
 	buf[1]	= pmsg[11];
 	buf[2]	= param_count;
-	node_data( pnodedata, buf, count + 3, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL );
+	node_data( pnodedata, buf, count + 3);
 	pnodedata->tag_data[12] = pnodedata->packet_num >> 8;
 	pnodedata->tag_data[13] = pnodedata->packet_num & 0xFF;
 	pnodedata->tag_data[14] = pnodedata->packet_no >> 8;
 	pnodedata->tag_data[15] = pnodedata->packet_no & 0xFF;
-	node_end( pnodedata );
+	node_end( pnodedata,jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL  );
 }
 
 FINSH_FUNCTION_EXPORT_ALIAS( jt808_param_0x8104, param, desc );
@@ -885,8 +885,8 @@ void jt808_param_0x8106( uint8_t *pmsg )
 	buf[1]				= pmsg[11];
 	buf[2]				= param_count;
 	pnodedata->timeout	= RT_TICK_PER_SECOND * 5;
-	node_data( pnodedata, buf, count + 3, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL );
-	node_end( pnodedata );
+	node_data( pnodedata, buf, count + 3);
+	node_end( pnodedata, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL  );
 }
 
 /************************************** The End Of File **************************************/

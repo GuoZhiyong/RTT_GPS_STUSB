@@ -127,6 +127,7 @@ rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter,
 extern void rt_hw_interrupt_thread_switch(void);
 extern long list_thread(void);
 extern rt_thread_t rt_current_thread;
+extern void reset( unsigned int reason );
 void rt_hw_hard_fault_exception(struct exception_stack_frame * exception_stack)
 {
     rt_kprintf("psr: 0x%08x\n", exception_stack->psr);
@@ -142,6 +143,10 @@ void rt_hw_hard_fault_exception(struct exception_stack_frame * exception_stack)
 #ifdef RT_USING_FINSH
     list_thread();
 #endif
+	/*÷¥––÷ÿ∆Ù*/
+{
+	reset(0xFFFFFFFF);
+}	
     while (1);
 }
 

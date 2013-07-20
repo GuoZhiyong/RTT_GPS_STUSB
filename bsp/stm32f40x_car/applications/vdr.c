@@ -1056,12 +1056,11 @@ void vdr_08_12_get_ready( uint8_t vdr_id, uint16_t seq, MYTIME start, MYTIME end
 	/*计算需要的数据包数*/
 	pnodedata->packet_num		= ( rec_count + sect_info[id].record_per_packet - 1 ) / sect_info[id].record_per_packet;
 	pnodedata->packet_no		= 0;
-	pnodedata->user_para		= puserdata;
-	pnodedata->cb_tx_timeout	= vdr_08_12_tx_timeout;
-	pnodedata->cb_tx_response	= vdr_08_12_tx_response;
 	rt_kprintf( "填充VDR数据\n" );
+	
 	vdr_08_12_fill_data( pnodedata );
-	node_end( pnodedata );
+	
+	node_end( pnodedata,vdr_08_12_tx_timeout,vdr_08_12_tx_response ,puserdata);
 }
 
 FINSH_FUNCTION_EXPORT_ALIAS( vdr_08_12_get_ready, vdr_get, get_vdr_data );
