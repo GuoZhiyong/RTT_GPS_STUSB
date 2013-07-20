@@ -24,8 +24,6 @@
 
 typedef uint32_t MYTIME;
 
-
-
 #define VDR_BASE 0x310000
 
 #define VDR_08_START	VDR_BASE
@@ -52,8 +50,6 @@ typedef uint32_t MYTIME;
 #define VDR_13_14_15_SECTORS	1   /*100条 外部供电记录 100条 参数修改记录 10条速度状态日志 */
 #define VDR_13_14_15_END		( VDR_13_14_15_START + VDR_13_14_15_SECTORS * 4096 )
 
-
-
 #define PACK_BYTE( buf, byte ) ( *( buf ) = ( byte ) )
 #define PACK_WORD( buf, word ) \
     do { \
@@ -75,11 +71,9 @@ typedef uint32_t MYTIME;
    4MB serial flash 0x400000
  */
 
-static rt_thread_t tid_usb_vdr = RT_NULL;
+static rt_thread_t		tid_usb_vdr = RT_NULL;
 
-
-
-static struct rt_timer tmr_200ms;
+static struct rt_timer	tmr_200ms;
 
 struct _sect_info
 {
@@ -113,7 +107,6 @@ static unsigned long linux_mktime( uint32_t year, uint32_t mon, uint32_t day, ui
 }
 
 #endif
-
 
 /**/
 static void vdr_pack_byte( uint8_t* buf, uint8_t byte, uint8_t* fcs )
@@ -357,22 +350,20 @@ static void mytime_to_hex( uint8_t* buf, MYTIME time )
 	*psrc++ = DAY( time );
 	*psrc++ = HOUR( time );
 	*psrc++ = MINUTE( time );
-	*psrc = SEC( time );
+	*psrc	= SEC( time );
 }
 
 /*转换为bcd字符串为自定义时间 例如 0x13 0x07 0x12=>代表 13年7月12日*/
 static void mytime_to_bcd( uint8_t* buf, MYTIME time )
 {
 	uint8_t *psrc = buf;
-	*psrc++ = HEX2BCD(YEAR( time ));
-	*psrc++ = HEX2BCD(MONTH( time ));
-	*psrc++ = HEX2BCD(DAY( time ));
-	*psrc++ = HEX2BCD(HOUR( time ));
-	*psrc++ = HEX2BCD(MINUTE( time ));
-	*psrc = HEX2BCD(SEC( time ));
+	*psrc++ = HEX2BCD( YEAR( time ) );
+	*psrc++ = HEX2BCD( MONTH( time ) );
+	*psrc++ = HEX2BCD( DAY( time ) );
+	*psrc++ = HEX2BCD( HOUR( time ) );
+	*psrc++ = HEX2BCD( MINUTE( time ) );
+	*psrc	= HEX2BCD( SEC( time ) );
 }
-
-
 
 typedef __packed struct _vdr_08_userdata
 {
@@ -745,6 +736,21 @@ MYTIME vdr_08_12_init( uint8_t vdr_id, uint8_t format )
 
 FINSH_FUNCTION_EXPORT_ALIAS( vdr_08_12_init, vdr_format, format vdr record );
 
+
+
+/*获取08_12的数据*/
+uint16_t vdr_08_12_getdata(VDR_USERDATA *userdata,uint8_t *pout)
+{
+
+
+
+}
+
+
+
+
+
+
 /*读取数据*/
 uint8_t vdr_08_12_fill_data( JT808_TX_NODEDATA *pnodedata )
 {
@@ -899,7 +905,7 @@ static JT808_MSG_STATE vdr_08_12_tx_timeout( JT808_TX_NODEDATA * pnodedata )
    行车记录仪数据有校验
 
  */
-void vdr_08_12_get_ready( uint8_t vdr_id, MYTIME start, MYTIME end, uint16_t totalrecord )
+void vdr_08_12_get_ready( uint8_t vdr_id, uint16_t seq, MYTIME start, MYTIME end, uint16_t totalrecord )
 {
 	uint32_t			addr;
 	uint8_t				buf[16];
@@ -975,8 +981,19 @@ void vdr_08_12_get_ready( uint8_t vdr_id, MYTIME start, MYTIME end, uint16_t tot
 	            sector_from, index_from,
 	            sector_to, index_to );
 
-	if( rec_count == 0 ) /*没有找到记录，也要上报*/
+	if( rec_count == 0 )    /*没有找到记录，也要上报*/
 	{
+		buf[0]	= seq >> 8;
+		buf[1]	= seq & 0xff;
+		buf[2]	= vdr_id;
+		buf[3]	= 0x55;     /*vdr相关*/
+		buf[4]	= 0x7a;
+		buf[5]	= vdr_id;   /*命令*/
+		buf[6]	= 0x0;      /*长度*/
+		buf[7]	= 0x0;
+		buf[8]	= 0x0;      /*保留*/
+		buf[9]	= ( 0x55 ^ 0x7a ^ vdr_id );
+		jt808_tx_ack(0x0700,buf,10);
 		return;
 	}
 
@@ -984,6 +1001,15 @@ void vdr_08_12_get_ready( uint8_t vdr_id, MYTIME start, MYTIME end, uint16_t tot
 
 	if( puserdata == RT_NULL )
 	{
+		buf[0]	= seq >> 8;
+		buf[1]	= seq & 0xff;
+		buf[2]	= vdr_id;
+		buf[3]	= 0x55;     /*vdr相关*/
+		buf[4]	= 0x7a;
+		buf[5]	= 0xFA;   /*采集出错命令*/
+		buf[6]	= 0x0;      /*保留*/
+		buf[7]	= ( 0x55 ^ 0x7a ^ 0xFA );
+		jt808_tx_ack(0x0700,buf,8);
 		return;
 	}
 	puserdata->id				= vdr_id;
@@ -999,13 +1025,12 @@ void vdr_08_12_get_ready( uint8_t vdr_id, MYTIME start, MYTIME end, uint16_t tot
 	puserdata->sector	= sector_from;
 	puserdata->index	= index_from;
 
-	puserdata->packet_total = ( rec_count + sect_info[id].record_per_packet - 1 ) / sect_info[id].record_per_packet;
-	puserdata->packet_curr	= 0;
+
+	/*每包用户数据大小，加7 是因为第一包有vdr的头和校验*/
+	i = sect_info[id].record_per_packet * sect_info[id].data_size + 7;  
 
 	/*计算要发送的数据总数，和单包最大字节数*/
-	i = sect_info[id].record_per_packet * sect_info[id].data_size + 7;  /*加7 是因为有vdr的头*/
-
-	if( rec_count * sect_info[id].data_size > 700 )                     /*多包发送,*/
+	if( rec_count > sect_info[id].record_per_packet )                     /*多包发送,*/
 	{
 		pnodedata = node_begin( 1, MULTI_CMD, 0x0700, 0xF000, i );
 	} else
@@ -1016,14 +1041,25 @@ void vdr_08_12_get_ready( uint8_t vdr_id, MYTIME start, MYTIME end, uint16_t tot
 	{
 		rt_free( puserdata );
 		puserdata = RT_NULL;
+		buf[0]	= seq >> 8;
+		buf[1]	= seq & 0xff;
+		buf[2]	= vdr_id;
+		buf[3]	= 0x55;     /*vdr相关*/
+		buf[4]	= 0x7a;
+		buf[5]	= 0xFA;   /*采集出错命令*/
+		buf[6]	= 0x0;      /*保留*/
+		buf[7]	= ( 0x55 ^ 0x7a ^ 0xFA );
+		jt808_tx_ack(0x0700,buf,8);
 		rt_kprintf( "无法分配\n" );
+		return;
 	}
+	/*计算需要的数据包数*/
 	pnodedata->packet_num		= ( rec_count + sect_info[id].record_per_packet - 1 ) / sect_info[id].record_per_packet;
 	pnodedata->packet_no		= 0;
 	pnodedata->user_para		= puserdata;
 	pnodedata->cb_tx_timeout	= vdr_08_12_tx_timeout;
 	pnodedata->cb_tx_response	= vdr_08_12_tx_response;
-	rt_kprintf( "填充数据\n" );
+	rt_kprintf( "填充VDR数据\n" );
 	vdr_08_12_fill_data( pnodedata );
 	node_end( pnodedata );
 }
@@ -1112,18 +1148,18 @@ void vdr_rx_8700( uint8_t * pmsg )
 			fcs		= 0;
 			vdr_pack_buf( buf + 3, "\x55\x7A\x03\x00\x14\x00", 6, &fcs );
 
-			mytime_to_bcd(tmpbuf,mytime_now);  /*实时时间*/
+			mytime_to_bcd( tmpbuf, mytime_now );            /*实时时间*/
 			vdr_pack_buf( buf + 9, tmpbuf, 6, &fcs );
 
-			mytime_to_bcd(tmpbuf,jt808_param.id_0xF030);  /*首次安装时间*/
+			mytime_to_bcd( tmpbuf, jt808_param.id_0xF030 ); /*首次安装时间*/
 			vdr_pack_buf( buf + 15, tmpbuf, 6, &fcs );
-			i			= jt808_param.id_0xF032 * 10;                   /*初次安装里程 0.1KM BCD码 00-99999999*/
+			i			= jt808_param.id_0xF032 * 10;       /*初次安装里程 0.1KM BCD码 00-99999999*/
 			tmpbuf[0]	= ( ( ( i / 10000000 ) % 10 ) << 4 ) | ( ( i / 1000000 ) % 10 );
 			tmpbuf[1]	= ( ( ( i / 100000 ) % 10 ) << 4 ) | ( ( i / 10000 ) % 10 );
 			tmpbuf[2]	= ( ( ( i / 1000 ) % 10 ) << 4 ) | ( ( i / 100 ) % 10 );
 			tmpbuf[3]	= ( ( ( i / 10 ) % 10 ) << 4 ) | ( i % 10 );
 			vdr_pack_buf( buf + 21, tmpbuf, 4, &fcs );
-			i			= jt808_param.id_0xF020 * 10;                   /*总里程 0.1KM BCD码 00-99999999*/
+			i			= jt808_param.id_0xF020 * 10;       /*总里程 0.1KM BCD码 00-99999999*/
 			tmpbuf[0]	= ( ( ( i / 10000000 ) % 10 ) << 4 ) | ( ( i / 1000000 ) % 10 );
 			tmpbuf[1]	= ( ( ( i / 100000 ) % 10 ) << 4 ) | ( ( i / 10000 ) % 10 );
 			tmpbuf[2]	= ( ( ( i / 1000 ) % 10 ) << 4 ) | ( ( i / 100 ) % 10 );
@@ -1132,7 +1168,7 @@ void vdr_rx_8700( uint8_t * pmsg )
 			buf[29] = fcs;
 			jt808_tx_ack( 0x0700, buf, 30 );
 			break;
-		case 0x04:    /*特征系数*/
+		case 0x04: /*特征系数*/
 			buf[0]	= seq >> 8;
 			buf[1]	= seq & 0xff;
 			buf[2]	= cmd;
@@ -1143,7 +1179,7 @@ void vdr_rx_8700( uint8_t * pmsg )
 			buf[17] = fcs;
 			jt808_tx_ack( 0x0700, buf, 18 );
 			break;
-		case 0x05:    /*车辆信息  41byte*/
+		case 0x05: /*车辆信息  41byte*/
 			buf[0]	= seq >> 8;
 			buf[1]	= seq & 0xff;
 			buf[2]	= cmd;
@@ -1194,7 +1230,7 @@ void vdr_rx_8700( uint8_t * pmsg )
 				rt_kprintf( "%d>8700的格式不识别\n", rt_tick_get( ) );
 				return;
 			}
-			vdr_08_12_get_ready( cmd, start, end, blocks );
+			vdr_08_12_get_ready( cmd, seq, start, end, blocks );
 			break;
 		case 0x13:
 			break;
