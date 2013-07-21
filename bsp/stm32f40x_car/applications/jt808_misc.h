@@ -17,6 +17,8 @@
 #include "stm32f4xx.h"
 #include "jt808.h"
 
+
+#if 0
 //------- 文本信息 --------
 typedef struct _TEXT_INFO
 {
@@ -137,6 +139,8 @@ extern u8				Duomeiti_sdFlag;
 extern Avrg_MintSpeed	Avrgspd_Mint;
 extern u8				avgspd_Mint_Wr; // 填写每分钟平均速度记录下标
 
+#endif
+
 typedef __packed struct
 {
 	uint32_t	id;                     /*单增序号*/
@@ -168,6 +172,18 @@ typedef __packed struct
 	uint8_t body[64 - 3];               /*事件内容*/
 }EVENT;
 
+
+/*
+   信息点播:设置在4k的buffer中
+ */
+typedef __packed struct
+{
+	uint8_t flag;                       /*标志*/
+	uint8_t st;							/*点播状态，0:未点播，1:已点播*/
+	uint8_t type;                       /*信息类型*/
+	uint8_t len;                        /*信息长度*/
+	uint8_t body[64 - 4];               /*信息名称*/
+}INFO_ONDEMAND;
 
 /*
    电话簿:设置在4k的buffer中
@@ -217,6 +233,8 @@ uint8_t jt808_phonebook_get( void );
 
 extern uint8_t* event_buf;
 extern uint8_t* phonebook_buf;
+extern uint8_t* info_ondemand_buf;
+
 
 
 void jt808_misc_init( void );

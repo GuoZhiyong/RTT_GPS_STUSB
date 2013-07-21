@@ -140,8 +140,8 @@ static void timetick( unsigned int systick )
 
 MENUITEM Menu_0_1_license =
 {
-	"≥µ≈∆∫≈",
-	6,
+	"≥µ≈∆∫≈ ‰»Î",
+	10,
 	0,
 	&show,
 	&keypress,

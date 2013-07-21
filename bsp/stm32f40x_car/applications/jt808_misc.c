@@ -56,6 +56,18 @@ struct _sector_info
 };
 #endif
 
+
+/*
+对于有的信息只是存在4k中，需要的时候动态分配
+事件、信息点播、电话簿
+每个记录都是64字节，但格式定义不同，
+*/
+
+
+
+
+
+
 uint32_t	textmsg_curr_addr;  /*当前写入最新数据的消息地址*/
 uint32_t	textmsg_curr_id;
 uint8_t		textmsg_count = 0;
@@ -492,7 +504,46 @@ void jt808_misc_0x8302( uint8_t *pmsg )
 	}
 }
 
-uint8_t* info_buffer;
+uint8_t* info_ondemand_buf;
+
+/*生成点播信息的内容，返回条数*/
+uint8_t jt808_info_ondemand_get( void )
+{
+	uint8_t		count = 0;
+	uint8_t		buf[16];
+	uint32_t	addr;
+
+	if( info_ondemand_buf != RT_NULL )
+	{
+		rt_free( info_ondemand_buf );
+	}
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	for( addr = INFO_ONDEMAND_START; addr < INFO_ONDEMAND_END; addr += 64 )
+	{
+		sst25_read( addr, buf, 16 );
+		if( buf[0] == 'I' )
+		{
+			count++;
+		}else
+		{
+			break;
+		}
+	}
+
+	if( count )
+	{
+		info_ondemand_buf = rt_malloc( count * 64 );
+		if( info_ondemand_buf == RT_NULL )
+		{
+			count = 0;
+		}else
+		{
+			sst25_read( INFO_ONDEMAND_START, info_ondemand_buf, count * 64 );
+		}
+	}
+	rt_sem_release( &sem_dataflash );
+	return count;
+}
 
 /*信息点播菜单设置*/
 uint8_t info_find_by_id( uint8_t *peventbuf, uint8_t id, uint16_t *addr )
@@ -532,7 +583,7 @@ void jt808_misc_0x8303( uint8_t *pmsg )
 	uint16_t	i, j;
 	uint8_t		* pdata;
 	uint8_t		*pevtbuf;
-	uint8_t		count, res = 0;
+	uint8_t		count;
 	uint16_t	len = 0;
 	uint16_t	addr;
 	uint16_t	tmpbuf[64];
@@ -540,8 +591,8 @@ void jt808_misc_0x8303( uint8_t *pmsg )
 	pevtbuf = rt_malloc( 4096 );
 	if( pevtbuf == RT_NULL )
 	{
-		res = 1;
-		goto lbl_end_8303;
+		jt808_tx_0x0001( seq, id, 1 );              /*返回应答*/
+		return;
 	}
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
@@ -620,21 +671,6 @@ void jt808_misc_0x8303( uint8_t *pmsg )
 		}
 	}
 
-
-	/*排序
-	   for(int i = 0;i<cnt;i++)
-	   {
-	   for(j=0;j<cnt-1;j++)
-	   {
-	   if(a[j]>a[j+1])
-	   {
-	      tmp = a[j];
-	      a[j] = a[j+1];
-	      a[j+1] = tmp;
-	   }
-	   }
-	   }
-	 */
 	for( i = 0; i < count; i++ )
 	{
 		for( j = 0; j < ( count - 1 ); j++ )
@@ -651,10 +687,13 @@ void jt808_misc_0x8303( uint8_t *pmsg )
 
 lbl_end_8303:
 	rt_sem_release( &sem_dataflash );
-	jt808_tx_0x0001( seq, id, res ); /*返回应答*/
+	jt808_tx_0x0001( seq, id, 0 ); /*返回应答*/
 }
 
-/*信息服务*/
+/*
+   信息服务
+   中心下发的信息，直接显示即可
+ */
 void jt808_misc_0x8304( uint8_t *pmsg )
 {
 }
@@ -662,7 +701,15 @@ void jt808_misc_0x8304( uint8_t *pmsg )
 uint8_t* phonebook_buf;
 
 
-uint8_t jt808_phonebook_get(void)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+uint8_t jt808_phonebook_get( void )
 {
 	uint8_t		count = 0;
 	uint8_t		buf[16];
@@ -797,7 +844,7 @@ void jt808_misc_0x8401( uint8_t *pmsg )
 
 			for( i = 0; i < 4096; i += 64 )
 			{
-				if(strncmp((char*)(pdata+len_phone+3),(char*)(pbuf+len_phone+4),len_contact)==0)
+				if( strncmp( (char*)( pdata + len_phone + 3 ), (char*)( pbuf + len_phone + 4 ), len_contact ) == 0 )
 				{
 					pbuf[i] = 'P';
 					memcpy( pbuf + i + 1, pdata, len );
@@ -807,7 +854,7 @@ void jt808_misc_0x8401( uint8_t *pmsg )
 			pdata += ( len_phone + len_contact + 3 );
 		}
 	}
-	
+
 	/*重新整理,去除空闲的*/
 	addr	= 0xFFFF;               /*第一个为空的地址*/
 	count	= 0;                    /*记录数*/

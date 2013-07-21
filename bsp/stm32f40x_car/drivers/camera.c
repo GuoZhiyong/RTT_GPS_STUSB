@@ -1542,7 +1542,7 @@ u8 Camera_Process( void )
 			break;
 		default:
 			Current_Cam_Para.State = CAM_NONE;
-			break;
+
 	}
 	return 1;
 }

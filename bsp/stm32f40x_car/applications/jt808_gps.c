@@ -254,7 +254,7 @@ static void cb_tmr_1sec( void )
 			}
 			else if(day==32)
 			{
-				day==1;
+				day=1;
 				month++;
 			}	
 			if( month == 13 )

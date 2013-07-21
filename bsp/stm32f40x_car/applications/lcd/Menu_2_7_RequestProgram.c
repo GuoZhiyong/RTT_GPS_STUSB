@@ -14,6 +14,148 @@
 #include "Menu_Include.h"
 #include "sed1520.h"
 
+#if 1
+
+static uint8_t			count, pos;
+
+static unsigned char	check[] = {
+	0xff,                                                                       /*[********]*/
+	0xc3,                                                                       /*[**    **]*/
+	0xa5,                                                                       /*[* *  * *]*/
+	0x99,                                                                       /*[*  **  *]*/
+	0x99,                                                                       /*[*  **  *]*/
+	0xa5,                                                                       /*[* *  * *]*/
+	0xc3,                                                                       /*[**    **]*/
+	0xff,                                                                       /*[********]*/
+};
+
+static unsigned char	uncheck[] = {
+	0xff,                                                                       /*[********]*/
+	0x81,                                                                       /*[*      *]*/
+	0x81,                                                                       /*[*      *]*/
+	0x81,                                                                       /*[*      *]*/
+	0x81,                                                                       /*[*      *]*/
+	0x81,                                                                       /*[*      *]*/
+	0x81,                                                                       /*[*      *]*/
+	0xff,                                                                       /*[********]*/
+};
+
+DECL_BMP( 8, 8, check);
+DECL_BMP( 8, 8, uncheck);
+
+/*显示*/
+static void display( void )
+{
+	char			buf[32];
+	INFO_ONDEMAND	* info;
+	uint8_t			index = pos & 0xFE; /*对齐到偶数页*/
+	lcd_fill( 0 );
+	if( count == 0 )
+	{
+		lcd_text12( ( 122 - 8 * 12 ) / 2, 18, "[无信息点播内容]", 16, LCD_MODE_SET );
+	}else
+	{
+		info = (INFO_ONDEMAND*)( info_ondemand_buf + 64 * index );
+		sprintf( buf, "%02d %s", info->type, info->body );
+		lcd_text12( 0, 4, buf, strlen( buf ), 3 - ( pos & 0x01 ) * 2 );         /*SET=1 INVERT=3*/
+		if( ( index + 1 ) < count )
+		{
+			info = (INFO_ONDEMAND*)( event_buf + 64 * index + 64 );
+			sprintf( buf, "%02d %s", info->type, info->body );
+			lcd_text12( 0, 18, buf, strlen( buf ), ( pos & 0x01 ) * 2 + 1 );    /*SET=1 INVERT=3*/
+		}
+	}
+	lcd_update_all( );
+}
+
+/**/
+static void msg( void *p )
+{
+}
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void show( void )
+{
+	pMenuItem->tick = rt_tick_get( );
+	count			= jt808_info_ondemand_get( );
+	rt_kprintf( "count=%d\n", count );
+	pos = 0;
+	display( );
+}
+
+/**/
+static void keypress( unsigned int key )
+{
+	uint8_t buf[32];
+	switch( key )
+	{
+		case KEY_MENU:
+			if( info_ondemand_buf != RT_NULL )
+			{
+				rt_free( info_ondemand_buf );
+				info_ondemand_buf = RT_NULL;
+			}
+			pMenuItem = &Menu_3_InforInteract;
+			pMenuItem->show( );
+			break;
+		case KEY_OK: /*事件报告*/
+			buf[0] = ( (INFO_ONDEMAND*)( info_ondemand_buf + pos * 64 ) )->type;
+			buf[1] =( (INFO_ONDEMAND*)( info_ondemand_buf + pos * 64 ) )->st;
+			jt808_tx( 0x0303, buf, 2 );
+			break;
+		case KEY_UP:
+			if( pos )
+			{
+				pos--;
+			}
+			display( );
+			break;
+		case KEY_DOWN:
+			if( pos < ( count - 1 ) )
+			{
+				pos++;
+			}
+			display( );
+			break;
+	}
+}
+
+/*检查是否回到主界面*/
+static void timetick( unsigned int tick )
+{
+	if( ( tick - pMenuItem->tick ) >= 100 * 10 )
+	{
+		if( info_ondemand_buf != RT_NULL )
+		{
+			rt_free( info_ondemand_buf );
+			info_ondemand_buf = RT_NULL;
+		}
+		pMenuItem = &Menu_1_Idle;
+		pMenuItem->show( );
+	}
+}
+
+MENUITEM Menu_2_7_RequestProgram =
+{
+	"信息点播查看",
+	12,				  0,
+	&show,
+	&keypress,
+	&timetick,
+	&msg,
+	(void*)0
+};
+
+
+#else
 unsigned char	Menu_dianbo			= 0;
 unsigned char	dianbo_scree		= 1;
 unsigned char	MSG_TypeToCenter	= 0; //发送给中心的序号
@@ -434,7 +576,7 @@ static void show( void )
 #if NEED_TODO
 	MSG_BroadCast_Read( );
 #endif
-	pMenuItem->tick=rt_tick_get();
+	pMenuItem->tick = rt_tick_get( );
 
 	Dis_dianbo( 1 );
 	Menu_dianbo = 1;
@@ -536,5 +678,6 @@ MENUITEM Menu_2_7_RequestProgram =
 	&msg,
 	(void*)0
 };
+#endif
 
 /************************************** The End Of File **************************************/

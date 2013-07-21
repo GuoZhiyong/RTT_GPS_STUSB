@@ -18,16 +18,8 @@
 
 static uint8_t	count, pos;
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-static void display( void )
+/**/
+static void affair_display( void )
 {
 	char buf[32];
 	EVENT* evt;
@@ -35,9 +27,7 @@ static void display( void )
 	lcd_fill( 0 );
 	if( count == 0 )
 	{
-		//lcd_text12( ( 122 - 6 * 12 ) / 2, 18, "[无事件信息]", 6*12,LCD_MODE_SET );
-		strcpy(buf,"[无事件信息]");
-		lcd_text12( ( 122 - 6 * 12 ) / 2, 18, buf, strlen(buf),LCD_MODE_SET );
+		lcd_text12( ( 122 - 6 * 12 ) / 2, 18, "[无事件信息]", 12,LCD_MODE_SET );
 	}
 	else
 	{
@@ -74,7 +64,7 @@ static void show( void )
 	count			= jt808_event_get();
 	rt_kprintf("count=%d\n",count);
 	pos				= 0;
-	display( );
+	affair_display( );
 }
 
 /**/
@@ -101,14 +91,14 @@ static void keypress( unsigned int key )
 			{
 				pos--;
 			}
-			display( );
+			affair_display( );
 			break;
 		case KEY_DOWN:
 			if( pos < (count-1) )
 			{
 				pos++;
 			}
-			display( );
+			affair_display( );
 			break;
 	}
 }

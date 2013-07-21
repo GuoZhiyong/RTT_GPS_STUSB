@@ -13,6 +13,100 @@
  ***********************************************************/
 #include "Menu_Include.h"
 #include "sed1520.h"
+
+#if 1
+
+unsigned char	noselect_log[] = { 0x3C, 0x7E, 0xC3, 0xC3, 0xC3, 0xC3, 0x7E, 0x3C };    //空心
+unsigned char	select_log[] = { 0x3C, 0x7E, 0xFF, 0xFF, 0xFF, 0xFF, 0x7E, 0x3C };      //实心
+
+DECL_BMP( 8, 8, select_log );
+DECL_BMP( 8, 8, noselect_log );
+
+static char pos=0;
+
+PMENUITEM mnu[4] = {
+	&Menu_0_1_license,
+	&Menu_0_2_CarType,
+	&Menu_0_3_vin,
+	&Menu_0_4_Colour,
+};
+
+/**/
+static void display(void)
+{
+	char i;
+	lcd_fill( 0 );
+	lcd_text12( 0, 3, "注册", 4, LCD_MODE_SET );
+	lcd_text12( 0, 17, "输入", 4, LCD_MODE_SET );
+
+	for( i = 0; i < 4; i++ )
+	{
+		lcd_bitmap( 35 + i * 12, 5, &BMP_noselect_log, LCD_MODE_SET );
+	}
+
+	lcd_bitmap(  35 + pos * 12, 5, &BMP_select_log, LCD_MODE_SET );
+
+	lcd_text12( 35, 19, mnu[pos]->caption,mnu[pos]->len, LCD_MODE_INVERT );
+
+	lcd_update_all( );
+}
+
+/**/
+static void msg( void *p )
+{
+}
+
+/**/
+static void show( void )
+{
+	pos=0;		/*bitter 从0 开始*/
+	display();
+}
+
+/**/
+static void keypress( unsigned int key )
+{
+	switch( key )
+	{
+		case KEY_MENU:
+			if( menu_color_flag )
+			{
+				menu_type_flag	= 0;
+				menu_color_flag = 0;
+
+				pMenuItem = &Menu_1_Idle; //进入信息查看界面
+				pMenuItem->show( );
+			}
+			break;
+		case KEY_OK:
+			pMenuItem = mnu[pos];  //车牌号输入
+			pMenuItem->show( );
+			break;
+		case KEY_UP:
+			break;
+		case KEY_DOWN:
+			break;
+	}
+}
+
+/* */
+static void timetick( unsigned int systick )
+{
+}
+
+MENUITEM Menu_0_loggingin =
+{
+	"车辆设置",
+	8,		   0,
+	&show,
+	&keypress,
+	&timetick,
+	&msg,
+	(void*)0
+};
+
+#else
+
 unsigned char	noselect_log[] = { 0x3C, 0x7E, 0xC3, 0xC3, 0xC3, 0xC3, 0x7E, 0x3C };    //空心
 unsigned char	select_log[] = { 0x3C, 0x7E, 0xFF, 0xFF, 0xFF, 0xFF, 0x7E, 0x3C };      //实心
 
@@ -22,16 +116,7 @@ unsigned char	CarSet_0 = 1;
 DECL_BMP( 8, 8, select_log );
 DECL_BMP( 8, 8, noselect_log );
 
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 void Selec_123( u8 par )
 {
 	u8 i = 0;
@@ -68,15 +153,7 @@ void Selec_123( u8 par )
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 void CarSet_0_fun( u8 set_type )
 {
 	lcd_fill( 0 );
@@ -103,43 +180,19 @@ void CarSet_0_fun( u8 set_type )
 	lcd_update_all( );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void msg( void *p )
 {
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void show( void )
 {
 	CounterBack = 0;
 	CarSet_0_fun( CarSet_0_counter );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void keypress( unsigned int key )
 {
 	switch( key )
@@ -189,12 +242,14 @@ static void timetick( unsigned int systick )
 MENUITEM Menu_0_loggingin =
 {
 	"车辆设置",
-	8,0,
+	8,		   0,
 	&show,
 	&keypress,
 	&timetick,
 	&msg,
 	(void*)0
 };
+
+#endif
 
 /************************************** The End Of File **************************************/

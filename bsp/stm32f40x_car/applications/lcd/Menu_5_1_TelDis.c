@@ -13,24 +13,16 @@
  ***********************************************************/
 #include "Menu_Include.h"
 #include "sed1520.h"
-
+#include <string.h>
 static uint8_t	count;
 static uint8_t	pos;
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void phonebook_display( void )
+/**/
+static void phonebook_display( void )
 {
 	uint8_t *p;
-	uint8_t len_tel,len_man;
-	char buf[32];
+	uint8_t len_tel, len_man;
+	char	buf[32];
 	lcd_fill( 0 );
 	if( count == 0 )
 	{
@@ -38,45 +30,28 @@ void phonebook_display( void )
 		lcd_text12( ( 122 - 12 * 6 ) >> 1, 14, "[电话本为空]", 12, LCD_MODE_SET );
 	}else
 	{
-		p =  phonebook_buf + pos * 64 ;  /*开始是一个'P'*/
-		len_tel=p[2];
-		len_man=p[len_tel+3];
-		memset(buf,0,32);
-		sprintf(buf,"[%02d] ",pos);
-		if(len_man>14)
-		{	
-			len_man=14;
-		}	
-		strncpy(buf+5,(char*)( p+len_tel+4 ),len_man);
-	lcd_text12( 0, 4, buf, strlen(buf), LCD_MODE_SET );
-		lcd_text12( 0, 18, (char*)( p+3 ), len_tel, LCD_MODE_SET );
-		
+		p		= phonebook_buf + pos * 64; /*开始是一个'P'*/
+		len_tel = p[2];
+		len_man = p[len_tel + 3];
+		memset( buf, 0, 32 );
+		sprintf( buf, "[%02d] ", pos );
+		if( len_man > 14 )
+		{
+			len_man = 14;
+		}
+		strncpy( buf + 5, (char*)( p + len_tel + 4 ), len_man );
+		lcd_text12( 0, 4, buf, strlen( buf ), LCD_MODE_SET );
+		lcd_text12( 0, 18, (char*)( p + 3 ), len_tel, LCD_MODE_SET );
 	}
 	lcd_update_all( );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void msg( void *p )
 {
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void show( void )
 {
 	pMenuItem->tick = rt_tick_get( );
@@ -103,7 +78,6 @@ static void keypress( unsigned int key )
 			pMenuItem->show( );
 			break;
 		case KEY_OK:
-
 
 			break;
 		case KEY_UP:
