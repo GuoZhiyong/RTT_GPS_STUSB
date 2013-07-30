@@ -623,7 +623,7 @@ rt_err_t resp_ETCPIP( char *p, uint16_t len )
 	char	*psrc	= p;
 	char	*pdst	= gsm_param.ip;
 
-	memset(gsm_param.ip,0,15);
+	memset( gsm_param.ip, 0, 15 );
 	while( 1 )
 	{
 		if( stage == 0 )
@@ -1415,6 +1415,11 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 		return;
 	}
 
+	if( strncmp( psrc, "%TSIM 0", 7 ) == 0 ) /*没有SIM卡*/
+	{
+		return;
+	}
+
 	if( SMS_rx_pro( pInfo, size ) )
 	{
 		return;
@@ -1451,10 +1456,10 @@ static void rt_thread_entry_gsm( void* parameter )
 		if( gsm_state == GSM_POWEROFF )
 		{
 			GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-			rt_thread_delay(RT_TICK_PER_SECOND*5);  /*延时5秒再启动*/
-			gsm_state=GSM_IDLE;
+			rt_thread_delay( RT_TICK_PER_SECOND * 5 ); /*延时5秒再启动*/
+			gsm_state = GSM_IDLE;
 		}
-		
+
 		if( gsm_state == GSM_GPRS )
 		{
 			rt_thread_gsm_gprs( RT_NULL );
@@ -1610,9 +1615,7 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 		{
 			m66_write( &dev_gsm, 0, "7D02", 4 );
 			rt_kprintf( "%s", "7D02" );
-		}
-
-		if( c == 0x7d )
+		}else if( c == 0x7D )
 		{
 			m66_write( &dev_gsm, 0, "7D01", 4 );
 			rt_kprintf( "%s", "7D01" );
@@ -1636,9 +1639,7 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count )
 	{
 		m66_write( &dev_gsm, 0, "7D02", 4 );
 		rt_kprintf( "%s", "7D02" );
-	}
-
-	if( fcs == 0x7d )
+	}else if( fcs == 0x7D )
 	{
 		m66_write( &dev_gsm, 0, "7D01", 4 );
 		rt_kprintf( "%s", "7D01" );

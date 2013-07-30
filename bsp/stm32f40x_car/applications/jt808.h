@@ -119,10 +119,11 @@ typedef enum
 
 typedef enum
 {
-	SINGLE_CMD = 0,
-	SINGLE_ACK=1,
-	MULTI_CMD=2,
-	MULTI_ACK=3
+	SINGLE_FIRST=0,
+	SINGLE_CMD = 1,
+	SINGLE_ACK=2,
+	MULTI_CMD=3,
+	MULTI_ACK=4
 }JT808_MSG_TYPE;
 
 typedef __packed struct
