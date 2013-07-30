@@ -71,6 +71,8 @@ void lcd_bitmap( const uint8_t left, const uint8_t top, IMG_DEF *img_ptr, const 
 
 void lcd_text12( char left, char top, char *pinfo, char len, const char mode );
 
+void lcd_drawline( int x1, int y1, int x2, int y2, const char mode );
+
 
 #endif
 /************************************** The End Of File **************************************/

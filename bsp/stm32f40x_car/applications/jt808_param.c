@@ -117,23 +117,41 @@ JT808_PARAM jt808_param =
 	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0117 其他CAN 总线 ID 单独采集设置*/
 	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0118 其他CAN 总线 ID 单独采集设置*/
 	{ 0,		   0,  0, 0, 0, 0, 0, 0 },  /*0x0119 其他CAN 总线 ID 单独采集设置*/
+
 	"70420",                                /*0xF000 制造商ID*/
 	"TW703-BD",                             /*0xF001 终端型号*/
 	"1234567",                              /*0xF002 终端ID*/
-	"",                                     /*0xF003 鉴权码*/
+	"12345",                                /*0xF003 鉴权码*/
 	0x07,                                   /*0xF004 终端类型*/
 	"0000000000000000",                     /*0xF005 车辆VIN*/
 	"",                                     /*0xF006 车牌号*/
 	0x02,                                   /*0xF007 车牌颜色*/
-	"",                                     /*0xF008 驾驶员姓名*/
-	"",                                     /*0xF009 驾驶证号码*/
+	"张三",                                 /*0xF008 驾驶员姓名*/
+	"120104197712015381",                   /*0xF009 驾驶证号码*/
+	"大型货运",                                      /*0xF00A 车辆类型*/
+	"1.00",                                 /*0xF010 软件版本号*/
+	"1.00",                                 /*0xF011 硬件版本号*/
+	"HB.TDT",                               /*0xF012 销售客户代码*/
 
-	"123456",                               /*0xF010 软件版本号*/
-	"0000",                                 /*0xF011 硬件版本号*/
 	0,                                      /*0xF020 总里程*/
+
+	0x35DECC80,                             /*0xF030 记录仪初次安装时间,mytime格式*/
+	0,                                      /*id_0xF032;      初始里程*/
+	6250,                                   /*id_0xF033;      车辆脉冲系数*/
+
+	6,                                      //line_space;               //行间隔
+	0,                                      //margin_left;				//左边界
+	0,                                      //margin_right;				//右边界
+	1,                                      //step_delay;               //步进延时,影响行间隔
+	1,                                      //gray_level;               //灰度等级,加热时间
+	5,                                      //heat_delay[0];			//加热延时
+	10,                                     //heat_delay[1];			//加热延时
+	15,                                     //heat_delay[2];			//加热延时
+	20,                                     //heat_delay[3];			//加热延时
 };
 
 #define FLAG_DISABLE_REPORT_INVALID 1       /*设备非法*/
+
 #define FLAG_DISABLE_REPORT_AREA	2       /*区域内禁止上报*/
 
 //static uint32_t flag_disable_report = 0;    /*禁止上报的标志位*/
@@ -284,6 +302,16 @@ struct _tbl_id_lookup
 	ID_LOOKUP( 0xF010, TYPE_STR ),      /*0xF010 软件版本号*/
 	ID_LOOKUP( 0xF011, TYPE_STR ),      /*0xF011 硬件版本号*/
 	ID_LOOKUP( 0x0020, TYPE_WORD ),     /*0xF020 总里程*/
+
+	ID_LOOKUP( 0xF040, TYPE_BYTE ),     //line_space;               //行间隔
+	ID_LOOKUP( 0xF041, TYPE_BYTE ),     //margin_left;				//左边界
+	ID_LOOKUP( 0xF042, TYPE_BYTE ),     //margin_right;				//右边界
+	ID_LOOKUP( 0xF043, TYPE_BYTE ),     //step_delay;               //步进延时,影响行间隔
+	ID_LOOKUP( 0xF044, TYPE_BYTE ),     //gray_level;               //灰度等级,加热时间
+	ID_LOOKUP( 0xF045, TYPE_BYTE ),     //heat_delay[0];				//加热延时
+	ID_LOOKUP( 0xF046, TYPE_BYTE ),     //heat_delay[1];				//加热延时
+	ID_LOOKUP( 0xF047, TYPE_BYTE ),     //heat_delay[2];				//加热延时
+	ID_LOOKUP( 0xF048, TYPE_BYTE ),     //heat_delay[3];				//加热延时
 };
 
 
@@ -685,7 +713,7 @@ void jt808_0x8104_fill_data( JT808_TX_NODEDATA *pnodedata )
 	pnodedata->tag_data[13] = pnodedata->packet_num & 0xFF;
 	pnodedata->tag_data[14] = pnodedata->packet_no >> 8;
 	pnodedata->tag_data[15] = pnodedata->packet_no & 0xFF;
-	pnodedata->state=IDLE;
+	pnodedata->state		= IDLE;
 }
 
 /*应答
@@ -695,11 +723,11 @@ static JT808_MSG_STATE jt808_0x8104_response( JT808_TX_NODEDATA * pnodedata, uin
 {
 	if( pnodedata->packet_num == pnodedata->packet_no ) /*已经发送了所有包*/
 	{
-		rt_kprintf("0x8104_response_delete\n");
-		pnodedata->state=ACK_OK;
+		rt_kprintf( "0x8104_response_delete\n" );
+		pnodedata->state = ACK_OK;
 		return WAIT_DELETE;
 	}
-	rt_kprintf("0x8104_response_idle\n");
+	rt_kprintf( "0x8104_response_idle\n" );
 	jt808_0x8104_fill_data( pnodedata );
 	return IDLE;
 }
@@ -707,14 +735,13 @@ static JT808_MSG_STATE jt808_0x8104_response( JT808_TX_NODEDATA * pnodedata, uin
 /*超时后的处理函数*/
 static JT808_MSG_STATE jt808_0x8104_timeout( JT808_TX_NODEDATA * pnodedata )
 {
-
 	if( pnodedata->packet_num == pnodedata->packet_no ) /*已经发送了所有包*/
 	{
-		rt_kprintf("0x8104_timeout_delete\n");
-		pnodedata->state=ACK_OK;
+		rt_kprintf( "0x8104_timeout_delete\n" );
+		pnodedata->state = ACK_OK;
 		return WAIT_DELETE;
 	}
-	rt_kprintf("0x8104_timeout_idle\n");
+	rt_kprintf( "0x8104_timeout_idle\n" );
 	jt808_0x8104_fill_data( pnodedata );
 	return IDLE;
 }
@@ -722,14 +749,14 @@ static JT808_MSG_STATE jt808_0x8104_timeout( JT808_TX_NODEDATA * pnodedata )
 /*上报所有终端参数*/
 void jt808_param_0x8104( uint8_t *pmsg )
 {
-	JT808_TX_NODEDATA	* pnodedata;
+	JT808_TX_NODEDATA * pnodedata;
 //	uint8_t				* pdata;
 //	uint16_t			id;
-	uint8_t				buf[600];
+	uint8_t		buf[600];
 //	uint8_t				*p;
-	uint16_t			param_size	= 0;
-	uint16_t			param_count = 0;
-	uint16_t			i, count;
+	uint16_t	param_size	= 0;
+	uint16_t	param_count = 0;
+	uint16_t	i, count;
 
 	pnodedata = node_begin( 1, MULTI_ACK, 0x0104, -1, 600 );
 	if( pnodedata == RT_NULL )
@@ -759,7 +786,7 @@ void jt808_param_0x8104( uint8_t *pmsg )
 				param_size += 6;
 				break;
 			case TYPE_STR:
-				param_size += ( strlen( (char*)(tbl_id_lookup[i].val) ) + 5 );
+				param_size += ( strlen( (char*)( tbl_id_lookup[i].val ) ) + 5 );
 				break;
 			case TYPE_CAN:
 				param_size += 13;
@@ -778,12 +805,12 @@ void jt808_param_0x8104( uint8_t *pmsg )
 	buf[0]	= pmsg[10];
 	buf[1]	= pmsg[11];
 	buf[2]	= param_count;
-	node_data( pnodedata, buf, count + 3);
+	node_data( pnodedata, buf, count + 3 );
 	pnodedata->tag_data[12] = pnodedata->packet_num >> 8;
 	pnodedata->tag_data[13] = pnodedata->packet_num & 0xFF;
 	pnodedata->tag_data[14] = pnodedata->packet_no >> 8;
 	pnodedata->tag_data[15] = pnodedata->packet_no & 0xFF;
-	node_end( pnodedata,jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL  );
+	node_end( pnodedata, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL );
 }
 
 FINSH_FUNCTION_EXPORT_ALIAS( jt808_param_0x8104, param, desc );
@@ -885,8 +912,8 @@ void jt808_param_0x8106( uint8_t *pmsg )
 	buf[1]				= pmsg[11];
 	buf[2]				= param_count;
 	pnodedata->timeout	= RT_TICK_PER_SECOND * 5;
-	node_data( pnodedata, buf, count + 3);
-	node_end( pnodedata, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL  );
+	node_data( pnodedata, buf, count + 3 );
+	node_end( pnodedata, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL );
 }
 
 /************************************** The End Of File **************************************/

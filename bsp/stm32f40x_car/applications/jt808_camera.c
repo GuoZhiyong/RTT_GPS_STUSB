@@ -329,6 +329,7 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 
 	if( TempAddress == 0xFFFFFFFF )
 	{
+		rt_kprintf("\n没有找到图片");
 		return RT_ERROR;
 	}
 
@@ -352,6 +353,7 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 		if( pnodedata == RT_NULL )
 		{
 			rt_free( p_para );
+			rt_kprintf("\n分配资源失败");
 			return RT_ENOMEM;
 		}
 		pnodedata->size			= TempPackageHead.Len - 64 + 36; /*空出了64字节的头部，加上36字节图片信息*/

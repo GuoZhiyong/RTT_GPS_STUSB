@@ -15,6 +15,8 @@
 #include <string.h>
 #include "sed1520.h"
 
+#include "gps.h"
+
 static uint8_t menu_pos=0;
 static uint8_t fupgrading=0;	/*是否在升级状态，禁用按键判断*/
 static rt_thread_t tid_upgrade=RT_NULL;	/*开始更新*/
@@ -195,7 +197,7 @@ static void keypress( unsigned int key )
 				menu_set();
 			if(menu_pos==0)
 			{
-//				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_uart, (void*)msg, 1024, 5, 5 );
+				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_uart, (void*)msg, 1024, 5, 5 );
 				if( tid_upgrade != RT_NULL )
 				{
 					msg("I等待串口升级");
@@ -206,7 +208,7 @@ static void keypress( unsigned int key )
 				}
 			}else /*U盘升级*/
 			{
-//				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_udisk, (void*)msg, 1024, 5, 5 );
+				tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_udisk, (void*)msg, 1024, 5, 5 );
 				if( tid_upgrade != RT_NULL )
 				{
 					msg("I等待U盘升级");
@@ -228,6 +230,11 @@ static void keypress( unsigned int key )
 	}
 }
 
+static void timetick( unsigned int tick )
+{
+
+
+}
 
 
 MENUITEM Menu_5_3_bdupgrade =
@@ -236,7 +243,7 @@ MENUITEM Menu_5_3_bdupgrade =
 	8,0,
 	&show,
 	&keypress,
-	&timetick_default,
+	&timetick,
 	&msg,
 	(void*)0
 };

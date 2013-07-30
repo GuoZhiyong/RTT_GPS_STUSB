@@ -188,6 +188,8 @@ void GPSGPRS_Status( void )
 rtc时间，需要频繁读取(1秒1次)，如何判断校时
 使用自己的mytime，如何更新(使用系统的1s定时器是否准确)
 */
+
+#if 0
 void  Disp_Idle( void )
 {
 	char	buf_datetime[22];
@@ -204,12 +206,55 @@ void  Disp_Idle( void )
 
 	lcd_fill( 0 );
 	lcd_text12( 0, 10, (char*)buf_datetime, strlen( buf_datetime ), LCD_MODE_SET );
+
 	lcd_text12( 0, 20, (char*)buf_speed, strlen( buf_speed ), LCD_MODE_SET );
+
+	
 	lcd_bitmap( 0, 3, &BMP_gsm_g, LCD_MODE_SET );
 	lcd_bitmap( 8, 3, &BMP_gsm_3, LCD_MODE_SET );
 	GPSGPRS_Status( );
 	lcd_update_all( );
 }
+#endif
+
+
+void  Disp_Idle( void )
+{
+	char	buf[20];
+	float   angle;
+
+	lcd_fill( 0 );
+
+	sprintf( buf, "20%02d/%02d/%02d",
+	         YEAR(mytime_now),
+	         MONTH(mytime_now),
+	         DAY(mytime_now));
+
+	lcd_text12( 0, 10, (char*)buf, strlen( buf), LCD_MODE_SET );
+
+	sprintf( buf, "%02d:%02d:%02d",
+	         HOUR(mytime_now),
+	         MINUTE(mytime_now),
+	         SEC(mytime_now) );
+	lcd_text12( 0, 20, (char*)buf, strlen( buf), LCD_MODE_SET );
+
+	sprintf( buf, "%03d", gps_speed);
+
+	
+	angle=gps_cog*2.0*3.14/360.0;
+
+
+	lcd_text12( 90, 12, (char*)buf, strlen( buf ), LCD_MODE_SET );
+
+	lcd_drawline(106,16,106+cos(angle),16+sin(angle),LCD_MODE_SET);
+	
+	lcd_bitmap( 0, 3, &BMP_gsm_g, LCD_MODE_SET );
+	lcd_bitmap( 8, 3, &BMP_gsm_3, LCD_MODE_SET );
+	GPSGPRS_Status( );
+	lcd_update_all( );
+}
+
+
 
 /**/
 static void msg( void *p )

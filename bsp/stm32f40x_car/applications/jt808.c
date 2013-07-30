@@ -171,7 +171,6 @@ static JT808_MSG_STATE jt808_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t 
 
 static JT808_MSG_STATE jt808_tx_timeout( JT808_TX_NODEDATA * nodedata )
 {
-	JT808_TX_NODEDATA* pnodedata = nodedata;
 #if 0
 	pnodedata->retry++;
 	if( pnodedata->retry > pnodedata->max_retry )
@@ -810,16 +809,23 @@ static int handle_rx_0x8800( uint8_t linkno, uint8_t *pmsg )
 {
 	MsgListNode			* iter;
 	JT808_TX_NODEDATA	* iterdata;
-	uint32_t			media_id;
+//	uint32_t			media_id;
 
 	/*跳过消息头12byte*/
-	media_id	= ( pmsg[12] << 24 ) | ( pmsg[13] << 16 ) | ( pmsg[14] << 8 ) | ( pmsg[15] );
+
 	iter		= list_jt808_tx->first;
+	iterdata = (JT808_TX_NODEDATA*)iter->data;
+	iterdata->cb_tx_response( iterdata, pmsg ); /*应答处理函数*/
+#if 0
+	media_id	= ( pmsg[12] << 24 ) | ( pmsg[13] << 16 ) | ( pmsg[14] << 8 ) | ( pmsg[15] );
+
+	
 	while( iter != RT_NULL )
 	{
 		iterdata = (JT808_TX_NODEDATA*)iter->data;
-		if( iterdata->head_id == media_id )
+		if( iterdata->head_id == media_id )	/*这里不对*/
 		{
+			
 			iterdata->cb_tx_response( iterdata, pmsg ); /*应答处理函数*/
 			iterdata->state = ACK_OK;
 			break;
@@ -828,7 +834,7 @@ static int handle_rx_0x8800( uint8_t linkno, uint8_t *pmsg )
 			iter = iter->next;
 		}
 	}
-
+#endif
 	return 1;
 }
 
@@ -1806,7 +1812,6 @@ void reset( unsigned int reason )
 
 FINSH_FUNCTION_EXPORT( reset, restart device );
 
-#define DUMP_PRINT( value, format ) rt_kprintf( # value "="format, value )
 
 
 /***********************************************************
@@ -1818,10 +1823,23 @@ FINSH_FUNCTION_EXPORT( reset, restart device );
 * Return:
 * Others:
 ***********************************************************/
-void dump_node( JT808_TX_NODEDATA *pnodedata )
+void list_node(void)
 {
-	DUMP_PRINT( pnodedata->head_id, "%02x" );
+	MsgListNode			* iter;
+	JT808_TX_NODEDATA	* pnodedata;
+	
+	iter=list_jt808_tx->first;
+	while(iter!=NULL)
+	{
+		pnodedata = ( JT808_TX_NODEDATA* )( iter->data );
+		rt_kprintf("\nid=%04x\tseq=%04x len=%d",pnodedata->head_id,pnodedata->head_sn,pnodedata->msg_len);
+		iter=iter->next;
+	}
+	return;
 }
+
+FINSH_FUNCTION_EXPORT( list_node, list node );
+
 
 /************************************** The End Of File **************************************/
 
