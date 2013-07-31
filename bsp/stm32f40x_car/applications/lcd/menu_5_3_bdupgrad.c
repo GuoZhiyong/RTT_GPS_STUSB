@@ -52,10 +52,11 @@ static void msg( void *p )
 	pinfo	= (char*)p;
 	len		= strlen( pinfo );
 	lcd_text12( 35, 10, pinfo + 1, len - 1, LCD_MODE_SET );
-	if( *pinfo == 'E' ) /*出错或结束*/
+	if( pinfo[0] == 'E' ) /*出错或结束*/
 	{
 		fupgrading	= 1;
 		tid_upgrade = RT_NULL;
+		rt_kprintf("\nfupgrading=%d",fupgrading);
 	}
 
 	lcd_update_all( );
@@ -72,10 +73,6 @@ static void msg( void *p )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
-	if( fupgrading )
-	{
-		return;
-	}
 	switch( key )
 	{
 		case KEY_MENU:
