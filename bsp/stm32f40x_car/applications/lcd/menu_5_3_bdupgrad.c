@@ -32,8 +32,8 @@ static rt_thread_t	tid_upgrade = RT_NULL; /*开始更新*/
 static void show( void )
 {
 	lcd_fill( 0 );
-	lcd_text12( ( 122 - 16 * 6 ) / 2, 10, "U盘更新文件就绪?", 16, LCD_MODE_SET );
-	lcd_text12( ( 122 - 14 * 6 ) / 2, 10, "按[确认键]开始", 14, LCD_MODE_SET );
+	lcd_text12( ( 122 - 16 * 6 ) / 2, 8, "U盘更新文件就绪?", 16, LCD_MODE_SET );
+	lcd_text12( ( 122 - 14 * 6 ) / 2, 20, "按[确认键]开始", 14, LCD_MODE_SET );
 	lcd_update_all( );
 }
 

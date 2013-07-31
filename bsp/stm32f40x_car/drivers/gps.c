@@ -662,7 +662,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	if( ( *pdata != 0x54 ) || ( *( pdata + 1 ) != 0x44 ) )
 	{
 		msg( "E文件头错误" );
-		goto end_upgrade_usb_1;
+		goto end_upgrade_usb_2;
 	}
 
 	ch_h	= ( *( pdata + 9 ) & 0xf0 ) >> 4;
@@ -695,7 +695,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	if( ( ptr_mem_packet[count - 1] != 0x54 ) || ( ptr_mem_packet[count - 2] != 0x44 ) )
 	{
 		msg( "E文件尾错误" );
-		goto end_upgrade_usb_1;
+		goto end_upgrade_usb_2;
 	}
 	file_matchcode[0]	= ptr_mem_packet[count - 6];
 	file_matchcode[1]	= ptr_mem_packet[count - 5];
@@ -732,36 +732,36 @@ void thread_gps_upgrade_udisk( void* parameter )
 /*版本查询*/
 	count = 0;
 
-
+/*先清除已有的数据，再发送*/
+	while( rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, 0 ) == RT_EOK )
+	{
+		rt_thread_delay( RT_TICK_PER_SECOND / 10 );
+	}
 
 	dev_gps_write( &dev_gps, 0, "\x40\x10\xC0\x00\x10\x00\x01\xC2\x84\x0D\x0A", 11 );
-	while( 1 )
+	res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
+	if( res == RT_EOK )                         //收到一包数据
 	{
-		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
-		if( res == RT_EOK )                           //收到一包数据
+		rt_kprintf( "\r\n版本查询\r\n" );
+#if 1
+		for( ch_h = 0; ch_h < uart_buf.wr; ch_h++ )
 		{
-			rt_kprintf( "\r\n版本查询\r\n" );
-#if 0
-			for( ch_h = 0; ch_h < uart_buf.wr; ch_h++ )
-			{
-				rt_kprintf( "%02x ", uart_buf.body[ch_h] );
-			}
-			rt_kprintf( "\r\n" );
-#endif
-			if( ( uart_buf.wr == 15 ) && ( uart_buf.body[4] == 0x02 ) ) /*进入升级状态*/
-			{
-				ch_h	= ( uart_buf.body[7] & 0xf0 ) >> 4;
-				ch_l	= ( uart_buf.body[7] & 0xf );
-				sprintf( buf, "I版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
-				rt_kprintf( "\n版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
-				msg( buf );
-				break;
-			}
-		}else /*超时*/
-		{
-			msg( "E进入升级错误" );
-			goto end_upgrade_usb_2;
+			rt_kprintf( "%02x ", uart_buf.body[ch_h] );
 		}
+		rt_kprintf( "\r\n" );
+#endif
+		if( ( uart_buf.wr == 15 ) && ( uart_buf.body[4] == 0x02 ) ) /*进入升级状态*/
+		{
+			ch_h	= ( uart_buf.body[7] & 0xf0 ) >> 4;
+			ch_l	= ( uart_buf.body[7] & 0xf );
+			sprintf( buf, "I版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
+			rt_kprintf( "\n版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
+			msg( buf );
+		}
+	}else /*超时*/
+	{
+		msg( "E进入升级错误" );
+		goto end_upgrade_usb_2;
 	}
 
 /*改波特率*/
@@ -773,7 +773,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	while( 1 )
 	{
 		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
-		if( res == RT_EOK )       //收到一包数据
+		if( res == RT_EOK ) //收到一包数据
 		{
 			if( ( uart_buf.wr == 11 ) && ( uart_buf.body[4] == 0x15 ) )
 			{
@@ -805,9 +805,8 @@ void thread_gps_upgrade_udisk( void* parameter )
 	while( ch_l )
 	{
 		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 10 );
-		if( res == RT_EOK )       //收到一包数据
+		if( res == RT_EOK ) //收到一包数据
 		{
-
 			if( ( uart_buf.wr == 11 ) && ( uart_buf.body[4] == 0xf2 ) )
 			{
 				ch_l = 0;
@@ -815,7 +814,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 		}else /*超时*/
 		{
 			msg( "E开始升级错误" );
-			
+
 			goto end_upgrade_usb_2;
 		}
 	}
@@ -903,10 +902,8 @@ void thread_gps_upgrade_udisk( void* parameter )
 	}
 
 end_upgrade_usb_2:
-	GPIO_ResetBits( GPIOD, GPIO_Pin_10 );
-	rt_thread_delay( RT_TICK_PER_SECOND * 3 );
-	GPIO_SetBits( GPIOD, GPIO_Pin_10 );
-end_upgrade_usb_1:
+
+//end_upgrade_usb_1:
 	if( fd >= 0 )
 	{
 		close( fd );
@@ -914,8 +911,11 @@ end_upgrade_usb_1:
 end_upgrade_usb_0:
 	rt_free( ptr_mem_packet );
 	ptr_mem_packet = RT_NULL;
+	rt_thread_delay( RT_TICK_PER_SECOND * 2 );
+	GPIO_ResetBits( GPIOD, GPIO_Pin_10 );
 	rt_thread_resume( &thread_gps );
-	rt_thread_delay(RT_TICK_PER_SECOND*5);
+	rt_thread_delay( RT_TICK_PER_SECOND * 3 );
+	GPIO_SetBits( GPIOD, GPIO_Pin_10 );
 }
 
 /*gps升级*/
