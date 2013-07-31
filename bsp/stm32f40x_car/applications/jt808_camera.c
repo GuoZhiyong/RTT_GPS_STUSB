@@ -205,10 +205,10 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 	uint16_t				ack_seq;                                            /*应答序号*/
 
 	temp_msg_id = buf_to_data( pmsg, 2 );
-	
+
 	if( 0x8001 == temp_msg_id )                                                 ///通用应答,有可能应答延时
 	{
-		ack_seq		= ( pmsg[12] << 8 ) | pmsg[13];                                 /*判断应答流水号*/
+		ack_seq = ( pmsg[12] << 8 ) | pmsg[13];                                 /*判断应答流水号*/
 		if( ack_seq != nodedata->head_sn )                                      /*流水号对应*/
 		{
 			nodedata->timeout_tick	= rt_tick_get( ) + 15 * RT_TICK_PER_SECOND; /*等15秒*/
@@ -240,13 +240,13 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 			nodedata->state = ACK_OK;
 			return WAIT_DELETE;
 		}
-		nodedata->state = IDLE;	/*正常发送*/
+		nodedata->state = IDLE;                     /*正常发送*/
 		return IDLE;
 	}
 
 	if( 0x8800 == temp_msg_id )                     ///专用应答
 	{
-		rt_kprintf("\n收到专用应答");
+		rt_kprintf( "\n收到专用应答" );
 		tempu32data = buf_to_data( pmsg + 12, 4 );  /*应答media ID*/
 
 		if( tempu32data != p_para->Data_ID )
@@ -255,7 +255,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 			nodedata->state = ACK_OK;
 			return WAIT_DELETE;
 		}
-		if( pmsg[16] == 0 )                   /*重传包总数*/
+		if( pmsg[16] == 0 )       /*重传包总数*/
 		{
 			if( p_para->Delete )
 			{
@@ -329,7 +329,7 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 
 	if( TempAddress == 0xFFFFFFFF )
 	{
-		rt_kprintf("\n没有找到图片");
+		rt_kprintf( "\n没有找到图片" );
 		return RT_ERROR;
 	}
 
@@ -353,7 +353,7 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 		if( pnodedata == RT_NULL )
 		{
 			rt_free( p_para );
-			rt_kprintf("\n分配资源失败");
+			rt_kprintf( "\n分配资源失败" );
 			return RT_ENOMEM;
 		}
 		pnodedata->size			= TempPackageHead.Len - 64 + 36; /*空出了64字节的头部，加上36字节图片信息*/
@@ -697,20 +697,17 @@ rt_err_t Cam_jt808_0x8801( uint8_t linkno, uint8_t *pmsg )
 	return RT_EOK;
 }
 
-/*********************************************************************************
-  *函数名称:rt_err_t Cam_jt808_0x8802(uint8_t linkno,uint8_t *pmsg)
-  *功能描述:存储多媒体数据检索
-  *输	入:	pmsg	:808消息体数据
-   msg_len	:808消息体长度
-  *输	出:none
-  *返 回 值:rt_err_t
-  *作	者:白养民
-  *创建日期:2013-06-16
-  *---------------------------------------------------------------------------------
-  *修 改 人:
-  *修改日期:
-  *修改描述:
-*********************************************************************************/
+
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 {
 	u8					*ptempbuf;
@@ -761,7 +758,6 @@ rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 
 	datalen += data_to_buf( pdestbuf + datalen, fram_num, 2 );
 	datalen += data_to_buf( pdestbuf + datalen, mediatotal, 2 );
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	for( i = 0; i < mediatotal; i++ )
 	{
 		TempAddress = buf_to_data( ptempbuf, 4 );
@@ -774,12 +770,11 @@ rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 		memcpy( pdestbuf + datalen, TempPackageHead.position, 28 ); ///位置信息汇报
 		datalen += 28;
 	}
-	rt_sem_release( &sem_dataflash );
 	jt808_tx_ack( 0x802, pdestbuf, datalen );
 
 	rt_free( ptempbuf );
 	rt_free( pdestbuf );
-	return RT_EOK;
+	return ret;
 }
 
 /*********************************************************************************

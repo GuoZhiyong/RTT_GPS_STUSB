@@ -24,14 +24,18 @@
 #include "jt808_gps.h"
 #include "camera.h"
 
-#define	DF_AreaAddress_Start	0x60000			///电子围栏数据存储开始位置
-#define DF_AreaAddress_End		0x61000			///电子围栏数据存储结束位置
+
+#define	DF_LineAddress_Start	0xF2000			///路线数据存储开始位置
+#define DF_LineAddress_End		0x106000			///路线数据存储结束位置
+#define DF_LINESaveSect			0x1000			///路线数据存储最小间隔
+
+
+#define	DF_AreaAddress_Start	0x106000			///电子围栏数据存储开始位置
+#define DF_AreaAddress_End		0x108000			///电子围栏数据存储结束位置
 #define DF_AreaSaveSect			0x40			///电子围栏数据存储最小间隔
 
 
-#define	DF_LineAddress_Start	0x61000			///路线数据存储开始位置
-#define DF_LineAddress_End		0x75000			///路线数据存储结束位置
-#define DF_LINESaveSect			0x1000			///路线数据存储最小间隔
+
 
 
 #define AREANUM			24

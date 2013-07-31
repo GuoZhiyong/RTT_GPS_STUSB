@@ -190,6 +190,8 @@ extern MENUITEM			Menu_5_other;
 extern MENUITEM			Menu_6_RemoteUpdata;
 extern MENUITEM			Menu_7_CentreTextDisplay;
 
+extern MENUITEM			Menu_Popup;
+
 extern unsigned char	SetVIN_NUM;                     //   1:设置车牌号码  2:设置VIN
 extern unsigned char	OK_Counter;                     //记录在快捷菜单下ok键按下的次数
 extern unsigned char	Screen_In, Screen_in0Z;         //记录备选屏内选中的汉字
@@ -237,6 +239,7 @@ extern u8				Menu_VecLogoColor[10];  // 车牌颜色
 extern u8				Menu_Vin_Code[17];
 extern u8				Menu_color_num;
 extern u8				menu_type_flag, menu_color_flag;
+
 
 extern void Cent_To_Disp( void );
 

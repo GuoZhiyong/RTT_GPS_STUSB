@@ -189,7 +189,7 @@ rtc时间，需要频繁读取(1秒1次)，如何判断校时
 使用自己的mytime，如何更新(使用系统的1s定时器是否准确)
 */
 
-#if 0
+#if 1
 void  Disp_Idle( void )
 {
 	char	buf_datetime[22];
@@ -215,9 +215,7 @@ void  Disp_Idle( void )
 	GPSGPRS_Status( );
 	lcd_update_all( );
 }
-#endif
-
-
+#else
 void  Disp_Idle( void )
 {
 	char	buf[20];
@@ -253,7 +251,7 @@ void  Disp_Idle( void )
 	GPSGPRS_Status( );
 	lcd_update_all( );
 }
-
+#endif
 
 
 /**/

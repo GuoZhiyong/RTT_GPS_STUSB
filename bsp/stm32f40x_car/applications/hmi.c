@@ -161,9 +161,23 @@ static void rt_thread_entry_hmi( void* parameter )
 			pMenuItem->keypress( key );         //每个子菜单的 按键检测  时钟源50ms timer
 		}
 		pMenuItem->timetick( rt_tick_get( ) );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
+		
 		rt_thread_delay( RT_TICK_PER_SECOND/20);	/*50ms调用一次*/
 	}
 }
+
+/*
+调用弹出窗体显示信息，并持续一定时间
+*/
+void pop_msg(char *msg,uint32_t interval)
+{
+	Menu_Popup.parent=pMenuItem;
+	pMenuItem=&Menu_Popup;
+	pMenuItem->tick=interval;		/*临时用tick传递一下参数*/
+	pMenuItem->show();
+	pMenuItem->msg((void*)msg);
+}
+
 
 /**/
 void hmi_init( void )

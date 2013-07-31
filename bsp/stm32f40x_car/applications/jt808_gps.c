@@ -202,6 +202,8 @@ static void cb_tmr_1sec( void )
 			//rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
 		}
 	}
+
+	
 	if( mytime_now )                                    /*mytime_now经过gps定位后的授时*/
 	{
 		if( ( jt808_status & BIT_STATUS_GPS ) == 0 )    /*未定位,但已授时过*/

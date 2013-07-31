@@ -18,11 +18,13 @@
 #include "sst25.h"
 #include "menu_include.h"
 
-#define TEXTMSG_START		0x3B3000
+/*文本信息*/
+#define TEXTMSG_START		0x34000
 #define TEXTMSG_SECTORS		2
 #define TEXTMSG_BLOCK_SIZE	256
 #define TEXTMSG_END			( TEXTMSG_START + TEXTMSG_SECTORS * 4096 )
 
+/*事件报告*/
 #define EVENT_START		( TEXTMSG_END )
 #define EVENT_SECTORS	1
 #define EVENT_END		( EVENT_START + EVENT_SECTORS * 4096 )
@@ -662,7 +664,16 @@ void jt808_misc_0x8304( uint8_t *pmsg )
 uint8_t* phonebook_buf;
 
 
-uint8_t jt808_phonebook_get(void)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+uint8_t jt808_phonebook_get( void )
 {
 	uint8_t		count = 0;
 	uint8_t		buf[16];
@@ -704,11 +715,18 @@ uint8_t jt808_phonebook_get(void)
 void jt808_misc_0x8400( uint8_t *pmsg )
 {
 	char		dialbuf[64];
+	uint16_t	seq = ( pmsg[10] << 8 ) | pmsg[11];
 	uint16_t	len = ( ( pmsg[2] << 8 ) | pmsg[3] ) & 0x3FF;
+
+	jt808_tx_0x0001( seq, 0x8400, 0 );          /*返回应答*/
+
 	strcpy( dialbuf, "ATD" );
 	strncpy( dialbuf + 3, (char*)( pmsg + 13 ), len - 1 );
-	strcat( dialbuf, ";\n" );
-	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
+	strcat( dialbuf, ";\r\n" );
+	if( pmsg[12] == 0 )                         /*普通通话*/
+	{
+		GPIO_ResetBits( GPIOD, GPIO_Pin_9 );    /*开功放*/
+	}
 	at( dialbuf );
 }
 
@@ -797,7 +815,7 @@ void jt808_misc_0x8401( uint8_t *pmsg )
 
 			for( i = 0; i < 4096; i += 64 )
 			{
-				if(strncmp((char*)(pdata+len_phone+3),(char*)(pbuf+len_phone+4),len_contact)==0)
+				if( strncmp( (char*)( pdata + len_phone + 3 ), (char*)( pbuf + len_phone + 4 ), len_contact ) == 0 )
 				{
 					pbuf[i] = 'P';
 					memcpy( pbuf + i + 1, pdata, len );
@@ -807,7 +825,7 @@ void jt808_misc_0x8401( uint8_t *pmsg )
 			pdata += ( len_phone + len_contact + 3 );
 		}
 	}
-	
+
 	/*重新整理,去除空闲的*/
 	addr	= 0xFFFF;               /*第一个为空的地址*/
 	count	= 0;                    /*记录数*/

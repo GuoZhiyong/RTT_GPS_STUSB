@@ -22,6 +22,7 @@
 #include "jt808.h"
 
 #include "m66.h"
+#include "hmi.h"
 
 #define GSM_GPIO			GPIOC
 #define GSM_TX_PIN			GPIO_Pin_10
@@ -1417,7 +1418,7 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 
 	if( strncmp( psrc, "%TSIM 0", 7 ) == 0 ) /*没有SIM卡*/
 	{
-		
+		pop_msg("SIM卡不存在",RT_TICK_PER_SECOND*1000);
 		return;
 	}
 

@@ -218,11 +218,11 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
 	if( fMultiPacket > SINGLE_ACK )
 	{
 		pnodedata->max_retry	= 1;
-		pnodedata->timeout		= RT_TICK_PER_SECOND * 5;
+		pnodedata->timeout		= RT_TICK_PER_SECOND * 10;
 	} else
 	{
 		pnodedata->max_retry	= 3;
-		pnodedata->timeout		= RT_TICK_PER_SECOND * 5;
+		pnodedata->timeout		= RT_TICK_PER_SECOND * 10;
 	}
 
 	pnodedata->packet_num	= 1;
@@ -403,13 +403,12 @@ void jt808_add_tx( uint8_t linkno,
 
 /*
    终端通用应答
+   只发送1次，发完后删除
  */
 rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res )
 {
 	JT808_TX_NODEDATA	* pnodedata;
-
-	uint8_t				buf[5];
-#if 0
+	uint8_t				buf[10];
 	pnodedata = node_begin( 1, SINGLE_ACK, 0x0001, -1, 5 );
 	if( pnodedata == NULL )
 	{
@@ -421,14 +420,7 @@ rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res )
 	buf[3]	= ( id & 0xff );
 	buf[4]	= res;
 	node_data( pnodedata, buf, 5, );
-	node_end( pnodedata, jt808_tx_timeout, jt808_tx_response, RT_NULL );
-#endif
-	buf[0]	= ( seq >> 8 );
-	buf[1]	= ( seq & 0xff );
-	buf[2]	= ( id >> 8 );
-	buf[3]	= ( id & 0xff );
-	buf[4]	= res;
-	jt808_tx_ack( 0x0001, buf, 5 );
+	node_prepend( pnodedata, jt808_tx_timeout, jt808_tx_response, RT_NULL );
 	return RT_EOK;
 }
 
@@ -1185,6 +1177,11 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 			rt_kprintf( "total_send_error=%d\n", total_send_error );
 		}
 
+		if(pnodedata->head_id==0x0001) 	/*应答信息，只发一遍，发完删除即可*/
+		{
+			return WAIT_DELETE;
+		}
+
 		pnodedata->timeout_tick = rt_tick_get( ) + ( pnodedata->retry + 1 ) * pnodedata->timeout - 30;  /*减30是为了修正*/
 		pnodedata->state		= WAIT_ACK;
 		rt_kprintf( "%d>send id=%04x (%d/%d) timeout=%d\n", rt_tick_get( ), pnodedata->head_id, pnodedata->retry,pnodedata->max_retry,pnodedata->timeout * 10 );
@@ -1811,6 +1808,22 @@ void reset( unsigned int reason )
 }
 
 FINSH_FUNCTION_EXPORT( reset, restart device );
+
+
+/*恢复出厂设置*/
+void factory(void)
+{
+	uint16_t i;
+	uint32_t addr=51*4096;
+	rt_enter_critical();
+	for(i=51;i<1024;i++)
+	{
+		sst25_erase_4k(addr);
+		addr+=4096;
+	}
+	NVIC_SystemReset();
+}
+FINSH_FUNCTION_EXPORT( factory, reset to factory );
 
 
 
