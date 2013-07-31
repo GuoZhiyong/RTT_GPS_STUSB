@@ -1321,6 +1321,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\SED1520.c</FilePath>
             </File>
+            <File>
+              <FileName>menu_popup.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\menu_popup.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

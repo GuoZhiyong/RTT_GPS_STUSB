@@ -419,7 +419,7 @@ rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res )
 	buf[2]	= ( id >> 8 );
 	buf[3]	= ( id & 0xff );
 	buf[4]	= res;
-	node_data( pnodedata, buf, 5, );
+	node_data( pnodedata, buf, 5);
 	node_prepend( pnodedata, jt808_tx_timeout, jt808_tx_response, RT_NULL );
 	return RT_EOK;
 }
