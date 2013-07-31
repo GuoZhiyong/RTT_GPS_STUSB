@@ -34,17 +34,17 @@ typedef __packed struct
 
 
 /*********************************************************************************
-*函数名称:u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
-*功能描述:在jt808_tx_proc当状态为GET_DATA时获取照片数据，该函数是 JT808_TX_NODEDATA 的 get_data 回调函数
-*输 入:	nodedata	:正在处理的发送链表
-*输 出: none
-*返 回 值:rt_err_t
-*作 者:白养民
-*创建日期:2013-06-16
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+  *函数名称:u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
+  *功能描述:在jt808_tx_proc当状态为GET_DATA时获取照片数据，该函数是 JT808_TX_NODEDATA 的 get_data 回调函数
+  *输 入:	nodedata	:正在处理的发送链表
+  *输 出: none
+  *返 回 值:rt_err_t
+  *作 者:白养民
+  *创建日期:2013-06-16
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
 *********************************************************************************/
 static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 {
@@ -101,7 +101,7 @@ static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 				wrlen	+= data_to_buf( iterdata->tag_data + wrlen, TempPackageHead.Channel_ID, 1 );    ///通道 ID
 				memcpy( iterdata->tag_data + wrlen, TempPackageHead.position, 28 );                     ///位置信息汇报
 				wrlen += 28;
-				sst25_read( tempu32data + 64, iterdata->tag_data + wrlen, body_len - wrlen + 12 );      /*当前把消息头也计算进来了*/
+				sst25_read( tempu32data + 64, iterdata->tag_data + wrlen, ( 512 - 36 ) );               /*当前把消息头也计算进来了*/
 			}else
 			{
 				tempu32data = tempu32data + JT808_PACKAGE_MAX * i + 64 - 36;
@@ -118,8 +118,8 @@ static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 			nodedata->state		= IDLE;
 			nodedata->timeout	= RT_TICK_PER_SECOND * 5;
 			nodedata->retry		= 0;
-			nodedata->max_retry = 1;
-			rt_kprintf( "\n%s(%d)\n", __func__, __LINE__ );
+			nodedata->max_retry = 5;
+			nodedata->timeout	= 10 * RT_TICK_PER_SECOND;
 
 			goto FUNC_RET;
 		}
@@ -132,17 +132,17 @@ FUNC_RET:
 }
 
 /*********************************************************************************
-*函数名称:JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
-*功能描述:发送图片相关数据的超时处理函数
-*输 入:	nodedata	:正在处理的发送链表
-*输 出: none
-*返 回 值:JT808_MSG_STATE
-*作 者:白养民
-*创建日期:2013-06-16
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+  *函数名称:JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
+  *功能描述:发送图片相关数据的超时处理函数
+  *输 入:	nodedata	:正在处理的发送链表
+  *输 出: none
+  *返 回 值:JT808_MSG_STATE
+  *作 者:白养民
+  *创建日期:2013-06-16
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
 *********************************************************************************/
 static JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
 {
@@ -160,7 +160,10 @@ static JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
 		case 0x0801:                                            /*上报图片数据*/
 			if( nodedata->packet_no == nodedata->packet_num )   /*都上报完了，还超时*/
 			{
-				return ACK_OK;
+				rt_kprintf( "\n全部上报完成\n" );               /*等待应答0x8800*/
+				nodedata->state = ACK_OK;
+
+				return WAIT_DELETE;
 			}
 			ret = Cam_add_tx_pic_getdata( nodedata );
 			if( ret == 0xFFFF )                                 /*bitter 没有找到图片id*/
@@ -178,17 +181,17 @@ static JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
 }
 
 /*********************************************************************************
-*函数名称:JT808_MSG_STATE Cam_jt808_0x801_response( JT808_TX_NODEDATA * nodedata , uint8_t *pmsg )
-*功能描述:在jt808中处理照片数据传输ACK_ok函数，该函数是 JT808_TX_NODEDATA 的 cb_tx_response 回调函数
-*输 入:	nodedata	:正在处理的发送链表
-*输 出: none
-*返 回 值:JT808_MSG_STATE
-*作 者:白养民
-*创建日期:2013-06-16
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+  *函数名称:JT808_MSG_STATE Cam_jt808_0x801_response( JT808_TX_NODEDATA * nodedata , uint8_t *pmsg )
+  *功能描述:在jt808中处理照片数据传输ACK_ok函数，该函数是 JT808_TX_NODEDATA 的 cb_tx_response 回调函数
+  *输 入:	nodedata	:正在处理的发送链表
+  *输 出: none
+  *返 回 值:JT808_MSG_STATE
+  *作 者:白养民
+  *创建日期:2013-06-16
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
 *********************************************************************************/
 static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
 {
@@ -197,88 +200,114 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 	uint16_t				temp_msg_id;
 	uint16_t				temp_msg_len;
 	uint16_t				i, pack_num;
-	uint16_t				body_len; /*消息体长度*/
-	uint8_t					* msg;
 	uint32_t				tempu32data;
-
-	if( NULL == pmsg )
-	{
-		tempu32data = Cam_add_tx_pic_getdata( nodedata );
-		if( tempu32data == 0xFFFF )
-		{
-			return ACK_OK;
-		}else if( tempu32data == 0 )
-		{
-			return WAIT_ACK;
-		}else
-		{
-			return IDLE;
-		}
-	}
+	uint16_t				ret;
+	uint16_t				ack_seq;                                            /*应答序号*/
 
 	temp_msg_id = buf_to_data( pmsg, 2 );
-	body_len	= buf_to_data( pmsg + 2, 2 ) & 0x3FF;
-	msg			= pmsg + 12;
-	if( 0x8001 == temp_msg_id )         ///通用应答
+
+	if( 0x8001 == temp_msg_id )                                                 ///通用应答,有可能应答延时
 	{
-		if( ( nodedata->head_sn == buf_to_data( msg, 2 ) ) && ( nodedata->head_id == buf_to_data( msg + 2, 2 ) ) && ( msg[4] == 0 ) )
+		ack_seq = ( pmsg[12] << 8 ) | pmsg[13];                                 /*判断应答流水号*/
+		if( ack_seq != nodedata->head_sn )                                      /*流水号对应*/
 		{
-			nodedata->retry = 0;
-			return IDLE;
+			nodedata->timeout_tick	= rt_tick_get( ) + 15 * RT_TICK_PER_SECOND; /*等15秒*/
+			nodedata->state			= WAIT_ACK;
+			return WAIT_ACK;
 		}
-	}else if( 0x8800 == temp_msg_id )   ///专用应答
-	{
-		tempu32data = buf_to_data( msg, 4 );
-		msg			+= 4;
-		p_para		= (TypePicMultTransPara*)( iterdata->user_para );
-		if( tempu32data == p_para->Data_ID )
+		if( nodedata->packet_no == nodedata->packet_num )                       /*所有数据包上报完成，等待中心下发0x8800*/
 		{
-			memset( p_para->Pack_Mark, 0, sizeof( p_para->Pack_Mark ) );
-			if( body_len >= 7 )
-			{
-				pack_num = *msg++;
-				for( i = 0; i < pack_num; i++ )
-				{
-					tempu32data = buf_to_data( msg, 2 );
-					if( tempu32data )
-					{
-						tempu32data--;
-					}
-					msg									+= 2;
-					p_para->Pack_Mark[tempu32data / 8]	|= BIT( tempu32data % 8 );
-				}
-				rt_kprintf( "\n Cam_jt808_0x801_response\n lost_pack=%d", pack_num );
-				nodedata->retry = 0;
-				return IDLE;
-			}else
-			{
-				if( p_para->Delete )
-				{
-					//Cam_Flash_DelPic(p_para->Data_ID);
-				}
-				rt_kprintf( "\n Cam_add_tx_pic_response_ok!" );
-				return ACK_OK;
-			}
+			rt_kprintf( "\n等待8800应答\n" );
+			nodedata->timeout_tick	= rt_tick_get( ) + 15 * RT_TICK_PER_SECOND; /*等15秒*/
+			nodedata->state			= WAIT_ACK;
+			nodedata->packet_no++;
+			return WAIT_ACK;
 		}
-	}else
-	{
+
+		if( nodedata->packet_no > nodedata->packet_num )                        /*超时等待0x8800应答*/
+		{
+			nodedata->state = ACK_OK;
+			return WAIT_DELETE;
+		}
+
+		ret = Cam_add_tx_pic_getdata( nodedata );
+		if( ret == 0xFFFF )                                                     /*bitter 没有找到图片id*/
+		{
+			rt_free( p_para );
+			p_para = RT_NULL;
+			rt_free( nodedata );
+			rt_kprintf( "%s有问题\n", __func__ );
+			nodedata->state = ACK_OK;
+			return WAIT_DELETE;
+		}
+		nodedata->state = IDLE;                     /*正常发送*/
+		return IDLE;
 	}
+
+	if( 0x8800 == temp_msg_id )                     ///专用应答
+	{
+		rt_kprintf( "\n收到专用应答" );
+		tempu32data = buf_to_data( pmsg + 12, 4 );  /*应答media ID*/
+
+		if( tempu32data != p_para->Data_ID )
+		{
+			rt_kprintf( "\n应答ID不正确" );
+			nodedata->state = ACK_OK;
+			return WAIT_DELETE;
+		}
+		if( pmsg[16] == 0 )       /*重传包总数*/
+		{
+			if( p_para->Delete )
+			{
+				//Cam_Flash_DelPic(p_para->Data_ID);
+			}
+			rt_kprintf( "\n单幅图片上报完成" );
+			nodedata->state = ACK_OK;
+			return WAIT_DELETE;
+		}
+
+		p_para = (TypePicMultTransPara*)( iterdata->user_para );
+		memset( p_para->Pack_Mark, 0, sizeof( p_para->Pack_Mark ) );
+
+		for( i = 0; i < pmsg[16]; i++ )
+		{
+			tempu32data = buf_to_data( pmsg + i * 2 + 17, 2 );
+			if( tempu32data )
+			{
+				tempu32data--;
+			}
+			p_para->Pack_Mark[tempu32data / 8] |= BIT( tempu32data % 8 );
+		}
+		rt_kprintf( "\n Cam_jt808_0x801_response\n lost_pack=%d", pmsg[16] );   /*重新获取发送数据*/
+		ret = Cam_add_tx_pic_getdata( nodedata );
+		if( ret == 0xFFFF )                                                     /*bitter 没有找到图片id*/
+		{
+			rt_free( p_para );
+			p_para = RT_NULL;
+			rt_free( nodedata );
+			rt_kprintf( "%s有问题\n", __func__ );
+			nodedata->state = ACK_OK;
+			return WAIT_DELETE;
+		}
+		return IDLE;
+	}
+
 	return nodedata->state;
 }
 
 /*********************************************************************************
-*函数名称:rt_err_t Cam_jt808_0x0801(u32 mdeia_id ,u8 media_delete)
-*功能描述:添加一个多媒体图片到发送列表中
-*输 入:	mdeia_id	:照片id
+  *函数名称:rt_err_t Cam_jt808_0x0801(u32 mdeia_id ,u8 media_delete)
+  *功能描述:添加一个多媒体图片到发送列表中
+  *输 入:	mdeia_id	:照片id
    media_delete:照片传送结束后是否删除标记，非0表示删除
-*输 出: none
-*返 回 值:rt_err_t
-*作 者:白养民
-*创建日期:2013-06-16
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+  *输 出: none
+  *返 回 值:rt_err_t
+  *作 者:白养民
+  *创建日期:2013-06-16
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
 *********************************************************************************/
 rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_delete )
 {
@@ -300,6 +329,7 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 
 	if( TempAddress == 0xFFFFFFFF )
 	{
+		rt_kprintf( "\n没有找到图片" );
 		return RT_ERROR;
 	}
 
@@ -313,16 +343,17 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 		}
 
 		///填充用户区数据
+		memset( p_para, 0xFF, sizeof( TypePicMultTransPara ) );
 
 		p_para->Address = TempAddress;
 		p_para->Data_ID = mdeia_id;
 		p_para->Delete	= media_delete;
-		memset( p_para, 0xFF, sizeof( TypePicMultTransPara ) );
 
 		pnodedata = node_begin( 1, MULTI_CMD, 0x0801, 0xF001, 512 + 64 );
 		if( pnodedata == RT_NULL )
 		{
 			rt_free( p_para );
+			rt_kprintf( "\n分配资源失败" );
 			return RT_ENOMEM;
 		}
 		pnodedata->size			= TempPackageHead.Len - 64 + 36; /*空出了64字节的头部，加上36字节图片信息*/
@@ -344,23 +375,26 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 		rt_kprintf( "%s有问题\n", __func__ );
 	}else
 	{
+		pnodedata->retry		= 0;
+		pnodedata->max_retry	= 5;
+		pnodedata->timeout		= 10 * RT_TICK_PER_SECOND;
 		node_end( pnodedata, Cam_jt808_timeout, Cam_jt808_0x0801_response, p_para );
 	}
 	return RT_EOK;
 }
 
 /*********************************************************************************
-*函数名称:JT808_MSG_STATE Cam_jt808_0x801_response( JT808_TX_NODEDATA * nodedata , uint8_t *pmsg )
-*功能描述:在jt808中处理照片数据传输ACK_ok函数，该函数是 JT808_TX_NODEDATA 的 cb_tx_response 回调函数
-*输 入:	nodedata	:正在处理的发送链表
-*输 出: none
-*返 回 值:JT808_MSG_STATE
-*作 者:白养民
-*创建日期:2013-06-16
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+  *函数名称:JT808_MSG_STATE Cam_jt808_0x801_response( JT808_TX_NODEDATA * nodedata , uint8_t *pmsg )
+  *功能描述:在jt808中处理照片数据传输ACK_ok函数，该函数是 JT808_TX_NODEDATA 的 cb_tx_response 回调函数
+  *输 入:	nodedata	:正在处理的发送链表
+  *输 出: none
+  *返 回 值:JT808_MSG_STATE
+  *作 者:白养民
+  *创建日期:2013-06-16
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
 *********************************************************************************/
 static JT808_MSG_STATE Cam_jt808_0x0800_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
 {
@@ -372,7 +406,6 @@ static JT808_MSG_STATE Cam_jt808_0x0800_response( JT808_TX_NODEDATA * nodedata, 
 	uint16_t				body_len; /*消息体长度*/
 	uint8_t					* msg;
 
-	rt_kprintf( "\n%s(%d)>", __func__, __LINE__ );
 	if( pmsg == RT_NULL )
 	{
 		return IDLE;
@@ -383,12 +416,14 @@ static JT808_MSG_STATE Cam_jt808_0x0800_response( JT808_TX_NODEDATA * nodedata, 
 	msg			= pmsg + 12;
 	if( 0x8001 == temp_msg_id ) ///通用应答
 	{
-		rt_kprintf( "\n%s(%d)>", __func__, __LINE__ );
 		if( ( nodedata->head_sn == buf_to_data( msg, 2 ) ) &&
 		    ( nodedata->head_id == buf_to_data( msg + 2, 2 ) ) &&
 		    ( msg[4] == 0 ) )
 		{
 			p_para = nodedata->user_para;
+
+			nodedata->state = ACK_OK;
+			return ACK_OK;
 
 
 			/*
@@ -426,17 +461,17 @@ static JT808_MSG_STATE Cam_jt808_0x0800_response( JT808_TX_NODEDATA * nodedata, 
 }
 
 /*********************************************************************************
-*函数名称:void Cam_jt808_0x800(TypeDF_PackageHead *phead)
-*功能描述:多媒体事件信息上传_发送照片多媒体信息
-*输	入:	phead	:照片信息信息
-*输	出:	none
-*返 回 值:rt_err_t
-*作	者:白养民
-*创建日期:2013-06-16
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+  *函数名称:void Cam_jt808_0x800(TypeDF_PackageHead *phead)
+  *功能描述:多媒体事件信息上传_发送照片多媒体信息
+  *输	入:	phead	:照片信息信息
+  *输	出:	none
+  *返 回 值:rt_err_t
+  *作	者:白养民
+  *创建日期:2013-06-16
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
 *********************************************************************************/
 rt_err_t Cam_jt808_0x0800( u32 mdeia_id, u8 media_delete )
 {
@@ -493,18 +528,18 @@ rt_err_t Cam_jt808_0x0800( u32 mdeia_id, u8 media_delete )
 }
 
 /*********************************************************************************
-*函数名称:void Cam_jt808_0x8801_cam_ok( struct _Style_Cam_Requset_Para *para,uint32_t pic_id )
-*功能描述:平台下发拍照命令处理函数的回调函数_单张照片拍照OK
-*输	入:	para	:拍照处理结构体
+  *函数名称:void Cam_jt808_0x8801_cam_ok( struct _Style_Cam_Requset_Para *para,uint32_t pic_id )
+  *功能描述:平台下发拍照命令处理函数的回调函数_单张照片拍照OK
+  *输	入:	para	:拍照处理结构体
    pic_id	:图片ID
-*输	出:	none
-*返 回 值:rt_err_t
-*作	者:白养民
-*创建日期:2013-06-17
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+  *输	出:	none
+  *返 回 值:rt_err_t
+  *作	者:白养民
+  *创建日期:2013-06-17
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
 *********************************************************************************/
 void Cam_jt808_0x8801_cam_ok( struct _Style_Cam_Requset_Para *para, uint32_t pic_id )
 {
@@ -524,24 +559,24 @@ void Cam_jt808_0x8801_cam_ok( struct _Style_Cam_Requset_Para *para, uint32_t pic
 #if 1
 	if( para->SendPhoto )
 	{
-		rt_kprintf( "%s pic_id=%d", __func__, pic_id );
+		rt_kprintf( "\n%s pic_id=%d\n", __func__, pic_id );
 		Cam_jt808_0x0801( RT_NULL, pic_id, !para->SavePhoto );
 	}
 #endif
 }
 
 /*********************************************************************************
-*函数名称:void Cam_jt808_0x8801_cam_end( struct _Style_Cam_Requset_Para *para )
-*功能描述:平台下发拍照命令处理函数的回调函数
-*输	入:	para	:拍照处理结构体
-*输	出:	none
-*返 回 值:rt_err_t
-*作	者:白养民
-*创建日期:2013-06-17
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+  *函数名称:void Cam_jt808_0x8801_cam_end( struct _Style_Cam_Requset_Para *para )
+  *功能描述:平台下发拍照命令处理函数的回调函数
+  *输	入:	para	:拍照处理结构体
+  *输	出:	none
+  *返 回 值:rt_err_t
+  *作	者:白养民
+  *创建日期:2013-06-17
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
 *********************************************************************************/
 void Cam_jt808_0x8801_cam_end( struct _Style_Cam_Requset_Para *para )
 {
@@ -557,7 +592,7 @@ void Cam_jt808_0x8801_cam_end( struct _Style_Cam_Requset_Para *para )
 	}else
 	{
 		pdestbuf[2] = 1;
-		datalen		= 5;
+		datalen		= 3;
 	}
 	//data_to_buf( pdestbuf + 3, para->PhotoNum, 2 ); ///写入应答流水号
 	pdestbuf[3] = para->PhotoNum >> 8;
@@ -571,14 +606,14 @@ void Cam_jt808_0x8801_cam_end( struct _Style_Cam_Requset_Para *para )
 }
 
 /*********************************************************************************
- *函数名称:rt_err_t Cam_jt808_0x8801(uint8_t linkno,uint8_t *pmsg)
- *功能描述:平台下发拍照命令处理函数
- *输	入:	pmsg	:808消息体数据
+   *函数名称:rt_err_t Cam_jt808_0x8801(uint8_t linkno,uint8_t *pmsg)
+   *功能描述:平台下发拍照命令处理函数
+   *输	入:	pmsg	:808消息体数据
    msg_len	:808消息体长度
- *输	出:	none
- *返 回 值:rt_err_t
- *作	者:白养民
- *创建日期:2013-06-17
+   *输	出:	none
+   *返 回 值:rt_err_t
+   *作	者:白养民
+   *创建日期:2013-06-17
  *--------------------------------------------------------------------------------*/
 
 
@@ -662,20 +697,17 @@ rt_err_t Cam_jt808_0x8801( uint8_t linkno, uint8_t *pmsg )
 	return RT_EOK;
 }
 
-/*********************************************************************************
-*函数名称:rt_err_t Cam_jt808_0x8802(uint8_t linkno,uint8_t *pmsg)
-*功能描述:存储多媒体数据检索
-*输	入:	pmsg	:808消息体数据
-   msg_len	:808消息体长度
-*输	出:none
-*返 回 值:rt_err_t
-*作	者:白养民
-*创建日期:2013-06-16
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
-*********************************************************************************/
+
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 {
 	u8					*ptempbuf;
@@ -726,7 +758,6 @@ rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 
 	datalen += data_to_buf( pdestbuf + datalen, fram_num, 2 );
 	datalen += data_to_buf( pdestbuf + datalen, mediatotal, 2 );
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	for( i = 0; i < mediatotal; i++ )
 	{
 		TempAddress = buf_to_data( ptempbuf, 4 );
@@ -739,27 +770,26 @@ rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 		memcpy( pdestbuf + datalen, TempPackageHead.position, 28 ); ///位置信息汇报
 		datalen += 28;
 	}
-	rt_sem_release( &sem_dataflash );
 	jt808_tx_ack( 0x802, pdestbuf, datalen );
 
 	rt_free( ptempbuf );
 	rt_free( pdestbuf );
-	return RT_EOK;
+	return ret;
 }
 
 /*********************************************************************************
-*函数名称:rt_err_t Cam_jt808_0x8803(uint8_t *pmsg,u16 msg_len)
-*功能描述:存储多媒体数据上传
-*输	入:	pmsg	:808消息体数据
+  *函数名称:rt_err_t Cam_jt808_0x8803(uint8_t *pmsg,u16 msg_len)
+  *功能描述:存储多媒体数据上传
+  *输	入:	pmsg	:808消息体数据
    msg_len	:808消息体长度
-*输	出:none
-*返 回 值:rt_err_t
-*作	者:白养民
-*创建日期:2013-06-16
-*---------------------------------------------------------------------------------
-*修 改 人:
-*修改日期:
-*修改描述:
+  *输	出:none
+  *返 回 值:rt_err_t
+  *作	者:白养民
+  *创建日期:2013-06-16
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
 *********************************************************************************/
 rt_err_t Cam_jt808_0x8803( uint8_t linkno, uint8_t *pmsg )
 {

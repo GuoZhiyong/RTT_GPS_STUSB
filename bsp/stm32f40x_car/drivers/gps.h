@@ -21,7 +21,7 @@
 
 
 */
-
+#if 1
 
 #define BDUPG_RES_UART_OK		(0x10000000)	/*没有错误升级成功-升级成功*/
 #define BDUPG_RES_UART_READY	(0x1000FFFF)	/*串口更新就绪*/
@@ -46,7 +46,7 @@
 #define BDUPG_RES_TIMEOUT	(0xFFFFFFFC)	/*超时失败*/
 
 
-
+#endif
 
 
 

@@ -33,12 +33,6 @@
 #define KEY_UP_REPEAT	0x40
 #define KEY_DOWN_REPEAT 0x80
 
-//(1) 文本信息          开始Page 6800-6899   100 page
-//(2) 事件设置          开始Page 6900-6949    50 page
-//(3) 信息点播菜单设置  开始Page 6950-6999    50 page
-#define InforStartPage_Text		6800
-#define InforStartPage_Affair	6900
-#define InforStartPage_Meun		6950
 
 typedef struct _IMG_DEF
 {
@@ -190,6 +184,8 @@ extern MENUITEM			Menu_5_other;
 extern MENUITEM			Menu_6_RemoteUpdata;
 extern MENUITEM			Menu_7_CentreTextDisplay;
 
+extern MENUITEM			Menu_Popup;
+
 extern unsigned char	SetVIN_NUM;                     //   1:设置车牌号码  2:设置VIN
 extern unsigned char	OK_Counter;                     //记录在快捷菜单下ok键按下的次数
 extern unsigned char	Screen_In, Screen_in0Z;         //记录备选屏内选中的汉字
@@ -237,6 +233,7 @@ extern u8				Menu_VecLogoColor[10];  // 车牌颜色
 extern u8				Menu_Vin_Code[17];
 extern u8				Menu_color_num;
 extern u8				menu_type_flag, menu_color_flag;
+
 
 extern void Cent_To_Disp( void );
 

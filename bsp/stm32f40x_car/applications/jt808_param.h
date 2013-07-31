@@ -130,9 +130,21 @@ typedef struct _jt808_param
 	uint32_t id_0xF020;         /*0xF020 总里程*/
 
 	uint32_t	id_0xF030;      /*0xF030 记录仪初次安装时间,mytime格式*/
-	uint32_t	id_0xF031;      /*0xF031 行车记录仪时间 mytime格式*/
+	//uint32_t	id_0xF031;      /*0xF031 行车记录仪时间 mytime格式*/
 	uint32_t	id_0xF032;      /*初始里程*/
 	uint16_t	id_0xF033;      /*车辆脉冲系数*/
+
+
+	uint8_t	id_0xF040;		//line_space; 				//行间隔
+	uint8_t	id_0xF041;		//margin_left;				//左边界
+	uint8_t	id_0xF042;		//margin_right;				//右边界
+	uint8_t	id_0xF043;		//step_delay; 				//步进延时,影响行间隔
+	uint8_t	id_0xF044;		//gray_level; 				//灰度等级,加热时间
+	uint8_t	id_0xF045;		//heat_delay[0];			//加热延时
+	uint8_t	id_0xF046;		//heat_delay[1];			//加热延时
+	uint8_t	id_0xF047;		//heat_delay[2];			//加热延时
+	uint8_t	id_0xF048;		//heat_delay[3];			//加热延时
+	
 }JT808_PARAM;
 
 #if 0

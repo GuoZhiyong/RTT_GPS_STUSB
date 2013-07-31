@@ -57,8 +57,8 @@ typedef  __packed struct
 	Style_Cam_Requset_Para	Para;       ///触发当前拍照相关信息
 } Style_Cam_Para;
 
-#define DF_CamAddress_Start 0x10D000    ///图片数据存储开始位置
-#define DF_CamAddress_End	0X1D5000    ///图片数据存储结束位置
+#define DF_CamAddress_Start 0x108000    ///图片数据存储开始位置
+#define DF_CamAddress_End	0X1D0000    ///图片数据存储结束位置
 #define DF_CamSaveSect		0x400       ///图片数据存储最小间隔
 
 extern rt_device_t _console_device;
@@ -1211,8 +1211,6 @@ rt_err_t take_pic_request( Style_Cam_Requset_Para *para )
 ***********************************************************/
 void readpic( u16 id )
 {
-	u16						i;
-	u16						len;
 	Style_Cam_Requset_Para	tempPara;
 	memset( &tempPara, 0, sizeof( tempPara ) );
 	tempPara.Channel_ID		= id;

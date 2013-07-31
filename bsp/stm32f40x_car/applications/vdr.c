@@ -24,9 +24,16 @@
 
 typedef uint32_t MYTIME;
 
-#define VDR_BASE 0x310000
+#define VDR_BASE 0x03B000
 
-#define VDR_08_START	VDR_BASE
+
+#define VDR_16_START	VDR_BASE
+#define VDR_16_SECTORS	3         /*每小时2个sector,保留50小时*/
+#define VDR_16_END		( VDR_16_START + VDR_16_SECTORS * 4096 )
+
+
+
+#define VDR_08_START	(VDR_16_END)
 #define VDR_08_SECTORS	100         /*每小时2个sector,保留50小时*/
 #define VDR_08_END		( VDR_08_START + VDR_08_SECTORS * 4096 )
 
@@ -49,6 +56,8 @@ typedef uint32_t MYTIME;
 #define VDR_13_14_15_START		( VDR_12_START + VDR_12_SECTORS * 4096 )
 #define VDR_13_14_15_SECTORS	1   /*100条 外部供电记录 100条 参数修改记录 10条速度状态日志 */
 #define VDR_13_14_15_END		( VDR_13_14_15_START + VDR_13_14_15_SECTORS * 4096 )
+
+
 
 #define PACK_BYTE( buf, byte ) ( *( buf ) = ( byte ) )
 #define PACK_WORD( buf, word ) \
@@ -900,7 +909,6 @@ static JT808_MSG_STATE vdr_08_12_tx_timeout( JT808_TX_NODEDATA * pnodedata )
 /*
    生成08-12发送的数据包
    不同的数据组包数是不同的。
-
 
    行车记录仪数据有校验
 

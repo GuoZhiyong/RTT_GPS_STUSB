@@ -202,16 +202,20 @@ static void cb_tmr_1sec( void )
 			//rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
 		}
 	}
-	if( mytime_now )                                /*mytime_now经过gps定位后的授时*/
+
+	
+	if( mytime_now )                                    /*mytime_now经过gps定位后的授时*/
 	{
-		if( ( jt808_status & BIT_STATUS_GPS ) == 0 ) /*未定位,但已授时过*/
+		if( ( jt808_status & BIT_STATUS_GPS ) == 0 )    /*未定位,但已授时过*/
 		{
 			sec		= SEC( mytime_now );
 			minute	= MINUTE( mytime_now );
 			hour	= HOUR( mytime_now );
 			day		= DAY( mytime_now );
 			month	= MONTH( mytime_now );
+			year	= YEAR( mytime_now );
 			sec++;
+
 			if( sec == 60 )
 			{
 				sec = 0;
@@ -251,22 +255,20 @@ static void cb_tmr_1sec( void )
 						month++;
 					}
 				}
-			}
-			else if(day==32)
+			}else if( day == 32 )
 			{
-				day=1;
+				day = 1;
 				month++;
-			}	
+			}
 			if( month == 13 )
 			{
 				month = 1;
 				year++;
 			}
+			mytime_now = MYDATETIME( year, month, day, hour, minute, sec );
 		}
 	}
 }
-
-
 
 /*
    Linux源码中的mktime算法解析
@@ -307,19 +309,19 @@ static double gpsToRad( GPSPoint point )
 ***********************************************************/
 static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, GPSPoint lngTo )
 {
-	double latFromRad	= gpsToRad( latFrom );
-	double lngFromRad	= gpsToRad( lngFrom );
-	double latToRad		= gpsToRad( latTo );
-	double lngToRad		= gpsToRad( lngTo );
-	double lngDiff		= lngToRad - lngFromRad;
-	double part1		= pow( cos( latToRad ) * sin( lngDiff ), 2 );
+	double	latFromRad	= gpsToRad( latFrom );
+	double	lngFromRad	= gpsToRad( lngFrom );
+	double	latToRad	= gpsToRad( latTo );
+	double	lngToRad	= gpsToRad( lngTo );
+	double	lngDiff		= lngToRad - lngFromRad;
+	double	part1		= pow( cos( latToRad ) * sin( lngDiff ), 2 );
 	//double part2 = pow( cos(latFromRad)*sin(latToRad)*cos(lngDiff) , 2);
-	double part2 = pow( cos( latFromRad ) * sin( latToRad ) - sin( latFromRad ) * cos( latToRad ) * cos( lngDiff ), 2 );
+	double	part2 = pow( cos( latFromRad ) * sin( latToRad ) - sin( latFromRad ) * cos( latToRad ) * cos( lngDiff ), 2 );
 
-	double part3 = sin( latFromRad ) * sin( latToRad ) + cos( latFromRad ) * cos( latToRad ) * cos( lngDiff );
+	double	part3 = sin( latFromRad ) * sin( latToRad ) + cos( latFromRad ) * cos( latToRad ) * cos( lngDiff );
 	//double centralAngle = atan2( sqrt(part1 + part2) / part3 );
-	double centralAngle = atan( sqrt( part1 + part2 ) / part3 );
-	return 6371.01 * 1000.0 * centralAngle;         //Return Distance in meter
+	double	centralAngle = atan( sqrt( part1 + part2 ) / part3 );
+	return 6371.01 * 1000.0 * centralAngle;      //Return Distance in meter
 }
 
 #endif
@@ -359,11 +361,11 @@ void do_overspeed_check( void )
 /*hmi 最近15min平均速度*/
 static void process_hmi_15min_speed( void )
 {
-	static uint8_t hmi_15min_speed_count	= 0;                                        /*分钟内的秒计数*/
-	static uint32_t hmi_15min_speed_sum		= 0;                                        /*速度累加和*/
-	if( ( mytime_now & 0xFFFFFFC0 ) != hmi_15min_speed[hmi_15min_speed_curr].time )     /*新时刻,精确到分钟*/
+	static uint8_t	hmi_15min_speed_count	= 0;                                    /*分钟内的秒计数*/
+	static uint32_t hmi_15min_speed_sum		= 0;                                    /*速度累加和*/
+	if( ( mytime_now & 0xFFFFFFC0 ) != hmi_15min_speed[hmi_15min_speed_curr].time ) /*新时刻,精确到分钟*/
 	{
-		if( hmi_15min_speed[hmi_15min_speed_curr].time != 0 )                           /*是要覆盖*/
+		if( hmi_15min_speed[hmi_15min_speed_curr].time != 0 )                       /*是要覆盖*/
 		{
 			//hmi_15min_speed[hmi_15min_speed_curr].speed=hmi_15min_speed_sum/hmi_15min_speed_count;
 			hmi_15min_speed_curr++;
@@ -375,7 +377,7 @@ static void process_hmi_15min_speed( void )
 	hmi_15min_speed[hmi_15min_speed_curr].time	= mytime_now & 0xFFFFFFC0;
 	hmi_15min_speed_sum							+= gps_speed;
 	hmi_15min_speed_count++;
-	hmi_15min_speed[hmi_15min_speed_curr].speed = hmi_15min_speed_sum / hmi_15min_speed_count;      /*随时更新*/
+	hmi_15min_speed[hmi_15min_speed_curr].speed = hmi_15min_speed_sum / hmi_15min_speed_count;   /*随时更新*/
 }
 
 /*
@@ -385,13 +387,13 @@ static void process_hmi_15min_speed( void )
 
 static void process_gps_report( void )
 {
-	uint32_t tmp;
-	uint8_t flag_send		= 0; /*默认不上报*/
-	uint8_t  *palarmdata	= RT_NULL;
-	uint16_t alarm_length;
-	uint32_t alarm_bits;
+	uint32_t	tmp;
+	uint8_t		flag_send	= 0; /*默认不上报*/
+	uint8_t		*palarmdata = RT_NULL;
+	uint16_t	alarm_length;
+	uint32_t	alarm_bits;
 
-	uint8_t buf[300];
+	uint8_t		buf[300];
 
 /*整小时校准*/
 	if( ( gps_datetime[4] == 0 ) && ( gps_datetime[5] == 0 ) )
@@ -402,7 +404,7 @@ static void process_gps_report( void )
 
 /*区域路线处理*/
 	alarm_bits = area_get_alarm( palarmdata, &alarm_length );
-	if( alarm_bits )      /*有告警*/
+	if( alarm_bits )   /*有告警*/
 	{
 		memcpy( buf + 28, palarmdata, alarm_length );
 		flag_send = 1;
@@ -412,7 +414,7 @@ static void process_gps_report( void )
 	memcpy( buf, (uint8_t*)&gps_baseinfo, 28 );
 
 /*中心追踪,直接上报，并返回*/
-	if( jt808_8202_track_duration )      /*要追踪*/
+	if( jt808_8202_track_duration )   /*要追踪*/
 	{
 		jt808_8202_track_counter++;
 		if( jt808_8202_track_counter >= jt808_8202_track_interval )
@@ -495,7 +497,7 @@ static void process_gps_report( void )
 	}
 
 /*计算定时上报*/
-	if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )      /*有定时上报*/
+	if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
 	{
 		if( utc_now - utc_last >= jt808_report_interval )
 		{
@@ -504,7 +506,7 @@ static void process_gps_report( void )
 		}
 	}
 /*计算定距上报*/
-	if( jt808_param.id_0x0020 )      /*有定距上报*/
+	if( jt808_param.id_0x0020 )   /*有定距上报*/
 	{
 		if( distance >= jt808_report_distance )
 		{
@@ -515,11 +517,13 @@ static void process_gps_report( void )
 
 	jt808_status_last = jt808_status;
 
-	if( flag_send == 0 )
-	{
-		return;
-	}
 
+/*
+   if( flag_send == 0 )
+   {
+   return;
+   }
+ */
 /*生成要上报的数据*/
 #if 1
 
@@ -548,17 +552,17 @@ static void process_gps_report( void )
 static uint8_t process_rmc( uint8_t * pinfo )
 {
 	//检查数据完整性,执行数据转换
-	uint8_t year = 0, mon = 0, day = 0, hour = 0, min = 0, sec = 0, fDateModify = 0;
-	uint32_t degrees, minutes;
-	uint8_t commacount = 0, count = 0;
+	uint8_t		year = 0, mon = 0, day = 0, hour = 0, min = 0, sec = 0, fDateModify = 0;
+	uint32_t	degrees, minutes;
+	uint8_t		commacount = 0, count = 0;
 
-	uint32_t lati		= 0, longi = 0;
-	uint16_t speed_10x	= 0;
-	uint16_t cog		= 0;    /*course over ground*/
+	uint32_t	lati		= 0, longi = 0;
+	uint16_t	speed_10x	= 0;
+	uint16_t	cog			= 0;    /*course over ground*/
 
-	uint8_t i;
-	uint8_t buf[20];
-	uint8_t  *psrc = pinfo + 6; /*指向开始位置 $GNRMC,074001.00,A,3905.291037,N,11733.138255,E,0.1,,171212,,,A*655220.9*3F0E*/
+	uint8_t		i;
+	uint8_t		buf[20];
+	uint8_t		*psrc = pinfo + 6;  /*指向开始位置 $GNRMC,074001.00,A,3905.291037,N,11733.138255,E,0.1,,171212,,,A*655220.9*3F0E*/
 
 /*因为自增了一次，所以从pinfo+6开始*/
 	while( *psrc++ )
@@ -814,12 +818,12 @@ static uint8_t process_rmc( uint8_t * pinfo )
 uint8_t process_gga( uint8_t * pinfo )
 {
 	//检查数据完整性,执行数据转换
-	uint8_t NoSV;
-	uint8_t i;
-	uint8_t buf[20];
-	uint8_t commacount	= 0, count = 0;
-	uint8_t  *psrc		= pinfo + 7; //指向开始位置
-	uint16_t altitute;
+	uint8_t		NoSV;
+	uint8_t		i;
+	uint8_t		buf[20];
+	uint8_t		commacount	= 0, count = 0;
+	uint8_t		*psrc		= pinfo + 7; //指向开始位置
+	uint16_t	altitute;
 
 	while( *psrc++ )
 	{
@@ -909,8 +913,8 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	{
 		rt_kprintf( "%d gps<%s\n", rt_tick_get( ), psrc );
 	}
-	
-	jt808_gps_pack(pinfo,length);
+
+	jt808_gps_pack( pinfo, length );
 
 	//if( ( strncmp( psrc, "$GNGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$BDGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$GPGGA,", 7 ) == 0 ) )
 	if( strncmp( psrc + 3, "GGA,", 4 ) == 0 )
@@ -938,12 +942,12 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		if( strstr( psrc + 24, "OK" ) != RT_NULL )
 		{
 			gps_status.Antenna_Flag = 0;
-			jt808_alarm				&=~(BIT_ALARM_GPS_OPEN|BIT_ALARM_GPS_SHORT); 
+			jt808_alarm				&= ~( BIT_ALARM_GPS_OPEN | BIT_ALARM_GPS_SHORT );
 		}
 		if( strstr( psrc + 24, "OPEN" ) != RT_NULL )
 		{
 			gps_status.Antenna_Flag = 1;
-			jt808_alarm				|= BIT_ALARM_GPS_OPEN;  /*bit5 天线开路*/
+			jt808_alarm				|= BIT_ALARM_GPS_OPEN; /*bit5 天线开路*/
 		}
 		if( strstr( psrc + 24, "SHORT" ) != RT_NULL )
 		{

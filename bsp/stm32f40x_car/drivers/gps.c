@@ -51,8 +51,8 @@ static LENGTH_BUF uart5_rxbuf;
 //static uint16_t uart5_rxbuf_wr = 2;
 
 /*gps原始信息数据区定义*/
-#define GPS_RAWINFO_SIZE 2000
-#define NEMA_SIZE	96			/*NEMA语句的长度*/
+#define GPS_RAWINFO_SIZE	2000
+#define NEMA_SIZE			96 /*NEMA语句的长度*/
 static uint8_t					gps_rawinfo[GPS_RAWINFO_SIZE];
 static struct rt_messagequeue	mq_gps;
 
@@ -61,9 +61,6 @@ uint8_t							flag_bd_upgrade_uart = 0;
 extern struct rt_device			dev_vuart;
 
 static rt_uint8_t				*ptr_mem_packet = RT_NULL;
-
-
-
 
 //*****************************************
 //CRC16 高字节表
@@ -191,7 +188,7 @@ void UART5_IRQHandler( void )
 
 		if( ( ch == 0x0a ) && ( last_ch == 0x0d ) ) /*遇到0d 0a 表明结束*/
 		{
-			if( uart5_rxbuf.wr < NEMA_SIZE)
+			if( uart5_rxbuf.wr < NEMA_SIZE )
 			{
 				rt_mq_send( &mq_gps, (void*)&uart5_rxbuf, uart5_rxbuf.wr + 2 );
 			}
@@ -398,14 +395,14 @@ static void rt_thread_entry_gps( void* parameter )
 {
 	rt_err_t	res;
 	LENGTH_BUF	buf;
-	rt_tick_t tick_lastrx=rt_tick_get();
+	rt_tick_t	tick_lastrx = rt_tick_get( );
 	while( 1 )
 	{
-		res = rt_mq_recv( &mq_gps, (void*)&buf, NEMA_SIZE, RT_TICK_PER_SECOND / 20 ); //等待100ms,实际上就是变长的延时,最长100ms
-		if( res == RT_EOK )                                                     //收到一包数据
+		res = rt_mq_recv( &mq_gps, (void*)&buf, NEMA_SIZE, RT_TICK_PER_SECOND / 20 );   //等待100ms,实际上就是变长的延时,最长100ms
+		if( res == RT_EOK )                                                             //收到一包数据
 		{
-			tick_lastrx=rt_tick_get();
-			jt808_alarm&=~BIT_ALARM_GPS_ERR;
+			tick_lastrx = rt_tick_get( );
+			jt808_alarm &= ~BIT_ALARM_GPS_ERR;
 			if( flag_bd_upgrade_uart == 0 )
 			{
 				gps_rx( buf.body, buf.wr );
@@ -418,14 +415,14 @@ static void rt_thread_entry_gps( void* parameter )
 			}
 		}
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
-		if((rt_tick_get()-tick_lastrx)>RT_TICK_PER_SECOND*5)
+		if( ( rt_tick_get( ) - tick_lastrx ) > RT_TICK_PER_SECOND * 5 )
 		{
 			//rt_kprintf("%d>gps no output\r\n");
-			jt808_alarm|=BIT_ALARM_GPS_ERR;
-			GPIO_ResetBits( GPIOD, GPIO_Pin_10 );  /*off gps*/
-			rt_thread_delay(RT_TICK_PER_SECOND*3);
-			GPIO_SetBits( GPIOD, GPIO_Pin_10 );		/*on gps*/
-			tick_lastrx=rt_tick_get();
+			jt808_alarm |= BIT_ALARM_GPS_ERR;
+			GPIO_ResetBits( GPIOD, GPIO_Pin_10 );   /*off gps*/
+			rt_thread_delay( RT_TICK_PER_SECOND * 3 );
+			GPIO_SetBits( GPIOD, GPIO_Pin_10 );     /*on gps*/
+			tick_lastrx = rt_tick_get( );
 		}
 	}
 }
@@ -461,11 +458,12 @@ rt_err_t gps_onoff( uint8_t openflag )
 	if( openflag == 0 )
 	{
 		GPIO_ResetBits( GPIOD, GPIO_Pin_10 );
+		return 0;
 	} else
 	{
 		GPIO_SetBits( GPIOD, GPIO_Pin_10 );
+		return 1;
 	}
-	return 0;
 }
 
 FINSH_FUNCTION_EXPORT( gps_onoff, gps_onoff([1 | 0] ) );
@@ -480,131 +478,23 @@ static void cleanup( struct rt_thread *tid )
 }
 
 /*升级时的调试输出,当前已无法打印输出,串口被占用*/
-static void msg_uart_usb( int res )
+static void msg_uart_usb(char *str )
 {
-	//rt_kprintf("bd>%d\r\n",res);
+	rt_kprintf("bd>\n%s",str);
 }
 
-/*更新北斗线程，接收调试串口来的数据，透传到gps串口中*/
 
-void thread_gps_upgrade_uart( void* parameter )
-{
-#define BD_SYNC_40	0
-#define BD_SYNC_0D	1
-#define BD_SYNC_0A	2
 
-/*定义一个函数指针，用作结果处理	*/
-
-	void			( *msg )( void *p );
-	unsigned int	resultcode;
-
-	rt_uint8_t		buf[256];
-	rt_uint8_t		info[32];
-	rt_uint8_t		*p;
-	rt_uint16_t		count = 0;
-	rt_uint16_t		i;
-	rt_size_t		len;
-	rt_uint32_t		baud				= 9600;
-	rt_uint16_t		packetnum			= 0;
-	rt_uint8_t		bd_packet_status	= BD_SYNC_40;   /*北斗升级报文接收状态*/
-	rt_uint8_t		last_char			= 0x0;
-
-	rt_tick_t		last_sendtick = 0;                  /*北斗更新时记录收到应答的时刻*/
-
-	msg = parameter;
-
-	ptr_mem_packet = rt_malloc( 1200 );
-	if( ptr_mem_packet == RT_NULL )
-	{
-		resultcode = BDUPG_RES_RAM;
-		msg( "E内存不足" );
-		return;
-	}
-	flag_bd_upgrade_uart = 1;
-
-	dev_vuart.flag &= ~RT_DEVICE_FLAG_STREAM;
-	rt_device_control( &dev_vuart, 0x03, &baud );
-	p = ptr_mem_packet;
-
-	while( 1 )
-	{
-		if( ( last_sendtick > 0 ) && ( rt_tick_get( ) - last_sendtick > RT_TICK_PER_SECOND * 12 ) )
-		{
-			/*升级程序发送数据，收到应答，再次发送数据。超时10s*/
-			resultcode = BDUPG_RES_TIMEOUT;
-			msg( "E超时错误" );
-			goto end_upgrade_uart_memfree;
-		}
-		while( ( len = rt_device_read( &dev_vuart, 0, buf, 256 ) ) > 0 )
-		{
-			for( i = 0; i < len; i++ )
-			{
-				switch( bd_packet_status )
-				{
-					case BD_SYNC_40:
-						if( buf[i] == 0x40 )
-						{
-							*p++				= 0x40;
-							bd_packet_status	= BD_SYNC_0A;
-							count				= 1;
-						}
-						break;
-					case BD_SYNC_0A:
-						if( ( buf[i] == 0x0a ) && ( last_char == 0x0d ) )
-						{
-							*p = 0x0a;
-							count++;
-							dev_gps_write( &dev_gps, 0, ptr_mem_packet, count );
-							packetnum++;                                            /*显示传递的包数*/
-							sprintf( info, "I发送第%d包", packetnum );
-							msg( info );
-							last_sendtick = rt_tick_get( );
-							if( memcmp( ptr_mem_packet, "\x40\x41\xc0", 3 ) == 0 )  /*修改波特率*/
-							{
-								baud = ( *( ptr_mem_packet + 4 ) << 24 ) | ( *( ptr_mem_packet + 5 ) << 16 ) | ( *( ptr_mem_packet + 6 ) << 8 ) | *( ptr_mem_packet + 7 );
-								gps_baud( baud );
-								uart1_baud( baud );
-							}
-							if( memcmp( ptr_mem_packet, "\x40\x34\xc0", 3 ) == 0 )  /*模块软件复位*/
-							{
-								resultcode = 0;
-								msg( "E更新完成" );                                 /*通知lcd显示完成*/
-								goto end_upgrade_uart_memfree;
-							}
-							p					= ptr_mem_packet;
-							bd_packet_status	= BD_SYNC_40;
-						}else
-						{
-							*p++ = buf[i];
-							count++;
-						}
-						break;
-				}
-				last_char = buf[i];
-			}
-		}
-		rt_thread_delay( RT_TICK_PER_SECOND / 50 );
-	}
-
-end_upgrade_uart_memfree:
-	rt_free( ptr_mem_packet );
-	ptr_mem_packet = RT_NULL;
-//end_upgrade_uart:
-	baud = 115200;
-	uart1_baud( baud );
-	flag_bd_upgrade_uart = 0;
-}
-
-/*更新北斗线程，接收调试串口来的数据，透传到gps串口中*/
+/*更新北斗线程，使用U盘更新*/
 void thread_gps_upgrade_udisk( void* parameter )
 {
 #define READ_PACKET_SIZE 1012
 
 	void		( *msg )( void *p );
-	int			fd = -1, size, count = 0;
+	int			fd = -1, count = 0;
 	rt_uint8_t	*pdata;             /*数据*/
 
-	rt_uint8_t	buf[32];
+	char	buf[32];
 	rt_uint8_t	ch_h, ch_l;
 	rt_err_t	res;
 	LENGTH_BUF	uart_buf;
@@ -657,17 +547,17 @@ void thread_gps_upgrade_udisk( void* parameter )
 		goto end_upgrade_usb_0;
 	}
 
-	size	= read( fd, ptr_mem_packet, 16 );
+	read( fd, ptr_mem_packet, 16 );
 	pdata	= ptr_mem_packet;
 	if( ( *pdata != 0x54 ) || ( *( pdata + 1 ) != 0x44 ) )
 	{
 		msg( "E文件头错误" );
-		goto end_upgrade_usb_1;
+		goto end_upgrade_usb_2;
 	}
 
 	ch_h	= ( *( pdata + 9 ) & 0xf0 ) >> 4;
 	ch_l	= ( *( pdata + 9 ) & 0xf );
-	sprintf( buf, "I版本:%d.%d.%d", ch_h, ch_l, *( pdata + 10 ) );
+	sprintf( buf, "I文件版本:%d.%d.%d", ch_h, ch_l, *( pdata + 10 ) );
 	msg( buf );
 /*升级数据长度*/
 	file_datalen	= 0;
@@ -695,7 +585,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	if( ( ptr_mem_packet[count - 1] != 0x54 ) || ( ptr_mem_packet[count - 2] != 0x44 ) )
 	{
 		msg( "E文件尾错误" );
-		goto end_upgrade_usb_1;
+		goto end_upgrade_usb_2;
 	}
 	file_matchcode[0]	= ptr_mem_packet[count - 6];
 	file_matchcode[1]	= ptr_mem_packet[count - 5];
@@ -712,8 +602,18 @@ void thread_gps_upgrade_udisk( void* parameter )
 	}
 
 /*开始升级*/
-/*停止gps线程*/
-	rt_thread_suspend( &thread_gps );
+/*尝试停止gps线程*/
+	while( rt_thread_suspend( &thread_gps ) != RT_EOK )
+	{
+		rt_kprintf( "\try to suspend gps" );
+		rt_thread_delay( 10 );
+	}
+#if 0
+	GPIO_ResetBits( GPIOD, GPIO_Pin_10 );   /*off gps*/
+	rt_thread_delay( RT_TICK_PER_SECOND * 2 );
+	GPIO_SetBits( GPIOD, GPIO_Pin_10 );     /*on gps*/
+	rt_thread_delay( RT_TICK_PER_SECOND * 2 );
+#endif
 
 /*进入升级状态*/
 	memcpy( buf, "\x40\x30\xC0\x00\x03\x00\x01\x34\x21\x0D\x0A", 11 );
@@ -721,31 +621,28 @@ void thread_gps_upgrade_udisk( void* parameter )
 	rt_thread_delay( RT_TICK_PER_SECOND );
 /*版本查询*/
 	count = 0;
-	dev_gps_write( &dev_gps, 0, "\x40\x10\xC0\x00\x10\x00\x01\xC2\x84\x0D\x0A", 11 );
-	while( 1 )
+
+/*先清除已有的数据，再发送*/
+	while( rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, 0 ) == RT_EOK )
 	{
-		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
-		if( res == RT_EOK )                                       //收到一包数据
+		rt_thread_delay( RT_TICK_PER_SECOND / 10 );
+	}
+
+	dev_gps_write( &dev_gps, 0, "\x40\x10\xC0\x00\x10\x00\x01\xC2\x84\x0D\x0A", 11 );
+	res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
+	if( res == RT_EOK )                         //收到一包数据
+	{
+		if( ( uart_buf.wr == 15 ) && ( uart_buf.body[4] == 0x02 ) ) /*进入升级状态*/
 		{
-			rt_kprintf( "\r\n版本查询\r\n" );
-			for( ch_h = 0; ch_h < uart_buf.wr; ch_h++ )
-			{
-				rt_kprintf( "%02x ", uart_buf.body[ch_h] );
-			}
-			rt_kprintf( "\r\n" );
-			if( ( uart_buf.wr == 15 ) && ( uart_buf.body[4] == 0x02 ) ) /*进入升级状态*/
-			{
-				ch_h	= ( uart_buf.body[7] & 0xf0 ) >> 4;
-				ch_l	= ( uart_buf.body[7] & 0xf );
-				sprintf( buf, "I版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
-				msg( buf );
-				break;
-			}
-		}else /*超时*/
-		{
-			msg( "E进入升级错误" );
-			goto end_upgrade_usb_2;
+			ch_h	= ( uart_buf.body[7] & 0xf0 ) >> 4;
+			ch_l	= ( uart_buf.body[7] & 0xf );
+			sprintf( buf, "I版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
+			msg( buf );
 		}
+	}else /*超时*/
+	{
+		msg( "E进入升级错误" );
+		goto end_upgrade_usb_2;
 	}
 
 /*改波特率*/
@@ -757,7 +654,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 	while( 1 )
 	{
 		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
-		if( res == RT_EOK )                   //收到一包数据
+		if( res == RT_EOK ) //收到一包数据
 		{
 			if( ( uart_buf.wr == 11 ) && ( uart_buf.body[4] == 0x15 ) )
 			{
@@ -789,14 +686,8 @@ void thread_gps_upgrade_udisk( void* parameter )
 	while( ch_l )
 	{
 		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 10 );
-		if( res == RT_EOK )                   //收到一包数据
+		if( res == RT_EOK ) //收到一包数据
 		{
-			for( ch_h = 0; ch_h < uart_buf.wr; ch_h++ )
-			{
-				rt_kprintf( "%02x ", uart_buf.body[ch_h] );
-			}
-			rt_kprintf( "\r\n" );
-
 			if( ( uart_buf.wr == 11 ) && ( uart_buf.body[4] == 0xf2 ) )
 			{
 				ch_l = 0;
@@ -809,10 +700,10 @@ void thread_gps_upgrade_udisk( void* parameter )
 	}
 
 /*发送数据包*/
-	count		= 0;            /*计算发送字节数*/
+	count		= 0;        /*计算发送字节数*/
 	packet_num	= 0;
-	read( fd, buf, 15 );        /*跳过文件头*/
-	rt_kprintf( "fd=%02x\r\n", fd );
+	read( fd, buf, 15 );    /*跳过文件头*/
+//	rt_kprintf( "fd=%02x\r\n", fd );
 	while( 1 )
 	{
 		rt_thread_delay( RT_TICK_PER_SECOND / 2 );
@@ -860,12 +751,6 @@ void thread_gps_upgrade_udisk( void* parameter )
 		ptr_mem_packet[res + 10]	= 0x0d;
 		ptr_mem_packet[res + 11]	= 0x0a;
 
-		rt_kprintf( "\r\nres=%d,%02x%02x,%04x\r\n", res, ptr_mem_packet[2], ptr_mem_packet[3], crc );
-		for( ch_h = 0; ch_h < 16; ch_h++ )
-		{
-			rt_kprintf( "%02x ", ptr_mem_packet[ch_h] );
-		}
-		rt_kprintf( "tx tick=%x\r\n", rt_tick_get( ) );
 		dev_gps_write( &dev_gps, 0, ptr_mem_packet, res + 12 );
 
 		ch_l = 1;
@@ -874,20 +759,17 @@ void thread_gps_upgrade_udisk( void* parameter )
 			res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 12 );
 			if( res == RT_EOK ) //收到一包数据
 			{
-				for( ch_h = 0; ch_h < uart_buf.wr; ch_h++ )
-				{
-					rt_kprintf( "%02x ", uart_buf.body[ch_h] );
-				}
-				rt_kprintf( "rx tick=%x\r\n", rt_tick_get( ) );
 				if( uart_buf.wr == 11 )
 				{
 					if( uart_buf.body[4] == 0x02 )
 					{
-						msg( "E升级完成" );
 						dev_gps_write( &dev_gps, 0, "\x40\x34\xC0\x00\x34\x00\x01\x84\x6B\x0D\x0A", 11 );
+						msg( "E升级完成" );
+						rt_kprintf("\n升级完成" );
 						goto end_upgrade_usb_2;
 					}
 					sprintf( buf, "I发送第%d包", packet_num );
+					rt_kprintf("\n发送第%d包", packet_num );
 					msg( buf );
 					ch_l = 0;
 				}
@@ -900,8 +782,8 @@ void thread_gps_upgrade_udisk( void* parameter )
 	}
 
 end_upgrade_usb_2:
-	rt_thread_resume( &thread_gps );
-end_upgrade_usb_1:
+
+//end_upgrade_usb_1:
 	if( fd >= 0 )
 	{
 		close( fd );
@@ -909,34 +791,27 @@ end_upgrade_usb_1:
 end_upgrade_usb_0:
 	rt_free( ptr_mem_packet );
 	ptr_mem_packet = RT_NULL;
+	rt_thread_delay( RT_TICK_PER_SECOND * 3 );
+	GPIO_ResetBits( GPIOD, GPIO_Pin_10 );
+	if(rt_thread_resume( &thread_gps )==RT_EOK)
+	{
+		rt_kprintf("\nbd>resume gps ok");
+	}
+	rt_thread_delay( RT_TICK_PER_SECOND * 1 );
+	GPIO_SetBits( GPIOD, GPIO_Pin_10 );
 }
 
 /*gps升级*/
-rt_err_t gps_upgrade( char *src )
+rt_err_t gps_upgrade( void )
 {
 	rt_thread_t tid;
-	int			buad = 9600;
-	rt_kprintf( "\nNow upgrade from %s\n", src );
-	if( strncmp( src, "COM", 3 ) == 0 ) /*串口升级*/
+	tid = rt_thread_create( "upgrade", thread_gps_upgrade_udisk, (void*)msg_uart_usb, 1024, 5, 5 );
+	if( tid != RT_NULL )
 	{
-		tid = rt_thread_create( "upgrade", thread_gps_upgrade_uart, (void*)msg_uart_usb, 2048, 5, 5 );
-		if( tid != RT_NULL )
-		{
-			rt_thread_startup( tid );
-		}else
-		{
-			rt_kprintf( "\n Upgrade from uart fail\n" );
-		}
+		rt_thread_startup( tid );
 	}else
 	{
-		tid = rt_thread_create( "upgrade", thread_gps_upgrade_udisk, (void*)msg_uart_usb, 512, 7, 5 );
-		if( tid != RT_NULL )
-		{
-			rt_thread_startup( tid );
-		}else
-		{
-			rt_kprintf( "\n Upgrade from uart fail\n" );
-		}
+		rt_kprintf( "\n Upgrade from usb fail\n" );
 	}
 }
 
