@@ -231,7 +231,7 @@ void node_end( JT808_TX_NODEDATA* pnodedata,
 
 
 void jt808_add_tx( uint8_t linkno,
-                       JT808_MSG_TYPE fMultiPacket, /*是否为多包*/
+                       JT808_MSG_TYPE msgtype, /*是否为多包*/
                        uint16_t id,
                        int32_t seq,
                        JT808_MSG_STATE ( *cb_tx_timeout )( ),

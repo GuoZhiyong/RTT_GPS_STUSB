@@ -19,7 +19,7 @@
    正常1秒 517字节  压缩后 260
    近似 100个扇区 保存25分钟原始数据
  */
-#define GPS_PACK_START		0x0003F000
+#define GPS_PACK_START		0x002FC000
 #define GPS_PACK_SECTORS	100
 
 

@@ -374,7 +374,7 @@ void node_prepend( JT808_TX_NODEDATA* pnodedata,
 * Others:
 ***********************************************************/
 void jt808_add_tx( uint8_t linkno,
-                   JT808_MSG_TYPE fMultiPacket,             /*是否为多包*/
+                   JT808_MSG_TYPE msgtype,             /*是否为多包*/
                    uint16_t id,
                    int32_t seq,
                    JT808_MSG_STATE ( *cb_tx_timeout )( ),
@@ -386,13 +386,13 @@ void jt808_add_tx( uint8_t linkno,
 {
 	JT808_TX_NODEDATA* pnodedata;
 
-	pnodedata = node_begin( linkno, fMultiPacket, id, seq, len );
+	pnodedata = node_begin( linkno, msgtype, id, seq, len );
 	if( pnodedata == RT_NULL )
 	{
 		return;
 	}
 	node_data( pnodedata, pinfo, len );
-	if( fMultiPacket == SINGLE_FIRST )
+	if( msgtype == SINGLE_FIRST )
 	{
 		node_prepend( pnodedata, cb_tx_timeout, cb_tx_response, userpara );
 	} else
@@ -1177,7 +1177,7 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 			rt_kprintf( "total_send_error=%d\n", total_send_error );
 		}
 
-		if(pnodedata->head_id==0x0001) 	/*应答信息，只发一遍，发完删除即可*/
+		if(pnodedata->type==SINGLE_ACK) 	/*应答信息，只发一遍，发完删除即可*/
 		{
 			return WAIT_DELETE;
 		}

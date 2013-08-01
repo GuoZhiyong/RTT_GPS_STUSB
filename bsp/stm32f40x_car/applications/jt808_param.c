@@ -753,7 +753,7 @@ void jt808_param_0x8104( uint8_t *pmsg )
 	uint16_t	param_count = 0;
 	uint16_t	i, count;
 
-	pnodedata = node_begin( 1, MULTI_ACK, 0x0104, -1, 600 );
+	pnodedata = node_begin( 1, MULTI_CMD, 0x0104, -1, 600 );
 	if( pnodedata == RT_NULL )
 	{
 		return;

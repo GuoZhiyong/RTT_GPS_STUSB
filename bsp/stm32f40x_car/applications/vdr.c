@@ -418,6 +418,7 @@ typedef __packed struct _vdr_userdata
 /*
    获取id下一个可用的地址
    并没有做搽除操作，交由写之前处理
+   20130801:数据要位于4k边界处，不能跨扇区，否则环回写入时会出现问题
 
  */
 static uint32_t vdr_08_12_get_nextaddr( uint8_t vdr_id )
@@ -487,6 +488,7 @@ void vdr_08_put( MYTIME datetime, uint8_t speed, uint8_t status )
 	vdr_08_info[sec * 2 + 10]	= gps_speed;
 	vdr_08_info[sec * 2 + 11]	= vdr_signal_status;
 }
+
 
 /*
    每扇区存6个小时的数据
