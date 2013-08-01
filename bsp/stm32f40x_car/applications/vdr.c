@@ -18,6 +18,7 @@
 #include "jt808_gps.h"
 #include "jt808_param.h"
 
+
 #define VDR_DEBUG
 
 //#define TEST_BKPSRAM
@@ -147,121 +148,8 @@ static void vdr_pack_buf( uint8_t* dst, uint8_t* src, uint16_t len, uint8_t* fcs
 
 uint8_t vdr_signal_status = 0x01; /*行车记录仪的状态信号*/
 
-/*外接车速信号*/
-__IO uint16_t	IC2Value	= 0;
-__IO uint16_t	DutyCycle	= 0;
-__IO uint32_t	Frequency	= 0;
 
-/*采用PA.0 作为外部脉冲计数*/
-void pulse_init( void )
-{
-	GPIO_InitTypeDef	GPIO_InitStructure;
-	NVIC_InitTypeDef	NVIC_InitStructure;
-	TIM_ICInitTypeDef	TIM_ICInitStructure;
 
-	/* TIM5 clock enable */
-	RCC_APB1PeriphClockCmd( RCC_APB1Periph_TIM5, ENABLE );
-
-	/* GPIOA clock enable */
-	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA, ENABLE );
-
-	/* TIM5 chennel1 configuration : PA.0 */
-	GPIO_InitStructure.GPIO_Pin		= GPIO_Pin_0;
-	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_100MHz;
-	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_UP;
-	GPIO_Init( GPIOA, &GPIO_InitStructure );
-
-	/* Connect TIM pin to AF0 */
-	GPIO_PinAFConfig( GPIOA, GPIO_PinSource0, GPIO_AF_TIM5 );
-
-	/* Enable the TIM5 global Interrupt */
-	NVIC_InitStructure.NVIC_IRQChannel						= TIM5_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority	= 0;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority			= 1;
-	NVIC_InitStructure.NVIC_IRQChannelCmd					= ENABLE;
-	NVIC_Init( &NVIC_InitStructure );
-
-	TIM_ICInitStructure.TIM_Channel		= TIM_Channel_1;
-	TIM_ICInitStructure.TIM_ICPolarity	= TIM_ICPolarity_Rising;
-	TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
-	TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV1;
-	TIM_ICInitStructure.TIM_ICFilter	= 0x0;
-
-	TIM_PWMIConfig( TIM5, &TIM_ICInitStructure );
-
-	/* Select the TIM5 Input Trigger: TI1FP1 */
-	TIM_SelectInputTrigger( TIM5, TIM_TS_TI1FP1 );
-
-	/* Select the slave Mode: Reset Mode */
-	TIM_SelectSlaveMode( TIM5, TIM_SlaveMode_Reset );
-	TIM_SelectMasterSlaveMode( TIM5, TIM_MasterSlaveMode_Enable );
-
-	/* TIM enable counter */
-	TIM_Cmd( TIM5, ENABLE );
-
-	/* Enable the CC2 Interrupt Request */
-	TIM_ITConfig( TIM5, TIM_IT_CC2, ENABLE );
-}
-
-/*TIM5_CH1*/
-void TIM5_IRQHandler( void )
-{
-	RCC_ClocksTypeDef RCC_Clocks;
-	RCC_GetClocksFreq( &RCC_Clocks );
-
-	TIM_ClearITPendingBit( TIM5, TIM_IT_CC2 );
-
-	/* Get the Input Capture value */
-	IC2Value = TIM_GetCapture2( TIM5 );
-
-	if( IC2Value != 0 )
-	{
-		/* Duty cycle computation */
-		//DutyCycle = ( TIM_GetCapture1( TIM5 ) * 100 ) / IC2Value;
-		/* Frequency computation   TIM4 counter clock = (RCC_Clocks.HCLK_Frequency)/2 */
-		//Frequency = (RCC_Clocks.HCLK_Frequency)/2 / IC2Value;
-/*是不是反向电路?*/
-		DutyCycle	= ( IC2Value * 100 ) / TIM_GetCapture1( TIM5 );
-		Frequency	= ( RCC_Clocks.HCLK_Frequency ) / 2 / TIM_GetCapture1( TIM5 );
-	}else
-	{
-		DutyCycle	= 0;
-		Frequency	= 0;
-	}
-}
-
-#define SPEED_LIMIT				5   /*速度门限 大于此值认为启动，小于此值认为停止*/
-#define SPEED_LIMIT_DURATION	10  /*速度门限持续时间*/
-
-#define SPEED_STATUS_ACC	0x01    /*acc状态 0:关 1:开*/
-#define SPEED_STATUS_BRAKE	0x02    /*刹车状态 0:关 1:开*/
-
-#define SPEED_JUDGE_ACC		0x04    /*是否判断ACC*/
-#define SPEED_JUDGE_BRAKE	0x08    /*是否判断BRAKE 刹车信号*/
-
-#define SPEED_USE_PULSE 0x10        /*使用脉冲信号 0:不使用 1:使用*/
-#define SPEED_USE_GPS	0x20        /*使用gps信号 0:不使用 1:使用*/
-
-enum _stop_run
-{
-	STOP=0,
-	RUN =1,
-};
-
-struct _vehicle_status
-{
-	enum _stop_run	stop_run;       /*当前车辆状态 0:停止 1:启动*/
-	uint8_t			logic;          /*当前逻辑状态*/
-	uint8_t			pulse_speed;    /*速度值*/
-	uint32_t		pulse_duration; /*持续时间-秒*/
-	uint8_t			gps_speed;      /*速度值，当前速度值*/
-	uint32_t		gps_duration;   /*持续时间-秒*/
-} car_status =
-{
-	STOP, ( SPEED_USE_GPS ), 0, 0, 0, 0
-};
 
 /*200ms间隔的速度状态信息*/
 static uint8_t	speed_status[100][2];
@@ -314,65 +202,6 @@ static uint32_t utc_car_stop	= 0;        /*车辆开始停驶时刻*/
 static uint32_t utc_car_run		= 0;        /*车辆开始行驶时刻*/
 
 
-/*
-   从buf中获取时间信息
-   如果是0xFF 组成的!!!!!!!特殊对待
-
- */
-static MYTIME mytime_from_hex( uint8_t* buf )
-{
-	uint8_t year, month, day, hour, minute, sec;
-	uint8_t *psrc = buf;
-	if( *psrc == 0xFF ) /*不是有效的数据*/
-	{
-		return 0xFFFFFFFF;
-	}
-	year	= *psrc++;
-	month	= *psrc++;
-	day		= *psrc++;
-	hour	= *psrc++;
-	minute	= *psrc++;
-	sec		= *psrc;
-	return MYDATETIME( year, month, day, hour, minute, sec );
-}
-
-/*转换bcd时间*/
-static MYTIME mytime_from_bcd( uint8_t* buf )
-{
-	uint8_t year, month, day, hour, minute, sec;
-	uint8_t *psrc = buf;
-	year	= BCD2HEX( *psrc++ );
-	month	= BCD2HEX( *psrc++ );
-	day		= BCD2HEX( *psrc++ );
-	hour	= BCD2HEX( *psrc++ );
-	minute	= BCD2HEX( *psrc++ );
-	sec		= BCD2HEX( *psrc );
-	return MYDATETIME( year, month, day, hour, minute, sec );
-}
-
-/*转换为十六进制的时间 例如 2013/07/18 => 0x0d 0x07 0x12*/
-static void mytime_to_hex( uint8_t* buf, MYTIME time )
-{
-	uint8_t *psrc = buf;
-	*psrc++ = YEAR( time );
-	*psrc++ = MONTH( time );
-	*psrc++ = DAY( time );
-	*psrc++ = HOUR( time );
-	*psrc++ = MINUTE( time );
-	*psrc	= SEC( time );
-}
-
-/*转换为bcd字符串为自定义时间 例如 0x13 0x07 0x12=>代表 13年7月12日*/
-static void mytime_to_bcd( uint8_t* buf, MYTIME time )
-{
-	uint8_t *psrc = buf;
-	*psrc++ = HEX2BCD( YEAR( time ) );
-	*psrc++ = HEX2BCD( MONTH( time ) );
-	*psrc++ = HEX2BCD( DAY( time ) );
-	*psrc++ = HEX2BCD( HOUR( time ) );
-	*psrc++ = HEX2BCD( MINUTE( time ) );
-	*psrc	= HEX2BCD( SEC( time ) );
-}
 
 typedef __packed struct _vdr_08_userdata
 {
@@ -570,7 +399,7 @@ void vdr_10_put( MYTIME datetime )
 	buf[7]	= HEX2BCD( HOUR( datetime ) );
 	buf[8]	= HEX2BCD( MINUTE( datetime ) );
 	buf[9]	= HEX2BCD( SEC( datetime ) );
-	memcpy( buf + 10, "120104198001012345", 18 );   /*驾驶证号码*/
+	memcpy( buf + 10, jt808_param.id_0xF009, 18 );   /*驾驶证号码*/
 	PACK_INT( buf + 228, ( gps_longi * 6 ) );
 	PACK_INT( buf + 232, ( gps_lati * 6 ) );
 	PACK_WORD( buf + 236, ( gps_alti ) );
@@ -587,8 +416,56 @@ void vdr_10_put( MYTIME datetime )
 	rt_kprintf( "%d>save 10 data addr=%08x\n", rt_tick_get( ), addr );
 }
 
+
+
 /*
-   收到gps数据的处理，有定位和未定位
+超时,疲劳驾驶记录
+有可能超时了，还在驾驶，这时要动态生成
+等到车停以后，休息了足够的时间，才是一次完整的超时驾驶记录
+如何保存?
+ */
+void vdr_11_put( MYTIME datetime )
+{
+	uint32_t	i, j;
+	uint32_t	addr;
+	uint8_t		buf[64]; /*保存要写入的信息*/
+	uint8_t		* pdata;
+
+	buf[0]	= datetime >> 24;
+	buf[1]	= datetime >> 16;
+	buf[2]	= datetime >> 8;
+	buf[3]	= datetime & 0xFF;
+	memcpy( buf + 4, jt808_param.id_0xF009, 18 );   /*驾驶证号码*/
+
+	mytime_to_hex(buf+22,car_status.mytime_start);
+	mytime_to_hex(buf+28,datetime);
+	
+	PACK_INT( buf + 34, (car_status.longi * 6 ) );
+	PACK_INT( buf + 38, ( car_status.lati * 6 ) );
+	PACK_WORD( buf + 42, (car_status.alti ) );
+	
+	PACK_INT( buf + 44, (gps_longi * 6 ) );
+	PACK_INT( buf + 48, ( gps_lati * 6 ) );
+	PACK_WORD( buf + 52, (gps_alti ) );
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
+	addr = vdr_08_12_get_nextaddr( 11 );
+	if( ( addr & 0xFFF ) == 0 )                     /*在4k边界处*/
+	{
+		sst25_erase_4k( addr );
+	}
+	sst25_write_through( addr, buf, 54 );
+
+	rt_sem_release( &sem_dataflash );
+	rt_kprintf( "%d>save 11 data addr=%08x\n", rt_tick_get( ), addr );
+}
+
+
+
+
+
+/*
+   收到已定位gps数据的处理，
    存储位置信息，
    速度判断，校准
  */
@@ -596,7 +473,6 @@ void vdr_10_put( MYTIME datetime )
 rt_err_t vdr_rx_gps( void )
 {
 	uint32_t	datetime;
-	uint8_t		year, month, day, hour, minute, sec;
 
 #ifdef TEST_BKPSRAM
 	uint8_t buf[128];
@@ -614,20 +490,7 @@ rt_err_t vdr_rx_gps( void )
 	}
 #endif
 
-	if( ( jt808_status & BIT_STATUS_GPS ) == 0 ) /*未定位*/
-	{
-		return RT_EOK;
-	}
-
-	year	= gps_datetime[0];
-	month	= gps_datetime[1];
-	day		= gps_datetime[2];
-	hour	= gps_datetime[3];
-	minute	= gps_datetime[4];
-	sec		= gps_datetime[5];
-	//rt_kprintf( "%d>vdr_rx=%02d-%02d-%02d %02d:%02d:%02d\r\n", rt_tick_get( ), year, month, day, hour, minute, sec );
-
-	datetime = MYDATETIME( year, month, day, hour, minute, sec );
+	datetime=mytime_from_hex(gps_datetime);
 
 	vdr_08_put( datetime, gps_speed, vdr_signal_status );
 	vdr_09_put( datetime );
@@ -639,6 +502,7 @@ rt_err_t vdr_rx_gps( void )
 	}
 	speed_status[speed_status_index][0] = gps_speed;                    /*当前位置写入速度,200ms任务中操作*/
 	utc_speed_status					= utc_now;
+
 
 /*判断车辆行驶状态*/
 	if( car_status.stop_run == STOP )                                   /*认为车辆停止,判断启动*/
@@ -1084,8 +948,6 @@ FINSH_FUNCTION_EXPORT_ALIAS( vdr_08_12_get_ready, vdr_get, get_vdr_data );
 rt_err_t vdr_init( void )
 {
 	uint8_t* pbuf;
-
-	pulse_init( ); /*接脉冲计数*/
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 

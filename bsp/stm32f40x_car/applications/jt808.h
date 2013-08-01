@@ -21,6 +21,8 @@
 #include "m66.h"
 #include "sst25.h"
 #include "jt808_area.h"
+#include "jt808_util.h"
+#include "jt808_vehicle.h"
 
 #define NEED_TODO	0
 
@@ -30,11 +32,6 @@
 #define JT808_PACKAGE_MAX	512
 
 
-/*
-   存储区域分配,采用绝对地址,以4K(0x1000)为一个扇区
- */
-
-#define ADDR_PARAM 0x000000000
 
 
 /*for new use*/
@@ -43,55 +40,6 @@
 
 
 
-#define BYTESWAP2( val )    \
-    ( ( ( ( val ) & 0xff ) << 8 ) |   \
-      ( ( ( val ) & 0xff00 ) >> 8 ) )
-
-#define BYTESWAP4( val )    \
-    ( ( ( ( val ) & 0xff ) << 24 ) |   \
-      ( ( ( val ) & 0xff00 ) << 8 ) |  \
-      ( ( ( val ) & 0xff0000 ) >> 8 ) |  \
-      ( ( ( val ) & 0xff000000 ) >> 24 ) )
-
-#define HEX2BCD( x )	( ( ( x ) / 10 ) << 4 | ( ( x ) % 10 ) )
-#define BCD2HEX( x )	( ( ( ( x ) >> 4 ) * 10 ) + ( ( x ) & 0x0f ) )
-
-typedef uint32_t MYTIME;
-
-#define MYDATETIME( year, month, day, hour, minute, sec ) \
-    ( (uint32_t)( ( year ) << 26 ) | \
-      (uint32_t)( ( month ) << 22 ) | \
-      (uint32_t)( ( day ) << 17 ) | \
-      (uint32_t)( ( hour ) << 12 ) | \
-      (uint32_t)( ( minute ) << 6 ) | ( sec ) )
-#define YEAR( datetime )	( ( datetime >> 26 ) & 0x3F )
-#define MONTH( datetime )	( ( datetime >> 22 ) & 0xF )
-#define DAY( datetime )		( ( datetime >> 17 ) & 0x1F )
-#define HOUR( datetime )	( ( datetime >> 12 ) & 0x1F )
-#define MINUTE( datetime )	( ( datetime >> 6 ) & 0x3F )
-#define SEC( datetime )		( datetime & 0x3F )
-
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-__inline MYTIME buf_to_time( uint8_t *p )
-{
-	uint32_t ret;
-	ret = (uint32_t)( ( *p++ ) << 26 );
-	ret |= (uint32_t)( ( *p++ ) << 22 );
-	ret |= (uint32_t)( ( *p++ ) << 17 );
-	ret |= (uint32_t)( ( *p++ ) << 12 );
-	ret |= (uint32_t)( ( *p++ ) << 6 );
-	ret |= ( *p );
-	return ret;
-}
 
 typedef struct
 {

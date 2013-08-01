@@ -13,7 +13,7 @@
  ***********************************************************/
 #include "Menu_Include.h"
 #include "sed1520.h"
-
+#include <string.h>
 static uint8_t	count;
 static uint8_t	pos;
 

@@ -23,7 +23,7 @@
 #include "jt808_param.h"
 #include "rtc.h"
 
-#include "jt808_auxio.h"
+#include "jt808_vehicle.h"
 #include "jt808_area.h"
 #include "menu_include.h"
 
@@ -60,8 +60,8 @@ static uint8_t	overspeed_flag = 0;                 /*ÊÇ·ñÒÑ³¬ËÙ 0:Î´³¬ËÙ 1:³¬ËÙÔ
 static uint32_t utc_overspeed_start;                /*¿ªÊ¼Ê±¼ä´Á*/
 
 /*Æ£ÀÍ¼ÝÊ»¼ÆÊ±*/
-static uint32_t period_acc_on	= 0;                /*Æ£ÀÍ¼ÝÊ»Ê±¼ä acc¿ª*/
-static uint32_t period_acc_off	= 0;                /*Æ£ÀÍ¼ÝÊ»Ê±¼äacc¹Ø*/
+static uint32_t duration_acc_on	= 0;                /*Æ£ÀÍ¼ÝÊ»Ê±¼ä acc¿ª*/
+static uint32_t duration_acc_off	= 0;                /*Æ£ÀÍ¼ÝÊ»Ê±¼äacc¹Ø*/
 
 uint32_t		gps_second_count = 0;               /*gpsÃëÓï¾äÊä³ö*/
 
@@ -72,6 +72,7 @@ uint16_t		jt808_8202_track_counter;
 uint32_t		jt808_8203_manual_ack_seq	= 0;    /*ÈË¹¤È·ÈÏ±¨¾¯µÄ±êÊ¶Î» 0,3,20,21,22,27,28*/
 uint16_t		jt808_8203_manual_ack_value = 0;
 
+#if 0
 
 /*
    ÇøÓòµÄ¶¨Òå,Ê¹ÓÃlist¹ØÁªÆðÀ´£¬Èç¹ûnode¹ý¶àµÄ»°£¬
@@ -105,6 +106,8 @@ struct
 	uint8_t		duration;                           /*³ÖÐøÊ±¼ä*/
 }			rectangle;
 
+#endif
+
 uint32_t	gps_lati;
 uint32_t	gps_longi;
 uint16_t	gps_speed;
@@ -136,8 +139,7 @@ MYTIME		mytime_now	= 0;
 uint8_t		ACC_status;     /*0:ACC¹Ø   1:ACC¿ª  */
 uint32_t	ACC_ticks;      /*ACC×´Ì¬·¢Éú±ä»¯Ê±µÄtickÖµ£¬´ËÊ±GPS¿ÉÄÜÎ´¶¨Î»*/
 
-/*ÉùÃ÷Ò»¸ö¶¨Ê±Æ÷£¬ÓÃÀ´¶¨Ê±¼ì²éAUX*/
-struct rt_timer tmr_50ms;
+
 
 struct
 {
@@ -156,10 +158,6 @@ struct
 	uint32_t	last_distance;  /*ÉÏÒ»´ÎÉÏ±¨Ê±µÄÀï³Ì*/
 } jt808_report;
 
-struct
-{
-	uint32_t perion_acc_on;
-} func_tired_drive;
 
 #define DEBUG_GPS
 
@@ -169,38 +167,26 @@ uint32_t	speed_count = 0;
 #endif
 
 
-/*
-   ¶¨Ê±Æ÷³¬Ê±º¯Êý,µ±Ç°ÉèÖÃÎª1SEC
- */
-static void cb_tmr_50ms( void* parameter )
-{
-	auxio_input_check( );
-}
 
-/*Í¨¹ýgpsÓï¾ä´¥·¢µÄ1Ãë¶¨Ê±*/
+/*
+Í¨¹ýgpsÓï¾ä´¥·¢µÄ1Ãë¶¨Ê±
+Î´¶¨Î»Ê±Ò²ÓÐÆ£ÀÍ¼ÝÊ»
+*/
 static void cb_tmr_1sec( void )
 {
 	uint8_t year, month, day, hour, minute, sec;
 	/*¼ì²éÆ£ÀÍ¼ÝÊ»£¬GPSÎ´¶¨Î»Ê±Ò²Òª¼ì²é,Ê¹ÓÃ¶¨Ê±Æ÷£¬³¤Ê±¼ä¶¨Ê±×¼²»×¼?*/
 	if( jt808_status & BIT_STATUS_ACC ) /*ACC¿ª*/
 	{
-		period_acc_off = 0;
-		period_acc_on++;
-		if( ( period_acc_on % 100 ) == 0 )
-		{
-			//rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
-		}
-		if( period_acc_on >= jt808_param.id_0x0057 )
+		duration_acc_off = 0;
+		duration_acc_on++;
+		if( duration_acc_on >= jt808_param.id_0x0057 )
 		{
 		}
 	}else
 	{
-		period_acc_on = 0;
-		period_acc_off++;
-		if( ( period_acc_off % 100 ) == 0 )
-		{
-			//rt_kprintf( "time adjust>%d %d\r\n", rt_tick_get( ), timestamp( ) );
-		}
+		duration_acc_on = 0;
+		duration_acc_off++;
 	}
 
 	
@@ -327,7 +313,7 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 #endif
 
 /*³¬ËÙ¡¢³¬ËÙÔ¤¾¯ÅÐ¶Ï*/
-void do_overspeed_check( void )
+void process_overspeed( void )
 {
 	if( gps_speed >= jt808_param.id_0x0055 )                                    /*³¬¹ý×î¸ßËÙ¶È*/
 	{
@@ -357,6 +343,7 @@ void do_overspeed_check( void )
 		jt808_alarm		&= ~( ( 1 << 1 ) | ( 1 << 13 ) );
 	}
 }
+
 
 /*hmi ×î½ü15minÆ½¾ùËÙ¶È*/
 static void process_hmi_15min_speed( void )
@@ -913,10 +900,9 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	{
 		rt_kprintf( "%d gps<%s\n", rt_tick_get( ), psrc );
 	}
-
+	/*±£´æRAWÊý¾Ý*/
 	jt808_gps_pack( pinfo, length );
 
-	//if( ( strncmp( psrc, "$GNGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$BDGGA,", 7 ) == 0 ) || ( strncmp( psrc, "$GPGGA,", 7 ) == 0 ) )
 	if( strncmp( psrc + 3, "GGA,", 4 ) == 0 )
 	{
 		process_gga( (uint8_t*)psrc );
@@ -926,12 +912,13 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	if( strncmp( psrc + 3, "RMC,", 4 ) == 0 )
 	{
 		gps_sec_count++;
-		if( process_rmc( (uint8_t*)psrc ) == 0 )    /*´¦ÀíÕýÈ·µÄRMCÐÅÏ¢,ÅÐ¶Ï¸ñÊ½ÕýÈ·£¬²¢²»ÅÐ¶Ï¶¨Î»Óë·ñ*/
+		if( process_rmc( (uint8_t*)psrc ) == 0 )    /*´¦ÀíÕýÈ·µÄÒÑ¶¨Î»RMCÐÅÏ¢*/
 		{
+			process_overspeed();
 			process_hmi_15min_speed( );             /*×î½ü15·ÖÖÓÆ½¾ùËÙ¶È*/
 			vdr_rx_gps( );                          /*ÐÐ³µ¼ÇÂ¼ÒÇÊý¾Ý´¦Àí*/
 			area_process( );                        /*ÇøÓòÏßÂ·¸æ¾¯*/
-			process_gps_report( );                  /*´¦ÀíGPSsÉÏ±¨ÐÅÏ¢*/
+			process_gps_report( );                  /*´¦ÀíGPSÉÏ±¨ÐÅÏ¢*/
 		}
 		cb_tmr_1sec( );                             /*×öÒ»Ð©1ÃëµÄ¶¨Ê±¼ì²é*/
 	}
@@ -960,15 +947,9 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 /*³õÊ¼»¯jt808 gpsÏà¹ØµÄ´¦Àí*/
 void jt808_gps_init( void )
 {
-	auxio_init( );
+	jt808_vehicle_init( );
 	area_init( );
-	rt_timer_init( &tmr_50ms, "tmr_50ms",                           /* ¶¨Ê±Æ÷Ãû×ÖÊÇ tmr_gps */
-	               cb_tmr_50ms,                                     /* ³¬Ê±Ê±»Øµ÷µÄ´¦Àíº¯Êý */
-	               RT_NULL,                                         /* ³¬Ê±º¯ÊýµÄÈë¿Ú²ÎÊý */
-	               RT_TICK_PER_SECOND / 20,                         /* ¶¨Ê±³¤¶È£¬ÒÔOS TickÎªµ¥Î» */
-	               RT_TIMER_FLAG_PERIODIC );                        /* ÖÜÆÚÐÔ¶¨Ê±Æ÷ */
-
-	rt_timer_start( &tmr_50ms );
+	gps_pack_init();
 }
 
 /***********************************************************

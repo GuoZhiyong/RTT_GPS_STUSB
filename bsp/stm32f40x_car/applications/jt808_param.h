@@ -16,6 +16,11 @@
 
 #include "stm32f4xx.h"
 
+/*
+   存储区域分配,采用绝对地址,以4K(0x1000)为一个扇区
+ */
+
+
 #define ADDR_PARAM 0x000000000
 
 typedef struct _jt808_param

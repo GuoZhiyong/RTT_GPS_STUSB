@@ -204,7 +204,7 @@ static void save_rec( uint8_t *p, uint8_t len )
 		pack_buf_pos=4;
 	}else
 	{
-		memcpy( pack_buf, p, len );
+		memcpy( pack_buf+pack_buf_pos, p, len );
 		pack_buf_pos+=len;
 	}
 }
@@ -301,7 +301,7 @@ uint8_t jt808_gps_pack( char *pinfo, uint8_t len )
 		case 'M': j = 3; break; /*RMC*/
 		case 'L': j = 4; break; /*GLL*/
 		default:
-			rt_kprintf( "unknow\n" );
+			rt_kprintf( "未知p[4]\n" );
 			return 0;
 	}
 	id		= MN | ( i * 5 + j );
@@ -333,7 +333,7 @@ uint8_t jt808_gps_pack( char *pinfo, uint8_t len )
 				case 'E': c |= 0xe; break;
 				case ',': c |= 0xf; break;
 				default:
-					rt_kprintf( "unknow\n" );
+					rt_kprintf( "未知[%02x]\n",*p );
 					return 0;
 			}
 		}
@@ -378,13 +378,13 @@ uint8_t jt808_gps_pack( char *pinfo, uint8_t len )
 void gps_pack_init( void )
 {
 	uint32_t	i;
-	uint8_t		buf[128];
+	uint8_t		buf[12];
 	uint32_t	addr, id;
 	uint16_t	pos;
 
 	pack_buf_id = 0;
 	sect_index	= 0xFF;
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 	for( i = 0; i < GPS_PACK_SECTORS; i++ )
 	{
 		addr = GPS_PACK_START + i * 4096;
@@ -399,13 +399,23 @@ void gps_pack_init( void )
 			}
 		}
 	}
+	
+	memset(pack_buf,0xFF,sizeof(pack_buf));
+
+
 	if( sect_index == 0xFF )            /*没有找到有数据的扇区*/
 	{
 		sect_index		= 0;            /**/
 		pack_buf_pos	= 4;            /*空出开始的四个字节保存id*/
+		pack_buf[0]=0;
+		pack_buf[1]=0;
+		pack_buf[2]=0;
+		pack_buf[3]=0;
+		
 	}else /*要在特定的扇区中查找，并不是太方便,因为是变长的*/
 	{
 		/*读入到4k的ram*/
+
 		sst25_read( addr + sect_index * 4096, pack_buf, 4096 );
 		pos = 4;
 		while( pos < 4096 )

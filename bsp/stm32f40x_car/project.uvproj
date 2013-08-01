@@ -567,11 +567,6 @@
               <FilePath>.\applications\vdr.c</FilePath>
             </File>
             <File>
-              <FileName>jt808_auxio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\jt808_auxio.c</FilePath>
-            </File>
-            <File>
               <FileName>jt808_camera.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_camera.c</FilePath>
@@ -595,6 +590,16 @@
               <FileName>jt808_gps_pack.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_gps_pack.c</FilePath>
+            </File>
+            <File>
+              <FileName>jt808_util.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_util.c</FilePath>
+            </File>
+            <File>
+              <FileName>jt808_vehicle.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_vehicle.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -680,6 +685,11 @@
               <FileName>rtc.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>SLE4442.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\SLE4442.c</FilePath>
             </File>
           </Files>
         </Group>

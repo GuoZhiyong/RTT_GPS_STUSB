@@ -38,7 +38,7 @@ static void msg( void *p )
 {
 	uint8_t len = strlen( (char*)p );
 	lcd_fill( 0 );
-	lcd_text12( ( 122 - len ) >> 1, 10, (char*)p, len, LCD_MODE_SET );
+	lcd_text12( ( 122 - len*6 ) >> 1, 10, (char*)p, len, LCD_MODE_SET );
 	lcd_update_all( );
 }
 

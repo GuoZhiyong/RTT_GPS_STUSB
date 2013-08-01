@@ -95,6 +95,7 @@ void rtthread_startup(void)
 	mma8451_driver_init( );
 	printer_driver_init( );
 	usbh_init( );
+	Init_4442();
 	spi_sd_init( );
 	sst25_init(); /*在此初始化,gsm才能读取参数，放在app_thread中不会先执行*/
 	rtc_init();

@@ -145,8 +145,7 @@ static u16 test_speed;
 //声明外部函数
 //*********************************************************************************
 extern u32 Times_To_LongInt(T_TIMES *T);
-extern uint32_t buf_to_data( uint8_t * psrc, uint8_t width );
-extern uint16_t data_to_buf( uint8_t * pdest, uint32_t data, uint8_t width );
+
 extern void printer_data_hex(u8 *pSrc,u16 nSrcLength);
 
 
