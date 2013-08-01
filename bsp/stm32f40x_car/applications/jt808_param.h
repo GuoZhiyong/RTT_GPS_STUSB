@@ -118,8 +118,6 @@ typedef struct _jt808_param
 	char		id_0xF003[32];  /*0xF003 鉴权码*/
 	uint16_t	id_0xF004;      /*0xF004 终端类型*/
 	char		id_0xF005[32];  /*0xF005 VIN*/
-	char		id_0xF006[32];  /*0xF006 车牌号*/
-	uint8_t		id_0xF007;      /*0xF007 车牌颜色*/
 	char		id_0xF008[32];  /*0xF008 驾驶员姓名*/
 	char		id_0xF009[32];  /*0xF009 驾驶证号码*/
 	char		id_0xF00A[32];  /*0xF00A 车辆类型*/

@@ -1682,6 +1682,13 @@ void jt808_init( void )
 {
 	/*读取参数，并配置,这个时候应该没有操作flash的*/
 	param_load( );
+
+
+
+
+
+
+	
 #ifdef BKSRAM
 	bkpsram_init( );
 #endif

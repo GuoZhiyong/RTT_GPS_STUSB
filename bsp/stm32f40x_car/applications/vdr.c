@@ -824,7 +824,7 @@ uint8_t vdr_08_12_fill_data( JT808_TX_NODEDATA *pnodedata )
 	}
 	rt_sem_release( &sem_dataflash );
 
-	if( id == 1 )                   /*整理一下09数据,无效的位置信息填写0x7FFFFFFF*/
+	if( puserdata->id==9 )                   /*整理一下09数据,无效的位置信息填写0x7FFFFFFF*/
 	{
 		pdata = pdata_body + 6 + 6; /*跳过开始的6字节55 7A和BCD时间头*/
 		for( i = 0; i < 660; i += 11 )
@@ -1192,7 +1192,7 @@ void vdr_rx_8700( uint8_t * pmsg )
 			buf[2]	= cmd;
 			fcs		= 0;
 			vdr_pack_buf( buf + 3, "\x55\x7A\x05\x00\x29\x00", 6, &fcs );
-			vdr_pack_buf( buf + 9, jt808_param.id_0xF006, 12, &fcs );
+			vdr_pack_buf( buf + 9, jt808_param.id_0x0083, 12, &fcs );
 			vdr_pack_buf( buf + 21, "大型汽车    ", 12, &fcs );
 			buf[33] = fcs;
 			jt808_tx_ack( 0x0700, buf, 34 );
