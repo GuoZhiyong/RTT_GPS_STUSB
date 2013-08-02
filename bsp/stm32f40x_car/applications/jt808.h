@@ -130,7 +130,7 @@ typedef __packed struct _jt808_tx_nodedata
 {
 /*发送机制相关*/
 	uint8_t			linkno;                                                                             /*传输使用的link,包括了协议和远端socket*/
-	uint8_t			multipacket;                                                                        /*是不是多包发送*/
+//	uint8_t			multipacket;                                                                        /*是不是多包发送*/
 	JT808_MSG_TYPE	type;                                                                               /*发送消息的类型*/
 	JT808_MSG_STATE state;                                                                              /*发送状态*/
 	uint32_t		retry;                                                                              /*重传次数,递增，递减找不到*/

@@ -163,7 +163,7 @@ void USBH_USR_Init( void )
 	if( startup == 0 )
 	{
 		startup = 1;
-		rt_kprintf( "> USB Host library started.\n" );
+		rt_kprintf( "\n>USB Host library started." );
 	}
 }
 
@@ -175,7 +175,7 @@ void USBH_USR_Init( void )
  */
 void USBH_USR_DeviceAttached( void )
 {
-	rt_kprintf( "%s\n", MSG_DEV_ATTACHED );
+	rt_kprintf( "\n%s", MSG_DEV_ATTACHED );
 
 }
 
@@ -187,7 +187,7 @@ void USBH_USR_DeviceAttached( void )
 void USBH_USR_UnrecoveredError( void )
 {
 	/* Set default screen color*/
-	rt_kprintf( "%s\n", MSG_UNREC_ERROR );
+	rt_kprintf( "\n%s", MSG_UNREC_ERROR );
 }
 
 /**
@@ -199,7 +199,7 @@ void USBH_USR_UnrecoveredError( void )
 void USBH_USR_DeviceDisconnected( void )
 {
 	/* Set default screen color*/
-	rt_kprintf( "%s\n", MSG_DEV_DISCONNECTED );
+	rt_kprintf( "\n%s", MSG_DEV_DISCONNECTED );
 }
 
 /**
@@ -210,7 +210,7 @@ void USBH_USR_DeviceDisconnected( void )
 void USBH_USR_ResetDevice( void )
 {
 	/* callback for USB-Reset */
-	rt_kprintf( "%s\n", __func__ );
+	rt_kprintf( "\n%s", __func__ );
 }
 
 /**
@@ -223,16 +223,16 @@ void USBH_USR_DeviceSpeedDetected( uint8_t DeviceSpeed )
 {
 	if( DeviceSpeed == HPRT0_PRTSPD_HIGH_SPEED )
 	{
-		rt_kprintf( "%s\n", MSG_DEV_HIGHSPEED );
+		rt_kprintf( "\n%s", MSG_DEV_HIGHSPEED );
 	}else if( DeviceSpeed == HPRT0_PRTSPD_FULL_SPEED )
 	{
-		rt_kprintf( "%s\n", MSG_DEV_FULLSPEED );
+		rt_kprintf( "\n%s", MSG_DEV_FULLSPEED );
 	}else if( DeviceSpeed == HPRT0_PRTSPD_LOW_SPEED )
 	{
-		rt_kprintf( "%s\n", MSG_DEV_LOWSPEED );
+		rt_kprintf( "\n%s", MSG_DEV_LOWSPEED );
 	}else
 	{
-		rt_kprintf( "%s\n", MSG_DEV_ERROR );
+		rt_kprintf( "\n%s", MSG_DEV_ERROR );
 	}
 }
 
@@ -247,8 +247,8 @@ void USBH_USR_Device_DescAvailable( void *DeviceDesc )
 	USBH_DevDesc_TypeDef *hs;
 	hs = DeviceDesc;
 
-	rt_kprintf( "VID : %04Xh\n", (uint32_t)( *hs ).idVendor );
-	rt_kprintf( "PID : %04Xh\n", (uint32_t)( *hs ).idProduct );
+	rt_kprintf( "\nVID : %04Xh", (uint32_t)( *hs ).idVendor );
+	rt_kprintf( "\nPID : %04Xh", (uint32_t)( *hs ).idProduct );
 }
 
 /**
@@ -259,7 +259,7 @@ void USBH_USR_Device_DescAvailable( void *DeviceDesc )
  */
 void USBH_USR_DeviceAddressAssigned( void )
 {
-	rt_kprintf( "%s\n", __func__ );
+	rt_kprintf( "\n%s", __func__ );
 }
 
 /**
@@ -278,10 +278,10 @@ void USBH_USR_Configuration_DescAvailable( USBH_CfgDesc_TypeDef * cfgDesc,
 
 	if( ( *id ).bInterfaceClass == 0x08 )
 	{
-		rt_kprintf( "%s\n", MSG_MSC_CLASS );
+		rt_kprintf( "\n%s", MSG_MSC_CLASS );
 	}else if( ( *id ).bInterfaceClass == 0x03 )
 	{
-		rt_kprintf( "%s\n", MSG_HID_CLASS );
+		rt_kprintf( "\n%s", MSG_HID_CLASS );
 	}
 }
 
@@ -293,7 +293,7 @@ void USBH_USR_Configuration_DescAvailable( USBH_CfgDesc_TypeDef * cfgDesc,
  */
 void USBH_USR_Manufacturer_String( void *ManufacturerString )
 {
-	rt_kprintf( "Manufacturer : %s\n", (char*)ManufacturerString );
+	rt_kprintf( "\nManufacturer:%s", (char*)ManufacturerString );
 }
 
 /**
@@ -304,7 +304,7 @@ void USBH_USR_Manufacturer_String( void *ManufacturerString )
  */
 void USBH_USR_Product_String( void *ProductString )
 {
-	rt_kprintf( "Product : %s\n", (char*)ProductString );
+	rt_kprintf( "\nProduct:%s", (char*)ProductString );
 }
 
 /**
@@ -315,7 +315,7 @@ void USBH_USR_Product_String( void *ProductString )
  */
 void USBH_USR_SerialNum_String( void *SerialNumString )
 {
-	rt_kprintf( "Serial Number : %s\n", (char*)SerialNumString );
+	rt_kprintf( "\nSerial Number:%s", (char*)SerialNumString );
 }
 
 /**
@@ -327,7 +327,7 @@ void USBH_USR_SerialNum_String( void *SerialNumString )
 void USBH_USR_EnumerationDone( void )
 {
 	/* Enumeration complete */
-	rt_kprintf( "%s\n", MSG_DEV_ENUMERATED );
+	rt_kprintf( "\n%s", MSG_DEV_ENUMERATED );
 }
 
 /**
@@ -338,7 +338,7 @@ void USBH_USR_EnumerationDone( void )
  */
 void USBH_USR_DeviceNotSupported( void )
 {
-	rt_kprintf( "> Device not supported." );
+	rt_kprintf( "\n>Device not supported." );
 }
 
 /**
@@ -371,7 +371,7 @@ USBH_USR_Status USBH_USR_UserInput( void )
  */
 void USBH_USR_OverCurrentDetected( void )
 {
-	rt_kprintf( "Overcurrent detected." );
+	rt_kprintf( "\nOvercurrent detected." );
 }
 
 static uint8_t			diskinited = 0;
@@ -389,7 +389,7 @@ static struct rt_device mscdev;
 ***********************************************************/
 static rt_err_t msc_init( rt_device_t dev )
 {
-	rt_kprintf( "%s\r\n", __func__ );
+	rt_kprintf( "\n%s", __func__ );
 	return RT_EOK;
 }
 
@@ -415,7 +415,7 @@ static rt_size_t msc_read( rt_device_t dev, rt_off_t sector, void* buff, rt_size
 			if( !HCD_IsDeviceConnected( &USB_OTG_Core ) )
 			{
 				//return RES_ERROR;
-				rt_kprintf( "%s error\r\n", __func__ );
+				rt_kprintf( "\n%s error", __func__ );
 				return USBH_MSC_FAIL;
 			}
 		}
@@ -440,7 +440,6 @@ static rt_size_t msc_read( rt_device_t dev, rt_off_t sector, void* buff, rt_size
 static rt_size_t msc_write( rt_device_t dev, rt_off_t sector, const void* buff, rt_size_t count )
 {
 	BYTE status = USBH_MSC_OK;
-	rt_kprintf( "%s\r\n", __func__ );
 	if( HCD_IsDeviceConnected( &USB_OTG_Core ) )
 	{
 		do
@@ -451,7 +450,7 @@ static rt_size_t msc_write( rt_device_t dev, rt_off_t sector, const void* buff, 
 			if( !HCD_IsDeviceConnected( &USB_OTG_Core ) )
 			{
 				//return RES_ERROR;
-				rt_kprintf( "%s error\r\n", __func__ );
+				rt_kprintf( "\n%s error", __func__ );
 				return USBH_MSC_FAIL;
 			}
 		}
@@ -501,7 +500,7 @@ rt_err_t msc_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 ***********************************************************/
 static rt_err_t msc_close( rt_device_t dev )
 {
-	rt_kprintf( "%s\r\n", __func__ );
+	rt_kprintf( "\n%s", __func__ );
 
 	return RT_EOK;
 }
@@ -517,7 +516,7 @@ static rt_err_t msc_close( rt_device_t dev )
 ***********************************************************/
 static rt_err_t msc_open( rt_device_t dev, rt_uint16_t oflag )
 {
-	rt_kprintf( "%s\r\n", __func__ );
+	rt_kprintf( "\n%s", __func__ );
 
 	return RT_EOK;
 }
@@ -553,7 +552,7 @@ int USBH_USR_MSC_Application( void )
 	rt_thread_delay( RT_TICK_PER_SECOND / 10 );
 	ret = dfs_mount( "udisk", "/udisk", "elm", 0, 0 );
 	
-	rt_kprintf( "dfs_mount ret=%x  now udisk start\r\n", ret );
+	rt_kprintf( "\ndfs_mount ret=%x  now udisk start", ret );
 
 	return 0;
 }
@@ -566,7 +565,7 @@ int USBH_USR_MSC_Application( void )
  */
 void USBH_USR_DeInit( void )
 {
-	rt_kprintf( "%s\r\n", __func__ );
+	rt_kprintf( "\n%s", __func__ );
 	//USBH_USR_ApplicationState = USH_USR_FS_INIT;
 	dfs_unmount( "/udisk" );
 	rt_device_unregister( &mscdev );

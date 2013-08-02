@@ -53,7 +53,7 @@ extern int __bss_end;
 *******************************************************************************/
 void assert_failed(u8* file, u32 line)
 {
-	rt_kprintf("\n\r Wrong parameter value detected on\n");
+	rt_kprintf("\nWrong parameter value detected on\n");
 	rt_kprintf("       file  %s\n", file);
 	rt_kprintf("       line  %d\n", line);
 

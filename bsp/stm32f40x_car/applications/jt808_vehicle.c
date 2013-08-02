@@ -19,12 +19,14 @@
 #include "jt808_param.h"
 
 
-static uint32_t utc_car_stop	= 0;        /*车辆开始停驶时刻*/
-static uint32_t utc_car_run		= 0;        /*车辆开始行驶时刻*/
+uint8_t car_stop_run=0;		/*车辆启动停止状态*/
+
 
 
 /*声明一个定时器，用来定时检查AUX*/
 struct rt_timer tmr_50ms;
+
+
 
 /*紧急情况的处理*/
 void onemg( uint8_t value )
@@ -81,15 +83,15 @@ AUX_OUT PIN_OUT[] = {
 	{ GPIOB, GPIO_Pin_6, 0, 0 },                    /*蜂鸣器*/
 };
 
-VEHICLE car_status =
-{
-	STOP, ( SPEED_USE_GPS ), 0, 0, 0, 0
-};
-
 /*外接车速信号*/
 __IO uint16_t	IC2Value	= 0;
 __IO uint16_t	DutyCycle	= 0;
 __IO uint32_t	Frequency	= 0;
+
+
+
+
+
 
 
 /*
@@ -99,10 +101,11 @@ __IO uint32_t	Frequency	= 0;
    要不要传递进来tick值?
 
  */
-void tmr_auxio_input_check( void* parameter )
+static void cb_tmr_50ms( void* parameter )
 {
-	int		i;
+	uint8_t	i;
 	uint8_t st;
+	
 	for( i = 0; i < sizeof( PIN_IN ) / sizeof( AUX_IN ); i++ )
 	{
 		st = GPIO_ReadInputDataBit( PIN_IN[i].port, PIN_IN[i].pin );
@@ -129,7 +132,8 @@ void tmr_auxio_input_check( void* parameter )
 	}
 }
 
-/*TIM5_CH1*/
+
+/*TIM5_CH1,脉冲判断速度*/
 void TIM5_IRQHandler( void )
 {
 	RCC_ClocksTypeDef RCC_Clocks;
@@ -212,21 +216,6 @@ void pulse_init( void )
 
 
 /*
-每秒判断车辆状态,gps中的RMC语句触发
-行驶里程
-*/
-void process_car_status(void)
-{
-
-
-
-}
-
-
-
-
-
-/*
    配置外部的输入输出口
    todo:是否导入到存储中，便于灵活配置
 
@@ -251,13 +240,12 @@ void jt808_vehicle_init( void )
 	}
 
 	rt_timer_init( &tmr_50ms, "tmr_50ms",       /* 定时器名字是 tmr_gps */
-	               tmr_auxio_input_check,       /* 超时时回调的处理函数 */
+	               cb_tmr_50ms,                 /* 超时时回调的处理函数 */
 	               RT_NULL,                     /* 超时函数的入口参数 */
 	               RT_TICK_PER_SECOND / 20,     /* 定时长度，以OS Tick为单位 */
 	               RT_TIMER_FLAG_PERIODIC );    /* 周期性定时器 */
 
 	rt_timer_start( &tmr_50ms );
-
 	pulse_init( );                              /*接脉冲计数*/
 }
 

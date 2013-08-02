@@ -171,7 +171,7 @@ static JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
 				rt_free( p_para );
 				p_para = RT_NULL;
 				rt_free( nodedata );
-				rt_kprintf( "%s有问题\n", __func__ );
+				rt_kprintf( "\n%s有问题", __func__ );
 			}
 			break;
 		default:
@@ -236,7 +236,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 			rt_free( p_para );
 			p_para = RT_NULL;
 			rt_free( nodedata );
-			rt_kprintf( "%s有问题\n", __func__ );
+			rt_kprintf( "\n%s有问题", __func__ );
 			nodedata->state = ACK_OK;
 			return WAIT_DELETE;
 		}
@@ -285,7 +285,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 			rt_free( p_para );
 			p_para = RT_NULL;
 			rt_free( nodedata );
-			rt_kprintf( "%s有问题\n", __func__ );
+			rt_kprintf( "\n%s有问题", __func__ );
 			nodedata->state = ACK_OK;
 			return WAIT_DELETE;
 		}
@@ -363,7 +363,7 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 	}else
 	{
 		pnodedata				= nodedata;
-		pnodedata->multipacket	= MULTI_CMD;
+		pnodedata->type	= MULTI_CMD;
 	}
 
 	ret = Cam_add_tx_pic_getdata( pnodedata );
@@ -372,7 +372,7 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 		rt_free( p_para );
 		p_para = RT_NULL;
 		rt_free( pnodedata );
-		rt_kprintf( "%s有问题\n", __func__ );
+		rt_kprintf( "\n%s有问题", __func__ );
 	}else
 	{
 		pnodedata->retry		= 0;
@@ -559,7 +559,7 @@ void Cam_jt808_0x8801_cam_ok( struct _Style_Cam_Requset_Para *para, uint32_t pic
 #if 1
 	if( para->SendPhoto )
 	{
-		rt_kprintf( "\n%s pic_id=%d\n", __func__, pic_id );
+		rt_kprintf( "\n%s pic_id=%d", __func__, pic_id );
 		Cam_jt808_0x0801( RT_NULL, pic_id, !para->SavePhoto );
 	}
 #endif

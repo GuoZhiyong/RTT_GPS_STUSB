@@ -571,7 +571,7 @@ rt_err_t resp_CGREG( char *p, uint16_t len )
  */
 rt_err_t resp_CIMI( char *p, uint16_t len )
 {
-	rt_kprintf( "cimi len=%d  %02x %02x\n", len, *p, *( p + 1 ) );
+	rt_kprintf( "\ncimi len=%d  %02x %02x", len, *p, *( p + 1 ) );
 	if( len < 15 )
 	{
 		return RT_ERROR;
@@ -645,7 +645,7 @@ rt_err_t resp_ETCPIP( char *p, uint16_t len )
 			psrc++;
 		}
 	}
-	rt_kprintf( "ip=%s\r\n", gsm_param.ip );
+	rt_kprintf( "\nip=%s", gsm_param.ip );
 	return RT_EOK;
 }
 
@@ -667,7 +667,7 @@ rt_err_t resp_DNSR( char *p, uint16_t len )
 	memset( curr_socket.ip_addr, 0, 15 );
 	memcpy( curr_socket.ip_addr, psrc + 6, len - 6 );
 
-	rt_kprintf( "dns ip=%s\r\n", curr_socket.ip_addr );
+	rt_kprintf( "\ndns ip=%s", curr_socket.ip_addr );
 	return RT_EOK;
 }
 
@@ -700,7 +700,7 @@ rt_err_t resp_IPOPENX( char *p, uint16_t len )
 ***********************************************************/
 rt_err_t resp_DEBUG( char *p, uint16_t len )
 {
-	rt_kprintf( "%s", p );
+	rt_kprintf( "\nresp_debug>%s", p );
 	return RT_ERROR;
 }
 
@@ -989,7 +989,7 @@ rt_err_t gsm_send( char *atcmd,
 		flag_wait	= 1;
 		if( strlen( atcmd ) ) /*要发送字符串*/
 		{
-			rt_kprintf( "%08d gsm>%s\r\n", tick_start, atcmd );
+			rt_kprintf( "\n%d gsm>%s", tick_start, atcmd );
 			m66_write( &dev_gsm, 0, atcmd, strlen( atcmd ) );
 		}
 		while( flag_wait )
@@ -1174,7 +1174,7 @@ static void rt_thread_gsm_power_on( void* parameter )
 	};
 
 lbl_poweron_start:
-	rt_kprintf( "%08d gsm_power_on>start\r\n", rt_tick_get( ) );
+	rt_kprintf( "\n%08d gsm_power_on>start", rt_tick_get( ) );
 
 	GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
@@ -1192,12 +1192,12 @@ lbl_poweron_start:
 		              at_init[i].retry ) != RT_EOK )
 		{
 			/*todo 错误计数，通知显示*/
-			rt_kprintf( "%08d stage=%d\r\n", rt_tick_get( ), i );
+			rt_kprintf( "\n%08d stage=%d", rt_tick_get( ), i );
 			goto lbl_poweron_start;
 		}
 	}
 
-	rt_kprintf( "%08d gsm_power_on>end\r\n", rt_tick_get( ) );
+	rt_kprintf( "\n%08d gsm_power_on>end", rt_tick_get( ) );
 
 	gsm_state = GSM_AT; /*当前出于AT状态,可以拨号，连接*/
 }
@@ -1286,7 +1286,7 @@ static void rt_thread_gsm_gprs( void* parameter )
 lbl_gsm_gprs_end_err:
 	gsm_state = GSM_ERR_GPRS;
 lbl_gsm_gprs_end:
-	rt_kprintf( "%08d gsm_gprs>end state=%d\r\n", rt_tick_get( ), gsm_state );
+	rt_kprintf( "\n%08d gsm_gprs>end state=%d", rt_tick_get( ), gsm_state );
 }
 
 /*关于链路维护,只维护一个，多链路由上层处理*/
@@ -1349,7 +1349,7 @@ static void rt_thread_gsm_socket( void* parameter )
 	curr_socket.state = SOCKET_READY;
 lbl_gsm_socket_end:
 	gsm_state = GSM_TCPIP; /*socket过程处理完成，结果在state中*/
-	rt_kprintf( "%08d gsm_socket>end socket.state=%d\r\n", rt_tick_get( ), curr_socket.state );
+	rt_kprintf( "\n%08d gsm_socket>end socket.state=%d", rt_tick_get( ), curr_socket.state );
 }
 
 /***********************************************************
@@ -1372,7 +1372,7 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 /*网络侧的信息，直接通知上层软件*/
 	if( fgsm_rawdata_out )
 	{
-		rt_kprintf( "\r\n%08d gsm<%s\r\n", rt_tick_get( ), pInfo );
+		rt_kprintf( "\n%d gsm<%s", rt_tick_get( ), pInfo );
 		fgsm_rawdata_out--;
 	}
 
@@ -1570,7 +1570,7 @@ rt_err_t dbgmsg( uint32_t i )
 {
 	if( i == 0 )
 	{
-		rt_kprintf( "debmsg=%d\r\n", fgsm_rawdata_out );
+		rt_kprintf( "\ndebmsg=%d", fgsm_rawdata_out );
 	} else
 	{
 		fgsm_rawdata_out = i;

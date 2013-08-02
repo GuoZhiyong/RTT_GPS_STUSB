@@ -6,7 +6,7 @@
 #include "usart.h"
 #include "board.h"
 #include <serial.h>
-
+#include <string.h>
 #include "SLE4442.h"
 #include "hmi.h"
 #include "menu_include.h"
@@ -712,18 +712,12 @@ void CheckICCard( void )
 				if(result==0)
 				{	
 					IC_Card_Checked=1;
-					//lcdmsg.id=LCD_MSG_ID_ICCARD;
-					//lcdmsg.info.payload[0]=IC_READ_OK; 
-					//pscr->msg(&lcdmsg);
 					beep(5,5,2);
 					
 				}
 				else
 				{
 					IC_Card_Checked=1;
-					//lcdmsg.id=LCD_MSG_ID_ICCARD;
-					//lcdmsg.info.payload[0]=IC_READ_ERR; 
-					//pscr->msg(&lcdmsg);
 					beep(2,2,3);
 				}
 			}
@@ -737,9 +731,6 @@ void CheckICCard( void )
 		_CardCMDVCC_HIGH;
 		if(IC_Card_Checked==1)
 		{
-			//lcdmsg.id=LCD_MSG_ID_ICCARD;
-			//lcdmsg.info.payload[0]=IC_PLUG_OUT; 
-			//pscr->msg(&lcdmsg);
 			beep(10,10,1);
 		}	
 		IC_Card_Checked=0;

@@ -20,6 +20,25 @@
 #define BCD2HEX( x )	( ( ( ( x ) >> 4 ) * 10 ) + ( ( x ) & 0x0f ) )
 
 
+#define PACK_BYTE( buf, byte ) ( *( buf ) = ( byte ) )
+#define PACK_WORD( buf, word ) \
+    do { \
+		*( ( buf ) )		= ( word ) >> 8; \
+		*( ( buf ) + 1 )	= ( word ) & 0xff; \
+	} \
+    while( 0 )
+
+#define PACK_INT( buf, byte4 ) \
+    do { \
+		*( ( buf ) )		= ( byte4 ) >> 24; \
+		*( ( buf ) + 1 )	= ( byte4 ) >> 16; \
+		*( ( buf ) + 2 )	= ( byte4 ) >> 8; \
+		*( ( buf ) + 3 )	= ( byte4 ) & 0xff; \
+	} while( 0 )
+
+
+
+
 typedef uint32_t MYTIME;
 
 #define MYDATETIME( year, month, day, hour, minute, sec ) \
