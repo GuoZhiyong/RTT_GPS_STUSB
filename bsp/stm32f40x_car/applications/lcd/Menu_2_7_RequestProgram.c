@@ -131,7 +131,7 @@ static void keypress( unsigned int key )
 /*检查是否回到主界面*/
 static void timetick( unsigned int tick )
 {
-	if( ( tick - pMenuItem->tick ) >= 100 * 10 )
+	if( ( tick - pMenuItem->tick ) >= RT_TICK_PER_SECOND* 10 )
 	{
 		if( info_ondemand_buf != RT_NULL )
 		{
