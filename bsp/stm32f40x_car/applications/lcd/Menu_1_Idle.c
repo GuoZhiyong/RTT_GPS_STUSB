@@ -183,11 +183,11 @@ void GPSGPRS_Status( void )
 }
 
 /*
-这里显示gps时间，若gps未定位，时间停走
-可选择 
-rtc时间，需要频繁读取(1秒1次)，如何判断校时
-使用自己的mytime，如何更新(使用系统的1s定时器是否准确)
-*/
+   这里显示gps时间，若gps未定位，时间停走
+   可选择
+   rtc时间，需要频繁读取(1秒1次)，如何判断校时
+   使用自己的mytime，如何更新(使用系统的1s定时器是否准确)
+ */
 
 #if 1
 void  Disp_Idle( void )
@@ -196,12 +196,12 @@ void  Disp_Idle( void )
 	char	buf_speed[20];
 
 	sprintf( buf_datetime, "20%02d/%02d/%02d %02d:%02d:%02d",
-	         YEAR(mytime_now),
-	         MONTH(mytime_now),
-	         DAY(mytime_now),
-	         HOUR(mytime_now),
-	         MINUTE(mytime_now),
-	         SEC(mytime_now) );
+	         YEAR( mytime_now ),
+	         MONTH( mytime_now ),
+	         DAY( mytime_now ),
+	         HOUR( mytime_now ),
+	         MINUTE( mytime_now ),
+	         SEC( mytime_now ) );
 	sprintf( buf_speed, "%3dkm/h   %3d度 ", gps_speed, gps_cog );
 
 	lcd_fill( 0 );
@@ -209,50 +209,59 @@ void  Disp_Idle( void )
 
 	lcd_text12( 0, 20, (char*)buf_speed, strlen( buf_speed ), LCD_MODE_SET );
 
-	
 	lcd_bitmap( 0, 3, &BMP_gsm_g, LCD_MODE_SET );
 	lcd_bitmap( 8, 3, &BMP_gsm_3, LCD_MODE_SET );
 	GPSGPRS_Status( );
 	lcd_update_all( );
 }
+
 #else
+
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 void  Disp_Idle( void )
 {
 	char	buf[20];
-	float   angle;
+	float	angle;
 
 	lcd_fill( 0 );
 
 	sprintf( buf, "20%02d/%02d/%02d",
-	         YEAR(mytime_now),
-	         MONTH(mytime_now),
-	         DAY(mytime_now));
+	         YEAR( mytime_now ),
+	         MONTH( mytime_now ),
+	         DAY( mytime_now ) );
 
-	lcd_text12( 0, 10, (char*)buf, strlen( buf), LCD_MODE_SET );
+	lcd_text12( 0, 10, (char*)buf, strlen( buf ), LCD_MODE_SET );
 
 	sprintf( buf, "%02d:%02d:%02d",
-	         HOUR(mytime_now),
-	         MINUTE(mytime_now),
-	         SEC(mytime_now) );
-	lcd_text12( 0, 20, (char*)buf, strlen( buf), LCD_MODE_SET );
+	         HOUR( mytime_now ),
+	         MINUTE( mytime_now ),
+	         SEC( mytime_now ) );
+	lcd_text12( 0, 20, (char*)buf, strlen( buf ), LCD_MODE_SET );
 
-	sprintf( buf, "%03d", gps_speed);
+	sprintf( buf, "%03d", gps_speed );
 
-	
-	angle=gps_cog*2.0*3.14/360.0;
-
+	angle = gps_cog * 2.0 * 3.14 / 360.0;
 
 	lcd_text12( 90, 12, (char*)buf, strlen( buf ), LCD_MODE_SET );
 
-	lcd_drawline(106,16,106+cos(angle),16+sin(angle),LCD_MODE_SET);
-	
+	lcd_drawline( 106, 16, 106 + cos( angle ), 16 + sin( angle ), LCD_MODE_SET );
+
 	lcd_bitmap( 0, 3, &BMP_gsm_g, LCD_MODE_SET );
 	lcd_bitmap( 8, 3, &BMP_gsm_3, LCD_MODE_SET );
 	GPSGPRS_Status( );
 	lcd_update_all( );
 }
-#endif
 
+#endif
 
 /**/
 static void msg( void *p )
@@ -263,7 +272,7 @@ static void msg( void *p )
 static void show( void )
 {
 	Disp_Idle( );
-	reset_firstset	= 0;
+	reset_firstset = 0;
 }
 
 /***********************************************************
@@ -277,6 +286,8 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
+	char	buf[128];
+	uint8_t i, pos, hour, minute;
 	switch( key )
 	{
 		case KEY_MENU:
@@ -285,7 +296,7 @@ static void keypress( unsigned int key )
 			OK_Counter	= 0;
 
 			CounterBack = 0;
-			UpAndDown	= 1; 
+			UpAndDown	= 1;
 
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );
@@ -318,13 +329,56 @@ static void keypress( unsigned int key )
 		case KEY_DOWN:
 			reset_firstset = 0;
 			//打印开电
-			GPIO_SetBits( GPIOB, GPIO_Pin_7 );
-			if( print_rec_flag == 0 )
+			//GPIO_SetBits( GPIOB, GPIO_Pin_6 );
+
+			sprintf( buf, "车牌号码:%s\n", jt808_param.id_0x0083 );
+			printer( buf );
+			sprintf( buf, "车牌分类:%s\n", jt808_param.id_0xF00A );
+			printer( buf );
+			sprintf( buf, "车辆VIN:%s\n", jt808_param.id_0xF005 );
+			printer( buf );
+			sprintf( buf, "驾驶员姓名:%s\n", jt808_param.id_0xF008 );
+			printer( buf );
+			sprintf( buf, "驾驶证代码:%s\n", jt808_param.id_0xF009 );
+			printer( buf );
+			memset( buf, 64, 0 );
+			sprintf( buf, "打印时间:20%02d-%02d-%02d %02d:%02d:%02d\n",
+			         YEAR( mytime_now ),
+			         MONTH( mytime_now ),
+			         DAY( mytime_now ),
+			         HOUR( mytime_now ),
+			         MINUTE( mytime_now ),
+			         SEC( mytime_now )
+			         );
+
+			printer( buf );
+			printer( "停车前15分钟车速:\n" );
+			pos = hmi_15min_speed_curr;
+			for( i = 0; i < 15; i++ )
 			{
-				print_rec_flag = 1; //打印标志
+				if( hmi_15min_speed[pos].time != 0 ) /*有数据*/
+				{
+					hour	= HOUR( hmi_15min_speed[pos].time );
+					minute	= MINUTE( hmi_15min_speed[pos].time );
+					sprintf( buf, "[%02d] %02d:%02d %d kmh\n", i + 1, hour, minute, hmi_15min_speed[pos].speed );
+					printer( buf );
+				}else
+				{
+					sprintf( buf, "[%02d] --:-- --\n", i + 1 );
+					printer( buf );
+				}
+				if( pos == 0 )
+				{
+					pos = 15;
+				}
+				pos--;
 			}
+
+			printer( "最近一次疲劳驾驶记录:\n无疲劳驾驶记录\n\n\n\n\n\n\n" );
+			//GPIO_ResetBits( GPIOB, GPIO_Pin_6 );
+
 			break;
-		case KEY_MENU_REPEAT:		/*长按进入设置*/
+		case KEY_MENU_REPEAT: /*长按进入设置*/
 			pMenuItem = &Menu_0_0_password;
 			pMenuItem->show( );
 			break;
@@ -348,10 +402,10 @@ static void timetick( unsigned int systick )
 	{
 		reset_firstset++;
 		//----------------------------------------------------------------------------------
-		JT808Conf_struct.password_flag = 0; // clear  first flag
+		JT808Conf_struct.password_flag = 0;     // clear  first flag
 		Api_Config_Recwrite_Large( jt808, 0, (u8*)&JT808Conf_struct, sizeof( JT808Conf_struct ) );
 		//----------------------------------------------------------------------------------
-	}else if( reset_firstset >= 7 )         //50ms一次,,60s
+	}else if( reset_firstset >= 7 )             //50ms一次,,60s
 	{
 		reset_firstset++;
 		lcd_fill( 0 );
@@ -389,7 +443,7 @@ static void timetick( unsigned int systick )
 MENUITEM Menu_1_Idle =
 {
 	"待机界面",
-	8,0,
+	8,		   0,
 	&show,
 	&keypress,
 	&timetick,

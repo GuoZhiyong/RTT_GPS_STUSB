@@ -90,9 +90,58 @@ unsigned char	ISP_Updata_Flag = 0;                            //远程升级主机程序
 unsigned char	data_tirexps[120];
 unsigned char	OneKeyCallFlag		= 0;                        //  一键拨号
 unsigned char	BD_upgrad_contr		= 0;                        //  北斗升级控制
-unsigned char	print_rec_flag		= 0;                        // 打印记录标志
-u8				CarSet_0_counter	= 1;                        //记录设置车辆信息的设置内容1:车牌号2:类型3:颜色
 
+u8				CarSet_0_counter;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //------------ 使用前锁定相关 ------------------
 unsigned char	Menu_Car_license[10];                           //存放车牌号码
 u8				Menu_VechileType[10];                           //  车辆类型

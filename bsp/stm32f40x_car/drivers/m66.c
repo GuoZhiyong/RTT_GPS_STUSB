@@ -571,7 +571,7 @@ rt_err_t resp_CGREG( char *p, uint16_t len )
  */
 rt_err_t resp_CIMI( char *p, uint16_t len )
 {
-	rt_kprintf( "\ncimi len=%d  %02x %02x", len, *p, *( p + 1 ) );
+	//rt_kprintf( "\ncimi len=%d  %02x %02x", len, *p, *( p + 1 ) );
 	if( len < 15 )
 	{
 		return RT_ERROR;
@@ -1038,6 +1038,7 @@ rt_err_t gsm_send( char *atcmd,
 	return ( -RT_ETIMEOUT );
 
 lbl_send_wait_ok:
+	pmsg=RT_NULL; /*重新开始等待*/
 	err = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pmsg, tm );
 	if( err == RT_EOK ) /*没有超时,判断信息是否正确*/
 	{
