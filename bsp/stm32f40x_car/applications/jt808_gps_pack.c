@@ -19,7 +19,7 @@
    Õý³£1Ãë 517×Ö½Ú  Ñ¹Ëõºó 260
    ½üËÆ 100¸öÉÈÇø ±£´æ25·ÖÖÓÔ­Ê¼Êý¾Ý
  */
-#define GPS_PACK_START		0x0003F000
+#define GPS_PACK_START		0x002FC000
 #define GPS_PACK_SECTORS	100
 
 
@@ -204,7 +204,7 @@ static void save_rec( uint8_t *p, uint8_t len )
 		pack_buf_pos=4;
 	}else
 	{
-		memcpy( pack_buf, p, len );
+		memcpy( pack_buf+pack_buf_pos, p, len );
 		pack_buf_pos+=len;
 	}
 }
@@ -279,7 +279,7 @@ uint8_t jt808_gps_pack( char *pinfo, uint8_t len )
 		case 'P': i = 1; break;
 		case 'D': i = 2; break;
 		default:
-			rt_kprintf( "unknow>%s",pinfo );  /*unknow>ÿ$GNRMC,074127.90,V,,,,,,,200713,,,N*6A*/
+			rt_kprintf( "\nunknow>%s",pinfo );  /*unknow>ÿ$GNRMC,074127.90,V,,,,,,,200713,,,N*6A*/
 			return 0;
 	}
 	switch( p[4] )
@@ -293,7 +293,7 @@ uint8_t jt808_gps_pack( char *pinfo, uint8_t len )
 				j = 1;
 			} else
 			{
-				rt_kprintf( "unknow\n" );
+				rt_kprintf( "\nunknow" );
 				return 0;
 			}
 			break;
@@ -301,7 +301,7 @@ uint8_t jt808_gps_pack( char *pinfo, uint8_t len )
 		case 'M': j = 3; break; /*RMC*/
 		case 'L': j = 4; break; /*GLL*/
 		default:
-			rt_kprintf( "unknow\n" );
+			rt_kprintf( "\ngps_packÎ´Öª:%02x",p[4] );
 			return 0;
 	}
 	id		= MN | ( i * 5 + j );
@@ -333,7 +333,7 @@ uint8_t jt808_gps_pack( char *pinfo, uint8_t len )
 				case 'E': c |= 0xe; break;
 				case ',': c |= 0xf; break;
 				default:
-					rt_kprintf( "unknow\n" );
+					rt_kprintf( "\ngps_packÎ´Öª[%02x]",*p );
 					return 0;
 			}
 		}
@@ -378,13 +378,13 @@ uint8_t jt808_gps_pack( char *pinfo, uint8_t len )
 void gps_pack_init( void )
 {
 	uint32_t	i;
-	uint8_t		buf[128];
+	uint8_t		buf[12];
 	uint32_t	addr, id;
 	uint16_t	pos;
 
 	pack_buf_id = 0;
 	sect_index	= 0xFF;
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 	for( i = 0; i < GPS_PACK_SECTORS; i++ )
 	{
 		addr = GPS_PACK_START + i * 4096;
@@ -399,13 +399,23 @@ void gps_pack_init( void )
 			}
 		}
 	}
+	
+	memset(pack_buf,0xFF,sizeof(pack_buf));
+
+
 	if( sect_index == 0xFF )            /*Ã»ÓÐÕÒµ½ÓÐÊý¾ÝµÄÉÈÇø*/
 	{
 		sect_index		= 0;            /**/
 		pack_buf_pos	= 4;            /*¿Õ³ö¿ªÊ¼µÄËÄ¸ö×Ö½Ú±£´æid*/
+		pack_buf[0]=0;
+		pack_buf[1]=0;
+		pack_buf[2]=0;
+		pack_buf[3]=0;
+		
 	}else /*ÒªÔÚÌØ¶¨µÄÉÈÇøÖÐ²éÕÒ£¬²¢²»ÊÇÌ«·½±ã,ÒòÎªÊÇ±ä³¤µÄ*/
 	{
 		/*¶ÁÈëµ½4kµÄram*/
+
 		sst25_read( addr + sect_index * 4096, pack_buf, 4096 );
 		pos = 4;
 		while( pos < 4096 )
@@ -420,7 +430,7 @@ void gps_pack_init( void )
 		}
 		if( pos > 4095 ) /*³ö´íÁË? why?*/
 		{
-			rt_kprintf( "gps_pack_init fault\n" );
+			rt_kprintf( "\ngps_pack_init fault" );
 			for( i = 0; i < GPS_PACK_SECTORS; i++ )
 			{
 				sst25_erase_4k( GPS_PACK_START + i * 4096 );
@@ -434,7 +444,7 @@ void gps_pack_init( void )
 		}
 	}
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "sect=%d id=%d pos=%d\n", sect_index, pack_buf_id, pack_buf_pos );
+	rt_kprintf( "\nsect=%d id=%d pos=%d", sect_index, pack_buf_id, pack_buf_pos );
 }
 
 /************************************** The End Of File **************************************/

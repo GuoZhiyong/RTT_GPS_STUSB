@@ -21,19 +21,9 @@
 #include "menu_include.h"
 #include "sed1520.h"
 
-/*
-   #define KEY_MENU_PORT	GPIOC
-   #define KEY_MENU_PIN	GPIO_Pin_8
+#include "sle4442.h"
 
-   #define KEY_DOWN_PORT		GPIOA
-   #define KEY_DOWN_PIN		GPIO_Pin_8
 
-   #define KEY_OK_PORT		GPIOC
-   #define KEY_OK_PIN		GPIO_Pin_9
-
-   #define KEY_UP_PORT	GPIOD
-   #define KEY_UP_PIN	GPIO_Pin_3
- */
 
 #define KEY_NONE 0
 
@@ -51,6 +41,13 @@ static KEY keys[] = {
 	{ GPIOA, GPIO_Pin_8, 0, KEY_NONE }, /*down*/
 	{ GPIOC, GPIO_Pin_8, 0, KEY_NONE }, /*ok*/
 };
+
+
+static uint8_t beep_high_ticks=0;
+static uint8_t beep_low_ticks=0;
+static uint8_t beep_state=0;
+static uint32_t beep_ticks;			/*持续时间计数*/
+static uint16_t beep_count=0;
 
 
 /*
@@ -129,6 +126,16 @@ static void key_lcd_port_init( void )
 	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_100MHz;
 	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_NOPULL;
 	GPIO_Init( GPIOE, &GPIO_InitStructure );
+
+	//BUZZER
+	GPIO_InitStructure.GPIO_Pin		= GPIO_Pin_6;
+	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_100MHz;
+	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_NOPULL;
+	GPIO_Init( GPIOB, &GPIO_InitStructure );
+
+	//GPIO_SetBits(GPIOB,GPIO_Pin_6);
 }
 
 
@@ -154,6 +161,7 @@ static void rt_thread_entry_hmi( void* parameter )
 	pMenuItem->tick=rt_tick_get( );
 	while( 1 )
 	{
+		CheckICCard();
 		key = keycheck( );
 		if( key )
 		{
@@ -161,7 +169,30 @@ static void rt_thread_entry_hmi( void* parameter )
 			pMenuItem->keypress( key );         //每个子菜单的 按键检测  时钟源50ms timer
 		}
 		pMenuItem->timetick( rt_tick_get( ) );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
-		
+
+		if(beep_count)		/*声音提示*/
+		{
+			beep_ticks--;
+			if(beep_ticks==0)
+			{
+				if(beep_state==1)  /*响的状态*/
+				{
+					GPIO_ResetBits(GPIOB,GPIO_Pin_6);
+					beep_ticks=beep_low_ticks;
+					beep_state=0;
+				}
+				else
+				{
+					beep_count--;
+					if(beep_count)	/*没响够*/
+					{
+						GPIO_SetBits(GPIOB,GPIO_Pin_6);
+						beep_ticks=beep_high_ticks;
+						beep_state=1;
+					}
+				}
+			}
+		}
 		rt_thread_delay( RT_TICK_PER_SECOND/20);	/*50ms调用一次*/
 	}
 }
@@ -178,6 +209,20 @@ void pop_msg(char *msg,uint32_t interval)
 	pMenuItem->msg((void*)msg);
 }
 
+/*
+蜂鸣器发声
+响 high tick
+灭 low
+*/
+void beep(uint8_t high_ticks,uint8_t low_ticks,uint16_t count)
+{
+	beep_high_ticks=high_ticks;
+	beep_low_ticks=low_ticks;
+	beep_state=1;		/*发声*/
+	beep_ticks=beep_high_ticks;		
+	beep_count=count;
+	GPIO_SetBits(GPIOB,GPIO_Pin_6);	/*发声*/
+}
 
 /**/
 void hmi_init( void )

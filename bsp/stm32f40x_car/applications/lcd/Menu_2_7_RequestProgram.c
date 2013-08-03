@@ -14,7 +14,7 @@
 #include "Menu_Include.h"
 #include "sed1520.h"
 
-#if 1
+#if 0
 
 static uint8_t			count, pos;
 

@@ -48,17 +48,17 @@ static void rt_thread_entry_usbmsc(void* parameter)
 			  &USBH_MSC_cb, 
 			  &USR_cb);
 	
-	rt_kprintf("\r\nUSBH_Init\r\n");
+	rt_kprintf("\nUSBH_Init");
 
 
 #if defined(RT_USING_DFS_ROMFS) 
 		dfs_romfs_init(); 
 		if (dfs_mount(RT_NULL, "/", "rom", 0, &romfs_root) == 0) 
 		{ 
-			rt_kprintf("Root File System initialized!\n"); 
+			rt_kprintf("\nRoot File System initialized!"); 
 		} 
 		else 
-			rt_kprintf("Root File System initialzation failed!\n"); 
+			rt_kprintf("\nRoot File System initialzation failed!"); 
 #endif
 
 

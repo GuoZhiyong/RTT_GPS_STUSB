@@ -21,6 +21,8 @@
 #include "m66.h"
 #include "sst25.h"
 #include "jt808_area.h"
+#include "jt808_util.h"
+#include "jt808_vehicle.h"
 
 #define NEED_TODO	0
 
@@ -30,11 +32,6 @@
 #define JT808_PACKAGE_MAX	512
 
 
-/*
-   存储区域分配,采用绝对地址,以4K(0x1000)为一个扇区
- */
-
-#define ADDR_PARAM 0x000000000
 
 
 /*for new use*/
@@ -43,55 +40,6 @@
 
 
 
-#define BYTESWAP2( val )    \
-    ( ( ( ( val ) & 0xff ) << 8 ) |   \
-      ( ( ( val ) & 0xff00 ) >> 8 ) )
-
-#define BYTESWAP4( val )    \
-    ( ( ( ( val ) & 0xff ) << 24 ) |   \
-      ( ( ( val ) & 0xff00 ) << 8 ) |  \
-      ( ( ( val ) & 0xff0000 ) >> 8 ) |  \
-      ( ( ( val ) & 0xff000000 ) >> 24 ) )
-
-#define HEX2BCD( x )	( ( ( x ) / 10 ) << 4 | ( ( x ) % 10 ) )
-#define BCD2HEX( x )	( ( ( ( x ) >> 4 ) * 10 ) + ( ( x ) & 0x0f ) )
-
-typedef uint32_t MYTIME;
-
-#define MYDATETIME( year, month, day, hour, minute, sec ) \
-    ( (uint32_t)( ( year ) << 26 ) | \
-      (uint32_t)( ( month ) << 22 ) | \
-      (uint32_t)( ( day ) << 17 ) | \
-      (uint32_t)( ( hour ) << 12 ) | \
-      (uint32_t)( ( minute ) << 6 ) | ( sec ) )
-#define YEAR( datetime )	( ( datetime >> 26 ) & 0x3F )
-#define MONTH( datetime )	( ( datetime >> 22 ) & 0xF )
-#define DAY( datetime )		( ( datetime >> 17 ) & 0x1F )
-#define HOUR( datetime )	( ( datetime >> 12 ) & 0x1F )
-#define MINUTE( datetime )	( ( datetime >> 6 ) & 0x3F )
-#define SEC( datetime )		( datetime & 0x3F )
-
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-__inline MYTIME buf_to_time( uint8_t *p )
-{
-	uint32_t ret;
-	ret = (uint32_t)( ( *p++ ) << 26 );
-	ret |= (uint32_t)( ( *p++ ) << 22 );
-	ret |= (uint32_t)( ( *p++ ) << 17 );
-	ret |= (uint32_t)( ( *p++ ) << 12 );
-	ret |= (uint32_t)( ( *p++ ) << 6 );
-	ret |= ( *p );
-	return ret;
-}
 
 typedef struct
 {
@@ -182,7 +130,7 @@ typedef __packed struct _jt808_tx_nodedata
 {
 /*发送机制相关*/
 	uint8_t			linkno;                                                                             /*传输使用的link,包括了协议和远端socket*/
-	uint8_t			multipacket;                                                                        /*是不是多包发送*/
+//	uint8_t			multipacket;                                                                        /*是不是多包发送*/
 	JT808_MSG_TYPE	type;                                                                               /*发送消息的类型*/
 	JT808_MSG_STATE state;                                                                              /*发送状态*/
 	uint32_t		retry;                                                                              /*重传次数,递增，递减找不到*/
@@ -231,7 +179,7 @@ void node_end( JT808_TX_NODEDATA* pnodedata,
 
 
 void jt808_add_tx( uint8_t linkno,
-                       JT808_MSG_TYPE fMultiPacket, /*是否为多包*/
+                       JT808_MSG_TYPE msgtype, /*是否为多包*/
                        uint16_t id,
                        int32_t seq,
                        JT808_MSG_STATE ( *cb_tx_timeout )( ),

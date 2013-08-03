@@ -34,13 +34,13 @@ static void display( void )
 	switch( page )
 	{
 		case 0:
-			sprintf( buf, "车 牌 号:%s", jt808_param.id_0xF006 );
+			sprintf( buf, "车 牌 号:%s", jt808_param.id_0x0083 );
 			lcd_text12( 0, 4, (char*)buf, strlen( buf ), LCD_MODE_SET );
 			sprintf( buf, "车辆类型:%s", jt808_param.id_0xF00A );
 			lcd_text12( 0, 18, (char*)buf, strlen( buf ), LCD_MODE_SET );
 			break;
 		case 1:
-			sprintf( buf, "入网ID:%s", jt808_param.id_0xF006 );
+			sprintf( buf, "入网ID:%02x%02x%02x%02x%02x%02x", mobile[0],mobile[1],mobile[2],mobile[3],mobile[4],mobile[5]);
 			lcd_text12( 0, 4, (char*)buf, strlen( buf ), LCD_MODE_SET );
 			sprintf( buf, "[%s]", jt808_param.id_0xF005 );
 			lcd_text12( 0, 18, (char*)buf, strlen( buf ), LCD_MODE_SET );

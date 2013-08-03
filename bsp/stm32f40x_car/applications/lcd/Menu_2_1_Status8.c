@@ -15,7 +15,7 @@
 #include <string.h>
 #include "sed1520.h"
 
-#include "jt808_auxio.h"
+#include "jt808_vehicle.h"
 
 char* caption[10]={"紧急","启动","输入","远光","车门","喇叭","左转","右转","刹车","雨刷"};
 
