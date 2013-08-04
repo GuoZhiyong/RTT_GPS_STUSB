@@ -224,7 +224,6 @@ extern unsigned char	bd_version[20];
 extern unsigned char	ISP_Updata_Flag;        //远程升级主机程序进度显示标志   1:开始升级  2:升级完成
 
 extern unsigned char	BD_upgrad_contr;
-extern unsigned char	print_rec_flag;
 
 //------------ 使用前锁定相关 ------------------
 extern unsigned char	Menu_Car_license[10];   //存放车牌号码

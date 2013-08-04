@@ -137,12 +137,6 @@ static uint32_t vdr11_lati_start	= 0;
 static uint32_t vdr11_longi_start	= 0;
 static uint16_t vdr11_alti_start	= 0;
 
-static MYTIME	vdr16_mytime_start	= 0;
-static uint8_t	vdr16_speed_min		= 0;
-static uint8_t	vdr16_speed_max		= 0;
-static uint8_t	vdr16_speed_avg		= 0;
-static uint32_t vdr16_speed_sum		= 0;
-
 
 /*
    200ms定时器
@@ -241,6 +235,7 @@ static enum _stop_run	car_stop_run	= STOP;
 static uint32_t			utc_car_stop	= 0;    /*车辆开始停驶时刻*/
 static uint32_t			utc_car_run		= 0;    /*车辆开始行驶时刻*/
 
+
 /*
    获取id下一个可用的地址
    并没有做搽除操作，交由写之前处理
@@ -301,7 +296,7 @@ void vdr_08_put( MYTIME datetime, uint8_t speed, uint8_t status )
 			}
 			sst25_write_through( addr, vdr_08_info, sizeof( vdr_08_info ) );
 			rt_sem_release( &sem_dataflash );
-			rt_kprintf( "\n%d>写入08 地址:%08x(sect:count=%d:%d) 值:%08x", rt_tick_get( ), addr, sect_info[0].sector, sect_info[0].index,vdr_08_time );
+			rt_kprintf( "\n%d>写入08 地址:%08x(sect:count=%d:%d) 值:%08x", rt_tick_get( ), addr, sect_info[0].sector, sect_info[0].index, vdr_08_time );
 
 #endif
 			memset( vdr_08_info, 0xFF, sizeof( vdr_08_info ) ); /*新的记录，初始化为0xFF*/
@@ -440,7 +435,7 @@ void vdr_11_put( MYTIME datetime )
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 	addr = vdr_08_12_get_nextaddr( 11 );
-	if( ( addr & 0xFFF ) == 0 )         /*在4k边界处*/
+	if( ( addr & 0xFFF ) == 0 ) /*在4k边界处*/
 	{
 		sst25_erase_4k( addr );
 	}
@@ -451,24 +446,24 @@ void vdr_11_put( MYTIME datetime )
 }
 
 /*超速驾驶记录*/
-void vdr_16_put( MYTIME datetime )
+void vdr_16_put( MYTIME start, MYTIME end, uint16_t speed_min, uint16_t speed_max, uint16_t speed_avg )
 {
 	uint32_t	addr;
 	uint8_t		buf[64]; /*保存要写入的信息*/
 
-	buf[0]	= datetime >> 24;
-	buf[1]	= datetime >> 16;
-	buf[2]	= datetime >> 8;
-	buf[3]	= datetime & 0xFF;
-	mytime_to_hex( buf + 4, vdr16_mytime_start );
-	mytime_to_hex( buf + 10, datetime );
-	PACK_WORD( buf + 16, vdr16_speed_min );
-	PACK_WORD( buf + 18, vdr16_speed_max );
-	PACK_WORD( buf + 20, vdr16_speed_avg );
+	buf[0]	= end >> 24;
+	buf[1]	= end >> 16;
+	buf[2]	= end >> 8;
+	buf[3]	= end & 0xFF;
+	mytime_to_hex( buf + 4, start );
+	mytime_to_hex( buf + 10, end );
+	PACK_WORD( buf + 16, speed_min );
+	PACK_WORD( buf + 18, speed_max );
+	PACK_WORD( buf + 20, speed_avg );
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 	//addr = vdr_08_12_get_nextaddr( 11 );
-	if( ( addr & 0xFFF ) == 0 )  /*在4k边界处*/
+	if( ( addr & 0xFFF ) == 0 ) /*在4k边界处*/
 	{
 		sst25_erase_4k( addr );
 	}
@@ -478,9 +473,6 @@ void vdr_16_put( MYTIME datetime )
 	rt_kprintf( "\n%d>save 16 data addr=%08x", rt_tick_get( ), addr );
 }
 
-
-
-
 /*
    每秒判断车辆状态,gps中的RMC语句触发
    行驶里程
@@ -488,7 +480,7 @@ void vdr_16_put( MYTIME datetime )
  */
 
 /*gps有效情况下检查车辆行驶状态*/
-void process_overtime( MYTIME datetime )
+void process_overtime( void )
 {
 /*判断车辆行驶状态*/
 	if( car_stop_run == STOP )                                          /*认为车辆停止,判断启动*/
@@ -499,7 +491,7 @@ void process_overtime( MYTIME datetime )
 		}
 		if( gps_speed >= SPEED_LIMIT )                                  /*速度大于门限值*/
 		{
-			if( utc_car_run == 0 )
+			if( utc_car_run == 0 )                                      /*还没有记录行驶的时刻*/
 			{
 				utc_car_run = utc_now;                                  /*记录开始时刻*/
 			}
@@ -515,6 +507,7 @@ void process_overtime( MYTIME datetime )
 			if( utc_now - utc_car_stop > jt808_param.id_0x005A )        /*判断停车最长时间*/
 			{
 				//rt_kprintf( "达到停车最长时间\r\n" );
+				jt808_alarm|=BIT_ALARM_STOP_OVERTIME;
 			}
 			utc_car_run = 0;
 		}
@@ -531,7 +524,7 @@ void process_overtime( MYTIME datetime )
 				car_stop_run = STOP;                                    /*认为车辆停驶*/
 				rt_kprintf( "\n%d>车辆停驶", rt_tick_get( ) );
 				utc_car_run = 0;
-				vdr_10_put( datetime );                                 /*生成VDR_10数据,事故疑点*/
+				vdr_10_put( mytime_now );                               /*生成VDR_10数据,事故疑点*/
 			}
 		}else
 		{
@@ -544,43 +537,75 @@ void process_overtime( MYTIME datetime )
 	}
 }
 
-
 /*超速、超速预警判断*/
 void process_overspeed( void )
 {
-	static uint8_t overspeed_flag=0;
+	static uint8_t	overspeed_flag = 0;
 	static uint32_t utc_overspeed_start;
+	static MYTIME	mytime_overspeed_start;
+	static uint32_t overspeed_sum	= 0;
+	static uint32_t overspeed_count = 0;
+	static uint16_t overspeed_min	= 0xFF;
+	static uint16_t overspeed_max	= 0;
 
-	if( gps_speed >= jt808_param.id_0x0055 )                                    /*超过最高速度*/
+	uint16_t		gps_speed_10x	= gps_speed * 10;
+	uint16_t		limit_speed_10x = jt808_param.id_0x0055 * 10;
+
+	if( gps_speed >= jt808_param.id_0x0055 )                                /*超过最高速度*/
 	{
-		if( overspeed_flag == 2 )                                               /*已超速*/
+		if( utc_overspeed_start )                                           /*判断超速持续事件*/
 		{
-			if( utc_now - utc_overspeed_start >= jt808_param.id_0x0056 )        /*已经持续超速*/
+			if( utc_now - utc_overspeed_start >= jt808_param.id_0x0056 )    /*已经持续超速*/
 			{
-				if( ( jt808_param.id_0x0050 & 0x02 ) == 0 )                     /*报警屏蔽字*/
+				if( ( jt808_param.id_0x0050 & BIT_ALARM_OVERSPEED ) == 0 )  /*报警屏蔽字*/
 				{
-					jt808_alarm |= 0x02;
+					jt808_alarm |= BIT_ALARM_OVERSPEED;
+					beep( 5, 1, 1 );
+				}
+				overspeed_flag	= 2;                                        /*已经超速了*/
+				overspeed_sum	+= gps_speed;
+				overspeed_count++;
+				if( gps_speed > overspeed_max )
+				{
+					overspeed_max = gps_speed;
+				}
+				if( gps_speed < overspeed_min )
+				{
+					overspeed_min = gps_speed;
 				}
 			}
-		}else                                                                   /*没有超速或超速预警，记录开始超速，*/
+		}else                                                               /*没有超速或超速预警，记录开始超速，*/
 		{
-			overspeed_flag		= 2;
-			utc_overspeed_start = utc_now;
+			utc_overspeed_start		= utc_now;                              /*记录超速开始的时刻*/
+			mytime_overspeed_start	= mytime_now;
 		}
-	}else if( gps_speed >= ( jt808_param.id_0x0055 - jt808_param.id_0x005B ) )  /*超速预警*/
+	}else
 	{
-		if( ( jt808_param.id_0x0050 & ( 1 << 13 ) ) == 0 )                      /*报警屏蔽字*/
+		if( gps_speed_10x >= ( limit_speed_10x - jt808_param.id_0x005B ) )  /*超速预警*/
 		{
-			jt808_alarm |= ( 1 << 13 );
+			if( ( jt808_param.id_0x0050 & BIT_ALARM_PRE_OVERSPEED ) == 0 )  /*报警屏蔽字*/
+			{
+				jt808_alarm |= ( BIT_ALARM_PRE_OVERSPEED );
+				jt808_alarm &= ~( BIT_ALARM_OVERSPEED );
+				beep( 10, 1, 1 );
+			}
+			overspeed_flag = 1;
+		}else                                                               /*没有超速，也没有预警,清除标志位*/
+		{
+			if( overspeed_flag > 1 )                                        /*已经超速了,现在速度正常，要记录当前的超速记录*/
+			{
+				vdr_16_put( mytime_overspeed_start, mytime_now, overspeed_min, overspeed_max, overspeed_sum / overspeed_count );
+			}
+			overspeed_flag	= 0;
+			jt808_alarm		&= ~( BIT_ALARM_OVERSPEED | BIT_ALARM_PRE_OVERSPEED );
 		}
-	}else                                                                       /*没有超速，也没有预警,清除标志位*/
-	{
-		overspeed_flag	= 0;
-		jt808_alarm		&= ~( ( 1 << 1 ) | ( 1 << 13 ) );
+		utc_overspeed_start = 0;                                            /*准备记录超速的时刻*/
+		overspeed_max		= 0;
+		overspeed_min		= 0xFF;
+		overspeed_count		= 0;
+		overspeed_sum		= 0;
 	}
 }
-
-
 
 /*
    收到已定位gps数据的处理，
@@ -608,7 +633,7 @@ void vdr_rx_gps( void )
 	}
 #endif
 
-	datetime = mytime_from_hex( gps_datetime );
+	datetime = mytime_from_hex( gps_datetime );         /*可以直接使用mytime_now*/
 
 	vdr_08_put( datetime, gps_speed, vdr_signal_status );
 	vdr_09_put( datetime );
@@ -621,12 +646,8 @@ void vdr_rx_gps( void )
 	speed_status[speed_status_index][0] = gps_speed;    /*当前位置写入速度,200ms任务中操作*/
 	utc_speed_status					= utc_now;
 
-
-	process_overspeed();
-	process_overtime(datetime);
-
-
-	
+	process_overspeed( );
+	process_overtime( );
 }
 
 /*
@@ -962,7 +983,7 @@ void vdr_08_12_get_ready( uint8_t vdr_id, uint16_t seq, MYTIME start, MYTIME end
 	i = sect_info[id].record_per_packet * sect_info[id].data_size + 7;
 
 	/*计算要发送的数据总数，和单包最大字节数*/
-	if( rec_count > sect_info[id].record_per_packet )         /*多包发送,*/
+	if( rec_count > sect_info[id].record_per_packet ) /*多包发送,*/
 	{
 		pnodedata = node_begin( 1, MULTI_CMD, 0x0700, 0xF000, i );
 	} else

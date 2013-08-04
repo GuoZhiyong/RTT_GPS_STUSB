@@ -192,6 +192,7 @@ static void rt_thread_entry_hmi( void* parameter )
 					}
 				}
 			}
+
 		}
 		rt_thread_delay( RT_TICK_PER_SECOND/20);	/*50ms调用一次*/
 	}
@@ -214,10 +215,10 @@ void pop_msg(char *msg,uint32_t interval)
 响 high tick
 灭 low
 */
-void beep(uint8_t high_ticks,uint8_t low_ticks,uint16_t count)
+void beep(uint8_t high_50ms_count,uint8_t low_50ms_count,uint16_t count)
 {
-	beep_high_ticks=high_ticks;
-	beep_low_ticks=low_ticks;
+	beep_high_ticks=high_50ms_count;
+	beep_low_ticks=low_50ms_count;
 	beep_state=1;		/*发声*/
 	beep_ticks=beep_high_ticks;		
 	beep_count=count;

@@ -105,7 +105,7 @@ uint32_t	gps_lati;
 uint32_t	gps_longi;
 uint16_t	gps_speed;
 
-uint16_t	gps_cog;                    /*course over ground*/
+uint16_t	gps_cog;                 /*course over ground*/
 uint16_t	gps_alti;
 uint8_t		gps_datetime[6];
 
@@ -186,7 +186,7 @@ static void adjust_mytime_now( void )
 {
 	uint8_t year, month, day, hour, minute, sec;
 
-	if( mytime_now )                        /*mytime_now经过gps定位后的授时*/
+	if( mytime_now )                     /*mytime_now经过gps定位后的授时*/
 	{
 		sec		= SEC( mytime_now );
 		minute	= MINUTE( mytime_now );
@@ -354,7 +354,7 @@ static void process_gps_report( void )
 	alarm_bits = area_get_alarm( palarmdata, &alarm_length );
 	if( alarm_bits ) /*有告警*/
 	{
-		rt_kprintf("\n区域有告警");
+		rt_kprintf( "\n区域有告警" );
 		memcpy( buf + 28, palarmdata, alarm_length );
 		flag_send = FLAG_SEND_AREA;
 	}
@@ -422,7 +422,7 @@ static void process_gps_report( void )
 		flag_send |= FLAG_SEND_ALARM;
 	}
 
-	if( tmp &BIT_ALARM_EMG)                                    /*紧急告警*/
+	if( tmp & BIT_ALARM_EMG )                           /*紧急告警*/
 	{
 		if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
 		{
@@ -538,12 +538,12 @@ static uint8_t process_rmc( uint8_t * pinfo )
 			case 2:                         /*A_V*/
 				if( buf[0] != 'A' )         /*未定位*/
 				{
-					jt808_status	&= ~BIT_STATUS_GPS;
+					jt808_status	&= ~BIT_STATUS_FIXED;
 					gps_lati_last	= 0;    /*从新计算距离*/
 					gps_longi_last	= 0;
 					return 2;
 				}
-				jt808_status |= BIT_STATUS_GPS;
+				jt808_status |= BIT_STATUS_FIXED;
 #if 0
 				if( buf[0] == 'A' )
 				{
@@ -732,7 +732,7 @@ static uint8_t process_rmc( uint8_t * pinfo )
 				gps_baseinfo.datetime[5]	= HEX2BCD( sec );
 
 				/*首次定位,校时*/
-				if( ( jt808_status_last & BIT_STATUS_GPS ) == 0 )
+				if( ( jt808_status_last & BIT_STATUS_FIXED ) == 0 )
 				{
 					date_set( year, mon, day );
 					time_set( hour, min, sec );
@@ -874,16 +874,17 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		gps_sec_count++;
 		ret = process_rmc( (uint8_t*)psrc );
 
-		if( ret == 0 )              /*已定位*/
+		if( ret == 0 )                  /*已定位*/
 		{
-			vdr_rx_gps( );          /*行车记录仪数据处理*/
-			area_process( );        /*区域线路告警*/
+			process_hmi_15min_speed( ); /*最近15分钟速度*/
+			vdr_rx_gps( );              /*行车记录仪数据处理*/
+			area_process( );            /*区域线路告警*/
 			calc_distance( );
 		}else
 		{
-			adjust_mytime_now( );   /*调整mytime_now*/
+			adjust_mytime_now( );       /*调整mytime_now*/
 		}
-		process_gps_report( );      /*处理GPS上报信息*/
+		process_gps_report( );          /*处理GPS上报信息*/
 	}
 
 	/*天线开短路检测 gps<$GNTXT,01,01,01,ANTENNA OK*2B*/

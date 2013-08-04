@@ -205,7 +205,8 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 	uint16_t				ack_seq;                                            /*应答序号*/
 
 	temp_msg_id = buf_to_data( pmsg, 2 );
-
+	p_para=nodedata->user_para;
+	
 	if( 0x8001 == temp_msg_id )                                                 ///通用应答,有可能应答延时
 	{
 		ack_seq = ( pmsg[12] << 8 ) | pmsg[13];                                 /*判断应答流水号*/
@@ -251,7 +252,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 
 		if( tempu32data != p_para->Data_ID )
 		{
-			rt_kprintf( "\n应答ID不正确" );
+			rt_kprintf( "\n应答ID不正确 %08x %08x",tempu32data,p_para->Data_ID );
 			nodedata->state = ACK_OK;
 			return WAIT_DELETE;
 		}
@@ -289,6 +290,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 			nodedata->state = ACK_OK;
 			return WAIT_DELETE;
 		}
+		nodedata->state=IDLE;
 		return IDLE;
 	}
 
