@@ -292,6 +292,7 @@ typedef struct
 
 extern HMI_15MIN_SPEED	hmi_15min_speed[15];
 extern uint8_t			hmi_15min_speed_curr;
+extern uint8_t	fconfirm_bd_upgrade_mode;
 
 void timetick_default( unsigned int tick );
 

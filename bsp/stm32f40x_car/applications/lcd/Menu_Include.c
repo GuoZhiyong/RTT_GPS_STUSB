@@ -334,6 +334,8 @@ void Dis_chaosu( unsigned char *p )
 
 uint32_t		hmi_status;
 
+uint8_t	fconfirm_bd_upgrade_mode=0;	/*北斗升级模式确认 1:查看信息 2:U盘升级*/
+
 HMI_15MIN_SPEED hmi_15min_speed[15];
 uint8_t			hmi_15min_speed_curr = 0;
 

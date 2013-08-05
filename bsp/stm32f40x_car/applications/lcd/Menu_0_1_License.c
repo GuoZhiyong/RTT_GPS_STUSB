@@ -42,7 +42,7 @@ static uint8_t min( uint8_t a, uint8_t b )
 }
 
 /**/
-void display( void )
+static void display( void )
 {
 	uint8_t page, index;
 	lcd_fill( 0 );
