@@ -572,7 +572,7 @@ rt_err_t resp_CGREG( char *p, uint16_t len )
 rt_err_t resp_CIMI( char *p, uint16_t len )
 {
 	//rt_kprintf( "\ncimi len=%d  %02x %02x", len, *p, *( p + 1 ) );
-	char mobile[6];
+	static char mobile[6];
 	if( len < 15 )
 	{
 		return RT_ERROR;

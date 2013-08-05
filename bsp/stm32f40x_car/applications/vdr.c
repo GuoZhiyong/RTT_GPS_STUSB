@@ -12,7 +12,7 @@
 #include <time.h>
 
 #include "sst25.h"
-
+#include "hmi.h"
 #include "jt808.h"
 #include "vdr.h"
 #include "jt808_gps.h"

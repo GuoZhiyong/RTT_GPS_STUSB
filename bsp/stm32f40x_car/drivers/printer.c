@@ -322,7 +322,7 @@ __IO uint8_t	print_stage			= PRINTER_IDLE;
 void TIM3_IRQHandler( void )
 {
 	unsigned char	*p;
-	unsigned char	b, c, row, col_byte;
+	unsigned char	b, c,col_byte;
 
 	if( TIM_GetITStatus( TIM3, TIM_IT_Update ) == RESET )
 	{
@@ -628,7 +628,7 @@ void printer_get_str_glyph( unsigned char *pstr, unsigned char len )
 		rt_kprintf( "%c", *( pstr + row ) );
 	}
 	rt_kprintf( "\r\n" );
-
+	//addr=0;
 	while( charnum )
 	{
 		for( row = 0; row < 80; row++ )

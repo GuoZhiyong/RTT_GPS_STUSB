@@ -95,7 +95,7 @@ static char* txt[] = {
 uint8_t jt808_gps_unpack( uint8_t *pinfo, char *pout )
 {
 	uint8_t			*psrc = pinfo;
-	uint8_t			*pdst;
+	char			*pdst;
 	uint8_t			count;
 	char			buf[80];
 	unsigned char	i, id, len, c[2];

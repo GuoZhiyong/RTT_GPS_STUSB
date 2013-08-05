@@ -22,7 +22,7 @@
 #include "jt808_gps.h"
 #include "jt808_param.h"
 #include "rtc.h"
-
+#include "jt808_util.h"
 #include "jt808_vehicle.h"
 #include "jt808_area.h"
 #include "menu_include.h"

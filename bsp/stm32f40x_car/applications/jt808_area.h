@@ -26,6 +26,8 @@ rt_err_t area_jt808_0x8607(uint8_t linkno,uint8_t *pmsg);
 void area_init(void);
 void area_process(void);
 u32  area_get_alarm(u8 *pdestbuf,u16* destbuflen);
+u32 dis_Point2Point( s32 Lati_1, s32 Longi_1, s32 Lati_2, s32 Longi_2 );
+
 #endif
 /************************************** The End Of File **************************************/
 

@@ -19,6 +19,11 @@
 #include "stm32f4xx.h"
 #include "board.h"
 #include "jt808.h"
+#include "hmi.h"
+#include "sle4442.h"
+#include "printer.h"
+#include "rs485.h"
+#include "mma8451.h"
 /**
  * @addtogroup STM32
  */

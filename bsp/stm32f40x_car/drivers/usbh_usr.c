@@ -487,6 +487,7 @@ rt_err_t msc_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 
 			break;
 	}
+	return RT_EOK;
 }
 
 /***********************************************************
@@ -529,7 +530,7 @@ static rt_err_t msc_open( rt_device_t dev, rt_uint16_t oflag )
  */
 int USBH_USR_MSC_Application( void )
 {
-	FRESULT res;
+//	FRESULT res;
 	int		ret;
 
 	if( diskinited )

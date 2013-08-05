@@ -507,6 +507,9 @@ static int handle_rx_0x8103( uint8_t linkno, uint8_t *pmsg )
 	uint16_t	offset;
 	uint16_t	seq, id;
 
+		id	= ( pmsg[0] << 8 ) | pmsg[1];
+	seq = ( pmsg[10] << 8 ) | pmsg[11];
+	
 	if( *( pmsg + 2 ) >= 0x20 ) /*如果是多包的设置参数*/
 	{
 		rt_kprintf( "\n>%s multi packet no support!", __func__ );
@@ -514,8 +517,7 @@ static int handle_rx_0x8103( uint8_t linkno, uint8_t *pmsg )
 		return 1;
 	}
 
-	id	= ( pmsg[0] << 8 ) | pmsg[1];
-	seq = ( pmsg[10] << 8 ) | pmsg[11];
+
 
 	param_count = pmsg[12];
 	offset		= 13;
@@ -1233,6 +1235,7 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 	{
 		return WAIT_DELETE;
 	}
+	return pnodedata->state;
 }
 
 /*

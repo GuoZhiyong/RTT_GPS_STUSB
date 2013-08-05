@@ -11,4 +11,9 @@
 #define PRINTER_CMD_MARGIN_RIGHT		0x51
 #define PRINTER_CMD_FACTORY				0x40
 #define PRINTER_CMD_PAPER				0xFF
+
+
+void printer( const char *str );
+void printer_driver_init( void );
+
 #endif
