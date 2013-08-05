@@ -25,7 +25,12 @@
    2:升级过程中，不响应按键
 
  */
-static uint8_t		fupgrading	= 0;
+
+#define BD_UPGRADE_IDLE 0
+#define BD_UPGRADE_END	1
+#define BD_UPGRADING	2
+
+static uint8_t		fupgrading	= BD_UPGRADE_IDLE;
 static rt_thread_t	tid_upgrade = RT_NULL; /*开始更新*/
 
 /**/
@@ -34,6 +39,7 @@ static void show( void )
 	lcd_fill( 0 );
 	lcd_text12( ( 122 - 16 * 6 ) / 2, 8, "U盘更新文件就绪?", 16, LCD_MODE_SET );
 	lcd_text12( ( 122 - 14 * 6 ) / 2, 20, "按[确认键]开始", 14, LCD_MODE_SET );
+	fupgrading=BD_UPGRADE_IDLE;
 	lcd_update_all( );
 }
 
@@ -54,9 +60,9 @@ static void msg( void *p )
 	lcd_text12( 35, 10, pinfo + 1, len - 1, LCD_MODE_SET );
 	if( pinfo[0] == 'E' ) /*出错或结束*/
 	{
-		fupgrading	= 1;
+		fupgrading	= BD_UPGRADE_END;
 		tid_upgrade = RT_NULL;
-		rt_kprintf("\nfupgrading=%d",fupgrading);
+		rt_kprintf( "\nfupgrading=%d", fupgrading );
 	}
 
 	lcd_update_all( );
@@ -76,7 +82,7 @@ static void keypress( unsigned int key )
 	switch( key )
 	{
 		case KEY_MENU:
-			if( fupgrading < 2 )
+			if( fupgrading < BD_UPGRADING )
 			{
 				pMenuItem = &Menu_5_other;
 				pMenuItem->show( );
@@ -84,15 +90,19 @@ static void keypress( unsigned int key )
 
 			break;
 		case KEY_OK:
+			if( fupgrading != BD_UPGRADE_IDLE )
+			{
+				break;
+			}
 			tid_upgrade = rt_thread_create( "upgrade", thread_gps_upgrade_udisk, (void*)msg, 1024, 5, 5 );
 			if( tid_upgrade != RT_NULL )
 			{
-				fupgrading=2;
+				fupgrading = BD_UPGRADING;
 				msg( "I等待U盘升级" );
 				rt_thread_startup( tid_upgrade );
 			}else
 			{
-				fupgrading=1;
+				fupgrading = BD_UPGRADE_IDLE;
 				msg( "E线程创建失败" );
 			}
 			break;
@@ -118,8 +128,8 @@ static void timetick( unsigned int tick )
 
 MENUITEM Menu_5_3_bdupgrade =
 {
-	"北斗升级",
-	8,		   0,
+	"北斗信息或升级",
+	14,		   0,
 	&show,
 	&keypress,
 	&timetick,

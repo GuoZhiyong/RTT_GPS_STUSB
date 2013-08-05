@@ -618,7 +618,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 /*进入升级状态*/
 	memcpy( buf, "\x40\x30\xC0\x00\x03\x00\x01\x34\x21\x0D\x0A", 11 );
 	dev_gps_write( &dev_gps, 0, buf, 11 );
-	rt_thread_delay( RT_TICK_PER_SECOND );
+	rt_thread_delay( RT_TICK_PER_SECOND*2);
 /*版本查询*/
 	count = 0;
 
@@ -636,7 +636,7 @@ void thread_gps_upgrade_udisk( void* parameter )
 		{
 			ch_h	= ( uart_buf.body[7] & 0xf0 ) >> 4;
 			ch_l	= ( uart_buf.body[7] & 0xf );
-			sprintf( buf, "I版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
+			sprintf( buf, "I模块版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
 			msg( buf );
 		}
 	}else /*超时*/

@@ -661,7 +661,7 @@ void jt808_misc_0x8304( uint8_t *pmsg )
 {
 }
 
-uint8_t* phonebook_buf;
+uint8_t* phonebook_buf=RT_NULL;
 
 
 /***********************************************************

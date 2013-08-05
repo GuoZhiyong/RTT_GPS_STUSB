@@ -572,6 +572,7 @@ rt_err_t resp_CGREG( char *p, uint16_t len )
 rt_err_t resp_CIMI( char *p, uint16_t len )
 {
 	//rt_kprintf( "\ncimi len=%d  %02x %02x", len, *p, *( p + 1 ) );
+	char mobile[6];
 	if( len < 15 )
 	{
 		return RT_ERROR;
@@ -1419,7 +1420,7 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 
 	if( strncmp( psrc, "%TSIM 0", 7 ) == 0 ) /*没有SIM卡*/
 	{
-		pop_msg("SIM卡不存在",RT_TICK_PER_SECOND*1000);
+		//pop_msg("SIM卡不存在",RT_TICK_PER_SECOND*1000);
 		return;
 	}
 

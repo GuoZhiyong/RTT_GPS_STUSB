@@ -590,23 +590,24 @@ void apn( uint8_t *s )
 FINSH_FUNCTION_EXPORT( apn, set apn );
 
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void ipport( uint8_t *ip, uint16_t port )
+/*设置主ip port*/
+void ipport1( uint8_t *ip, uint16_t port )
 {
-	param_put_str( 0x13, ip );
-	param_put_int( 0x18, port );
+	param_put_str( 0x0013, ip );
+	param_put_int( 0x0018, port );
 	param_save( );
 }
 
-FINSH_FUNCTION_EXPORT( ipport, set ipport );
+FINSH_FUNCTION_EXPORT( ipport1, set ipport );
+
+/*获取车辆的mobile终端手机号 6字节,不足12位补数字0*/
+void carid(uint8_t *s)
+{
+
+
+}
+FINSH_FUNCTION_EXPORT( carid, set carid );
+
 
 static uint16_t id_get = 1; /*保存当前发送的id*/
 

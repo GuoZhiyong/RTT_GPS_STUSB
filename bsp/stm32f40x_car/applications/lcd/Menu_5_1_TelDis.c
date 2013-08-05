@@ -74,6 +74,11 @@ static void keypress( unsigned int key )
 	switch( key )
 	{
 		case KEY_MENU:
+			if( phonebook_buf != RT_NULL )
+			{
+				rt_free( phonebook_buf );
+				phonebook_buf = RT_NULL;
+			}
 			pMenuItem = &Menu_5_other;
 			pMenuItem->show( );
 			break;
@@ -97,13 +102,39 @@ static void keypress( unsigned int key )
 	}
 }
 
+
+/*检查是否回到主界面*/
+static void timetick( unsigned int tick )
+{
+	MENUITEM *tmp;
+	if( ( tick - pMenuItem->tick ) >= 100 * 30 )
+	{
+		if( phonebook_buf != RT_NULL )
+		{
+			rt_free( phonebook_buf );
+			phonebook_buf = RT_NULL;
+		}
+		if( pMenuItem->parent != (void*)0 )
+		{
+			tmp=pMenuItem->parent;
+			pMenuItem->parent=(void*)0;
+			pMenuItem=tmp;
+		}else
+		{
+			pMenuItem = &Menu_5_other;
+		}
+		pMenuItem->show( );
+	}
+}
+
+
 MENUITEM Menu_5_1_TelDis =
 {
 	"电话本查看",
 	10,				  0,
 	&show,
 	&keypress,
-	&timetick_default,
+	&timetick,
 	&msg,
 	(void*)0
 };

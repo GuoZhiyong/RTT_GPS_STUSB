@@ -259,6 +259,24 @@ extern unsigned char Fetch_15minSpeed( unsigned char Num15 );
 
 #include <rtthread.h>
 
+/*≥¨ÀŸº› ª*/
+typedef __packed struct
+{
+	uint8_t start[6];
+	uint8_t end[6];
+	uint8_t max;
+	uint8_t avg;
+}REC_OVERSPEED;
+
+/*≥¨ ±£¨∆£¿Õº› ª*/
+typedef __packed struct
+{
+	uint8_t start[6];
+	uint8_t end[6];
+}REC_OVERTIME;
+
+
+
 typedef __packed struct
 {
 	MYTIME	time;

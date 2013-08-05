@@ -152,9 +152,6 @@ typedef __packed struct _jt808_tx_nodedata
 	uint8_t tag_data[];                                                                                 /*指向数据的指针*/
 }JT808_TX_NODEDATA;
 
-extern uint8_t mobile[6];
-
-
 void jt808_init( void );
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 rt_size_t tts_write( char* info,uint16_t len );

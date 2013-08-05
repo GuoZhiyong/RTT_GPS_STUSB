@@ -33,8 +33,12 @@
 
 #define VDR_BASE 0x03B000
 
-#define VDR_16_START	VDR_BASE
-#define VDR_16_SECTORS	3           /*每小时2个sector,保留50小时*/
+#define VDR_XX_START	VDR_BASE
+#define VDR_XX_SECTORS	2           /*预留*/
+#define VDR_XX_END		( VDR_XX_START + VDR_XX_SECTORS * 4096 )
+
+#define VDR_16_START	VDR_XX_END
+#define VDR_16_SECTORS	1           /*每个32字节，不保留位置信息*/
 #define VDR_16_END		( VDR_16_START + VDR_16_SECTORS * 4096 )
 
 #define VDR_08_START	( VDR_16_END )
@@ -136,6 +140,10 @@ static MYTIME	vdr11_mytime_start	= 0;
 static uint32_t vdr11_lati_start	= 0;
 static uint32_t vdr11_longi_start	= 0;
 static uint16_t vdr11_alti_start	= 0;
+
+/*超速记录*/
+static uint32_t vdr16_addr_curr = VDR_16_END;
+static uint32_t vdr16_id_curr	= 0;
 
 
 /*
@@ -405,25 +413,33 @@ void vdr_10_put( MYTIME datetime )
 	rt_kprintf( "\n%d>save 10 data addr=%08x", rt_tick_get( ), addr );
 }
 
+
+void vdr_11_get(void)
+{
+
+
+
+}
+
 /*
    超时,疲劳驾驶记录
    有可能超时了，还在驾驶，这时要动态生成
    等到车停以后，休息了足够的时间，才是一次完整的超时驾驶记录
    如何保存?
  */
-void vdr_11_put( MYTIME datetime )
+void vdr_11_put( MYTIME start,MYTIME end )
 {
 	uint32_t	addr;
 	uint8_t		buf[64];                            /*保存要写入的信息*/
 
-	buf[0]	= datetime >> 24;
-	buf[1]	= datetime >> 16;
-	buf[2]	= datetime >> 8;
-	buf[3]	= datetime & 0xFF;
+	buf[0]	= mytime_now >> 24;
+	buf[1]	= mytime_now >> 16;
+	buf[2]	= mytime_now >> 8;
+	buf[3]	= mytime_now & 0xFF;
 	memcpy( buf + 4, jt808_param.id_0xF009, 18 );   /*驾驶证号码*/
 
-	mytime_to_hex( buf + 22, vdr11_mytime_start );
-	mytime_to_hex( buf + 28, datetime );
+	mytime_to_bcd( buf + 22, vdr11_mytime_start );
+	mytime_to_bcd( buf + 28, mytime_now );
 
 	PACK_INT( buf + 34, ( vdr11_longi_start * 6 ) );
 	PACK_INT( buf + 38, ( vdr11_lati_start * 6 ) );
@@ -445,32 +461,71 @@ void vdr_11_put( MYTIME datetime )
 	rt_kprintf( "\n%d>save 11 data addr=%08x", rt_tick_get( ), addr );
 }
 
+/*
+   读取超速驾驶记录
+   输入起止时间，获取最多记录数
+   pout返回得到的记录
+
+   就返回最近9条记录吧
+ */
+uint8_t vdr_16_get( MYTIME start, MYTIME end, uint8_t num, uint8_t *pout )
+{
+	uint32_t	addr;
+	uint8_t		buf[32];
+	uint32_t	id;
+	uint16_t	i, count = 0;
+	rt_sem_take(&sem_dataflash,RT_TICK_PER_SECOND*5);
+	addr = vdr16_addr_curr;
+	for( i = 0; i < 256; i++ ) /*不一次读进来了*/
+	{
+		sst25_read( addr, buf, 32 );
+		id=(buf[0]<<24)|(buf[1]<<16)|(buf[2]<<8)|buf[3];
+		if(id==0xFFFFFFFF)	/*不是有效记录*/
+		{
+			continue;
+		}
+		memcpy(pout+count*14,buf+4,6);
+		memcpy(pout+count*14+6,buf+4,6);
+		pout[count*14+12]=buf[16];
+		pout[count*14+13]=buf[17];
+		count++;
+		if( addr == VDR_16_START )
+		{
+			addr = VDR_16_END;
+		}
+		addr -= 32;
+	}
+	rt_sem_release(&sem_dataflash);
+	return count;
+}
+
 /*超速驾驶记录*/
 void vdr_16_put( MYTIME start, MYTIME end, uint16_t speed_min, uint16_t speed_max, uint16_t speed_avg )
 {
 	uint32_t	addr;
-	uint8_t		buf[64]; /*保存要写入的信息*/
+	uint8_t		buf[32]; /*保存要写入的信息*/
 
-	buf[0]	= end >> 24;
-	buf[1]	= end >> 16;
-	buf[2]	= end >> 8;
-	buf[3]	= end & 0xFF;
-	mytime_to_hex( buf + 4, start );
-	mytime_to_hex( buf + 10, end );
+	vdr16_id_curr++;
+	buf[0]	= vdr16_id_curr >> 24;
+	buf[1]	= vdr16_id_curr >> 16;
+	buf[2]	= vdr16_id_curr >> 8;
+	buf[3]	= vdr16_id_curr & 0xFF;
+	mytime_to_bcd( buf + 4, start );
+	mytime_to_bcd( buf + 10, end );
 	PACK_WORD( buf + 16, speed_min );
 	PACK_WORD( buf + 18, speed_max );
 	PACK_WORD( buf + 20, speed_avg );
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
-	//addr = vdr_08_12_get_nextaddr( 11 );
-	if( ( addr & 0xFFF ) == 0 ) /*在4k边界处*/
+	vdr16_addr_curr += 32;
+	if( vdr16_addr_curr >= VDR_16_END )
 	{
-		sst25_erase_4k( addr );
+		vdr16_addr_curr = VDR_16_START;
 	}
-	sst25_write_through( addr, buf, 22 );
 
+	sst25_write_back( addr, buf, 22 );
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "\n%d>save 16 data addr=%08x", rt_tick_get( ), addr );
+	rt_kprintf( "\n%d>save16 data id=%d,addr=%08x", rt_tick_get( ), vdr16_id_curr, addr );
 }
 
 /*
@@ -507,7 +562,7 @@ void process_overtime( void )
 			if( utc_now - utc_car_stop > jt808_param.id_0x005A )        /*判断停车最长时间*/
 			{
 				//rt_kprintf( "达到停车最长时间\r\n" );
-				jt808_alarm|=BIT_ALARM_STOP_OVERTIME;
+				jt808_alarm |= BIT_ALARM_STOP_OVERTIME;
 			}
 			utc_car_run = 0;
 		}
@@ -518,6 +573,7 @@ void process_overtime( void )
 			if( utc_car_stop == 0 )
 			{
 				utc_car_stop = utc_now;
+				
 			}
 			if( ( utc_now - utc_car_stop ) >= SPEED_LIMIT_DURATION )    /*超过了持续时间*/
 			{
@@ -531,6 +587,7 @@ void process_overtime( void )
 			if( utc_now - utc_car_run > jt808_param.id_0x0057 )         /*判断连续驾驶最长时间*/
 			{
 				//rt_kprintf( "达到连续驾驶最长时间\r\n" );
+				
 			}
 			utc_car_stop = 0;
 		}
@@ -701,9 +758,29 @@ MYTIME vdr_08_12_init( uint8_t vdr_id, uint8_t format )
 
 FINSH_FUNCTION_EXPORT_ALIAS( vdr_08_12_init, vdr_format, format vdr record );
 
-/*获取08_12的数据*/
-uint16_t vdr_08_12_getdata( VDR_USERDATA *userdata, uint8_t *pout )
+/*初始化超速记录*/
+void vdr_16_init( void )
 {
+	uint32_t	addr;
+	uint8_t		buf[32];
+	uint32_t	id;
+	uint16_t	count = 0;
+	for( addr = VDR_16_START; addr < VDR_16_END; addr += 32 ) /*不一次读进来了*/
+	{
+		sst25_read( addr, buf, 32 );
+		id = ( buf[0] << 24 ) | ( buf[1] << 16 ) | ( buf[2] << 8 ) | buf[3];
+		if( id == 0xFFFFFFFF )
+		{
+			continue;
+		}
+		if( id >= vdr16_id_curr )
+		{
+			vdr16_id_curr	= id;
+			vdr16_addr_curr = addr;
+			count++;
+		}
+	}
+	rt_kprintf( "\n%d>vdr16 count=%d id=%d addr=%08x", rt_tick_get( ), count, vdr16_id_curr, vdr16_addr_curr );
 }
 
 /*读取数据*/
@@ -807,7 +884,7 @@ uint8_t vdr_08_12_fill_data( JT808_TX_NODEDATA *pnodedata )
 	pnodedata->head_sn++;
 	pdata_head[10]	= pnodedata->head_sn >> 8;
 	pdata_head[11]	= pnodedata->head_sn & 0xFF;
-	memcpy( pdata_head + 4, mobile, 6 ); /*拷贝终端号码,此时可能还没有mobileh号码*/
+	memcpy( pdata_head + 4, jt808_param.id_0xF006, 6 ); /*拷贝终端号码,此时可能还没有mobileh号码*/
 
 	node_datalen( pnodedata, count + 7 );
 

@@ -123,6 +123,7 @@ typedef struct _jt808_param
 	char		id_0xF003[32];  /*0xF003 鉴权码*/
 	uint16_t	id_0xF004;      /*0xF004 终端类型*/
 	char		id_0xF005[32];  /*0xF005 VIN*/
+	char		id_0xF006[32];	/*0xF006 CARID 上报的终端手机号，系统原来的mobile */
 	char		id_0xF008[32];  /*0xF008 驾驶员姓名*/
 	char		id_0xF009[32];  /*0xF009 驾驶证号码*/
 	char		id_0xF00A[32];  /*0xF00A 车辆类型*/

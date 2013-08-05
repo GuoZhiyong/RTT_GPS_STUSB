@@ -46,8 +46,6 @@ static struct rt_mailbox	mb_gprsrx;
 #define MB_GPRSDATA_POOL_SIZE 32
 static uint8_t				mb_gprsrx_pool[MB_GPRSDATA_POOL_SIZE];
 
-uint8_t						mobile[6];
-
 typedef enum
 {
 	STOP_REPORT = 0,
@@ -260,7 +258,7 @@ JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA *pnodedata,
 	pdata[10]	= pnodedata->head_sn >> 8;
 	pdata[11]	= pnodedata->head_sn & 0xff;
 
-	memcpy( pdata + 4, mobile, 6 );
+	memcpy( pdata + 4, jt808_param.id_0xF006, 6 );
 	if( pnodedata->type >= MULTI_CMD )      /*多包数据*/
 	{
 		pdata[2] += 0x20;
@@ -314,7 +312,7 @@ void node_end( JT808_TX_NODEDATA* pnodedata,
 {
 	pnodedata->user_para = userpara;
 
-	memcpy( pnodedata->tag_data + 4, mobile, 6 );
+	memcpy( pnodedata->tag_data + 4, jt808_param.id_0xF006, 6 );
 
 	if( cb_tx_timeout == RT_NULL )
 	{
@@ -349,7 +347,7 @@ void node_prepend( JT808_TX_NODEDATA* pnodedata,
 {
 	pnodedata->user_para = userpara;
 
-	memcpy( pnodedata->tag_data + 4, mobile, 6 );
+	memcpy( pnodedata->tag_data + 4, jt808_param.id_0xF006, 6 );
 
 	if( cb_tx_timeout == RT_NULL )
 	{

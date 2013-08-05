@@ -280,6 +280,7 @@ uint32_t calc_distance( void )
 	}
 	gps_lati_last	= gps_lati;
 	gps_longi_last	= gps_longi;
+	/**/
 	return distance;
 }
 
