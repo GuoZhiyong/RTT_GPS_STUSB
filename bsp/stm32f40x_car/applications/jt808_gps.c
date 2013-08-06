@@ -26,7 +26,7 @@
 #include "jt808_vehicle.h"
 #include "jt808_area.h"
 #include "menu_include.h"
-
+#include "jt808_gps_pack.h"
 #include "vdr.h"
 #include "math.h"
 
@@ -742,8 +742,8 @@ static uint8_t process_rmc( uint8_t * pinfo )
 				/*整小时校准*/
 				if( ( gps_datetime[4] == 0 ) && ( gps_datetime[5] == 0 ) )
 				{
-					date_set( gps_datetime[0], gps_datetime[1], gps_datetime[2] );
-					time_set( gps_datetime[3], gps_datetime[4], gps_datetime[5] );
+					date_set( year, mon, day );
+					time_set( hour, min, sec );
 				}
 
 				return 0;
@@ -862,7 +862,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		rt_kprintf( "\n%d gps<%s", rt_tick_get( ), psrc );
 	}
 	/*保存RAW数据*/
-	jt808_gps_pack( pinfo, length );
+	jt808_gps_pack( (char*)pinfo, length );
 
 	if( strncmp( psrc + 3, "GGA,", 4 ) == 0 )
 	{

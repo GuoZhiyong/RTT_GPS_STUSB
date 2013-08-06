@@ -10,7 +10,7 @@
 * Return:
 * Others:
 ***********************************************************/
-__inline MYTIME buf_to_time( uint8_t *p )
+__inline MYTIME buf_to_mytime( uint8_t *p )
 {
 	uint32_t ret;
 	ret = (uint32_t)( ( *p++ ) << 26 );

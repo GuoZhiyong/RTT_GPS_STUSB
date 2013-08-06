@@ -40,13 +40,7 @@ static void display( void )
 			lcd_text12( 0, 18, (char*)buf, strlen( buf ), LCD_MODE_SET );
 			break;
 		case 1:
-			sprintf( buf, "»ÎÕ¯ID:%02x%02x%02x%02x%02x%02x", 
-		jt808_param.id_0xF006[0],
-		jt808_param.id_0xF006[1],
-		jt808_param.id_0xF006[2],
-		jt808_param.id_0xF006[3],
-		jt808_param.id_0xF006[4],
-		jt808_param.id_0xF006[5]);
+			sprintf( buf, "»ÎÕ¯ID:%s", jt808_param.id_0xF006);
 			lcd_text12( 0, 4, (char*)buf, strlen( buf ), LCD_MODE_SET );
 			sprintf( buf, "[%s]", jt808_param.id_0xF005 );
 			lcd_text12( 0, 18, (char*)buf, strlen( buf ), LCD_MODE_SET );

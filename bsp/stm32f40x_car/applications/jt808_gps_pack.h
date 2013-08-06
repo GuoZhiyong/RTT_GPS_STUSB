@@ -3,14 +3,6 @@
 
 
 
-
-
-
-
-
-
-
-
 void gps_pack_init(void);
 
 uint8_t jt808_gps_pack(char *pinfo,uint8_t len);

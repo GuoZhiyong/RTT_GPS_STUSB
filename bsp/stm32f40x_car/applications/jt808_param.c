@@ -16,6 +16,7 @@
 #include "sst25.h"
 #include "jt808.h"
 #include <finsh.h>
+#include "string.h"
 
 #define TYPE_BYTE	0x01                /*固定为1字节,小端对齐*/
 #define TYPE_WORD	0x02                /*固定为2字节,小端对齐*/
@@ -25,7 +26,7 @@
 
 JT808_PARAM jt808_param =
 {
-	0x13080102,                         /*0x0000 版本*/
+	0x13080603,                         /*0x0000 版本*/
 	50,                                 /*0x0001 心跳发送间隔*/
 	10,                                 /*0x0002 TCP应答超时时间*/
 	3,                                  /*0x0003 TCP超时重传次数*/
@@ -74,13 +75,13 @@ JT808_PARAM jt808_param =
 	5,                                  /*0x0052 报警拍照开关*/
 	3,                                  /*0x0053 报警拍摄存储标志*/
 	5,                                  /*0x0054 关键标志*/
-	3,                                  /*0x0055 最高速度kmh*/
+	90,                                 /*0x0055 最高速度kmh*/
 	5,                                  /*0x0056 超速持续时间*/
 	4 * 60 * 60,                        /*0x0057 连续驾驶时间门限*/
-	5,                                  /*0x0058 当天累计驾驶时间门限*/
-	1200,                               /*0x0059 最小休息时间*/
-	7200,                               /*0x005A 最长停车时间*/
-	900,                                /*0x0005B 超速报警预警差值，单位为 1/10Km/h */
+	8*60*60,                            /*0x0058 当天累计驾驶时间门限*/
+	20*60,                               /*0x0059 最小休息时间*/
+	12*60,                               /*0x005A 最长停车时间*/
+	100,                                /*0x005B 超速报警预警差值，单位为 1/10Km/h */
 	90,                                 /*0x005C 疲劳驾驶预警差值，单位为秒（s），>0*/
 	0x200a,                             /*0x005D 碰撞报警参数设置:*/
 	30,                                 /*0x005E 侧翻报警参数设置： 侧翻角度，单位 1 度，默认为 30 度*/
@@ -123,7 +124,7 @@ JT808_PARAM jt808_param =
 	"12345",                            /*0xF003 鉴权码*/
 	0x07,                               /*0xF004 终端类型*/
 	"0000000000000000",                 /*0xF005 车辆VIN*/
-	"010203040506",
+	"021022612645",                     /*0xF006 DeviceID*/
 	"张三",                             /*0xF008 驾驶员姓名*/
 	"120104197712015381",               /*0xF009 驾驶证号码*/
 	"大型货运",                         /*0xF00A 车辆类型*/
@@ -291,6 +292,7 @@ struct _tbl_id_lookup
 	ID_LOOKUP( 0xF003, TYPE_STR ),      /*0xF003 鉴权码*/
 	ID_LOOKUP( 0xF004, TYPE_BYTE ),     /*0xF004 终端类型*/
 	ID_LOOKUP( 0xF005, TYPE_STR ),      /*0xF005 车辆标识,VIN*/
+	ID_LOOKUP( 0xF006, TYPE_STR ),      /*0xF006 车辆标识,MOBILE*/
 	ID_LOOKUP( 0xF008, TYPE_STR ),      /*0xF008 驾驶员姓名*/
 	ID_LOOKUP( 0xF009, TYPE_STR ),      /*0xF009 驾驶证号码*/
 	ID_LOOKUP( 0xF00A, TYPE_STR ),      /*0xF008 车辆类型*/
@@ -590,7 +592,6 @@ void apn( uint8_t *s )
 
 FINSH_FUNCTION_EXPORT( apn, set apn );
 
-
 /*设置主ip port*/
 void ipport1( uint8_t *ip, uint16_t port )
 {
@@ -602,13 +603,25 @@ void ipport1( uint8_t *ip, uint16_t port )
 FINSH_FUNCTION_EXPORT( ipport1, set ipport );
 
 /*获取车辆的mobile终端手机号 6字节,不足12位补数字0*/
-void carid(uint8_t *s)
+void deviceid( uint8_t *s )
 {
-
-
+	uint8_t len, i;
+	char	buf[13];
+	len = strlen( s );
+	memset( buf, 0, 13 );
+	if( len >= 12 )
+	{
+		strncpy( buf, s, 12 );
+	}else
+	{
+		strcpy( buf + 12 - len, s );
+	}
+	buf[12] = 0;
+	param_put_str( 0xF006, s );
+	param_save( );
 }
-FINSH_FUNCTION_EXPORT( carid, set carid );
 
+FINSH_FUNCTION_EXPORT( deviceid, set deviceid );
 
 static uint16_t id_get = 1; /*保存当前发送的id*/
 

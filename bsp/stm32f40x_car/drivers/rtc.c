@@ -61,7 +61,7 @@ static ErrorStatus RTC_Config( void )
 			timeout--;
 		}else
 		{
-			rt_kprintf( "\r\n%s(%d) error\r\n", __func__, __LINE__ );
+			rt_kprintf( "\n%s(%d) error\n", __func__, __LINE__ );
 			return ERROR;
 		}
 	}
@@ -103,7 +103,7 @@ static ErrorStatus RTC_Config( void )
 		return SUCCESS;
 	}else
 	{
-		rt_kprintf( "\r\n%s(%d) error\r\n", __func__, __LINE__ );
+		rt_kprintf( "\n%s(%d) error", __func__, __LINE__ );
 		return ERROR;
 	}
 }
@@ -122,7 +122,7 @@ void datetime( void )
 	RTC_GetTime( RTC_Format_BIN, &RTC_TimeStructure );
 	RTC_GetDate(RTC_Format_BIN,&RTC_DateStructure);
 	/* Display time Format : hh:mm:ss */
-	rt_kprintf( "\r\nRTC=%02d-%02d-%02d %02d:%02d:%02d",\
+	rt_kprintf( "\nRTC=%02d-%02d-%02d %02d:%02d:%02d",\
 		RTC_DateStructure.RTC_Year,\
 		RTC_DateStructure.RTC_Month,\
 		RTC_DateStructure.RTC_Date,\
@@ -172,20 +172,20 @@ rt_err_t rtc_init(void )
 {
 	if( RTC_ReadBackupRegister( RTC_BKP_DR0 ) != RTC_CONFIGED_FLAG )
 	{
-		rt_kprintf( "\r\n>RTC_CONFIGED_FLAG ERR\r\n" );
+		rt_kprintf( "\n>RTC_CONFIGED_FLAG ERR" );
 		/* RTC configuration	*/
 		if( RTC_Config( ) == ERROR )
 		{
-			rt_kprintf( "\r\n%s(%d) RTC error\r\n", __func__, __LINE__ );
+			rt_kprintf( "\n%s(%d) RTC error", __func__, __LINE__ );
 			goto lbl_rtc_err;
 		}
 		/* Display the RTC Time and Alarm */
 		datetime( );
-		rt_kprintf("\r\n RTC OK\r\n");
+		rt_kprintf("\nRTC OK\n");
 		goto lbl_rtc_ok;
 	}else
 	{
-		rt_kprintf( "\r\n wait ForSynchro\r\n" );
+		rt_kprintf( "\nwait ForSynchro\n" );
 
 		/* Enable the PWR clock */
 		RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
@@ -197,11 +197,11 @@ rt_err_t rtc_init(void )
 		if( RTC_WaitForSynchro( ) == SUCCESS )
 		{
 			datetime( );
-			rt_kprintf("\r\n RTC OK\r\n");
+			rt_kprintf("\nRTC OK");
 			goto lbl_rtc_ok;
 		}else
 		{
-			rt_kprintf( "\r\n%s(%d) error\r\n", __func__, __LINE__ );
+			rt_kprintf( "\n%s(%d) error", __func__, __LINE__ );
 			goto lbl_rtc_err;
 		}
 	}

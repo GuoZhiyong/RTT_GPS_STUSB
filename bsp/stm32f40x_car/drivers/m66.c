@@ -1351,7 +1351,7 @@ static void rt_thread_gsm_socket( void* parameter )
 	curr_socket.state = SOCKET_READY;
 lbl_gsm_socket_end:
 	gsm_state = GSM_TCPIP; /*socket过程处理完成，结果在state中*/
-	rt_kprintf( "\n%08d gsm_socket>end socket.state=%d", rt_tick_get( ), curr_socket.state );
+	rt_kprintf( "\n%d gsm_socket>end socket.state=%d", rt_tick_get( ), curr_socket.state );
 }
 
 /***********************************************************
