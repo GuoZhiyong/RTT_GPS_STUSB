@@ -339,6 +339,14 @@ uint8_t	fconfirm_bd_upgrade_mode=0;	/*北斗升级模式确认 1:查看信息 2:U盘升级*/
 HMI_15MIN_SPEED hmi_15min_speed[15];
 uint8_t			hmi_15min_speed_curr = 0;
 
+unsigned char	arrow_left[] = {0x01,0x03,0x07,0x0f,0x0f,0x07,0x03,0x01};
+unsigned char	arrow_right[] = {0x80,0xc0,0xe0,0xf0,0xf0,0xe0,0xc0,0x80};
+
+
+DECL_BMP( 8, 8, arrow_left );
+DECL_BMP( 8, 8, arrow_right ); 
+
+
 /*检查是否回到主界面*/
 void timetick_default( unsigned int tick )
 {

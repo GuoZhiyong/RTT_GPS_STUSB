@@ -555,7 +555,6 @@ void process_overtime( void )
 			{
 				utc_car_run = utc_now;                                                      /*记录开始时刻*/
 			}
-
 			if( ( utc_now - utc_car_run ) >= SPEED_LIMIT_DURATION )                         /*超过了持续时间*/
 			{
 				car_stop_run = RUN;                                                         /*认为车辆行驶*/

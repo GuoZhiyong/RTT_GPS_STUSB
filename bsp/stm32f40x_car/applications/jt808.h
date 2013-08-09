@@ -156,6 +156,7 @@ void jt808_init( void );
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 rt_size_t tts_write( char* info,uint16_t len );
 rt_size_t at( char *sinfo );
+void cb_socket_close( uint8_t cid );
 
 
 

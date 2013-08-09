@@ -24,7 +24,11 @@
 #include  <stdio.h>
 #include  <string.h>
 #include  "jt808_sms.h"
+#include "jt808.h"
 #include "m66.h"
+
+
+#if 0
 
 #define PHONEMAXNUM 15
 #define PHONEMAXSTR 150
@@ -67,12 +71,12 @@ typedef  struct
 	u8	SMS_Style;                                  // 消息类型，1为pdu，0为text
 	u8	SMS_delayCounter;                           // 短信延时器
 	u8	SMS_waitCounter;                            ///短信等待
-	u8	SMSAtSend[45];                              //短信AT命令寄存器
+	char	SMSAtSend[45];                              //短信AT命令寄存器
 
-	u8				SMS_destNum[15];                //  发送短息目的号码
+	char				SMS_destNum[15];                //  发送短息目的号码
 	u8				SMS_sendFlag;                   //  短息发送标志位
-	u8				SMS_sd_Content[PHONEMAXSTR];    // 短息发送内容
-	u8				SMS_rx_Content[PHONEMAXSTR];    // 短息接收内容
+	char				SMS_sd_Content[PHONEMAXSTR];    // 短息发送内容
+	char				SMS_rx_Content[PHONEMAXSTR];    // 短息接收内容
 	SMS_RX_STATE	rx_state;                       //接收状态
 	SMS_TX_STATE	tx_state;                       //发送状态
 	u8				rx_retry;                       ///重复接收次数
@@ -83,7 +87,7 @@ typedef  struct
 
 typedef __packed struct
 {
-	u8		SMS_destNum[PHONEMAXNUM];               //  发送短息目的号码
+	char		SMS_destNum[PHONEMAXNUM];               //  发送短息目的号码
 	char	*pstr;                                  // 短息发送内容
 } SMS_Send_Msg;
 
@@ -98,7 +102,7 @@ static SMS_Style	SMS_Service;   //  短息相关
 static const char	GB_DATA[]	= "京津沪宁渝琼藏川粤青贵闽吉陕蒙晋甘桂鄂赣浙苏新鲁皖湘黑辽云豫冀";
 static const char	UCS2_CODE[] = "4EAC6D256CAA5B816E1D743C85CF5DDD7CA497528D3595FD540996558499664B7518684291028D636D5982CF65B09C8176966E589ED18FBD4E918C6B5180";
 
-static void SMS_protocol( u8 *instr, u16 len, u8 ACKstate );
+void SMS_protocol( u8 *instr, u16 len, u8 ACKstate );
 
 
 /*获取一个指定字符的位置，中文字符作为一个字符计算*/
@@ -183,7 +187,7 @@ u16 Hex_To_Ascii( const u8* pSrc, u8* pDst, u16 nSrcLength )
 * Return:
 * Others:
 ***********************************************************/
-u16 Ascii_To_Hex( const u8* pSrc, u8* pDst, u16 nSrcLength )
+u16 Ascii_To_Hex( char* pSrc, char* pDst, u16 nSrcLength )
 {
 	u16 i;
 	for( i = 0; i < nSrcLength; i += 2 )
@@ -447,7 +451,7 @@ u16 GsmEncodeUcs2( const u8* pSrc, u8* pDst, u16 nSrcLength )
 			if( indexNum >= 0 )
 			{
 				indexNum = indexNum * 2;
-				Ascii_To_Hex( (const u8 *)&UCS2_CODE[indexNum], (u8 *)strTemp, 4 );
+				Ascii_To_Hex( (char*)&UCS2_CODE[indexNum], strTemp, 4 );
 				*pDst++ = strTemp[0];
 				*pDst++ = strTemp[1];
 			}else   ///不可识别的汉子用"※"表示
@@ -670,7 +674,7 @@ u8 Que_Number_Length( const u8 *Src )
   *修改日期:
   *修改描述:
 *********************************************************************************/
-u16 SetPhoneNumToPDU( u8 *pDest, char *pSrc, u16 len )
+u16 SetPhoneNumToPDU( char *pDest, char *pSrc, u16 len )
 {
 	u16 i;
 
@@ -732,7 +736,7 @@ u16 GetPhoneNumFromPDU( char *pDest, u8 *pSrc, u16 len )
 
 //ok_bym
 //解码程序
-u16   GsmDecodePdu( const u8* pSrc, u16 pSrcLength, SmsType *pSmstype, u8 *DataDst )
+u16   GsmDecodePdu( char* pSrc, u16 pSrcLength, SmsType *pSmstype, char *DataDst )
 {
 	u8	nDstLength = 0;                                             // 目标PDU串长度
 	u8	tmp;                                                        // 内部用的临时字节变量
@@ -936,7 +940,7 @@ u16 GsmEncodePdu_Center( const SmsType pSrc, const u8 *DataSrc, u16 datalen, u8*
 	nDstLength	+= Hex_To_Ascii( buf, &pDst[nDstLength], 2 );
 	// SMSC地址信息段
 	nLength		= Que_Number_Length( pSrc.TPA );                                // TP-DA地址字符串的长度
-	buf[0]		= (u8)nLength;                                                  // 目标地址数字个数(TP-DA地址字符串真实长度)
+	buf[0]		= nLength;                                                  // 目标地址数字个数(TP-DA地址字符串真实长度)
 	buf[1]		= 0x91;                                                         // 固定: 用国际格式号码
 	nDstLength	+= Hex_To_Ascii( buf, &pDst[nDstLength], 2 );
 	nLength		= Hex_Num_Encode( pSrc.TPA, buf, nLength );
@@ -1320,7 +1324,7 @@ u8 SMS_Tx_Text( char *strDestNum, char *s )
 	///发送调试信息
 	SMS_SendConsoleStr( pstrTemp );
 	///发送到GSM模块
-	at( pstrTemp, len );
+	at( pstrTemp );
 	rt_free( pstrTemp );
 	pstrTemp = RT_NULL;
 	return 1;
@@ -1414,7 +1418,7 @@ FINSH_FUNCTION_EXPORT( SMS_Test, SMS_Test );
 void SMS_PDU( char *s )
 {
 	u16		len;
-	u16		i, j;
+//	u16		i, j;
 	char	*pstrTemp;
 	pstrTemp	= (char*)rt_malloc( 160 ); ///短信解码后的完整内容，解码后汉子为GB码
 	len			= GsmDecodePdu( s, strlen( s ), &SMS_Service.Sms_Info, pstrTemp );
@@ -1624,7 +1628,7 @@ u8 SMS_rx_pro( char *psrc, u16 len )
 void SMS_Process_old( void )
 {
 	u16				ContentLen = 0;
-	u16				i, j, k;
+//	u16				i, j, k;
 	char			*pstrTemp;
 	SMS_Send_Msg	*pmsg = RT_NULL;
 
@@ -1669,7 +1673,7 @@ void SMS_Process_old( void )
 			//////
 			//rt_kprintf("%s",pstrTemp);
 			SMS_SendConsoleStr( pstrTemp );
-			at( ( char* )pstrTemp, ContentLen + 1 );
+			at( ( char* )pstrTemp );
 			rt_free( pstrTemp );
 			pstrTemp = RT_NULL;
 		}
@@ -1689,7 +1693,7 @@ void SMS_Process_old( void )
 			ContentLen								= strlen( SMS_Service.SMS_sd_Content );
 			SMS_Service.SMS_sd_Content [ContentLen] = 0x1A; // message  end
 			rt_kprintf( "%s", SMS_Service.SMS_sd_Content );
-			at( ( char* )SMS_Service.SMS_sd_Content, ContentLen + 1 );
+			at( ( char* )SMS_Service.SMS_sd_Content );
 		}
 		//#endif
 		SMS_Service.SMS_sendFlag	= 0;                    // clear
@@ -1729,7 +1733,7 @@ void SMS_Process_old( void )
 void SMS_Process( void )
 {
 	u16				ContentLen = 0;
-	u16				i, j, k;
+//	u16				i, j, k;
 	char			*pstrTemp;
 	SMS_Send_Msg	*pmsg = RT_NULL;
 	static uint32_t rx_tick;
@@ -2282,5 +2286,24 @@ void   SMS_protocol( u8 *instr, u16 len, u8 ACKstate )  //  ACKstate
 }
 
 #endif
+
+
+#endif
+
+/*收到短信息处理*/
+void jt808_sms_rx(char *sender,char *info,uint16_t len)
+{
+	uint16_t i;
+	char *p=info;
+	rt_kprintf("\nSMS>%s",p);
+	p=info;
+	if(strncmp(p,"TW703",5)!=0) return;
+
+}
+
+
+
+
+
 
 /************************************** The End Of File **************************************/

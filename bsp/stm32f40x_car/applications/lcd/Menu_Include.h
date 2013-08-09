@@ -33,7 +33,6 @@
 #define KEY_UP_REPEAT	0x40
 #define KEY_DOWN_REPEAT 0x80
 
-
 typedef struct _IMG_DEF
 {
 	unsigned char	width_in_pixels;    /* Image width */
@@ -143,6 +142,8 @@ extern MENUITEM			Menu_0_1_license;
 extern MENUITEM			Menu_0_2_CarType;
 extern MENUITEM			Menu_0_3_vin;
 extern MENUITEM			Menu_0_4_Colour;
+extern MENUITEM			Menu_0_5_DeviceID;
+
 extern MENUITEM			Menu_0_loggingin;
 
 extern MENUITEM			Menu_1_Idle;
@@ -233,7 +234,6 @@ extern u8				Menu_Vin_Code[17];
 extern u8				Menu_color_num;
 extern u8				menu_type_flag, menu_color_flag;
 
-
 extern void Cent_To_Disp( void );
 
 
@@ -275,8 +275,6 @@ typedef __packed struct
 	uint8_t end[6];
 }REC_OVERTIME;
 
-
-
 typedef __packed struct
 {
 	MYTIME	time;
@@ -292,7 +290,10 @@ typedef struct
 
 extern HMI_15MIN_SPEED	hmi_15min_speed[15];
 extern uint8_t			hmi_15min_speed_curr;
-extern uint8_t	fconfirm_bd_upgrade_mode;
+extern uint8_t			fconfirm_bd_upgrade_mode;
+extern IMG_DEF BMP_arrow_left;
+extern IMG_DEF BMP_arrow_right;
+
 
 void timetick_default( unsigned int tick );
 

@@ -90,7 +90,7 @@ static void menu_disp( void )
 			{
 				lcd_text12( 16 + i * 48, 18, bd_restart[i], 6, LCD_MODE_SET );
 			}
-			lcd_text12( pos * 40, 18, bd_restart[pos], strlen( bd_restart[pos] ), LCD_MODE_INVERT );
+			lcd_text12( 16+pos * 48, 18, bd_restart[pos], strlen( bd_restart[pos] ), LCD_MODE_INVERT );
 
 			break;
 	}
@@ -203,9 +203,9 @@ static void keypress( unsigned int key )
 						menu_disp( );
 						break;
 					case 3:
+						oper_mode = OPER_RESTART;
 						pos = 0;
 						menu_disp( );
-						oper_mode = OPER_RESTART;
 						break;
 				}
 			}

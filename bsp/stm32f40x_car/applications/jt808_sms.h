@@ -38,5 +38,13 @@ jt808主线程调用
 void SMS_Process(void);
 /*m66接收线程调用*/
 u8 	SMS_rx_pro(char *psrc,u16 len);
+
+
+
+void jt808_sms_rx(char *sender,char *info,uint16_t len);
+
+
+
+
 #endif
 /************************************** The End Of File **************************************/

@@ -95,7 +95,7 @@ typedef struct _jt808_param
 	uint32_t	id_0x0081;      /*0x0081 省域ID*/
 	uint32_t	id_0x0082;      /*0x0082 市域ID*/
 	char		id_0x0083[32];  /*0x0083 机动车号牌*/
-	uint32_t	id_0x0084;      /*0x0084 车牌颜色  1蓝色 2黄色 3黑色 4白色 9其他*/
+	uint32_t	id_0x0084;      /*0x0084 车牌颜色  0 未上牌 1蓝色 2黄色 3黑色 4白色 9其他*/
 	uint32_t	id_0x0090;      /*0x0090 GNSS 定位模式*/
 	uint32_t	id_0x0091;      /*0x0091 GNSS 波特率*/
 	uint32_t	id_0x0092;      /*0x0092 GNSS 模块详细定位数据输出频率*/
@@ -124,12 +124,20 @@ typedef struct _jt808_param
 	uint16_t	id_0xF004;      /*0xF004 终端类型*/
 	char		id_0xF005[32];  /*0xF005 VIN*/
 	char		id_0xF006[32];	/*0xF006 CARID 上报的终端手机号，系统原来的mobile */
+
+	char		id_0xF007[32];  /*0xF007 驾驶证代码*/
 	char		id_0xF008[32];  /*0xF008 驾驶员姓名*/
 	char		id_0xF009[32];  /*0xF009 驾驶证号码*/
 	char		id_0xF00A[32];  /*0xF00A 车辆类型*/
+	char		id_0xF00B[32];  /*0xF00B 驾驶证*/
+	char		id_0xF00C[32];  /*0xF00C 车辆类型*/
+	char		id_0xF00D[32];  /*0xF00D 从业资格证*/
+	char		id_0xF00E[32];  /*0xF00E 发证机构*/
+	
 	char		id_0xF010[32];  /*0xF010 软件版本号*/
 	char		id_0xF011[32];  /*0xF011 硬件版本号*/
 	char		id_0xF012[32];  /*0xF012 销售客户代码*/
+
 
 	uint32_t id_0xF020;         /*0xF020 总里程*/
 

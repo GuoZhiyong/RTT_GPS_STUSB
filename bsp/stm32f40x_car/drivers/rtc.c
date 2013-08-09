@@ -44,7 +44,7 @@ __IO uint32_t		uwSynchPrediv	= 0;
 static ErrorStatus RTC_Config( void )
 {
 	RTC_DateTypeDef RTC_DateStructure;
-	__IO uint32_t	timeout = 0xC0000;
+	__IO uint32_t	timeout = 0x400000;
 
 	RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
 	PWR_BackupAccessCmd( ENABLE );

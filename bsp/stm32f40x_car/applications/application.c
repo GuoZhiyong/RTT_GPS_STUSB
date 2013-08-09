@@ -24,44 +24,31 @@
 #include <board.h>
 #include <rtthread.h>
 
-#include "mma8451.h"
-#include "printer.h"
-#include "spi_sd.h"
+#include "rtc.h"
+
+
+ALIGN( RT_ALIGN_SIZE )
+static char thread_app_stack[256];
+struct rt_thread thread_app;
 
 /*
    应该在此处初始化必要的设备和事件集
  */
-void rt_init_thread_entry( void* parameter )
+void rt_thread_entry_app( void* parameter )
 {
-
-
-#if 0
-
-	GPIO_InitTypeDef	GPIO_InitStructure;
-	NVIC_InitTypeDef	NVIC_InitStructure;
-	USART_InitTypeDef	USART_InitStructure;
-
-	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOC, ENABLE );
-	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOD, ENABLE );
-	RCC_APB1PeriphClockCmd( RCC_APB1Periph_UART5, ENABLE );
-
-	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
-	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_NOPULL;
-	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_50MHz;
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-	GPIO_Init( GPIOD, &GPIO_InitStructure );
-	GPIO_ResetBits( GPIOD, GPIO_Pin_10 );
-
+	uint8_t rtc_need_init=1;
 	while( 1 )
 	{
-		GPIO_ResetBits( GPIOD, GPIO_Pin_10 );
-		rt_thread_delay( RT_TICK_PER_SECOND * 5 );
-		GPIO_SetBits( GPIOD, GPIO_Pin_10 );
+		if( rtc_need_init)
+		{
+			if(rtc_init( )==0)
+			{
+				rtc_need_init=0;
+				timestamp( );
+			}	
+		}
 		rt_thread_delay( RT_TICK_PER_SECOND * 5 );
 	}
-#endif
 }
 
 /***********************************************************
@@ -72,19 +59,18 @@ void rt_init_thread_entry( void* parameter )
 * Return:
 * Others:
 ***********************************************************/
-int rt_application_init(void)
+int rt_application_init( void )
 {
-	rt_thread_t tid;
 
-	tid = rt_thread_create( "init",
-	                        rt_init_thread_entry, RT_NULL,
-	                        2048, RT_THREAD_PRIORITY_MAX - 2, 20 );
-
-	if( tid != RT_NULL )
-	{
-		rt_thread_startup( tid );
-	}
+	rt_thread_init( &thread_app,
+	                "init",
+	                rt_thread_entry_app,
+	                RT_NULL,
+	                &thread_app_stack[0],
+	                sizeof( thread_app_stack ),RT_THREAD_PRIORITY_MAX-3, 5 );
+	rt_thread_startup( &thread_app );
 	return 0;
+
 }
 
 /*@}*/

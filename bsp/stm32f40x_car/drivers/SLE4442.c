@@ -77,7 +77,7 @@ void DELAY5us( void )
 	}
 }
 
-
+#if 0
 
 static void delay_us( const uint32_t usec )
 {
@@ -93,6 +93,7 @@ static void delay_us( const uint32_t usec )
 	while( 1 );
 }
 
+#endif
 
 /***********************************************************
 * Function:
@@ -652,13 +653,17 @@ static uint8_t IC_Card_Checked=0; 	/*卡是否已检测*/
 
 void CheckICCard( void )
 {
-	unsigned char	write_flag	= 0;
+//	unsigned char	write_flag	= 0;
 	u8				result=0;
-	uint8_t			buf[128];
-	void *pmsg;
-	uint16_t i;
+	unsigned char	buf[20];
 
-
+	unsigned char	buf1[12];
+	unsigned char	buf2[20];
+	unsigned char	buf3[4];
+	unsigned char	buf4[22];
+	unsigned char	buf5[40];
+	unsigned char	buf6[42];
+	
 	if( GPIO_ReadInputDataBit( GPIOC, GPIO_Pin_7 ) )
 	{
 		if(IC_Card_Checked) return;
@@ -691,27 +696,30 @@ void CheckICCard( void )
 			}
 			else
 			{
-				result = Rx_4442( 70, 10, (unsigned char*)buf );																			//读驾驶员姓名
-				rt_kprintf( "\n驾驶员姓名:%s,result=%d", buf, result );
+				result = Rx_4442( 70, 10, buf1 );																			//读驾驶员姓名
+				rt_kprintf( "\n驾驶员姓名:%s,result=%d", buf1, result );
 			
-				result += Rx_4442( 52, 18, (unsigned char*)buf );																			//读驾驶证号码
-				rt_kprintf( "\n驾驶证代码:%s,result=%d", buf, result );
+				result += Rx_4442( 52, 18, buf2 );																			//读驾驶证号码
+				rt_kprintf( "\n驾驶证代码:%s,result=%d", buf2, result );
 			
-				result += Rx_4442( 49, 3, (unsigned char*)buf );																			//读驾驶员代码
-				rt_kprintf( "\n驾驶员代码:%s,result=%d", buf, result );
+				result += Rx_4442( 49, 3, buf3 );																			//读驾驶员代码
+				rt_kprintf( "\n驾驶员代码:%s,result=%d", buf3, result );
 			
-				result += Rx_4442( 80, 20, (unsigned char*)buf );																			//身份证号码
-				rt_kprintf( "\n身份证号码:%s,result=%d", buf, result );
+				result += Rx_4442( 80, 20, buf4 );																			//身份证号码
+				rt_kprintf( "\n身份证号码:%s,result=%d", buf4, result );
 			
-				result += Rx_4442( 100, 40, (unsigned char*)buf );																			//从业资格证
-				rt_kprintf( "\n从业资格证:%s,result=%d", buf, result );
+				result += Rx_4442( 100, 40,buf5 );																			//从业资格证
+				rt_kprintf( "\n从业资格证:%s,result=%d", buf5, result );
 			
-				result += Rx_4442( 140, 41, (unsigned char*)buf );																			//发证机构
-				rt_kprintf( "\n发证机构:%10s,result=%d", buf, result );
+				result += Rx_4442( 140, 41, buf6 );																			//发证机构
+				rt_kprintf( "\n发证机构:%10s,result=%d", buf6, result );
 				rt_kprintf( "\nIC result=%d", result );
 				if(result==0)
 				{	
 					IC_Card_Checked=1;
+					strncpy(jt808_param.id_0xF008,buf1,10);
+					strncpy(jt808_param.id_0xF009,buf1,18);
+					
 					beep(5,5,2);
 					
 				}

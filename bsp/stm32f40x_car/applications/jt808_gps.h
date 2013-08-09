@@ -41,47 +41,48 @@
 #define BIT_STATUS_GLONASS	0x00100000
 #define BIT_STATUS_GALILEO	0x00200000
 
-#define BIT_ALARM_EMG			0x00000001  /*紧急*/
-#define BIT_ALARM_OVERSPEED		0x00000002  /*超速*/
-#define BIT_ALARM_OVERTIME		0x00000004  /*超时，疲劳驾驶*/
-#define BIT_ALARM_DANGER		0x00000008  /*危险预警*/
-#define BIT_ALARM_GPS_ERR		0x00000010  /*GNSS模块故障*/
-#define BIT_ALARM_GPS_OPEN		0x00000020
-#define BIT_ALARM_GPS_SHORT		0x00000040
-#define BIT_ALARM_LOW_PWR		0x00000080  /*终端主电源欠压*/
-#define BIT_ALARM_LOST_PWR		0x00000100  /*终端主电源掉电*/
-#define BIT_ALARM_FAULT_LCD		0x00000200  /*LCD故障*/
-#define BIT_ALARM_FAULT_TTS		0x00000400  /*TTS故障*/
-#define BIT_ALARM_FAULT_CAM		0x00000800  /*CAM故障*/
-#define BIT_ALARM_FAULT_ICCARD	0x00001000  /*IC卡故障*/
-#define BIT_ALARM_PRE_OVERSPEED 0x00002000  /*超速预警 bit13*/
-#define BIT_ALARM_PRE_OVERTIME	0x00004000  /*超时预警 bit14*/
-#define BIT_ALARM_STOP_OVERTIME 0x00080000  /*超时停驶*/
-#define BIT_ALARM_VSS			0x01000000  /*VSS故障*/
-#define BIT_ALARM_OIL			0x02000000  /*油量异常*/
-#define BIT_ALARM_STOLEN		0x04000000  /*被盗*/
-#define BIT_ALARM_IGNITION		0x08000000  /*非法点火*/
-#define BIT_ALARM_MOVE			0x10000000  /*非法移位*/
-#define BIT_ALARM_COLLIDE		0x20000000  /*碰撞*/
-#define BIT_ALARM_TILT			0x40000000  /*侧翻*/
-#define BIT_ALARM_DOOR_OPEN		0x80000000  /*非法开门*/
+#define BIT_ALARM_EMG				0x00000001  /*紧急*/
+#define BIT_ALARM_OVERSPEED			0x00000002  /*超速*/
+#define BIT_ALARM_OVERTIME			0x00000004  /*超时，疲劳驾驶*/
+#define BIT_ALARM_DANGER			0x00000008  /*危险预警*/
+#define BIT_ALARM_GPS_ERR			0x00000010  /*GNSS模块故障*/
+#define BIT_ALARM_GPS_OPEN			0x00000020  /*天线开路*/
+#define BIT_ALARM_GPS_SHORT			0x00000040  /*天线短路*/
+#define BIT_ALARM_LOW_PWR			0x00000080  /*终端主电源欠压*/
+#define BIT_ALARM_LOST_PWR			0x00000100  /*终端主电源掉电*/
+#define BIT_ALARM_FAULT_LCD			0x00000200  /*LCD故障*/
+#define BIT_ALARM_FAULT_TTS			0x00000400  /*TTS故障*/
+#define BIT_ALARM_FAULT_CAM			0x00000800  /*CAM故障*/
+#define BIT_ALARM_FAULT_ICCARD		0x00001000  /*IC卡故障*/
+#define BIT_ALARM_PRE_OVERSPEED		0x00002000  /*超速预警 bit13*/
+#define BIT_ALARM_PRE_OVERTIME		0x00004000  /*超时预警 bit14*/
+#define BIT_ALARM_TODAY_OVERTIME	0x00040000  /*当天累计驾驶超时*/
+#define BIT_ALARM_STOP_OVERTIME		0x00080000  /*超时停驶*/
+#define BIT_ALARM_VSS				0x01000000  /*VSS故障*/
+#define BIT_ALARM_OIL				0x02000000  /*油量异常*/
+#define BIT_ALARM_STOLEN			0x04000000  /*被盗*/
+#define BIT_ALARM_IGNITION			0x08000000  /*非法点火*/
+#define BIT_ALARM_MOVE				0x10000000  /*非法移位*/
+#define BIT_ALARM_COLLIDE			0x20000000  /*碰撞*/
+#define BIT_ALARM_TILT				0x40000000  /*侧翻*/
+#define BIT_ALARM_DOOR_OPEN			0x80000000  /*非法开门*/
 
 /*基本位置信息,因为字节对齐的方式，还是使用数组方便*/
 typedef __packed struct _gps_baseinfo
 {
 	uint32_t	alarm;
 	uint32_t	status;
-	uint32_t	latitude;                   /*纬度*/
-	uint32_t	longitude;                  /*精度*/
+	uint32_t	latitude;                       /*纬度*/
+	uint32_t	longitude;                      /*精度*/
 	uint16_t	altitude;
-	uint16_t	speed_10x;                  /*对地速度 0.1KMH*/
-	uint16_t	cog;                        /*对地角度*/
-	uint8_t		datetime[6];                /*BCD格式*/
+	uint16_t	speed_10x;                      /*对地速度 0.1KMH*/
+	uint16_t	cog;                            /*对地角度*/
+	uint8_t		datetime[6];                    /*BCD格式*/
 }GPS_BASEINFO;
 
 enum BDGPS_MODE
 {
-	MODE_GET=0,                             /*查询*/
+	MODE_GET=0,                                 /*查询*/
 	MODE_BD =1,
 	MODE_GPS,
 	MODE_BDGPS,

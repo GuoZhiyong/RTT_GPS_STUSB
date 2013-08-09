@@ -361,6 +361,7 @@ static void process_gps_report( void )
 	}
 	jt808_alarm			|= alarm_bits;
 	gps_baseinfo.alarm	= BYTESWAP4( jt808_alarm );
+	gps_baseinfo.status	= BYTESWAP4( jt808_status );
 	memcpy( buf, (uint8_t*)&gps_baseinfo, 28 );
 
 /*中心追踪,直接上报，并返回*/
@@ -457,6 +458,7 @@ static void process_gps_report( void )
 	}
 
 	jt808_status_last = jt808_status;
+	jt808_alarm_last=jt808_alarm;
 
 
 /*

@@ -17,22 +17,22 @@
 
 #if 1
 
-static char		* color = "蓝色黄色黑色白色其它";
-static uint8_t	index;
-static char		select_color[8];
-static uint8_t  color_set;
+static char				* color[] = { "无牌照", "蓝色", "黄色", "黑色", "白色", "其它" };
+
+static uint8_t			pos;
+
 
 /**/
 static void display( void )
 {
 	lcd_fill( 0 );
 
-	lcd_text12( 19, 4, "车牌颜色", 8, LCD_MODE_SET );
-	lcd_text12( 19 + 8 * 6, 4, select_color,  6, LCD_MODE_SET );
+	lcd_text12( 16, 12, "车牌颜色", 8, LCD_MODE_SET );
+	lcd_bitmap( 70, 14, &BMP_arrow_left, LCD_MODE_SET );
+	lcd_text12( 80, 12, color[pos], strlen(color[pos]), LCD_MODE_INVERT );
+	lcd_bitmap( 82+strlen(color[pos])*6, 14, &BMP_arrow_right, LCD_MODE_SET );
 
-	lcd_text12( 0, 18, color, 20, LCD_MODE_SET );
-	lcd_text12( index* 24, 18, color + index * 4, 4, LCD_MODE_INVERT );
-	lcd_update_all();
+	lcd_update_all( );
 }
 
 /**/
@@ -43,18 +43,15 @@ static void msg( void *p )
 /**/
 static void show( void )
 {
-	index = 0;
-	color_set=0;
-	memset( select_color, 0x20, 8 );
-	select_color[0] = '[';
-	select_color[5] = ']';
-	select_color[6] = 0;
+	pMenuItem->tick=rt_tick_get();
+	pos=0;
 	display( );
 }
 
 /**/
 static void keypress( unsigned int key )
 {
+	char	color_index[] = { 0, 1, 2, 3, 4, 9 };
 	switch( key )
 	{
 		case KEY_MENU:
@@ -62,50 +59,41 @@ static void keypress( unsigned int key )
 			pMenuItem->show( );
 			break;
 		case KEY_OK:
-			if(color_set==0)
+			jt808_param.id_0x0084=color_index[pos];
+			if(pos==0)		/*未上牌,输入VIN*/
 			{
-				memcpy(select_color+1,color+index*4,4);
-				color_set++;
-				display();
+				pMenuItem = &Menu_0_3_vin;
 			}
 			else
 			{
-				lcd_fill(0);
-				lcd_text12(13,14,"车牌颜色设置完成",16,LCD_MODE_SET);
-				lcd_update_all();
-			}
+				pMenuItem = &Menu_0_1_license;
+			}	
+			pMenuItem->show( );
 			break;
 		case KEY_UP:
-			color_set=0;
-			if( index == 0 )
+			if( pos == 0 )
 			{
-				index = 6;
+				pos = 6;
 			}
-			index--;
-			display();
+			pos--;
+			display( );
 			break;
 		case KEY_DOWN:
-			color_set=0;
-			index++;
-			index%=5;
-			display();
+			pos++;
+			pos %= 6;
+			display( );
 			break;
 	}
 }
 
-/**/
-static void timetick( unsigned int systick )
-{
-
-}
 
 MENUITEM Menu_0_4_Colour =
 {
-	"车辆颜色设置",
+	"车牌颜色设置",
 	12,			   0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

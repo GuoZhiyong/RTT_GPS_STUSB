@@ -55,6 +55,8 @@ static void display( void )
 /**/
 static void show( void )
 {
+	pMenuItem->tick = rt_tick_get( );
+
 	vin_pos = 0;
 	pos		= 0;
 	memset( vin, 0, 18 );
@@ -81,7 +83,7 @@ static void keypress( unsigned int key )
 		case KEY_OK:
 			if( vin_pos > 16 )
 			{
-				pMenuItem = &Menu_0_4_Colour;
+				pMenuItem = &Menu_0_5_DeviceID;
 				pMenuItem->show( );
 			}else
 			{
@@ -107,17 +109,15 @@ static void keypress( unsigned int key )
 }
 
 /**/
-static void timetick( unsigned int systick )
-{
-}
+
 
 MENUITEM Menu_0_3_vin =
 {
 	"VIN…Ë÷√",
-	7,		  0,
+	7,				  0,
 	&show,
 	&keypress,
-	&timetick,
+	&timetick_default,
 	&msg,
 	(void*)0
 };

@@ -22,6 +22,7 @@
 #include "jt808.h"
 
 #include "m66.h"
+#include "m66_sms.h"
 #include "hmi.h"
 
 #define GSM_GPIO			GPIOC
@@ -64,7 +65,7 @@ static uint16_t		gsm_rx_wr = 0;
 static T_GSM_STATE	gsm_state = GSM_IDLE;
 
 /*串口接收缓存区定义*/
-#define UART4_RX_SIZE 256
+#define UART4_RX_SIZE 512
 static uint8_t	uart4_rxbuf[UART4_RX_SIZE];
 static uint16_t uart4_rxbuf_wr = 0, uart4_rxbuf_rd = 0;
 
@@ -1039,8 +1040,8 @@ rt_err_t gsm_send( char *atcmd,
 	return ( -RT_ETIMEOUT );
 
 lbl_send_wait_ok:
-	pmsg=RT_NULL; /*重新开始等待*/
-	err = rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pmsg, tm );
+	pmsg	= RT_NULL;  /*重新开始等待*/
+	err		= rt_mb_recv( &mb_gsmrx, (rt_uint32_t*)&pmsg, tm );
 	if( err == RT_EOK ) /*没有超时,判断信息是否正确*/
 	{
 		if( strstr( pmsg + 2, "OK" ) != RT_NULL )
@@ -1155,7 +1156,6 @@ lbl_poweron_start:
 /*gsm供电的处理纤程*/
 static void rt_thread_gsm_power_on( void* parameter )
 {
-	rt_err_t	ret;
 	int			i;
 	AT_CMD_RESP at_init[] =
 	{
@@ -1166,7 +1166,7 @@ static void rt_thread_gsm_power_on( void* parameter )
 		{ "AT%TSIM\r\n",	 RESP_TYPE_STR_WITHOK,	RT_NULL,	"%TSIM 1",		RT_TICK_PER_SECOND * 2, 5  },
 
 		{ "AT+CMGF=0\r\n",	 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 3, 3  },
-		{ "AT+CNMI=1,2\r\n", RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 3, 3  },
+		{ "AT+CNMI=3,1\r\n", RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 3, 3  },
 
 		{ "AT+CPIN?\r\n",	 RESP_TYPE_STR_WITHOK,	RT_NULL,	"+CPIN: READY", RT_TICK_PER_SECOND * 2, 30 },
 
@@ -1424,11 +1424,19 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 		return;
 	}
 
+#if 0
+
 	if( SMS_rx_pro( pInfo, size ) )
 	{
 		return;
 	}
+#else
 
+	if( sms_rx_proc( pInfo, size ) )  /*一个完整的处理过程?*/
+	{
+		return;
+	}
+#endif
 	/*直接发送到Mailbox中,内部处理*/
 	pmsg = rt_malloc( len + 2 );
 	if( pmsg != RT_NULL )
@@ -1489,7 +1497,7 @@ struct rt_thread thread_gsm_rx;
 static void rt_thread_entry_gsm_rx( void* parameter )
 {
 	unsigned char ch;
-
+	sms_init();
 	while( 1 )
 	{
 		while( uart4_rxbuf_rd != uart4_rxbuf_wr )   /*有数据时，保存数据*/
@@ -1506,12 +1514,12 @@ static void rt_thread_entry_gsm_rx( void* parameter )
 			{
 				if( gsm_rx_wr )
 				{
-					gsmrx_cb( gsm_rx, gsm_rx_wr );                  /*接收信息的处理函数*/
+					gsmrx_cb( (char*)gsm_rx, gsm_rx_wr );           /*接收信息的处理函数*/
 				}
 				gsm_rx_wr = 0;
 			}
 		}
-		if( rt_tick_get( ) - last_tick > RT_TICK_PER_SECOND / 10 )  //等待100ms,实际上就是变长的延时,最迟100ms处理完一个数据包
+		if( rt_tick_get( ) - last_tick > RT_TICK_PER_SECOND / 5 )  //等待200ms,实际上就是变长的延时,最迟100ms处理完一个数据包
 		{
 			if( gsm_rx_wr )
 			{
@@ -1519,6 +1527,7 @@ static void rt_thread_entry_gsm_rx( void* parameter )
 				gsm_rx_wr = 0;
 			}
 		}
+		sms_proc();	
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
 	}
 }

@@ -360,11 +360,11 @@ static void keypress( unsigned int key )
 				{
 					hour	= HOUR( hmi_15min_speed[pos].time );
 					minute	= MINUTE( hmi_15min_speed[pos].time );
-					sprintf( buf, "[%02d] %02d:%02d %d kmh\n", i + 1, hour, minute, hmi_15min_speed[pos].speed );
+					sprintf( buf, " [%02d] %02d:%02d %d kmh\n", i + 1, hour, minute, hmi_15min_speed[pos].speed );
 					printer( buf );
 				}else
 				{
-					sprintf( buf, "[%02d] --:-- --\n", i + 1 );
+					sprintf( buf, " [%02d] --:-- --\n", i + 1 );
 					printer( buf );
 				}
 				if( pos == 0 )

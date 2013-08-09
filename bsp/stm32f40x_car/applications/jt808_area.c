@@ -134,7 +134,7 @@ static u16				test_speed;
 extern u32 Times_To_LongInt( T_TIMES *T );
 
 
-extern void printer_data_hex( u8 *pSrc, u16 nSrcLength );
+//extern void printer_data_hex( u8 *pSrc, u16 nSrcLength );
 
 
 /*********************************************************************************
@@ -2169,8 +2169,8 @@ void area_read( void )
 		            Area_Para.area_info[i].area_data->Rect_left.Lati, \
 		            Area_Para.area_info[i].area_data->Rect_right.Longi, \
 		            Area_Para.area_info[i].area_data->Rect_right.Lati );
-		rt_kprintf( "\n   DATA=" );
-		printer_data_hex( (u8*)Area_Para.area_info[i].area_data, Area_Para.area_info[i].area_data->Len );
+		//rt_kprintf( "\n   DATA=" );
+		//printer_data_hex( (u8*)Area_Para.area_info[i].area_data, Area_Para.area_info[i].area_data->Len );
 	}
 	///线路处理，如果当前位置在一个线路中，则跳出线路扫描
 	for( i = 0; i < Area_Para.line_num; i++ )

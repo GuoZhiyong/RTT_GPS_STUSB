@@ -20,13 +20,12 @@
 static uint8_t	invert	= 0;
 static uint8_t	count	= 0;
 
-char			*car_type1[]	= {"大型","中型","小型","微型"};
-char			*car_type2[]	= {"客运","货运","危品","出租"};
-
+char			*car_type1[] = { "大型", "中型", "小型", "微型" };
+char			*car_type2[] = { "客运", "货运", "危品", "出租" };
 
 static int8_t	row = 0, col = 0;
 
-static int8_t	row0_selected,row1_selected;
+static int8_t	row0_selected, row1_selected;
 
 /**/
 static void display( void )
@@ -35,29 +34,32 @@ static void display( void )
 	invert %= 2;
 
 	lcd_fill( 0 );
-	lcd_text12( 20, 4, car_type1[0], 4, LCD_MODE_SET );
-	lcd_text12( 44, 4, car_type1[1], 4, LCD_MODE_SET );
-	lcd_text12( 68, 4, car_type1[2], 4, LCD_MODE_SET );
-	lcd_text12( 92, 4, car_type1[3], 4, LCD_MODE_SET );
-	lcd_text12( 20, 18, car_type2[0], 4, LCD_MODE_SET );
-	lcd_text12( 44, 18, car_type2[1], 4, LCD_MODE_SET );
-	lcd_text12( 68, 18, car_type2[2], 4, LCD_MODE_SET );
-	lcd_text12( 92, 18, car_type2[3], 4, LCD_MODE_SET );
 
-	if( row == 0 )                                                                  /*操作第一行*/
+	if( row > 1 ) /*设置完成*/
 	{
-		lcd_text12( 20 + col * 24, 4, car_type1[col], 4, invert * 2 + 1 );     /*闪烁 1 set 3 invert*/
-	}else if( row == 1 )
-	{
-		lcd_text12( 20 + row0_selected * 24, 4, car_type1[row0_selected], 4, LCD_MODE_INVERT );
-		lcd_text12( 20 + col * 24, 18, car_type2[col], 4, invert * 2 + 1 );    /*闪烁 1 set 3 invert*/
+		strcpy( jt808_param.id_0xF00A, car_type1[row0_selected] );
+		strcat( jt808_param.id_0xF00A, car_type2[col] );
+		param_save( );
+		lcd_text12( 13, 16, "车辆类型设置完成", 16, LCD_MODE_SET );
 	}else
 	{
-		lcd_fill( 0 );
-		strcpy(jt808_param.id_0xF00A,car_type1[row0_selected]);
-		strcat(jt808_param.id_0xF00A,car_type2[col]);
-		param_save();
-		lcd_text12( 13, 16, "车辆类型设置完成", 16, LCD_MODE_SET );
+		lcd_text12( 20, 4, car_type1[0], 4, LCD_MODE_SET );
+		lcd_text12( 44, 4, car_type1[1], 4, LCD_MODE_SET );
+		lcd_text12( 68, 4, car_type1[2], 4, LCD_MODE_SET );
+		lcd_text12( 92, 4, car_type1[3], 4, LCD_MODE_SET );
+		lcd_text12( 20, 18, car_type2[0], 4, LCD_MODE_SET );
+		lcd_text12( 44, 18, car_type2[1], 4, LCD_MODE_SET );
+		lcd_text12( 68, 18, car_type2[2], 4, LCD_MODE_SET );
+		lcd_text12( 92, 18, car_type2[3], 4, LCD_MODE_SET );
+
+		if( row == 0 )                                                          /*操作第一行*/
+		{
+			lcd_text12( 20 + col * 24, 4, car_type1[col], 4, invert * 2 + 1 );  /*闪烁 1 set 3 invert*/
+		}else if( row == 1 )
+		{
+			lcd_text12( 20 + row0_selected * 24, 4, car_type1[row0_selected], 4, LCD_MODE_INVERT );
+			lcd_text12( 20 + col * 24, 18, car_type2[col], 4, invert * 2 + 1 ); /*闪烁 1 set 3 invert*/
+		}
 	}
 	lcd_update_all( );
 }
@@ -109,9 +111,9 @@ static void keypress( unsigned int key )
 				row1_selected = col;
 			}
 			row++;
-			col = 0;
-			invert=1;
-			display();
+			col		= 0;
+			invert	= 1;
+			display( );
 			break;
 		case KEY_UP:
 			if( col == 0 )
@@ -134,7 +136,7 @@ static void timetick( unsigned int systick )
 {
 	count++;
 	count %= 10;
-	if( count == 0 ) 
+	if( count == 0 )
 	{
 		display( );
 	}

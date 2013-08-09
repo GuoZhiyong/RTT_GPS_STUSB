@@ -64,7 +64,7 @@ static void display( void )
 		lcd_text12( index * 12, 20, hz + page * 20 + index * 2, 2, LCD_MODE_INVERT );
 	}else if( input_pos > 8 )
 	{
-		pMenuItem = &Menu_0_2_CarType;
+		pMenuItem = &Menu_0_5_DeviceID;
 		pMenuItem->show( );
 		
 	}else
