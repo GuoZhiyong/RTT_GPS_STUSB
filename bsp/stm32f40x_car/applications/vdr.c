@@ -1210,7 +1210,7 @@ void vdr_rx_8700( uint8_t * pmsg )
 			fcs		= 0;
 			vdr_pack_buf( buf + 3, "\x55\x7A\x04\x00\x08\x00", 6, &fcs );
 			vdr_pack_buf( buf + 9, gps_baseinfo.datetime, 6, &fcs );
-			vdr_pack_word( buf + 15, jt808_param.id_0xF033, &fcs );
+			vdr_pack_word( buf + 15, jt808_param.id_0xF032, &fcs );
 			buf[17] = fcs;
 			jt808_tx_ack( 0x0700, buf, 18 );
 			break;

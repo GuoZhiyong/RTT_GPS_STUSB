@@ -160,8 +160,9 @@ static void rt_thread_entry_hmi( void* parameter )
 	{
 		CheckICCard( );
 		key = keycheck( );
-		if( key )
+		if( key )			/*有键按下，打开背光*/
 		{
+			
 			pMenuItem->tick = rt_tick_get( );
 			pMenuItem->keypress( key );         //每个子菜单的 按键检测  时钟源50ms timer
 		}

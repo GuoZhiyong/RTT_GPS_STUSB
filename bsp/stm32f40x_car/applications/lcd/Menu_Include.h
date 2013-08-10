@@ -143,6 +143,7 @@ extern MENUITEM			Menu_0_2_CarType;
 extern MENUITEM			Menu_0_3_vin;
 extern MENUITEM			Menu_0_4_Colour;
 extern MENUITEM			Menu_0_5_DeviceID;
+extern MENUITEM			Menu_0_6_Engineer;
 
 extern MENUITEM			Menu_0_loggingin;
 
@@ -291,9 +292,8 @@ typedef struct
 extern HMI_15MIN_SPEED	hmi_15min_speed[15];
 extern uint8_t			hmi_15min_speed_curr;
 extern uint8_t			fconfirm_bd_upgrade_mode;
-extern IMG_DEF BMP_arrow_left;
-extern IMG_DEF BMP_arrow_right;
-
+extern IMG_DEF			BMP_arrow_left;
+extern IMG_DEF			BMP_arrow_right;
 
 void timetick_default( unsigned int tick );
 

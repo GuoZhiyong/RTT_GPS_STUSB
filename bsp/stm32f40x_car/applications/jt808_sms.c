@@ -1,13 +1,13 @@
 /************************************************************
  * Copyright (C), 2008-2012,
- * FileName:		// 	jt808_sms.c
- * Author:			// 	baiyangmin
- * Date:			// 	2013-07-08
- * Description:		// 	短信处理及发送，接收，修改参数等功能
- * Version:			// 	V0.01
- * Function List:	// 	主要函数及其功能
- *     1. -------		
- * History:			// 	历史修改记录
+ * FileName:		//  jt808_sms.c
+ * Author:			//  baiyangmin
+ * Date:			//  2013-07-08
+ * Description:		//  短信处理及发送，接收，修改参数等功能
+ * Version:			//  V0.01
+ * Function List:	//  主要函数及其功能
+ *     1. -------
+ * History:			//  历史修改记录
  *     <author>  <time>   <version >   <desc>
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
@@ -15,9 +15,6 @@
 #include <rtthread.h>
 #include <rthw.h>
 #include "stm32f4xx.h"
-#include "usart.h"
-#include "board.h"
-#include <serial.h>
 #include <finsh.h>
 
 #include  <stdlib.h> //数字转换成字符串
@@ -25,8 +22,9 @@
 #include  <string.h>
 #include  "jt808_sms.h"
 #include "jt808.h"
+#include "jt808_param.h"
+#include "jt808_gps.h"
 #include "m66.h"
-
 
 #if 0
 
@@ -64,19 +62,19 @@ typedef struct
 
 typedef  struct
 {
-	u8	SMIndex;                                    // 短信记录
-	u8	SMS_read;                                   // 读取短信标志位
-	u8	SMS_delALL;                                 // 删除所有短信标志位
-	u8	SMS_come;                                   // 有短信过来了
-	u8	SMS_Style;                                  // 消息类型，1为pdu，0为text
-	u8	SMS_delayCounter;                           // 短信延时器
-	u8	SMS_waitCounter;                            ///短信等待
-	char	SMSAtSend[45];                              //短信AT命令寄存器
+	u8		SMIndex;                                // 短信记录
+	u8		SMS_read;                               // 读取短信标志位
+	u8		SMS_delALL;                             // 删除所有短信标志位
+	u8		SMS_come;                               // 有短信过来了
+	u8		SMS_Style;                              // 消息类型，1为pdu，0为text
+	u8		SMS_delayCounter;                       // 短信延时器
+	u8		SMS_waitCounter;                        ///短信等待
+	char	SMSAtSend[45];                          //短信AT命令寄存器
 
-	char				SMS_destNum[15];                //  发送短息目的号码
+	char			SMS_destNum[15];                //  发送短息目的号码
 	u8				SMS_sendFlag;                   //  短息发送标志位
-	char				SMS_sd_Content[PHONEMAXSTR];    // 短息发送内容
-	char				SMS_rx_Content[PHONEMAXSTR];    // 短息接收内容
+	char			SMS_sd_Content[PHONEMAXSTR];    // 短息发送内容
+	char			SMS_rx_Content[PHONEMAXSTR];    // 短息接收内容
 	SMS_RX_STATE	rx_state;                       //接收状态
 	SMS_TX_STATE	tx_state;                       //发送状态
 	u8				rx_retry;                       ///重复接收次数
@@ -87,7 +85,7 @@ typedef  struct
 
 typedef __packed struct
 {
-	char		SMS_destNum[PHONEMAXNUM];               //  发送短息目的号码
+	char	SMS_destNum[PHONEMAXNUM];               //  发送短息目的号码
 	char	*pstr;                                  // 短息发送内容
 } SMS_Send_Msg;
 
@@ -97,7 +95,7 @@ static struct rt_mailbox mb_smsdata;
 /* 消息邮箱中用到的放置消息的内存池*/
 static uint8_t		mb_smsdata_pool[MB_SMSDATA_POOL_SIZE];
 
-static SMS_Style	SMS_Service;   //  短息相关
+static SMS_Style	SMS_Service; //  短息相关
 
 static const char	GB_DATA[]	= "京津沪宁渝琼藏川粤青贵闽吉陕蒙晋甘桂鄂赣浙苏新鲁皖湘黑辽云豫冀";
 static const char	UCS2_CODE[] = "4EAC6D256CAA5B816E1D743C85CF5DDD7CA497528D3595FD540996558499664B7518684291028D636D5982CF65B09C8176966E589ED18FBD4E918C6B5180";
@@ -238,20 +236,20 @@ u16 Ascii_To_Hex( char* pSrc, char* pDst, u16 nSrcLength )
 * Return:
 * Others:
 ***********************************************************/
-void printer_data_hex(u8 *pSrc,u16 nSrcLength)
+void printer_data_hex( u8 *pSrc, u16 nSrcLength )
 {
-	char pDst[3];
- 	const u8	tab[] = "0123456789ABCDEF"; // 0x0-0xf的字符查找表
+	char		pDst[3];
+	const u8	tab[] = "0123456789ABCDEF"; // 0x0-0xf的字符查找表
 	u16			i;
-	
-	pDst[2]=0;
+
+	pDst[2] = 0;
 	for( i = 0; i < nSrcLength; i++ )
 	{
 		// 输出低4位
 		pDst[0] = tab[*pSrc >> 4];
 		// 输出高4位
 		pDst[1] = tab[*pSrc & 0x0f];
-		rt_kprintf("%s",pDst);
+		rt_kprintf( "%s", pDst );
 		pSrc++;
 	}
 }
@@ -310,7 +308,7 @@ u16  GsmEncode8bit( const u8 *pSrc, u8 *pDst, u16 nSrcLength )
 ***********************************************************/
 u16 GsmDecodeUcs2_old( const u8* pSrc, u8* pDst, u16 nSrcLength )
 {
-	u16 nDstLength = nSrcLength;   // UNICODE宽字符数目
+	u16 nDstLength = nSrcLength; // UNICODE宽字符数目
 	u16 i;
 	// INT16U wchar[128];      // UNICODE串缓冲区
 
@@ -341,7 +339,7 @@ u16 GsmDecodeUcs2_old( const u8* pSrc, u8* pDst, u16 nSrcLength )
 ***********************************************************/
 u16 GsmEncodeUcs2_old( const u8* pSrc, u8* pDst, u16 nSrcLength )
 {
-	u16 nDstLength = nSrcLength;   // UNICODE宽字符数目
+	u16 nDstLength = nSrcLength; // UNICODE宽字符数目
 	u16 i;
 	//INT16U wchar[128];      // UNICODE串缓冲区
 
@@ -385,7 +383,7 @@ u16 GsmDecodeUcs2( const u8* pSrc, u8* pDst, u16 nSrcLength )
 		if( *pSrc ) ///汉字编码
 		{
 			p = pSrc;
-			Hex_To_Ascii( p, (u8 *)strTemp, 2 );
+			Hex_To_Ascii( p, (u8*)strTemp, 2 );
 			strTemp[4]	= 0;
 			indexNum	= StringFind( UCS2_CODE, strTemp, strlen( UCS2_CODE ) );
 			if( indexNum >= 0 )
@@ -486,10 +484,10 @@ u16 GsmEncodeUcs2( const u8* pSrc, u8* pDst, u16 nSrcLength )
 ***********************************************************/
 u16 GsmDecode7bit( const u8* pSrc, u8* pDst, u16 nSrcLength )
 {
-	u16 nSrc;       // 源字符串的计数值
-	u16 nDst;       // 目标解码串的计数值
-	u16 nByte;      // 当前正在处理的组内字节的序号，范围是0-6
-	u8	nLeft;      // 上一字节残余的数据
+	u16 nSrc;   // 源字符串的计数值
+	u16 nDst;   // 目标解码串的计数值
+	u16 nByte;  // 当前正在处理的组内字节的序号，范围是0-6
+	u8	nLeft;  // 上一字节残余的数据
 
 	// 计数值初始化
 	nSrc	= 0;
@@ -544,10 +542,10 @@ u16 GsmDecode7bit( const u8* pSrc, u8* pDst, u16 nSrcLength )
 //将每个ascii8位编码的Bit8去掉，依次将下7位编码的后几位逐次移到前面，形成新的8位编码。
 u16 GsmEncode7bit( const u8* pSrc, u8* pDst, u16 nSrcLength )
 {
-	u16 nSrc;       // 源字符串的计数值
-	u16 nDst;       // 目标编码串的计数值
-	u16 nChar;      // 当前正在处理的组内字符字节的序号，范围是0-7
-	u8	nLeft;      // 上一字节残余的数据
+	u16 nSrc;   // 源字符串的计数值
+	u16 nDst;   // 目标编码串的计数值
+	u16 nChar;  // 当前正在处理的组内字符字节的序号，范围是0-7
+	u8	nLeft;  // 上一字节残余的数据
 
 	// 计数值初始化
 	nSrc	= 0;
@@ -940,7 +938,7 @@ u16 GsmEncodePdu_Center( const SmsType pSrc, const u8 *DataSrc, u16 datalen, u8*
 	nDstLength	+= Hex_To_Ascii( buf, &pDst[nDstLength], 2 );
 	// SMSC地址信息段
 	nLength		= Que_Number_Length( pSrc.TPA );                                // TP-DA地址字符串的长度
-	buf[0]		= nLength;                                                  // 目标地址数字个数(TP-DA地址字符串真实长度)
+	buf[0]		= nLength;                                                      // 目标地址数字个数(TP-DA地址字符串真实长度)
 	buf[1]		= 0x91;                                                         // 固定: 用国际格式号码
 	nDstLength	+= Hex_To_Ascii( buf, &pDst[nDstLength], 2 );
 	nLength		= Hex_Num_Encode( pSrc.TPA, buf, nLength );
@@ -1212,7 +1210,7 @@ u8 SMS_Rx_Text( char *instr, char *strDestNum )
 	rt_kprintf( "\r\n  短息来源号码:%s", SMS_Service.SMS_destNum );
 	rt_kprintf( "\r\n 短信收到消息: " );
 	rt_kprintf( instr );
-	if( strncmp( (char*)instr, "TW703#", 6 ) == 0 )                                             //短信修改UDP的IP和端口
+	if( strncmp( (char*)instr, "TW703#", 6 ) == 0 )                     //短信修改UDP的IP和端口
 	{
 		//-----------  自定义 短息设置修改 协议 ----------------------------------
 		SMS_protocol( instr + 5, len - 5, SMS_ACK_msg );
@@ -1267,7 +1265,7 @@ u8 SMS_Rx_PDU( char *instr, u16 len )
 	rt_kprintf( "\r\n 短信消息: " );
 	SMS_SendConsoleStr( pstrTemp );
 	//rt_hw_console_output(instr);
-	if( strncmp( (char*)pstrTemp, "TW703#", 6 ) == 0 )                                             //短信修改UDP的IP和端口
+	if( strncmp( (char*)pstrTemp, "TW703#", 6 ) == 0 )                     //短信修改UDP的IP和端口
 	{
 		//-----------  自定义 短息设置修改 协议 ----------------------------------
 		SMS_protocol( pstrTemp + 5, len - 5, SMS_ACK_msg );
@@ -1283,7 +1281,6 @@ u8 SMS_Rx_PDU( char *instr, u16 len )
 	//////
 	return ret;
 }
-
 
 /*********************************************************************************
   *函数名称:u8 SMS_Tx_Text(char *strDestNum,char *s)
@@ -1600,8 +1597,7 @@ u8 SMS_rx_pro( char *psrc, u16 len )
 			SMS_Service.tx_state = SMS_TX_OK;
 		}
 		return 1;
-	}
-	else if( strncmp( (char*)psrc, "+CMS ERROR:", 11 ) == 0 )
+	}else if( strncmp( (char*)psrc, "+CMS ERROR:", 11 ) == 0 )
 	{
 		if( SMS_Service.tx_state == SMS_TX_WAITACK )
 		{
@@ -1773,7 +1769,7 @@ void SMS_Process( void )
 			SMS_Tx_PDU( tx_dest_num, tx_dest_str );
 			SMS_Service.tx_retry++;
 			//SMS_Service.tx_state=SMS_TX_WAITACK;	///判断是否成功发送
-			SMS_Service.tx_state	= SMS_TX_WAITACK;                        ///不判断是否成功发送，直接返回成功
+			SMS_Service.tx_state	= SMS_TX_WAITACK;                   ///不判断是否成功发送，直接返回成功
 			tx_tick					= rt_tick_get( );
 			break;
 		}
@@ -1852,7 +1848,7 @@ void SMS_Process( void )
 			rt_kprintf( "\n  短息来源号码:%s", SMS_Service.SMS_destNum );
 			rt_kprintf( "\n 短信收到消息: " );
 			rt_kprintf( SMS_Service.SMS_rx_Content );
-			if( strncmp( (char*)SMS_Service.SMS_rx_Content, "TW703#", 6 ) == 0 )                                        //短信修改UDP的IP和端口
+			if( strncmp( (char*)SMS_Service.SMS_rx_Content, "TW703#", 6 ) == 0 ) //短信修改UDP的IP和端口
 			{
 				ContentLen = strlen( SMS_Service.SMS_rx_Content );
 				//-----------  自定义 短息设置修改 协议 ----------------------------------
@@ -1925,7 +1921,7 @@ u8 Add_SMS_Ack_Content( char * instr, u8 ACKflag )
 		return false;
 	}
 
-	if( strlen( (const char *)instr ) + strlen( (const char *)SMS_Service.SMS_sd_Content ) < sizeof( (const char *)SMS_Service.SMS_sd_Content ) )
+	if( strlen( (const char*)instr ) + strlen( (const char*)SMS_Service.SMS_sd_Content ) < sizeof( (const char*)SMS_Service.SMS_sd_Content ) )
 	{
 		strcat( (char*)SMS_Service.SMS_sd_Content, instr );
 		SMS_Service.SMS_sendFlag = 1;
@@ -1949,8 +1945,10 @@ u8 Add_SMS_Ack_Content( char * instr, u8 ACKflag )
 *********************************************************************************/
 void SMS_protocol( u8 *instr, u16 len, u8 ACKstate )
 {
-	SMS_Tx_PDU( (char *)SMS_Service.SMS_destNum, (char *)instr );
+	SMS_Tx_PDU( (char*)SMS_Service.SMS_destNum, (char*)instr );
 }
+
+#endif
 
 #if 0
 
@@ -2133,7 +2131,7 @@ void   SMS_protocol( u8 *instr, u16 len, u8 ACKstate )  //  ACKstate
 
 					/*
 					   DF_WriteFlashSector(DF_SIMID_offset,0,SIM_CardID_JT808,13);
-					  */
+					 */
 					Add_SMS_Ack_Content( sms_ack_data, ACKstate );
 
 					//------- add on 2013-6-6
@@ -2288,22 +2286,162 @@ void   SMS_protocol( u8 *instr, u16 len, u8 ACKstate )  //  ACKstate
 #endif
 
 
-#endif
-
-/*收到短信息处理*/
-void jt808_sms_rx(char *sender,char *info,uint16_t len)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void analy_param( char* cmd, char*value )
 {
-	uint16_t i;
-	char *p=info;
-	rt_kprintf("\nSMS>%s",p);
-	p=info;
-	if(strncmp(p,"TW703",5)!=0) return;
+	if( strlen( cmd ) == 0 )
+	{
+		return;
+	}
+/*先找不带参数的*/
+	if( strncmp( cmd, "TIREDCLEAR", 10 ) == 0 )
+	{
+		return;
+	}
 
+	if( strncmp( cmd, "DISCLEAR", 8 ) == 0 )
+	{
+		return;
+	}
+
+	if( strncmp( cmd, "RESET", 5 ) == 0 )
+	{
+		return;
+	}
+/*带参数的，先判有没有参数*/
+	if( strlen( value ) == 0 )
+	{
+		return;
+	}
+/*查找对应的参数*/
+	if( strncmp( cmd, "DNSR", 4 ) == 0 )
+	{
+		if( cmd[4] == '1' )
+		{
+			strcpy( jt808_param.id_0x0013, value );
+		}
+		if( cmd[4] == '2' )
+		{
+			strcpy( jt808_param.id_0x0017, value );
+		}
+		return;
+	}
+	if( strncmp( cmd, "PORT", 4 ) == 0 )
+	{
+		if( cmd[4] == '1' )
+		{
+			param_put_int( 0x0018, atoi( value ) );
+		}
+		if( cmd[4] == '2' )
+		{
+			param_put_int( 0x0019, atoi( value ) );
+		}
+		return;
+	}
+
+	if( strncmp( cmd, "IP", 2 ) == 0 )
+	{
+		if( cmd[2] == '1' )
+		{
+			strcpy( jt808_param.id_0x0013, value );
+		}
+		if( cmd[2] == '2' )
+		{
+			strcpy( jt808_param.id_0x0017, value );
+		}
+		return;
+	}
+	if( strncmp( cmd, "DUR", 3 ) == 0 )
+	{
+		param_put_int( 0x0029, atoi( value ) );
+		return;
+	}
+	if( strncmp( cmd, "SIMID", 6 ) == 0 )
+	{
+		strcpy( jt808_param.id_0xF006, value );
+		return;
+	}
+	if( strncmp( cmd, "DEVICEID", 8 ) == 0 )
+	{
+		strcpy( jt808_param.id_0xF002, value ); /*终端ID 大写字母+数字*/
+		return;
+	}
+
+	if( strncmp( cmd, "MODE", 4 ) == 0 )   ///6. 设置定位模式
+	{
+		if( strncmp( value, "BD", 2 ) == 0 )
+		{
+			gps_status.Position_Moule_Status=MODE_BD;
+		}
+		if( strncmp( value, "GP", 2 ) == 0 )
+		{
+			gps_status.Position_Moule_Status=MODE_GPS;
+		}
+		if( strncmp( value, "GN", 2 ) == 0 )
+		{
+			gps_status.Position_Moule_Status=MODE_BDGPS;
+		}
+		gps_mode(gps_status.Position_Moule_Status);
+	}
+
+
+
+
+	
 }
 
+/*收到短信息处理*/
+void jt808_sms_rx( char *sender, char *info, uint16_t len )
+{
+	uint16_t	i;
+	char		*p = info;
+	char		cmd[64];
+	char		value[64];
+	char		*psave;
+	uint8_t		count;
 
-
-
-
+	rt_kprintf( "\nSMS>%s", p );
+	if( strncmp( p, "TW703", 5 ) != 0 )
+	{
+		return;
+	}
+	p += 5;
+	while( *p != 0 )
+	{
+		switch( *p )
+		{
+			case '#':
+				analy_param( cmd, value );
+				memset( cmd, 0, 64 );
+				memset( value, 0, 64 );
+				psave	= cmd;      /*先往cmd缓冲中存*/
+				count	= 0;
+				break;
+			case '(':
+				psave	= value;    /*向取值区保存*/
+				count	= 0;
+				break;
+			case ')':               /*表示结束,不保存*/
+				break;
+			default:
+				if( count < 64 )    /*正常，保存*/
+				{
+					*psave++ = *p;
+					count++;
+				}
+				break;
+		}
+		p++;
+	}
+	analy_param( cmd, value );
+}
 
 /************************************** The End Of File **************************************/

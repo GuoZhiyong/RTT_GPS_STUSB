@@ -154,8 +154,7 @@ typedef __packed struct _jt808_tx_nodedata
 
 void jt808_init( void );
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
-rt_size_t tts_write( char* info,uint16_t len );
-rt_size_t at( char *sinfo );
+
 void cb_socket_close( uint8_t cid );
 
 
@@ -194,7 +193,7 @@ rt_err_t jt808_tx_0x0001(uint16_t seq, uint16_t id, uint8_t res );
 #define jt808_tx( id, info, len ) jt808_add_tx( 1, SINGLE_CMD, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
 
 /*×¨ÓÃÓ¦´ð*/
-#define jt808_tx_ack( id, info, len ) jt808_add_tx( 1, SINGLE_ACK, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
+#define jt808_tx_ack( id, info, len ) jt808_add_tx( 1, SINGLE_FIRST, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
 
 
 #endif

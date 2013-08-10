@@ -81,7 +81,8 @@ static void keypress( unsigned int key )
 				}
 				else if( strncmp( (char*)input, ENTER_CODE2, 6 ) == 0 ) /*¹¤³ÌÉèÖÃ*/
 				{
-					
+					pMenuItem = &Menu_0_6_Engineer;
+					pMenuItem->show();
 					
 				}
 				else

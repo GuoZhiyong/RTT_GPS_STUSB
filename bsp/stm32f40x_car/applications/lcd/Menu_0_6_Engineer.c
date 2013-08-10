@@ -21,8 +21,9 @@ static uint8_t	pos;
 static char		*op[] =
 {
 	"清除所有数据",
+	"打印机",
 	"修改参数",
-}
+};
 
 /***********************************************************
 * Function:
@@ -92,7 +93,7 @@ static void keypress( unsigned int key )
 
 /**/
 
-MENUITEM Menu_0_3_vin =
+MENUITEM Menu_0_6_Engineer =
 {
 	"工程模式",
 	8,				  0,

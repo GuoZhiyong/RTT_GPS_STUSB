@@ -105,7 +105,7 @@ uint32_t	gps_lati;
 uint32_t	gps_longi;
 uint16_t	gps_speed;
 
-uint16_t	gps_cog;                 /*course over ground*/
+uint16_t	gps_cog;              /*course over ground*/
 uint16_t	gps_alti;
 uint8_t		gps_datetime[6];
 
@@ -186,7 +186,7 @@ static void adjust_mytime_now( void )
 {
 	uint8_t year, month, day, hour, minute, sec;
 
-	if( mytime_now )                     /*mytime_now经过gps定位后的授时*/
+	if( mytime_now )                  /*mytime_now经过gps定位后的授时*/
 	{
 		sec		= SEC( mytime_now );
 		minute	= MINUTE( mytime_now );
@@ -361,7 +361,7 @@ static void process_gps_report( void )
 	}
 	jt808_alarm			|= alarm_bits;
 	gps_baseinfo.alarm	= BYTESWAP4( jt808_alarm );
-	gps_baseinfo.status	= BYTESWAP4( jt808_status );
+	gps_baseinfo.status = BYTESWAP4( jt808_status );
 	memcpy( buf, (uint8_t*)&gps_baseinfo, 28 );
 
 /*中心追踪,直接上报，并返回*/
@@ -457,8 +457,8 @@ static void process_gps_report( void )
 		}
 	}
 
-	jt808_status_last = jt808_status;
-	jt808_alarm_last=jt808_alarm;
+	jt808_status_last	= jt808_status;
+	jt808_alarm_last	= jt808_alarm;
 
 
 /*
@@ -890,23 +890,35 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		process_gps_report( );          /*处理GPS上报信息*/
 	}
 
+
 	/*天线开短路检测 gps<
-	$GNTXT,01,01,01,ANTENNA OK*2B
-	$GNTXT,01,01,01,ANTENNA OPEN*3B
-	*/
+	   $GNTXT,01,01,01,ANTENNA OK*2B
+	   $GNTXT,01,01,01,ANTENNA OPEN*3B
+	 */
 	if( strncmp( psrc + 3, "TXT", 3 ) == 0 )
 	{
-		if( strncmp( psrc + 24, "OK",2) ==0 )
+		if( strncmp( psrc, "GN", 2 ) == 0 )
+		{
+			gps_status.Position_Moule_Status = MODE_BDGPS;
+		}
+		else if( strncmp( psrc, "GP", 2 ) == 0 )
+		{
+			gps_status.Position_Moule_Status = MODE_GPS;
+		}
+		else if( strncmp( psrc, "BD", 2 ) == 0 )
+		{
+			gps_status.Position_Moule_Status = MODE_BD;
+		}
+
+		if( strncmp( psrc + 24, "OK", 2 ) == 0 )
 		{
 			gps_status.Antenna_Flag = 0;
 			jt808_alarm				&= ~( BIT_ALARM_GPS_OPEN | BIT_ALARM_GPS_SHORT );
-		}
-		if( strncmp( psrc + 24, "OPEN" ,4) ==0 )
+		}else if( strncmp( psrc + 24, "OPEN", 4 ) == 0 )
 		{
 			gps_status.Antenna_Flag = 1;
 			jt808_alarm				|= BIT_ALARM_GPS_OPEN; /*bit5 天线开路*/
-		}
-		if( strncmp( psrc + 24, "SHORT",4 ) ==0 )
+		}else if( strncmp( psrc + 24, "SHORT", 4 ) == 0 )
 		{
 			gps_status.Antenna_Flag = 1;
 			jt808_alarm				|= BIT_ALARM_GPS_SHORT;

@@ -58,20 +58,7 @@ typedef enum
 JT808_STATE jt808_state = REGISTER;
 
 
-/*
-   AT命令发送使用的mailbox
-   供 VOICE TTS SMS TTS使用
- */
-#define MB_TTS_POOL_SIZE 32
-static struct rt_mailbox	mb_tts;
-static uint8_t				mb_tts_pool[MB_TTS_POOL_SIZE];
 
-#define MB_AT_TX_POOL_SIZE 32
-static struct rt_mailbox	mb_at_tx;
-static uint8_t				mb_at_tx_pool[MB_AT_TX_POOL_SIZE];
-
-static rt_tick_t			tick_server_heartbeat	= 0;
-static rt_tick_t			tick_auth_heartbeat		= 0;
 
 #if 0
 #define MB_VOICE_POOL_SIZE 32
@@ -93,7 +80,10 @@ MsgList* list_jt808_tx;
 /*接收信息列表*/
 MsgList					* list_jt808_rx;
 
-static rt_device_t		dev_gsm;
+static rt_tick_t			tick_server_heartbeat	= 0;
+static rt_tick_t			tick_auth_heartbeat		= 0;
+
+
 
 struct _connect_state	connect_state = { 0, CONNECT_IDLE, 0, CONNECT_NONE, 0 };
 
@@ -231,7 +221,7 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
 		return RT_NULL;
 	}
 	rt_kprintf( "\n%d>malloc node(%04x) %p", rt_tick_get( ), id, pnodedata );
-	//memset( pnodedata, 0, sizeof( JT808_TX_NODEDATA ) ); ///绝对不能少，否则系统出错
+	memset( pnodedata, 0, sizeof( JT808_TX_NODEDATA ) ); ///绝对不能少，否则系统出错
 	pnodedata->linkno	= linkno;
 	pnodedata->state	= IDLE;
 	pnodedata->head_id	= id;
@@ -1435,108 +1425,6 @@ static void jt808_socket_proc( void )
 }
 
 /*
-   tts语音播报的处理
-
-   是通过
-   %TTS: 0 判断tts状态(怀疑并不是每次都有输出)
-   还是AT%TTS? 查询状态
- */
-void jt808_tts_proc( void )
-{
-	rt_err_t	ret;
-	rt_size_t	len;
-	uint8_t		*pinfo, *p;
-	uint8_t		c;
-	T_GSM_STATE oldstate;
-
-	char		buf[20];
-	char		tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-/*gsm在处理其他命令*/
-	oldstate = gsmstate( GSM_STATE_GET );
-	if( oldstate != GSM_TCPIP )
-	{
-		if( oldstate != GSM_AT )
-		{
-			return;
-		}
-	}
-
-/*是否有信息要播报*/
-	ret = rt_mb_recv( &mb_tts, (rt_uint32_t*)&pinfo, 0 );
-	if( ret != RT_EOK )
-	{
-		return;
-	}
-
-	gsmstate( GSM_AT_SEND );
-
-	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
-
-	sprintf( buf, "AT%%TTS=2,3,5,\"" );
-
-	rt_device_write( dev_gsm, 0, buf, strlen( buf ) );
-
-	rt_kprintf( "%s", buf );
-
-	len = ( *pinfo << 8 ) | ( *( pinfo + 1 ) );
-	p	= pinfo + 2;
-	while( len-- )
-	{
-		c		= *p++;
-		buf[0]	= tbl[c >> 4];
-		buf[1]	= tbl[c & 0x0f];
-		rt_device_write( dev_gsm, 0, buf, 2 );
-		rt_kprintf( "%c%c", buf[0], buf[1] );
-	}
-	buf[0]	= '"';
-	buf[1]	= 0x0d;
-	buf[2]	= 0x0a;
-	buf[3]	= 0;
-	rt_device_write( dev_gsm, 0, buf, 3 );
-	rt_kprintf( "%s", buf );
-/*不判断，在gsmrx_cb中处理*/
-	rt_free( pinfo );
-	ret = gsm_send( "", RT_NULL, "%TTS: 0", RESP_TYPE_STR, RT_TICK_PER_SECOND * 35, 1 );
-	GPIO_SetBits( GPIOD, GPIO_Pin_9 ); /*关功放*/
-	gsmstate( oldstate );
-}
-
-/*
-   at命令处理，收到OK或超时退出
- */
-void jt808_at_tx_proc( void )
-{
-	rt_err_t	ret;
-	uint8_t		*pinfo, *p;
-
-	T_GSM_STATE oldstate;
-
-/*gsm在处理其他命令*/
-	oldstate = gsmstate( GSM_STATE_GET );
-	if( oldstate != GSM_TCPIP )
-	{
-		if( oldstate != GSM_AT )
-		{
-			return;
-		}
-	}
-
-/*是否有信息要发送*/
-	ret = rt_mb_recv( &mb_at_tx, (rt_uint32_t*)&pinfo, 0 );
-	if( ret != RT_EOK )
-	{
-		return;
-	}
-
-	gsmstate( GSM_AT_SEND );
-	p	= pinfo + 2;
-	ret = gsm_send( (char*)p, RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 5, 1 );
-	rt_kprintf( "\nat_tx=%d", ret );
-	rt_free( pinfo );
-	gsmstate( oldstate );
-}
-
-/*
    连接状态维护
    jt808协议处理
 
@@ -1578,9 +1466,7 @@ static void rt_thread_entry_jt808( void * parameter )
 
 		jt808_socket_proc( );   /*jt808 socket处理*/
 
-		jt808_tts_proc( );      /*tts处理*/
 
-		jt808_at_tx_proc( );    /*at命令处理*/
 
 /*短信处理*/
 		//SMS_Process( );
@@ -1739,12 +1625,8 @@ void jt808_init( void )
 #endif
 	vdr_init( );
 
-	dev_gsm = rt_device_find( "gsm" );
 	rt_mb_init( &mb_gprsrx, "mb_gprs", &mb_gprsrx_pool, MB_GPRSDATA_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 
-	rt_mb_init( &mb_tts, "mb_tts", &mb_tts_pool, MB_TTS_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
-
-	rt_mb_init( &mb_at_tx, "mb_at_tx", &mb_at_tx_pool, MB_AT_TX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 
 	rt_thread_init( &thread_jt808,
 	                "jt808",
@@ -1772,71 +1654,7 @@ rt_err_t gprs_rx( uint8_t linkno, uint8_t * pinfo, uint16_t length )
 	return 1;
 }
 
-/*
-   收到tts信息并发送
-   返回0:OK
-    1:分配RAM错误
- */
-rt_size_t tts_write( char* info, uint16_t len )
-{
-	uint8_t *pmsg;
-	/*直接发送到Mailbox中,内部处理*/
-	pmsg = rt_malloc( len + 2 );
-	if( pmsg != RT_NULL )
-	{
-		*pmsg			= len >> 8;
-		*( pmsg + 1 )	= len & 0xff;
-		memcpy( pmsg + 2, info, len );
-		rt_mb_send( &mb_tts, (rt_uint32_t)pmsg );
-		return 0;
-	}
-	return 1;
-}
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-rt_err_t tts( char *s )
-{
-	tts_write( s, strlen( s ) );
-	return RT_EOK;
-}
-
-FINSH_FUNCTION_EXPORT( tts, tts send );
-
-
-/*
-   发送AT命令
-   如何保证不干扰,其他的执行，传入等待的时间
-
- */
-rt_size_t at( char *sinfo )
-{
-	char		*pmsg;
-	uint16_t	count;
-	count = strlen( sinfo );
-
-	/*直接发送到Mailbox中,内部处理*/
-	pmsg = rt_malloc( count + 3 );
-	if( pmsg != RT_NULL )
-	{
-		count=sprintf(pmsg+2,"%s\r\n",sinfo);
-		pmsg[0]=count>>8;
-		pmsg[1]=count&0xff;
-		*( pmsg + count + 2 ) = 0;
-		rt_mb_send( &mb_at_tx, (rt_uint32_t)pmsg );
-		return 0;
-	}
-	return 1;
-}
-
-FINSH_FUNCTION_EXPORT( at, write gsm );
 
 
 /*

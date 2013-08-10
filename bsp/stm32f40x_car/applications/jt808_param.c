@@ -26,7 +26,7 @@
 
 JT808_PARAM jt808_param =
 {
-	0x13080701,                         /*0x0000 版本*/
+	0x13081001,                         /*0x0000 版本*/
 	50,                                 /*0x0001 心跳发送间隔*/
 	10,                                 /*0x0002 TCP应答超时时间*/
 	3,                                  /*0x0003 TCP超时重传次数*/
@@ -125,18 +125,22 @@ JT808_PARAM jt808_param =
 	0x07,                               /*0xF004 终端类型*/
 	"0000000000000000",                 /*0xF005 车辆VIN*/
 	"021022612645",                     /*0xF006 DeviceID*/
+	"驾驶证代码",                       /*0xF007 驾驶证代码*/
 	"张三",                             /*0xF008 驾驶员姓名*/
 	"120104197712015381",               /*0xF009 驾驶证号码*/
 	"大型货运",                         /*0xF00A 车辆类型*/
+	"未知",                             /*0xF00B 从业资格证*/
+	"未知      ",                       /*0xF00C 发证机构*/
+
 	"1.00",                             /*0xF010 软件版本号*/
 	"1.00",                             /*0xF011 硬件版本号*/
-	"TJ.GT",                           /*0xF012 销售客户代码*/
+	"TJ.GT",                            /*0xF012 销售客户代码*/
 
 	0,                                  /*0xF020 总里程*/
 
 	0x35DECC80,                         /*0xF030 记录仪初次安装时间,mytime格式*/
-	0,                                  /*id_0xF032;      初始里程*/
-	6250,                               /*id_0xF033;      车辆脉冲系数*/
+	0,                                  /*id_0xF031;      初始里程*/
+	6250,                               /*id_0xF032;      车辆脉冲系数*/
 
 	6,                                  //line_space;               //行间隔
 	0,                                  //margin_left;				//左边界
@@ -295,7 +299,9 @@ struct _tbl_id_lookup
 	ID_LOOKUP( 0xF006, TYPE_STR ),      /*0xF006 车辆标识,MOBILE*/
 	ID_LOOKUP( 0xF008, TYPE_STR ),      /*0xF008 驾驶员姓名*/
 	ID_LOOKUP( 0xF009, TYPE_STR ),      /*0xF009 驾驶证号码*/
-	ID_LOOKUP( 0xF00A, TYPE_STR ),      /*0xF008 车辆类型*/
+	ID_LOOKUP( 0xF00A, TYPE_STR ),      /*0xF00A 车辆类型*/
+	ID_LOOKUP( 0xF00B, TYPE_STR ),  /*0xF00B 从业资格证*/
+	ID_LOOKUP( 0xF00C, TYPE_STR ), 	 /*0xF00C 发证机构*/
 
 	ID_LOOKUP( 0xF010, TYPE_STR ),      /*0xF010 软件版本号*/
 	ID_LOOKUP( 0xF011, TYPE_STR ),      /*0xF011 硬件版本号*/

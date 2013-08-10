@@ -86,6 +86,7 @@ typedef enum
 
 enum RESP_TYPE
 {
+	RESP_TYPE_NONE			=0,		/*没有任何操作,只是发送，由其他接管*/
 	RESP_TYPE_FUNC			=1,
 	RESP_TYPE_FUNC_WITHOK	=2,
 	RESP_TYPE_STR			=3,
@@ -118,16 +119,18 @@ void ctl_gprs( char* apn, char* user, char*psw ,uint8_t fdial );
 void ctl_socket( uint8_t linkno,char type, char* remoteip, uint16_t remoteport,uint8_t fconnect );
 
 rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count );
-
+/*
 rt_err_t gsm_send( char *atcmd,
                    RESP_FUNC respfunc,
                    char * compare_str,
                    uint8_t type,
                    uint32_t timeout,
                    uint8_t retry );
-
+*/
 T_GSM_STATE gsmstate( T_GSM_STATE cmd );
 T_SOCKET_STATE socketstate( T_SOCKET_STATE cmd );
+rt_size_t tts_write( char* info,uint16_t len );
+rt_size_t at( char *sinfo );
 
 
 #endif

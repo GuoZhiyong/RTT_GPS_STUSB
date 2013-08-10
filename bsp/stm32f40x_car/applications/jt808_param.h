@@ -124,15 +124,12 @@ typedef struct _jt808_param
 	uint16_t	id_0xF004;      /*0xF004 终端类型*/
 	char		id_0xF005[32];  /*0xF005 VIN*/
 	char		id_0xF006[32];	/*0xF006 CARID 上报的终端手机号，系统原来的mobile */
-
 	char		id_0xF007[32];  /*0xF007 驾驶证代码*/
 	char		id_0xF008[32];  /*0xF008 驾驶员姓名*/
 	char		id_0xF009[32];  /*0xF009 驾驶证号码*/
 	char		id_0xF00A[32];  /*0xF00A 车辆类型*/
-	char		id_0xF00B[32];  /*0xF00B 驾驶证*/
-	char		id_0xF00C[32];  /*0xF00C 车辆类型*/
-	char		id_0xF00D[32];  /*0xF00D 从业资格证*/
-	char		id_0xF00E[32];  /*0xF00E 发证机构*/
+	char		id_0xF00B[32];  /*0xF00B 从业资格证*/
+	char		id_0xF00C[32];  /*0xF00C 发证机构*/
 	
 	char		id_0xF010[32];  /*0xF010 软件版本号*/
 	char		id_0xF011[32];  /*0xF011 硬件版本号*/
@@ -142,9 +139,8 @@ typedef struct _jt808_param
 	uint32_t id_0xF020;         /*0xF020 总里程*/
 
 	uint32_t	id_0xF030;      /*0xF030 记录仪初次安装时间,mytime格式*/
-	//uint32_t	id_0xF031;      /*0xF031 行车记录仪时间 mytime格式*/
-	uint32_t	id_0xF032;      /*初始里程*/
-	uint16_t	id_0xF033;      /*车辆脉冲系数*/
+	uint32_t	id_0xF031;      /*初始里程*/
+	uint16_t	id_0xF032;      /*车辆脉冲系数*/
 
 
 	uint8_t	id_0xF040;		//line_space; 				//行间隔

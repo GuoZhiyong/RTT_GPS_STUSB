@@ -651,11 +651,6 @@
               <FileType>1</FileType>
               <FilePath>.\drivers\SLE4442.c</FilePath>
             </File>
-            <File>
-              <FileName>m66_sms.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\m66_sms.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -1345,6 +1340,11 @@
               <FileName>Menu_0_5_DeviceID.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\Menu_0_5_DeviceID.c</FilePath>
+            </File>
+            <File>
+              <FileName>Menu_0_6_Engineer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_0_6_Engineer.c</FilePath>
             </File>
           </Files>
         </Group>
