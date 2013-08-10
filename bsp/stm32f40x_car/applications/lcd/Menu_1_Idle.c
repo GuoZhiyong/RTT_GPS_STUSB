@@ -18,11 +18,11 @@
 #include "menu_include.h"
 #include "sed1520.h"
 
-static uint32_t			lasttick;
-unsigned char			dispstat		= 0;
-unsigned int			reset_firstset	= 0;
+static uint32_t lasttick;
+unsigned char	dispstat		= 0;
+unsigned int	reset_firstset	= 0;
 
-unsigned char			gsm_g[] = {
+unsigned char	gsm_g[] = {
 	0x1c,                                                                       /*[   ***  ]*/
 	0x22,                                                                       /*[  *   * ]*/
 	0x40,                                                                       /*[ *      ]*/
@@ -33,7 +33,7 @@ unsigned char			gsm_g[] = {
 	0x1e,                                                                       /*[   **** ]*/
 };
 
-unsigned char			gsm_0[] = {
+unsigned char	gsm_0[] = {
 	0x00,                                                                       /*[        ]*/
 	0x00,                                                                       /*[        ]*/
 	0x00,                                                                       /*[        ]*/
@@ -44,7 +44,7 @@ unsigned char			gsm_0[] = {
 	0x80,                                                                       /*[*       ]*/
 };
 
-unsigned char			gsm_1[] = {
+unsigned char	gsm_1[] = {
 	0x00,                                                                       /*[        ]*/
 	0x00,                                                                       /*[        ]*/
 	0x00,                                                                       /*[        ]*/
@@ -55,7 +55,7 @@ unsigned char			gsm_1[] = {
 	0xa0,                                                                       /*[* *     ]*/
 };
 
-unsigned char			gsm_2[] = {
+unsigned char	gsm_2[] = {
 	0x00,                                                                       /*[        ]*/
 	0x00,                                                                       /*[        ]*/
 	0x08,                                                                       /*[    *   ]*/
@@ -66,7 +66,7 @@ unsigned char			gsm_2[] = {
 	0xa8,                                                                       /*[* * *   ]*/
 };
 
-unsigned char			gsm_3[] = {
+unsigned char	gsm_3[] = {
 	0x02,                                                                       /*[      * ]*/
 	0x02,                                                                       /*[      * ]*/
 	0x0a,                                                                       /*[    * * ]*/
@@ -77,7 +77,7 @@ unsigned char			gsm_3[] = {
 	0xaa,                                                                       /*[* * * * ]*/
 };
 
-unsigned char			link_on[] = {
+unsigned char	link_on[] = {
 	0x08,                                                                       /*[    *   ]*/
 	0x04,                                                                       /*[     *  ]*/
 	0xfe,                                                                       /*[******* ]*/
@@ -88,7 +88,7 @@ unsigned char			link_on[] = {
 	0x00,                                                                       /*[        ]*/
 };
 
-unsigned char			link_off[] = {
+unsigned char	link_off[] = {
 	0x10,                                                                       /*[   *    ]*/
 	0x08,                                                                       /*[    *   ]*/
 	0xc6,                                                                       /*[**   ** ]*/
@@ -98,14 +98,45 @@ unsigned char			link_off[] = {
 	0x08,                                                                       /*[    *   ]*/
 	0x00,                                                                       /*[        ]*/
 };
-static unsigned char	Battery[] = { 0x00, 0xFC, 0xFF, 0xFF, 0xFC, 0x00 };     //8*6
-static unsigned char	NOBattery[] = { 0x04, 0x0C, 0x98, 0xB0, 0xE0, 0xF8 };   //6*6
-static unsigned char	TriangleS[] = { 0x30, 0x78, 0xFC, 0xFC, 0x78, 0x30 };   //6*6
-static unsigned char	TriangleK[] = { 0x30, 0x48, 0x84, 0x84, 0x48, 0x30 };   //6*6
 
-static unsigned char	empty[] = { 0x84, 0x84, 0x84, 0x84, 0x84, 0xFC };       /*空车*/
-static unsigned char	full_0[] = { 0x84, 0x84, 0x84, 0xFC, 0xFC, 0xFC };      /*半满*/
-static unsigned char	full_1[] = { 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC };      /*重车*/
+
+unsigned char	num0[] = {0x00,0x70,0x88,0x88,0x88,0x88,0x70,0x00};/*"0",0*/ /*"0",0*/
+unsigned char	num1[] = {0x00,0x20,0x60,0x20,0x20,0x20,0x70,0x00};/*"1",1*/ /*"1",1*/
+unsigned char	num2[] = {0x00,0x78,0x88,0x08,0x30,0x40,0xF8,0x00};/*"2",2*/ /*"2",2*/
+unsigned char	num3[] = {0x00,0x78,0x88,0x30,0x08,0x88,0x70,0x00};/*"3",3*/ /*"3",3*/
+unsigned char	num4[] = {0x00,0x10,0x30,0x50,0x90,0x78,0x10,0x00};/*"4",4*/ /*"4",4*/
+unsigned char	num5[] = {0x00,0xF8,0x80,0xF0,0x08,0x88,0x70,0x00};/*"5",5*/ /*"5",5*/
+unsigned char	num6[] = {0x00,0x70,0x80,0xF0,0x88,0x88,0x70,0x00};/*"6",6*/ /*"6",6*/
+unsigned char	num7[] = {0x00,0xF8,0x90,0x10,0x20,0x20,0x20,0x00};/*"7",7*/ /*"7",7*/
+unsigned char	num8[] = {0x00,0x70,0x88,0x50,0xA8,0x88,0x70,0x00};/*"8",8*/ /*"8",8*/
+unsigned char	num9[] = {0x00,0x70,0x88,0x88,0x78,0x08,0x70,0x00};/*"9",9*/ /*"9",9*/
+
+
+
+//DECL_BMP(6,8,num0);
+
+IMG_DEF img_num0608[10] =
+{
+	{ 6, 8, num0 },
+	{ 6, 8, num1 },
+	{ 6, 8, num2 },
+	{ 6, 8, num3 },
+	{ 6, 8, num4 },
+	{ 6, 8, num5 },
+	{ 6, 8, num6 },
+	{ 6, 8, num7 },
+	{ 6, 8, num8 },
+	{ 6, 8, num9 },	
+};
+
+static unsigned char Battery[] = { 0x00, 0xFC, 0xFF, 0xFF, 0xFC, 0x00 };        //8*6
+static unsigned char NOBattery[] = { 0x04, 0x0C, 0x98, 0xB0, 0xE0, 0xF8 };      //6*6
+static unsigned char TriangleS[] = { 0x30, 0x78, 0xFC, 0xFC, 0x78, 0x30 };      //6*6
+static unsigned char TriangleK[] = { 0x30, 0x48, 0x84, 0x84, 0x48, 0x30 };      //6*6
+
+static unsigned char empty[] = { 0x84, 0x84, 0x84, 0x84, 0x84, 0xFC };          /*空车*/
+static unsigned char full_0[] = { 0x84, 0x84, 0x84, 0xFC, 0xFC, 0xFC };         /*半满*/
+static unsigned char full_1[] = { 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC };         /*重车*/
 
 //电池 是否校验特征系数的标志
 DECL_BMP( 8, 6, Battery );  DECL_BMP( 6, 6, NOBattery );
@@ -131,20 +162,27 @@ DECL_BMP( 6, 6, empty );    DECL_BMP( 6, 6, full_0 );  DECL_BMP( 6, 6, full_1 );
 ***********************************************************/
 void GPSGPRS_Status( void )
 {
-	char *mode[] = { "   ", "BD ", "GPS", "G/B" };
-	lcd_text12( 19, 0, mode[gps_status.Position_Moule_Status], 3, LCD_MODE_SET );
-
-	if( jt808_status & BIT_STATUS_FIXED ) /*gps状态定位与否*/
+	char *mode[] = { "  ", "BD", "GP", "GN" };
+	if( jt808_alarm & ( BIT_ALARM_GPS_ERR | BIT_ALARM_GPS_OPEN | BIT_ALARM_GPS_SHORT ) ) /*北斗异常*/
 	{
-		lcd_bitmap( 37, 2, &BMP_link_on, LCD_MODE_SET );
-	}else
+		lcd_text12( 0, 0, mode[gps_status.Position_Moule_Status], 2, LCD_MODE_INVERT );
+	}else /*不考虑gps状态定位与否,用NoSV指示*/
 	{
-		lcd_bitmap( 37, 2, &BMP_link_off, LCD_MODE_SET );
+		lcd_text12( 0, 0, mode[gps_status.Position_Moule_Status], 2, LCD_MODE_SET );
+		//buf[0]	= gps_status.NoSV / 10 + '0';
+		//buf[1]	= gps_status.NoSV % 10 + '0';
+		//buf[2]	= 0;
+		//lcd_text12( 12, 0, buf, 2, LCD_MODE_SET );
+		lcd_bitmap(12,0,&img_num0608[gps_status.NoSV / 10],LCD_MODE_SET);
+		lcd_bitmap(18,0,&img_num0608[gps_status.NoSV % 10],LCD_MODE_SET);
 	}
+
+	lcd_bitmap( 30, 2, &BMP_gsm_g, LCD_MODE_SET );
+	lcd_bitmap( 38, 2, &BMP_gsm_3, LCD_MODE_SET );
 
 	lcd_text12( 48, 0, "GPRS", 4, LCD_MODE_SET );
 
-	if( connect_state.server_state == CONNECTED ) /*gprs连接状态*/
+	if( connect_state.server_state == CONNECTED )  /*gprs连接状态*/
 	{
 		lcd_bitmap( 72, 2, &BMP_link_on, LCD_MODE_SET );
 	}else
@@ -153,7 +191,7 @@ void GPSGPRS_Status( void )
 	}
 
 #if 0
-	if( JT808Conf_struct.LOAD_STATE == 1 ) //车辆载重标志
+	if( JT808Conf_struct.LOAD_STATE == 1 )  //车辆载重标志
 	{
 		lcd_bitmap( 95, 2, &BMP_empty, LCD_MODE_SET );
 	}else if( JT808Conf_struct.LOAD_STATE == 2 )
@@ -164,7 +202,7 @@ void GPSGPRS_Status( void )
 		lcd_bitmap( 95, 2, &BMP_full_1, LCD_MODE_SET );
 	}
 
-	if( ModuleStatus & 0x04 ) //电源标志
+	if( ModuleStatus & 0x04 )  //电源标志
 	{
 		lcd_bitmap( 105, 2, &BMP_Battery, LCD_MODE_SET );
 	}else
@@ -172,7 +210,7 @@ void GPSGPRS_Status( void )
 		lcd_bitmap( 105, 2, &BMP_NOBattery, LCD_MODE_SET );
 	}
 
-	if( DF_K_adjustState ) //是否校验特征系数
+	if( DF_K_adjustState )  //是否校验特征系数
 	{
 		lcd_bitmap( 115, 2, &BMP_TriangleS, LCD_MODE_SET );
 	}else
@@ -190,10 +228,10 @@ void GPSGPRS_Status( void )
  */
 
 #if 1
-void  Disp_Idle( void )
+void Disp_Idle( void )
 {
-	char	buf_datetime[22];
-	char	buf_speed[20];
+	char buf_datetime[22];
+	char buf_speed[20];
 
 	sprintf( buf_datetime, "20%02d/%02d/%02d %02d:%02d:%02d",
 	         YEAR( mytime_now ),
@@ -208,9 +246,6 @@ void  Disp_Idle( void )
 	lcd_text12( 0, 10, (char*)buf_datetime, strlen( buf_datetime ), LCD_MODE_SET );
 
 	lcd_text12( 0, 20, (char*)buf_speed, strlen( buf_speed ), LCD_MODE_SET );
-
-	lcd_bitmap( 0, 3, &BMP_gsm_g, LCD_MODE_SET );
-	lcd_bitmap( 8, 3, &BMP_gsm_3, LCD_MODE_SET );
 	GPSGPRS_Status( );
 	lcd_update_all( );
 }
@@ -227,10 +262,10 @@ void  Disp_Idle( void )
 * Return:
 * Others:
 ***********************************************************/
-void  Disp_Idle( void )
+void Disp_Idle( void )
 {
-	char	buf[20];
-	float	angle;
+	char buf[20];
+	float angle;
 
 	lcd_fill( 0 );
 
@@ -286,7 +321,7 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
-	char	buf[128];
+	char buf[128];
 	uint8_t i, pos, hour, minute;
 	switch( key )
 	{
@@ -402,10 +437,10 @@ static void timetick( unsigned int systick )
 	{
 		reset_firstset++;
 		//----------------------------------------------------------------------------------
-		JT808Conf_struct.password_flag = 0;     // clear  first flag
+		JT808Conf_struct.password_flag = 0; // clear  first flag
 		Api_Config_Recwrite_Large( jt808, 0, (u8*)&JT808Conf_struct, sizeof( JT808Conf_struct ) );
 		//----------------------------------------------------------------------------------
-	}else if( reset_firstset >= 7 )             //50ms一次,,60s
+	}else if( reset_firstset >= 7 )         //50ms一次,,60s
 	{
 		reset_firstset++;
 		lcd_fill( 0 );

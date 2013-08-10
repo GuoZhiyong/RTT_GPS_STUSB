@@ -890,20 +890,23 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		process_gps_report( );          /*处理GPS上报信息*/
 	}
 
-	/*天线开短路检测 gps<$GNTXT,01,01,01,ANTENNA OK*2B*/
+	/*天线开短路检测 gps<
+	$GNTXT,01,01,01,ANTENNA OK*2B
+	$GNTXT,01,01,01,ANTENNA OPEN*3B
+	*/
 	if( strncmp( psrc + 3, "TXT", 3 ) == 0 )
 	{
-		if( strstr( psrc + 24, "OK" ) != RT_NULL )
+		if( strncmp( psrc + 24, "OK",2) ==0 )
 		{
 			gps_status.Antenna_Flag = 0;
 			jt808_alarm				&= ~( BIT_ALARM_GPS_OPEN | BIT_ALARM_GPS_SHORT );
 		}
-		if( strstr( psrc + 24, "OPEN" ) != RT_NULL )
+		if( strncmp( psrc + 24, "OPEN" ,4) ==0 )
 		{
 			gps_status.Antenna_Flag = 1;
 			jt808_alarm				|= BIT_ALARM_GPS_OPEN; /*bit5 天线开路*/
 		}
-		if( strstr( psrc + 24, "SHORT" ) != RT_NULL )
+		if( strncmp( psrc + 24, "SHORT",4 ) ==0 )
 		{
 			gps_status.Antenna_Flag = 1;
 			jt808_alarm				|= BIT_ALARM_GPS_SHORT;
