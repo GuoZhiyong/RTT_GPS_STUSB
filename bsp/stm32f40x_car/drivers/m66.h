@@ -131,6 +131,8 @@ T_GSM_STATE gsmstate( T_GSM_STATE cmd );
 T_SOCKET_STATE socketstate( T_SOCKET_STATE cmd );
 rt_size_t tts_write( char* info,uint16_t len );
 rt_size_t at( char *sinfo );
+void sms_tx(char *info );
+
 
 
 #endif

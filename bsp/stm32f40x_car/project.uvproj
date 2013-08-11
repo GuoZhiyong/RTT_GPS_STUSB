@@ -517,11 +517,6 @@
               <FilePath>.\applications\jt808_gps.c</FilePath>
             </File>
             <File>
-              <FileName>jt808_sms.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\jt808_sms.c</FilePath>
-            </File>
-            <File>
               <FileName>vdr.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\vdr.c</FilePath>
@@ -560,6 +555,11 @@
               <FileName>jt808_vehicle.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\jt808_vehicle.c</FilePath>
+            </File>
+            <File>
+              <FileName>jt808_sms.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\jt808_sms.c</FilePath>
             </File>
           </Files>
         </Group>

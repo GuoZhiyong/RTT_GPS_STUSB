@@ -15,7 +15,7 @@
 #define _H_SMS
 
 
-void jt808_sms_rx(char *sender,char *info,uint16_t len);
+void jt808_sms_rx(char *info,uint16_t size);
 
 #endif
 /************************************** The End Of File **************************************/
