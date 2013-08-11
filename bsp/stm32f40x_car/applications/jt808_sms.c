@@ -39,7 +39,7 @@ static char		sender[32];
 static char		smsc[32];
 
 
-struct
+
 	
 
 
@@ -228,6 +228,25 @@ u16 gsmencode7bit( const u8* pSrc, u8* pDst, u16 nSrcLength )
 
 
 
+/*信息编码为7bit pdu模式,并发送*/
+
+void encode_pdu_7bit(char* info)
+{
+	char buf[200];
+	uint16_t len;
+	char *p;
+	
+	rt_printf("\nGSM>ENCODE:%s",info);
+
+	strcpy(buf,smsc,strlen(smsc));
+	
+
+	
+	
+
+
+
+}
 
 
 /*输入命令,按要求返回
@@ -365,7 +384,7 @@ uint8_t analy_param( char* cmd, char*value )
 					jt808_param.id_0xF002,
 					jt808_param.id_0xF005,
 					jt808_param.id_0x0029);
-			sms_tx(sender,smsc,buf);
+			encode_pdu_7bit(buf);
 
 		}
 	

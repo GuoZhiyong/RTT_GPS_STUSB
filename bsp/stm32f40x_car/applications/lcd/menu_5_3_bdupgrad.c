@@ -211,6 +211,7 @@ static void keypress( unsigned int key )
 			}
 			else if( oper_mode == OPER_SWITCH_MODE )
 			{
+				gps_status.Position_Moule_Status=pos+1;
 				gps_mode(pos+1);
 				oper_mode=OPER_MENU_SELECT;
 				pos=0;

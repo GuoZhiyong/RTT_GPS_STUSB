@@ -1308,17 +1308,19 @@ uint8_t sms_rx( char *pinfo, uint16_t size )
 	return sms_state;
 }
 
-/*发送短信息,包含接收方,SMSC*/
-void sms_tx(char *info )
+/*发送短信息,包含接收方,SMSC,7bit编码后的信息*/
+void sms_tx(char* info,uint8_t tp_len )
 {
 	uint8_t len=strlen(info);
 	void *p;
-	p=rt_malloc(len+2);
+	p=rt_malloc(len+4);
 	if(p!=RT_NULL)
 	{
-		p[0]=len<<8;
-		p[1]=len&0xff;
-		memcpy(p+2,info,len);
+		p[0]=tp_len>>8;		/*tp_len AT+CMGS时需要*/
+		p[1]=tp_len&0xff;
+		p[2]=len<<8;		/*完整的数据长度包括CTRL+Z*/
+		p[3]=len&0xff;
+		memcpy(p+4,info,len);
 		rt_mb_send(&mb_sms,p);
 	}
 }
@@ -1370,20 +1372,17 @@ void sms_proc( void )
 			}
 			break;
 		default:	/*发送信息*/
-			sms_send=(char*)&i;
-			len=(sms_send[0]<<8)|sms_send(1);
+			sms_send=(char*)i;
+			len=(sms_send[0]<<8)|sms_send[1];		/*tp_len*/
 			sprintf(buf,"AT+CMGS=%d\r\n",len);
 			ret=gsm_send(buf,RT_NULL,">",RESP_TYPE_STR,RT_TICK_PER_SECOND*5,1);
 			if(ret==RT_EOK)
 			{
-				m66_write(&dev_gsm,2,sms_send,strlen(sms_send+2));
-				
-				USART_SendData( UART4, 0x1A );
-				while( USART_GetFlagStatus( UART4, USART_FLAG_TC ) == RESET )
-				{
-				}
+				len=(sms_send[0]<<8)|sms_send[1];		/*真实消息长度,包括CTRL_Z*/
+				m66_write(&dev_gsm,4,sms_send,len);
 			}
 			ret=gsm_send("",RT_NULL,"+CMGS:",RESP_TYPE_STR_WITHOK,RT_TICK_PER_SECOND*5,1);
+			break;
 			
 	}
 	gsm_state = oldstate;
