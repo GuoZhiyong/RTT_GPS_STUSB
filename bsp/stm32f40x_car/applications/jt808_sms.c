@@ -35,14 +35,11 @@ static uint16_t		sms_ucs2[31]	= { 0x5180, 0x4EAC, 0x6D25, 0x6CAA, 0x5B81, 0x6E1D
 	                                    0x8D35,		   0x95FD, 0x5409, 0x9655, 0x8499, 0x664B, 0x7518, 0x6842, 0x9102, 0x8D63,
 	                                    0x6D59,		   0x82CF, 0x65B0, 0x9C81, 0x7696, 0x6E58, 0x9ED1, 0x8FBD, 0x4E91, 0x8C6B, };
 
-static char		sender[32];
-static char		smsc[32];
+static char			sender[32];
+static char			smsc[32];
 
-
-
-	
-
-
+/*发送的原始信息*/
+static char send_buf[180];
 
 /**/
 u16  gsmencode8bit( const char *pSrc, char *pDst, u16 nSrcLength )
@@ -74,10 +71,10 @@ static uint16_t ucs2_to_gb2312( uint16_t uni )
 /**/
 static uint16_t gb2312_to_ucs2( uint16_t gb )
 {
-	uint8_t i;
+	uint8_t		i;
 	for( i = 0; i < 31; i++ )
 	{
-		if( gb == ( ( sms_gb_data[i * 2] << 8 ) | sms_gb_data[i * 2 + 1] ) )
+		if( gb == ( ( sms_gb_data[i * 2] << 8 ) | sms_gb_data[i * 2+1] ))
 		{
 			return sms_ucs2[i];
 		}
@@ -199,59 +196,125 @@ u16 gsmencode7bit( const u8* pSrc, u8* pDst, u16 nSrcLength )
 	// 如果分组不到8字节，也能正确处理
 	while( nSrc < nSrcLength + 1 )
 	{
-		// 取源字符串的计数值的最低3位
-		nChar = nSrc & 7;
-		// 处理源串的每个字节
-		if( nChar == 0 )
+		nChar = nSrc & 7;                                   // 取源字符串的计数值的最低3位
+		if( nChar == 0 )                                    // 处理源串的每个字节
 		{
-			// 组内第一个字节，只是保存起来，待处理下一个字节时使用
-			nLeft = *pSrc;
+			nLeft = *pSrc;                                  // 组内第一个字节，只是保存起来，待处理下一个字节时使用
 		}else
 		{
-			// 组内其它字节，将其右边部分与残余数据相加，得到一个目标编码字节
-			*pDst = ( *pSrc << ( 8 - nChar ) ) | nLeft;
-			// 将该字节剩下的左边部分，作为残余数据保存起来
-			nLeft = *pSrc >> nChar;
-			// 修改目标串的指针和计数值 pDst++;
-			pDst++;
+			*pDst	= ( *pSrc << ( 8 - nChar ) ) | nLeft;   // 组内其它字节，将其右边部分与残余数据相加，得到一个目标编码字节
+			nLeft	= *pSrc >> nChar;                       // 将该字节剩下的左边部分，作为残余数据保存起来
+			pDst++;                                         // 修改目标串的指针和计数值 pDst++;
 			nDst++;
 		}
-
-		// 修改源串的指针和计数值
-		pSrc++; nSrc++;
+		pSrc++; nSrc++;                                     // 修改源串的指针和计数值
 	}
-
-	// 返回目标串长度
-	return nDst;
+	return nDst;                                            // 返回目标串长度
 }
-
-
-
 
 /*信息编码为7bit pdu模式,并发送*/
 
-void encode_pdu_7bit(char* info)
+void sms_encode_pdu_7bit( char* info )
 {
-	char buf[200];
-	uint16_t len;
-	char *p;
-	
-	rt_printf("\nGSM>ENCODE:%s",info);
+	char		buf[200];
+	uint16_t	len;
+	char		*pSrc, *pDst;
+	char		c;
+	char		ASC[]	= "0123456789ABCDEF";
+	uint8_t		count	= 0;
+	uint16_t	nSrc	= 0, nDst = 0, nChar = 0;
+	uint8_t		nLeft;
 
-	strcpy(buf,smsc,strlen(smsc));
-	
+	len = strlen( info );
+	rt_kprintf( "\nSMS>ENCODE(%d):%s", len, info );
 
-	
-	
+	strcpy( buf, "0891683108200205F01100" );
+	count = strlen( sender );
+	strcat( buf, sender );
+	strcat( buf, "00008F" );                                //	7bit编码
 
+	pSrc	= info;
+	pDst	= buf + ( count + 28 + 2 );                     //sender长度+12ASC+2预留TP长度
+	while( nSrc < ( len + 1 ) )
+	{
+		nChar = nSrc & 7;                                   // 取源字符串的计数值的最低3位
+		if( nChar == 0 )                                    // 处理源串的每个字节
+		{
+			nLeft = *pSrc;                                  // 组内第一个字节，只是保存起来，待处理下一个字节时使用
+		}else
+		{
+			c		= ( *pSrc << ( 8 - nChar ) ) | nLeft;   // 组内其它字节，将其右边部分与残余数据相加，得到一个目标编码字节
+			*pDst++ = ASC[c >> 4];
+			*pDst++ = ASC[c & 0x0f];
+			nLeft	= *pSrc >> nChar;                       // 将该字节剩下的左边部分，作为残余数据保存起来
+			nDst+=2;
+		}
+		pSrc++;
+		nSrc++;                                             // 修改源串的指针和计数值
+	}
+	*pDst++			= 0x1A;
+	*pDst			= 0;
+	buf[count + 12] = ASC[len >> 4];
+	buf[count + 13] = ASC[len & 0x0F];
 
-
+	rt_kprintf( "\nSMS>encode 7BIT:%s", buf );
+	sms_tx(buf,(nDst+count+10)>>1);
 }
 
+/*信息编码为uscs2 pdu模式,并发送*/
+
+void sms_encode_pdu_ucs2( char* info )
+{
+	char		buf[400];
+	uint16_t	len, gb, ucs2;
+	char		*pSrc, *pDst;
+	char		ASC[]	= "0123456789ABCDEF";
+	uint8_t		count	= 0;
+	uint8_t		nLeft;
+
+	len = strlen( info );
+	rt_kprintf( "\nSMS>ENCODE(%d):%s", len, info );
+
+//	strcpy(buf,smsc,strlen(smsc));
+	strcpy( buf, "0891683108200205F01100" );
+	count = strlen( sender );
+	strcat( buf, sender );
+	strcat( buf, "00088F" );
+//	ucs2bit编码
+	pSrc	= info;
+	pDst	= buf + ( count + 28 + 2 ); //sender长度+12ASC+2预留TP长度
+	while( *pSrc )
+	{
+		gb = *pSrc++;
+		if( gb > 0x7F )
+		{
+			gb		<<= 8;
+			gb		|= *pSrc++;
+			ucs2	= gb2312_to_ucs2( gb ); /*有可能没有找到返回00*/
+			*pDst++ = ASC[( ucs2 & 0xF000 ) >> 12];
+			*pDst++ = ASC[( ucs2 & 0x0F00 ) >> 8];
+			*pDst++ = ASC[( ucs2 & 0x00F0 ) >> 4];
+			*pDst++ = ASC[( ucs2 & 0x000F )];
+		}else
+		{
+			*pDst++ = '0';
+			*pDst++ = '0';
+			*pDst++ = ASC[gb >> 4];
+			*pDst++ = ASC[gb & 0x0F];
+		}
+	}
+	*pDst++			= 0x1A;
+	*pDst			= 0;
+	buf[count + 12] = ASC[len >> 4];
+	buf[count + 13] = ASC[len & 0x0F];
+
+	rt_kprintf( "\nSMS>encode UCS2:%s", buf );
+	sms_tx(buf,(len*4+count+10)>>1);
+}
 
 /*输入命令,按要求返回
-   对于查询命令直接发送 返回0
-   其他命令返回1,交由调用方处理
+   对于查询命令直接发送 返回0，不需要应答或内部已应答
+   其他命令返回1,交由调用方处理,需要通用应答
 
 
  */
@@ -272,20 +335,19 @@ uint8_t analy_param( char* cmd, char*value )
 	{
 		return 1;
 	}
-	if( strncmp( cmd, "RESET", 5 ) == 0 )  /*要求复位,发送完成后复位，如何做?*/
+	if( strncmp( cmd, "RESET", 5 ) == 0 )               /*要求复位,发送完成后复位，如何做?*/
 	{
-		
 		return 1;
-	}else if( strncmp( cmd, "CLEARREGIST", 11 ) == 0 ) /*清除注册*/
+	}else if( strncmp( cmd, "CLEARREGIST", 11 ) == 0 )  /*清除注册*/
 	{
-		memcpy(jt808_param.id_0xF003,0,32);		/*清除鉴权码*/
+		memcpy( jt808_param.id_0xF003, 0, 32 );         /*清除鉴权码*/
 		return 1;
 	}
 
 /*带参数的，先判有没有参数*/
 	if( strlen( value ) == 0 )
 	{
-		return RT_NULL;
+		return 0;
 	}
 /*查找对应的参数*/
 	if( strncmp( cmd, "DNSR", 4 ) == 0 )
@@ -310,8 +372,8 @@ uint8_t analy_param( char* cmd, char*value )
 		{
 			param_put_int( 0x0019, atoi( value ) );
 		}
-		return RT_NULL;
-	} 
+		return 1;
+	}
 	if( strncmp( cmd, "IP", 2 ) == 0 )
 	{
 		if( cmd[2] == '1' )
@@ -322,24 +384,24 @@ uint8_t analy_param( char* cmd, char*value )
 		{
 			strcpy( jt808_param.id_0x0017, value );
 		}
-		return RT_NULL;
+		return 1;
 	}
 	if( strncmp( cmd, "DUR", 3 ) == 0 )
 	{
 		param_put_int( 0x0029, atoi( value ) );
-		return RT_NULL;
+		return 1;
 	}
 	if( strncmp( cmd, "SIMID", 6 ) == 0 )
 	{
 		strcpy( jt808_param.id_0xF006, value );
-		return RT_NULL;
+		return 1;
 	}
 	if( strncmp( cmd, "DEVICEID", 8 ) == 0 )
 	{
 		strcpy( jt808_param.id_0xF002, value ); /*终端ID 大写字母+数字*/
-		return RT_NULL;
+		return 1;
 	}
-	if( strncmp( cmd, "MODE", 4 ) == 0 )  ///6. 设置定位模式
+	if( strncmp( cmd, "MODE", 4 ) == 0 )        ///6. 设置定位模式
 	{
 		if( strncmp( value, "BD", 2 ) == 0 )
 		{
@@ -354,59 +416,62 @@ uint8_t analy_param( char* cmd, char*value )
 			gps_status.Position_Moule_Status = MODE_BDGPS;
 		}
 		gps_mode( gps_status.Position_Moule_Status );
-	}else if( strncmp( cmd, "VIN", 3 ) == 0 )
+		return 1;
+	}
+	if( strncmp( cmd, "VIN", 3 ) == 0 )
 	{
 		strcpy( jt808_param.id_0xF005, value ); /*VIN(TJSDA09876723424243214324)*/
+		return 1;
 	}
 	/*	RELAY(0)关闭继电器 继电器通 RELAY(1) 断开继电器 继电器断*/
-	else if( strncmp( cmd, "RELAY", 5 ) == 0 )
+	if( strncmp( cmd, "RELAY", 5 ) == 0 )
 	{
-	}else if( strncmp( cmd, "TAKE", 4 ) == 0 )  /*拍照 1.2.3.4路*/
+		return 1;
+	}
+	if( strncmp( cmd, "TAKE", 4 ) == 0 )    /*拍照 1.2.3.4路*/
 	{
-	}else if( strncmp( cmd, "PLAY", 4 ) == 0 )  /*语音播报*/
+		return 1;
+	}
+	if( strncmp( cmd, "PLAY", 4 ) == 0 )    /*语音播报*/
 	{
 		tts( value );
+		return 1;
 	}
-
-
-/*
-   QUERY(0)	 车辆相关信息	VIN    DUR
-   QUERY(1)	 网络系统配置信息
-   QUERY(2)	 位置信息  MODE  A/V  E
- */
-	else if( strncmp( cmd, "QUERY", 5 ) == 0 )
+	if( strncmp( cmd, "QUERY", 5 ) == 0 )   /*0 车辆相关信息 1 网络系统配置信息 2位置信息*/
 	{
 		/*直接发送信息*/
-		if(value=='0')
+		if( *value == '0' )
 		{
-			sprintf(buf,"TCBTW703#%s#%s#%s#%d",
-					jt808_param.id_0x0083+2,
-					jt808_param.id_0xF002,
-					jt808_param.id_0xF005,
-					jt808_param.id_0x0029);
-			encode_pdu_7bit(buf);
-
+			sprintf( buf, "TCBTW703#%s#%s#%s#%d",
+			         jt808_param.id_0x0083 + 2,
+			         jt808_param.id_0xF002,
+			         jt808_param.id_0xF005,
+			         jt808_param.id_0x0029 );
+			sms_encode_pdu_7bit( buf );
 		}
-	
-		return;
+
+		return 0;
 	}
-	if( strncmp( cmd, "ISP", 3 ) == 0 )       /*	ISP(202.89.23.210：9000)*/
+	if( strncmp( cmd, "ISP", 3 ) == 0 )         /*	ISP(202.89.23.210：9000)*/
 	{
+		return 1;
 	}
-	if( strncmp( cmd, "PLATENUM", 8 ) == 0 )  /*PLATENUM(津A8888)	*/
+	if( strncmp( cmd, "PLATENUM", 8 ) == 0 )    /*PLATENUM(津A8888)	*/
 	{
+		return 0x80;
 	}
-	if( strncmp( cmd, "COLOR", 5 ) == 0 )     /* COLOR(0) 1： 蓝色  2： 黄色    3： 黑色    4： 白色    9：  其他*/
+	if( strncmp( cmd, "COLOR", 5 ) == 0 )       /* COLOR(0) 1： 蓝色  2： 黄色    3： 黑色    4： 白色    9：  其他*/
 	{
+		return 1;
 	}
-	if( strncmp( cmd, "CONNECT", 7 ) == 0 )   /*CONNECT(0)  0:  DNSR   优先     1：  MainIP   优先 */
+	if( strncmp( cmd, "CONNECT", 7 ) == 0 )     /*CONNECT(0)  0:  DNSR   优先     1：  MainIP   优先 */
 	{
+		return 1;
 	}
-	if( strncmp( cmd, "PASSWORD", 7 ) == 0 )  /*PASSWORD（0） 1： 通过   0： 不通过*/
+	if( strncmp( cmd, "PASSWORD", 7 ) == 0 )    /*PASSWORD（0） 1： 通过   0： 不通过*/
 	{
-	return RT_NULL;
+		return 1;
 	}
-	
 }
 
 /*收到短信息处理*/
@@ -423,14 +488,15 @@ void jt808_sms_rx( char *info, uint16_t size )
 	uint8_t		decode_msg[180];    /*解码后的信息*/
 	uint16_t	decode_msg_len = 0;
 	uint8_t		tmpbuf[180];        /*解码后的信息*/
+	uint8_t		tmpbuf_count = 0;
 
 	char		cmd[64];
 	char		value[64];
 	uint8_t		count;
 	char		*psave;
-	
-	memset(sender,0,64);
-	memset(smsc,0,64);
+
+	memset( sender, 0, 64 );
+	memset( smsc, 0, 64 );
 	p = info;                       /*重新定位到开始*/
 	/*SCA*/
 	len = tbl[p[0] - '0'] << 4;
@@ -503,6 +569,7 @@ void jt808_sms_rx( char *info, uint16_t size )
 	}
 	decode_msg[decode_msg_len] = 0;
 
+/*decode_msg保存解码后的信息*/
 	p = decode_msg;
 	rt_kprintf( "\nSMS(%dbytes)>%s", decode_msg_len, p );
 	if( strncmp( p, "TW703", 5 ) != 0 )
@@ -514,15 +581,14 @@ void jt808_sms_rx( char *info, uint16_t size )
 	memset( value, 0, 64 );
 	count	= 0;
 	psave	= cmd;
-
+	i		= 0;
 /*tmpbuf用作应答的信息 TW703#*/
-	
 	while( *p != 0 )
 	{
 		switch( *p )
 		{
 			case '#':
-				analy_param( cmd, value );
+				i += analy_param( cmd, value );
 				memset( cmd, 0, 64 );
 				memset( value, 0, 64 );
 				psave	= cmd;      /*先往cmd缓冲中存*/
@@ -544,13 +610,27 @@ void jt808_sms_rx( char *info, uint16_t size )
 		}
 		p++;
 	}
-	analy_param( cmd, value );
-
+	i += analy_param( cmd, value );
+	if( i > 0x7F ) /*要返回信息,有车牌*/
+	{
+		sprintf( tmpbuf, "%s#%-7s#%s", jt808_param.id_0x0083 + 2, jt808_param.id_0xF002, decode_msg + 6 );
+		sms_encode_pdu_ucs2( tmpbuf );
+	}else if( i > 0 )
+	{
+		sprintf( tmpbuf, "%s#%-7s#%s", jt808_param.id_0x0083 + 2, jt808_param.id_0xF002, decode_msg + 6 );
+		sms_encode_pdu_7bit( tmpbuf );
+	}
 }
 
 /*
    0891683108200205F0000D91683106029691F10008318011216584232C0054005700370030003300230050004C004100540045004E0055004D00286D25005400540036003500320029
    0891683108200205F0000D91683106029691F100003180112175222332D4EB0D361B0D9F4E67714845C15223A2732A8DA1D4F498EB7C46E7E17497BB4C4F8DA04F293586BAC160B814
+
+   在线验证
+
+   http://www.diafaan.com/sms-tutorials/gsm-modem-tutorial/online-sms-submit-pdu-decoder/
+
+
  */
 
 void sms_test( uint8_t index )

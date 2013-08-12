@@ -20,6 +20,7 @@
 #include "gps.h"
 #include "jt808.h"
 #include "jt808_gps.h"
+#include "hmi.h"
 
 #include <finsh.h>
 
@@ -51,7 +52,7 @@ static LENGTH_BUF uart5_rxbuf;
 //static uint16_t uart5_rxbuf_wr = 2;
 
 /*gps原始信息数据区定义*/
-#define GPS_RAWINFO_SIZE	2000
+#define GPS_RAWINFO_SIZE	2048
 #define NEMA_SIZE			96 /*NEMA语句的长度*/
 static uint8_t					gps_rawinfo[GPS_RAWINFO_SIZE];
 static struct rt_messagequeue	mq_gps;
@@ -415,15 +416,34 @@ static void rt_thread_entry_gps( void* parameter )
 			}
 		}
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
-		if( ( rt_tick_get( ) - tick_lastrx ) > RT_TICK_PER_SECOND * 5 )
+		if( ( rt_tick_get( ) - tick_lastrx ) > RT_TICK_PER_SECOND * 10 ) /*长时间没有语句输出,模块损坏*/
 		{
 			rt_kprintf("%d>gps no output\r\n",rt_tick_get());
 			jt808_alarm |= BIT_ALARM_GPS_ERR;
 			GPIO_ResetBits( GPIOD, GPIO_Pin_10 );   /*off gps*/
+			while(rt_mq_recv( &mq_gps, (void*)&buf, NEMA_SIZE, RT_TICK_PER_SECOND / 20 )==RT_EOK)
+			{
+				rt_thread_delay( RT_TICK_PER_SECOND/20);
+			}
 			rt_thread_delay( RT_TICK_PER_SECOND * 3 );
 			GPIO_SetBits( GPIOD, GPIO_Pin_10 );     /*on gps*/
 			tick_lastrx = rt_tick_get( );
 		}
+		if(gps_notfixed_count>15*60)		/*15分钟未定位*/
+		{
+			rt_kprintf("\n15分钟未定位");
+			beep(5,5,5);
+			GPIO_ResetBits( GPIOD, GPIO_Pin_10 );   /*off gps*/
+			while(rt_mq_recv( &mq_gps, (void*)&buf, NEMA_SIZE, RT_TICK_PER_SECOND / 20 )==RT_EOK)
+			{
+				rt_thread_delay( RT_TICK_PER_SECOND/20);
+			}
+			rt_thread_delay( RT_TICK_PER_SECOND * 3 );
+			GPIO_SetBits( GPIOD, GPIO_Pin_10 );     /*on gps*/
+			gps_notfixed_count=0;
+		}
+
+		
 	}
 }
 
@@ -886,7 +906,7 @@ void thread_gps_check_ver( void* parameter )
 				sprintf( buf, "E模块版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
 				msg( buf );
 				rt_kprintf( "\n%s", buf );
-				ch_h = 0xAA;
+				ch_h = 0xAA; /*标记已查到版本*/
 				break;
 			}else
 			{

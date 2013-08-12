@@ -132,6 +132,10 @@ MYTIME		mytime_now	= 0;
 uint8_t		ACC_status;     /*0:ACC关   1:ACC开  */
 uint32_t	ACC_ticks;      /*ACC状态发生变化时的tick值，此时GPS可能未定位*/
 
+
+uint32_t gps_notfixed_count=0;
+
+
 struct
 {
 	uint8_t		mode;       /*上报模式 0:定时 1:定距 2:定时定距*/
@@ -544,9 +548,11 @@ static uint8_t process_rmc( uint8_t * pinfo )
 					jt808_status	&= ~BIT_STATUS_FIXED;
 					gps_lati_last	= 0;    /*从新计算距离*/
 					gps_longi_last	= 0;
+					gps_speed=0;
 					return 2;
 				}
 				jt808_status |= BIT_STATUS_FIXED;
+				
 #if 0
 				if( buf[0] == 'A' )
 				{
@@ -794,10 +800,6 @@ uint8_t process_gga( uint8_t * pinfo )
 				break;
 
 			case 2: /*纬度处理ddmm.mmmmmm*/
-				if( count < 10 )
-				{
-					return 2;
-				}
 				break;
 
 			case 3: /*N_S处理*/
@@ -811,6 +813,7 @@ uint8_t process_gga( uint8_t * pinfo )
 			case 6: /*定位类型*/
 				break;
 			case 7: /*NoSV,卫星数*/
+				if(count<1) break;
 				NoSV = 0;
 				for( i = 0; i < count; i++ )
 				{
@@ -823,6 +826,7 @@ uint8_t process_gga( uint8_t * pinfo )
 				return 0;
 
 			case 9: /*MSL Altitute*/
+				if(count<1) break;
 				altitute = 0;
 				for( i = 0; i < count; i++ )
 				{
@@ -857,6 +861,8 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	uint8_t ret;
 	char	* psrc;
 	psrc				= (char*)pinfo;
+
+	
 	*( psrc + length )	= 0;
 	/*是否输出原始信息*/
 	if( gps_status.Raw_Output )
@@ -879,6 +885,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 
 		if( ret == 0 )                  /*已定位*/
 		{
+			gps_notfixed_count=0;
 			process_hmi_15min_speed( ); /*最近15分钟速度*/
 			vdr_rx_gps( );              /*行车记录仪数据处理*/
 			area_process( );            /*区域线路告警*/
@@ -886,6 +893,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		}else
 		{
 			adjust_mytime_now( );       /*调整mytime_now*/
+			gps_notfixed_count++;
 		}
 		process_gps_report( );          /*处理GPS上报信息*/
 	}

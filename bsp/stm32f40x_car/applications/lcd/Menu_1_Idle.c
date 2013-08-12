@@ -163,16 +163,18 @@ DECL_BMP( 6, 6, empty );    DECL_BMP( 6, 6, full_0 );  DECL_BMP( 6, 6, full_1 );
 void GPSGPRS_Status( void )
 {
 	char *mode[] = { "  ", "BD", "GP", "GN" };
-	if( jt808_alarm & ( BIT_ALARM_GPS_ERR | BIT_ALARM_GPS_OPEN | BIT_ALARM_GPS_SHORT ) ) /*北斗异常*/
+	if( jt808_alarm & ( BIT_ALARM_GPS_ERR | BIT_ALARM_GPS_OPEN | BIT_ALARM_GPS_SHORT ) ) /*北斗异常，不显示*/
 	{
-		lcd_text12( 0, 0, mode[gps_status.Position_Moule_Status], 2, LCD_MODE_INVERT );
-	}else /*不考虑gps状态定位与否,用NoSV指示*/
+		lcd_text12( 0, 0, mode[0], 2, LCD_MODE_SET );
+	}else if(jt808_status&BIT_STATUS_FIXED)/*定位正常显示*/
 	{
 		lcd_text12( 0, 0, mode[gps_status.Position_Moule_Status], 2, LCD_MODE_SET );
-		//buf[0]	= gps_status.NoSV / 10 + '0';
-		//buf[1]	= gps_status.NoSV % 10 + '0';
-		//buf[2]	= 0;
-		//lcd_text12( 12, 0, buf, 2, LCD_MODE_SET );
+		lcd_bitmap(12,1,&img_num0608[gps_status.NoSV / 10],LCD_MODE_SET);
+		lcd_bitmap(18,1,&img_num0608[gps_status.NoSV % 10],LCD_MODE_SET);
+	}
+	else /*未定位，反色显示*/
+	{
+		lcd_text12( 0, 0, mode[gps_status.Position_Moule_Status], 2, LCD_MODE_INVERT );
 		lcd_bitmap(12,1,&img_num0608[gps_status.NoSV / 10],LCD_MODE_SET);
 		lcd_bitmap(18,1,&img_num0608[gps_status.NoSV % 10],LCD_MODE_SET);
 	}

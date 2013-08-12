@@ -1312,16 +1312,13 @@ uint8_t sms_rx( char *pinfo, uint16_t size )
 void sms_tx(char* info,uint8_t tp_len )
 {
 	uint8_t len=strlen(info);
-	void *p;
-	p=rt_malloc(len+4);
+	char *p;
+	p=rt_malloc(len+2);
 	if(p!=RT_NULL)
 	{
-		p[0]=tp_len>>8;		/*tp_len AT+CMGS时需要*/
-		p[1]=tp_len&0xff;
-		p[2]=len<<8;		/*完整的数据长度包括CTRL+Z*/
-		p[3]=len&0xff;
-		memcpy(p+4,info,len);
-		rt_mb_send(&mb_sms,p);
+		p[0]=tp_len;		/*tp_len AT+CMGS时需要*/
+		strcpy(p+1,info);
+		rt_mb_send(&mb_sms,(uint32_t)p);
 	}
 }
 
@@ -1373,13 +1370,14 @@ void sms_proc( void )
 			break;
 		default:	/*发送信息*/
 			sms_send=(char*)i;
-			len=(sms_send[0]<<8)|sms_send[1];		/*tp_len*/
+			len=sms_send[0];		/*tp_len*/
 			sprintf(buf,"AT+CMGS=%d\r\n",len);
 			ret=gsm_send(buf,RT_NULL,">",RESP_TYPE_STR,RT_TICK_PER_SECOND*5,1);
 			if(ret==RT_EOK)
 			{
-				len=(sms_send[0]<<8)|sms_send[1];		/*真实消息长度,包括CTRL_Z*/
-				m66_write(&dev_gsm,4,sms_send,len);
+				rt_kprintf("\nSMS>SEND:%s",sms_send+1);
+				len=strlen(sms_send+1);		/*真实消息长度,包括CTRL_Z*/
+				m66_write(&dev_gsm,2,sms_send,len);
 			}
 			ret=gsm_send("",RT_NULL,"+CMGS:",RESP_TYPE_STR_WITHOK,RT_TICK_PER_SECOND*5,1);
 			break;
@@ -1587,7 +1585,7 @@ void gsm_init( void )
 	rt_mb_init( &mb_gsmrx, "mb_gsmrx", &mb_gsmrx_pool, MB_GSMRX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 	rt_mb_init( &mb_tts, "mb_tts", &mb_tts_pool, MB_TTS_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 	rt_mb_init( &mb_at_tx, "mb_at_tx", &mb_at_tx_pool, MB_AT_TX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
-	rt_mb_init( &mb_sms_rx, "mb_sms_rx", &mb_sms_rx_pool, MB_SMS_RX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
+	rt_mb_init( &mb_sms, "mb_sms_rx", &mb_sms_pool, MB_SMS_RX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 
 	rt_thread_init( &thread_gsm,
 	                "gsm",
