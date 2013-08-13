@@ -1282,7 +1282,7 @@ static void jt808_socket_proc( void )
 		gsmstate( GSM_POWERON );                /*开机登网*/
 		return;
 	}
-	return;		/*临时测试不登网*/
+	return;
 /*控制登网*/
 	if( state == GSM_AT )                       /*这里要判断用那个apn user psw 登网*/
 	{

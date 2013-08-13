@@ -113,11 +113,9 @@ static void keypress( unsigned int key )
 		case KEY_UP:
 			if( menu_pos == 0 )
 			{
-				menu_pos = 7;
-			} else
-			{
-				menu_pos--;
+				menu_pos = 8;
 			}
+			menu_pos--;
 			menuswitch( );
 			break;
 		case KEY_DOWN:

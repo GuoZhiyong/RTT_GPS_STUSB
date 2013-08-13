@@ -137,12 +137,16 @@ typedef struct _jt808_param
 
 
 	uint32_t id_0xF020;         /*0xF020 总里程*/
+	uint32_t id_0xF021; 		/*0xF021 车辆状态*/
 
+
+	
+/*行车记录仪*/
 	uint32_t	id_0xF030;      /*0xF030 记录仪初次安装时间,mytime格式*/
 	uint32_t	id_0xF031;      /*初始里程*/
 	uint16_t	id_0xF032;      /*车辆脉冲系数*/
 
-
+/*打印相关*/
 	uint8_t	id_0xF040;		//line_space; 				//行间隔
 	uint8_t	id_0xF041;		//margin_left;				//左边界
 	uint8_t	id_0xF042;		//margin_right;				//右边界

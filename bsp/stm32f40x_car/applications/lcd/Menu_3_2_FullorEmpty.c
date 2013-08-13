@@ -1,114 +1,103 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #include "Menu_Include.h"
 #include "sed1520.h"
-unsigned char car_status_str[3][4]={"空车","半空","重车"};
+unsigned char	*car_status_str[4] = { "空车", "半载", "预留", "满载" };
 
-unsigned char CarStatus_change=1;//状态选择
-unsigned char CarStatus_screen=0;//界面切换使用
+static uint8_t	pos			= 0;
+static uint8_t	selected	= 0; /*是否已选择*/
 
-
-
-void CarStatus(unsigned char Status)
+/**/
+static void display( )
 {
-unsigned char i=0;
+	unsigned char i = 0;
 
-	lcd_fill(0);
-	lcd_text12(12,3,"车辆负载状态选择",16,LCD_MODE_SET);
-	for(i=0;i<3;i++)
-		lcd_text12(20+i*30,19,(char *)car_status_str[i],4,LCD_MODE_SET);
-	lcd_text12(20+30*Status,19,(char *)car_status_str[Status],4,LCD_MODE_INVERT);
-	lcd_update_all();
-}
-static void msg( void *p)
-{
-}
-static void show(void)
-{
-	pMenuItem->tick=rt_tick_get();
-
-	CarStatus(1);
-}
-
-
-static void keypress(unsigned int key)
-{
-switch(key)
+	lcd_fill( 0 );
+	if( selected == 0 )
 	{
-	case KEY_MENU:
-		pMenuItem=&Menu_3_InforInteract;
-		pMenuItem->show();
-		CounterBack=0;
-		
-		CarStatus_change=1;//选择
-		CarStatus_screen=0;//界面切换使用
-		break;
-	case KEY_OK:
-		
-		if(CarStatus_screen==0)
-			{
-			CarStatus_screen=1;
-			lcd_fill(0);
-			lcd_text12(12,10,"发送车辆状态",12,LCD_MODE_SET);
-			lcd_text12(88,10,(char *)car_status_str[CarStatus_change],4,LCD_MODE_SET);
-			lcd_update_all();
-			}
-		else if(CarStatus_screen==1)
-			{
-			CarStatus_screen=2;
-#if NEED_TODO
-				JT808Conf_struct.LOAD_STATE=CarStatus_change;
-			Api_Config_Recwrite_Large(jt808,0,(u8*)&JT808Conf_struct,sizeof(JT808Conf_struct));
-#endif
-		     /* Car_Status[2]&=~0x03;      //  空载
-	             if(CarStatus_change==1)
-				Car_Status[2]|=0x01;   //半载
-			else if(CarStatus_change==2)
-				Car_Status[2]|=0x03;   //满载*/
+		lcd_text12( 12, 3, "车辆状态选择", 12, LCD_MODE_SET );
+		for( i = 0; i < 4; i++ )
+		{
+			lcd_text12( i * 30, 19, car_status_str[i], 4, LCD_MODE_SET );
+		}
+		lcd_text12(30 * pos, 19, car_status_str[pos], 4, LCD_MODE_INVERT );
+	}else
+	{
+		lcd_text12( 12, 3, "车辆状态: ", 10, LCD_MODE_SET );
+		lcd_text12( 12+60, 3, car_status_str[pos], 4, LCD_MODE_INVERT );
+	}
+	lcd_update_all( );
+}
 
-            //上报位置信息
-				#if NEED_TODO
-			PositionSD_Enable();
-			Current_UDP_sd=1;
-				#endif
+/**/
+static void msg( void *p )
+{
+}
 
-			lcd_fill(0);
-			lcd_text12(20,10,(char *)car_status_str[CarStatus_change],4,LCD_MODE_SET);
-			lcd_text12(48,10,"发送成功",8,LCD_MODE_SET);
-			lcd_update_all();
-			
-			CarStatus_change=1;//选择
-			CarStatus_screen=0;//界面切换使用
+/**/
+static void show( void )
+{
+	pMenuItem->tick = rt_tick_get( );
+	pos				= jt808_param.id_0xF021;
+	selected		= 0;
+	display( );
+}
+
+/**/
+static void keypress( unsigned int key )
+{
+	uint32_t i;
+	
+	switch( key )
+	{
+		case KEY_MENU:
+			pMenuItem = &Menu_3_InforInteract;
+			pMenuItem->show( );
+			break;
+		case KEY_OK:
+			if( selected ) /*已经选择*/
+			{
+				pMenuItem = &Menu_3_InforInteract;
+				pMenuItem->show( );
+				break;
 			}
-		break;
-	case KEY_UP:
-		if(CarStatus_screen==0)
-			{			
-			if(CarStatus_change<=0)
-				CarStatus_change=2;
-			else
-				CarStatus_change--;
-			CarStatus(CarStatus_change);
+			selected = 1;
+			jt808_param.id_0xF021=pos;
+			i=jt808_status&0xFFFFFCFF;	/*bit 8.9 清零*/
+			jt808_status=i|(uint32_t)(pos<<8);
+			display( );
+			break;
+		case KEY_UP:
+			if( pos == 0 )
+			{
+				pos = 4;
 			}
-		break;
-	case KEY_DOWN:
-		if(CarStatus_screen==0)
-			{		
-			if(CarStatus_change>=2)
-				CarStatus_change=0;
-			else
-				CarStatus_change++;
-			
-			CarStatus(CarStatus_change);
-			}
-		break;
+			pos--;
+			display( );
+			break;
+		case KEY_DOWN:
+			pos++;
+			pos %= 4;
+			display( );
+			break;
 	}
 }
 
-
-MENUITEM	Menu_3_2_FullorEmpty= 
+MENUITEM Menu_3_2_FullorEmpty =
 {
-
-    "车辆状态发送",
-    12,0,
+	"车辆状态",
+	8,				  0,
 	&show,
 	&keypress,
 	&timetick_default,
@@ -116,3 +105,4 @@ MENUITEM	Menu_3_2_FullorEmpty=
 	(void*)0
 };
 
+/************************************** The End Of File **************************************/

@@ -134,7 +134,7 @@ static void display_detail( void )
 {
 	uint8_t i, col;
 
-	i = line_pos & 0xFE;                                      /*对齐到偶数行上*/
+	i = line_pos & 0xFE;                                   /*对齐到偶数行上*/
 
 	lcd_fill( 0 );
 
@@ -142,7 +142,7 @@ static void display_detail( void )
 	{
 		if( i < split_lines_count )
 		{
-			if( disp_row[i].attrib >= 0x8000 )          /*问题*/
+			if( disp_row[i].attrib >= 0x8000 ) /*问题*/
 			{
 				lcd_text12( 0, col, (char*)( center_ask.body + disp_row[i].start ), disp_row[i].count, LCD_MODE_SET );
 				attr		= 0xFFFF;
@@ -183,7 +183,6 @@ static void show( void )
 		lcd_text12( ( 122 - 8 * 12 ) >> 1, 16, "[无中心提问下发]", 16, LCD_MODE_SET );
 		lcd_update_all( );
 		view_mode = VIEW_NONE;
-		return;
 	}
 	pMenuItem->tick = rt_tick_get( );
 	item_pos		= 0;
@@ -196,12 +195,18 @@ static void show( void )
 static void keypress( unsigned int key )
 {
 	uint8_t buf[8];
+	if( center_ask_count == 0 )
+	{
+		pMenuItem = &Menu_3_InforInteract;
+		pMenuItem->show( );
+		return;
+	}
 	switch( key )
 	{
 		case KEY_MENU:
 			if( view_mode <= VIEW_ITEM )
 			{
-				pMenuItem = &Menu_2_InforCheck;
+				pMenuItem = &Menu_3_InforInteract;
 				pMenuItem->show( );
 			}else
 			{

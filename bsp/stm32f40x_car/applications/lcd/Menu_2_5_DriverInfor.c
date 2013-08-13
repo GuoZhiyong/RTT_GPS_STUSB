@@ -31,7 +31,7 @@ if(NameCode==1)
 else
 	{
 	lcd_text12(30,3,"¼ÝÊ»Ö¤ºÅÂë",10,LCD_MODE_SET);
-	lcd_text12(42,19,jt808_param.id_0xF009,strlen(jt808_param.id_0xF009),LCD_MODE_SET);
+	lcd_text12(0,19,jt808_param.id_0xF009,strlen(jt808_param.id_0xF009),LCD_MODE_SET);
 	}
 lcd_update_all();
 } 

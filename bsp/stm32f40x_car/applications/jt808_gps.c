@@ -55,8 +55,6 @@ static uint32_t jt808_report_distance	= 1000;     /*GPS上报距离间隔,为0 停止上报
 static uint32_t distance		= 0;                /*定距上报当前距离值*/
 static uint32_t total_distance	= 0;                /*总的累计里程*/
 
-uint32_t		gps_second_count = 0;               /*gps秒语句输出*/
-
 uint16_t		jt808_8202_track_interval	= 0;    /*jt808_8202 临时位置跟踪控制*/
 uint32_t		jt808_8202_track_duration	= 0;
 uint16_t		jt808_8202_track_counter;

@@ -21,15 +21,7 @@ unsigned char	LogInorOut_screen	= 0;    //选择鉴权/注销,选择好以后按确认键清0
 unsigned char	LogInorOut			= 0;    //  1:选择鉴权	2:选择注册
 
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 void confirm_login( unsigned char par )
 {
 	lcd_fill( 0 );
@@ -50,28 +42,12 @@ void confirm_login( unsigned char par )
 	lcd_update_all( );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void msg( void *p )
 {
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void show( void )
 {
 	pMenuItem->tick = rt_tick_get( );
@@ -80,15 +56,7 @@ static void show( void )
 	LogInorOut			= 1;
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void keypress( unsigned int key )
 {
 	switch( key )

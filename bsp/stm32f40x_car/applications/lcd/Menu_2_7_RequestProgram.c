@@ -14,9 +14,13 @@
 #include "Menu_Include.h"
 #include "sed1520.h"
 
-#if 0
+#include <string.h>
+
+#if 1
 
 static uint8_t			count, pos;
+
+static uint8_t			* ptr_info_ondemand = RT_NULL;
 
 static unsigned char	check[] = {
 	0xff,                                                                       /*[********]*/
@@ -40,8 +44,8 @@ static unsigned char	uncheck[] = {
 	0xff,                                                                       /*[********]*/
 };
 
-DECL_BMP( 8, 8, check);
-DECL_BMP( 8, 8, uncheck);
+DECL_BMP( 8, 8, check );
+DECL_BMP( 8, 8, uncheck );
 
 /*显示*/
 static void display( void )
@@ -55,12 +59,12 @@ static void display( void )
 		lcd_text12( ( 122 - 8 * 12 ) / 2, 18, "[无信息点播内容]", 16, LCD_MODE_SET );
 	}else
 	{
-		info = (INFO_ONDEMAND*)( info_ondemand_buf + 64 * index );
+		info = (INFO_ONDEMAND*)( ptr_info_ondemand + 64 * index );
 		sprintf( buf, "%02d %s", info->type, info->body );
 		lcd_text12( 0, 4, buf, strlen( buf ), 3 - ( pos & 0x01 ) * 2 );         /*SET=1 INVERT=3*/
 		if( ( index + 1 ) < count )
 		{
-			info = (INFO_ONDEMAND*)( event_buf + 64 * index + 64 );
+			info = (INFO_ONDEMAND*)( ptr_info_ondemand + 64 * index + 64 );
 			sprintf( buf, "%02d %s", info->type, info->body );
 			lcd_text12( 0, 18, buf, strlen( buf ), ( pos & 0x01 ) * 2 + 1 );    /*SET=1 INVERT=3*/
 		}
@@ -85,7 +89,7 @@ static void msg( void *p )
 static void show( void )
 {
 	pMenuItem->tick = rt_tick_get( );
-	count			= jt808_info_ondemand_get( );
+	count			= jt808_info_ondemand_get( ptr_info_ondemand );
 	rt_kprintf( "count=%d\n", count );
 	pos = 0;
 	display( );
@@ -95,20 +99,25 @@ static void show( void )
 static void keypress( unsigned int key )
 {
 	uint8_t buf[32];
+	if( count == 0 ) /*没有记录,任意键返回*/
+	{
+		pMenuItem = &Menu_3_InforInteract;
+		pMenuItem->show( );
+	}
 	switch( key )
 	{
 		case KEY_MENU:
-			if( info_ondemand_buf != RT_NULL )
+			if( ptr_info_ondemand != RT_NULL )
 			{
-				rt_free( info_ondemand_buf );
-				info_ondemand_buf = RT_NULL;
+				rt_free( ptr_info_ondemand );
+				ptr_info_ondemand = RT_NULL;
 			}
 			pMenuItem = &Menu_3_InforInteract;
 			pMenuItem->show( );
 			break;
 		case KEY_OK: /*事件报告*/
-			buf[0] = ( (INFO_ONDEMAND*)( info_ondemand_buf + pos * 64 ) )->type;
-			buf[1] =( (INFO_ONDEMAND*)( info_ondemand_buf + pos * 64 ) )->st;
+			buf[0]	= ( (INFO_ONDEMAND*)( ptr_info_ondemand + pos * 64 ) )->type;
+			buf[1]	= ( (INFO_ONDEMAND*)( ptr_info_ondemand + pos * 64 ) )->st;
 			jt808_tx( 0x0303, buf, 2 );
 			break;
 		case KEY_UP:
@@ -131,12 +140,12 @@ static void keypress( unsigned int key )
 /*检查是否回到主界面*/
 static void timetick( unsigned int tick )
 {
-	if( ( tick - pMenuItem->tick ) >= RT_TICK_PER_SECOND* 10 )
+	if( ( tick - pMenuItem->tick ) >= RT_TICK_PER_SECOND * 10 )
 	{
-		if( info_ondemand_buf != RT_NULL )
+		if( ptr_info_ondemand != RT_NULL )
 		{
-			rt_free( info_ondemand_buf );
-			info_ondemand_buf = RT_NULL;
+			rt_free( ptr_info_ondemand );
+			ptr_info_ondemand = RT_NULL;
 		}
 		pMenuItem = &Menu_1_Idle;
 		pMenuItem->show( );
@@ -146,14 +155,13 @@ static void timetick( unsigned int tick )
 MENUITEM Menu_2_7_RequestProgram =
 {
 	"信息点播查看",
-	12,				  0,
+	12,			   0,
 	&show,
 	&keypress,
 	&timetick,
 	&msg,
 	(void*)0
 };
-
 
 #else
 unsigned char	Menu_dianbo			= 0;

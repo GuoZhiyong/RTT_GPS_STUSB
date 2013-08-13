@@ -26,7 +26,7 @@
 
 JT808_PARAM jt808_param =
 {
-	0x13081001,                         /*0x0000 版本*/
+	0x13081101,                         /*0x0000 版本*/
 	50,                                 /*0x0001 心跳发送间隔*/
 	10,                                 /*0x0002 TCP应答超时时间*/
 	3,                                  /*0x0003 TCP超时重传次数*/
@@ -137,6 +137,7 @@ JT808_PARAM jt808_param =
 	"TJ.GT",                            /*0xF012 销售客户代码*/
 
 	0,                                  /*0xF020 总里程*/
+	0, 		/*0xF021 车辆状态*/
 
 	0x35DECC80,                         /*0xF030 记录仪初次安装时间,mytime格式*/
 	0,                                  /*id_0xF031;      初始里程*/
@@ -306,6 +307,7 @@ struct _tbl_id_lookup
 	ID_LOOKUP( 0xF010, TYPE_STR ),      /*0xF010 软件版本号*/
 	ID_LOOKUP( 0xF011, TYPE_STR ),      /*0xF011 硬件版本号*/
 	ID_LOOKUP( 0x0020, TYPE_WORD ),     /*0xF020 总里程*/
+	ID_LOOKUP( 0x0021, TYPE_WORD ), 	/*0xF021 车辆状态*/
 
 	ID_LOOKUP( 0xF040, TYPE_BYTE ),     //line_space;               //行间隔
 	ID_LOOKUP( 0xF041, TYPE_BYTE ),     //margin_left;				//左边界

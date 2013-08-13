@@ -230,10 +230,12 @@ uint32_t jt808_center_ask_get( uint8_t index, CENTER_ASK* pout );
 uint8_t jt808_event_get( void );
 uint8_t jt808_phonebook_get( void );
 
+uint8_t jt808_info_ondemand_get( uint8_t *ptr );
+
+
 
 extern uint8_t* event_buf;
 extern uint8_t* phonebook_buf;
-extern uint8_t* info_ondemand_buf;
 
 
 

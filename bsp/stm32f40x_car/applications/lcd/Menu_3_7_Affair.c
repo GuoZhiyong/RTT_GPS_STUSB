@@ -49,15 +49,7 @@ static void msg( void *p )
 {
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void show( void )
 {
 	pMenuItem->tick = rt_tick_get( );

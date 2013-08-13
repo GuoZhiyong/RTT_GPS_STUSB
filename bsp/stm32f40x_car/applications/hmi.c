@@ -82,7 +82,7 @@ static uint32_t  keycheck( void )
 	{
 		keys[i].status = 0;
 	}
-#if 1
+#if 0
 	if( tmp_key )
 	{
 		rt_kprintf( "%04x\r\n", tmp_key );

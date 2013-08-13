@@ -17,111 +17,28 @@
 #include "sed1520.h"
 
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void Disp_DnsIP( u8 par )
+static uint8_t pos;
+
+/*显示网络信息*/
+static void display()
 {
-	char	dns1[50]	= { "1. " }, dns2[50] = { "2. " }, apn[20] = { "APN:" };
-	u8	len1		= 0;
-	char	ip1[30]		= { "   .   .   .   :    " }, ip2[30] = { "   .   .   .   :    " };
 
-	if( par == 1 )
-	{
-		strcpy( dns1 + 3, jt808_param.id_0x0013 );
-		strcpy( dns2 + 3, jt808_param.id_0x0017 );
-
-		lcd_fill( 0 );
-		lcd_text12( 0, 3, (char*)dns1, strlen( dns1 ), LCD_MODE_SET );
-		lcd_text12( 0, 18, (char*)dns2, strlen( dns2 ), LCD_MODE_SET );
-		lcd_update_all( );
-	}else if( par == 2 )
-	{
-		#if NEED_TODO
-		for( i = 0; i < 4; i++ )
-		{
-			ip1[i * 4] = RemoteIP_main[i] / 100 + '0';
-		}
-		for( i = 0; i < 4; i++ )
-		{
-			ip1[1 + i * 4] = RemoteIP_main[i] % 100 / 10 + '0';
-		}
-		for( i = 0; i < 4; i++ )
-		{
-			ip1[2 + i * 4] = RemoteIP_main[i] % 10 + '0';
-		}
-
-		//ip1[21]=RemotePort_1/10000+'0';
-		ip1[16] = RemotePort_main % 10000 / 1000 + '0';
-		ip1[17] = RemotePort_main % 1000 / 100 + '0';
-		ip1[18] = RemotePort_main % 100 / 10 + '0';
-		ip1[19] = RemotePort_main % 10 + '0';
-
-		for( i = 0; i < 4; i++ )
-		{
-			ip2[i * 4] = RemoteIP_aux[i] / 100 + '0';
-		}
-		for( i = 0; i < 4; i++ )
-		{
-			ip2[1 + i * 4] = RemoteIP_aux[i] % 100 / 10 + '0';
-		}
-		for( i = 0; i < 4; i++ )
-		{
-			ip2[2 + i * 4] = RemoteIP_aux[i] % 10 + '0';
-		}
-
-#endif
-		//ip2[21]=RemotePort_2/10000+'0';
-		ip2[16] = jt808_param.id_0x0018 % 10000 / 1000 + '0';
-		ip2[17] = jt808_param.id_0x0018 % 1000 / 100 + '0';
-		ip2[18] = jt808_param.id_0x0018 % 100 / 10 + '0';
-		ip2[19] = jt808_param.id_0x0018 % 10 + '0';
-
-		strcpy( apn + 4, jt808_param.id_0x0010 );
-		lcd_fill( 0 );
-		lcd_text12( 0, 0, (char*)apn, 4 + len1, LCD_MODE_SET );
-		lcd_text12( 0, 11, (char*)ip1, 20, LCD_MODE_SET );
-		lcd_text12( 0, 22, (char*)ip2, 20, LCD_MODE_SET );
-		lcd_update_all( );
-	}
+	lcd_fill(0);
+	lcd_text12((122-8*6)>>1,14,"有待完善",8,LCD_MODE_SET);
+	lcd_update_all( );
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void msg( void *p )
 {
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/**/
 static void show( void )
 {
 	pMenuItem->tick=rt_tick_get();
-
-	lcd_fill( 0 );
-	lcd_text12( 24, 3, "查看设置信息", 12, LCD_MODE_SET );
-	lcd_text12( 30, 18, "请按确认键", 10, LCD_MODE_SET );
-	lcd_update_all( );
+	pos=0;
+	display();
 }
 
 /***********************************************************
@@ -143,13 +60,10 @@ static void keypress( unsigned int key )
 			CounterBack = 0;
 			break;
 		case KEY_OK:
-			Disp_DnsIP( 1 );
 			break;
 		case KEY_UP:
-			Disp_DnsIP( 1 );
 			break;
 		case KEY_DOWN:
-			Disp_DnsIP( 2 );
 			break;
 	}
 }
@@ -158,7 +72,7 @@ static void keypress( unsigned int key )
 MENUITEM Menu_2_8_DnsIpDisplay =
 {
 	"网络设置",
-	7,0,
+	8,0,
 	&show,
 	&keypress,
 	&timetick_default,
