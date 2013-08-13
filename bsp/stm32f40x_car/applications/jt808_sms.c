@@ -177,41 +177,7 @@ u16 gsmdecode7bit( char* pSrc, char* pDst, u16 nSrcLength )
 	return nDst;                                            // 返回目标串长度
 }
 
-#if 0
-//将每个ascii8位编码的Bit8去掉，依次将下7位编码的后几位逐次移到前面，形成新的8位编码。
-u16 gsmencode7bit( const u8* pSrc, u8* pDst, u16 nSrcLength )
-{
-	u16 nSrc;
-	u16 nDst;
-	u16 nChar;
-	u8	nLeft;
 
-	// 计数值初始化
-	nSrc	= 0;
-	nDst	= 0;
-
-	// 将源串每8个字节分为一组，压缩成7个字节
-	// 循环该处理过程，直至源串被处理完
-	// 如果分组不到8字节，也能正确处理
-	while( nSrc < nSrcLength + 1 )
-	{
-		nChar = nSrc & 7;                                   // 取源字符串的计数值的最低3位
-		if( nChar == 0 )                                    // 处理源串的每个字节
-		{
-			nLeft = *pSrc;                                  // 组内第一个字节，只是保存起来，待处理下一个字节时使用
-		}else
-		{
-			*pDst	= ( *pSrc << ( 8 - nChar ) ) | nLeft;   // 组内其它字节，将其右边部分与残余数据相加，得到一个目标编码字节
-			nLeft	= *pSrc >> nChar;                       // 将该字节剩下的左边部分，作为残余数据保存起来
-			pDst++;                                         // 修改目标串的指针和计数值 pDst++;
-			nDst++;
-		}
-		pSrc++; nSrc++;                                     // 修改源串的指针和计数值
-	}
-	return nDst;                                            // 返回目标串长度
-}
-
-#endif
 /*信息编码为7bit pdu模式,并发送*/
 
 
@@ -353,12 +319,14 @@ uint8_t analy_param( char* cmd, char*value )
 	}
 	if( strncmp( cmd, "RESET", 5 ) == 0 )               /*要求复位,发送完成后复位，如何做?*/
 	{
+		reset(0xaa);
 		return 1;
 	}else if( strncmp( cmd, "CLEARREGIST", 11 ) == 0 )  /*清除注册*/
 	{
 		memset( jt808_param.id_0xF003, 0, 32 );         /*清除鉴权码*/
 		return 1;
 	}
+
 
 /*带参数的，先判有没有参数*/
 	if( strlen( value ) == 0 )
@@ -471,8 +439,8 @@ uint8_t analy_param( char* cmd, char*value )
 			sprintf( buf, "TCBTW703#%s#%s#%s#%d",
 			         jt808_param.id_0x0083 + 2,
 			         jt808_param.id_0xF002,
-			         jt808_param.id_0xF005,
-			         jt808_param.id_0x0029 );
+			         jt808_param.id_0x0013,
+			         jt808_param.id_0x0018);
 			sms_encode_pdu_7bit( buf );
 		}
 		if( *value == '2' )
@@ -493,10 +461,14 @@ uint8_t analy_param( char* cmd, char*value )
 	}
 	if( strncmp( cmd, "PLATENUM", 8 ) == 0 )    /*PLATENUM(津A8888)	*/
 	{
+		strcpy(jt808_param.id_0x0083,value);
+		param_save();
 		return 0x80;
 	}
 	if( strncmp( cmd, "COLOR", 5 ) == 0 )       /* COLOR(0) 1： 蓝色  2： 黄色    3： 黑色    4： 白色    9：  其他*/
 	{
+		jt808_param.id_0x0084=atoi(value);
+		param_save();
 		return 1;
 	}
 	if( strncmp( cmd, "CONNECT", 7 ) == 0 )     /*CONNECT(0)  0:  DNSR   优先     1：  MainIP   优先 */
@@ -672,6 +644,9 @@ void jt808_sms_rx( char *info, uint16_t size )
 
  */
 
+
+#if 1
+
 void sms_test( uint8_t index )
 {
 	char *s[2] =
@@ -681,5 +656,10 @@ void sms_test( uint8_t index )
 }
 
 FINSH_FUNCTION_EXPORT( sms_test, test sms )
+
+
+
+
+#endif
 
 /************************************** The End Of File **************************************/
