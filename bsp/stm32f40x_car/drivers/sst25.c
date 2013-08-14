@@ -31,8 +31,8 @@
 #define SectorErace_4KB 0x20    //扇区擦除
 #define SST25_READ		0x03
 
-
 struct rt_semaphore sem_dataflash;
+
 
 /***********************************************************
 * Function:
@@ -150,9 +150,8 @@ void sst25_init( void )
 	spi_tx( DBSY );
 	DF_CS_1;
 
-	rt_sem_init(&sem_dataflash,"sem_df",0, RT_IPC_FLAG_FIFO );
-	rt_sem_release(&sem_dataflash);
-	
+	rt_sem_init( &sem_dataflash, "sem_df", 0, RT_IPC_FLAG_FIFO );
+	rt_sem_release( &sem_dataflash );
 }
 
 /***********************************************************
@@ -299,7 +298,7 @@ void sst25_write_through( uint32_t addr, uint8_t *p, uint16_t len )
 		sst25_bytewrite( wr_addr, *pdata );
 		return;
 	}
-	if(wr_addr&0x01)	/*AAI需要从A0=0开始*/
+	if( wr_addr & 0x01 ) /*AAI需要从A0=0开始*/
 	{
 		sst25_bytewrite( wr_addr++, *pdata++ );
 		remain--;
@@ -349,71 +348,57 @@ void sst25_write_through( uint32_t addr, uint8_t *p, uint16_t len )
    回写，读出数据，
    限制写入大小，不能跨多个扇区
  */
+
 void sst25_write_back( uint32_t addr, uint8_t *p, uint16_t len )
 {
 	uint32_t	i, wr_addr;
-	uint8_t		*pdata = p;
 	uint16_t	offset;
 	uint8_t		*pbuf;
 
-	uint16_t	remain = len;
 
 /*找到当前地址对应的4k=0x1000边界*/
-	wr_addr = addr & 0xFFFFF000;            /*对齐到4k边界*/
+	wr_addr = addr & 0xFFFFF000;        /*对齐到4k边界*/
+	offset	= addr & 0xfff;             /*4k内偏移*/
 
-	offset = addr & 0xfff;                  /*4k内偏移*/
+	sst25_read( wr_addr, buf, 4096 );   /*读出数据*/
+	sst25_erase_4k( wr_addr );          /*清除扇区*/
 
-	while( remain )
+	memcpy( buf + offset, p, len );
+	pbuf = buf;
+	DF_CS_0;
+	spi_tx( SST25_WREN );
+	DF_CS_1;
+	DF_CS_0;
+	spi_tx( SST25_AAI ); /**/
+	spi_tx( wr_addr >> 16 );
+	spi_tx( wr_addr >> 8 );
+	spi_tx( wr_addr & 0xff );
+	spi_tx( *pbuf++ );
+	spi_tx( *pbuf++ );
+	DF_CS_1;
+	while( sst25_busy( ) )
 	{
-		sst25_read( wr_addr, buf, 4096 );   /*读出数据*/
-		sst25_erase_4k( wr_addr );          /*清除扇区*/
-
-		if( remain + offset < 4096 )        /*在一个扇区内*/
-		{
-			memcpy( buf + offset, pdata, remain );
-			remain = 0;
-		}else
-		{
-			memcpy( buf + offset, pdata, 4096 - offset );
-			remain = remain - ( 4096 - offset );
-		}
-
-		pbuf = buf;
+		;                    
+	}
+	for( i = 0; i < 4094; i += 2 )
+	{
 		DF_CS_0;
-		spi_tx( SST25_WREN );
-		DF_CS_1;
-		DF_CS_0;
-		spi_tx( SST25_AAI ); /**/
-		spi_tx( wr_addr >> 16 );
-		spi_tx( wr_addr >> 8 );
-		spi_tx( wr_addr & 0xff );
+		spi_tx( SST25_AAI );    /**/
 		spi_tx( *pbuf++ );
 		spi_tx( *pbuf++ );
 		DF_CS_1;
 		while( sst25_busy( ) )
 		{
-			;                       //判忙
+			;                
 		}
-		for( i = 0; i < 4094; i += 2 )
-		{
-			DF_CS_0;
-			spi_tx( SST25_AAI );    /**/
-			spi_tx( *pbuf++ );
-			spi_tx( *pbuf++ );
-			DF_CS_1;
-			while( sst25_busy( ) )
-			{
-				;                   //判忙
-			}
-		}
-		DF_CS_0;
-		spi_tx( SST25_WRDI );       //WRDI用于退出AAI写模式 所谓AAI 就是地址自动加
-		DF_CS_1;
-
-		offset	= 0;                /*如果跨4k的话，从0开始*/
-		wr_addr += 4096;
 	}
+	DF_CS_0;
+	spi_tx( SST25_WRDI );       //WRDI用于退出AAI写模式 所谓AAI 就是地址自动加
+	DF_CS_1;
 }
+
+
+
 
 /***********************************************************
 * Function:
@@ -426,14 +411,14 @@ void sst25_write_back( uint32_t addr, uint8_t *p, uint16_t len )
 ***********************************************************/
 int df_read( uint32_t addr, uint16_t size )
 {
-	uint8_t tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-	int		i, count = 0;
-	uint8_t c;
-	uint8_t *p		= RT_NULL;
-	uint8_t *pdata	= RT_NULL;
-	uint8_t printbuf[100];
-	int32_t len = size;
-	uint32_t pos=addr;
+	uint8_t		tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	int			i, count = 0;
+	uint8_t		c;
+	uint8_t		*p		= RT_NULL;
+	uint8_t		*pdata	= RT_NULL;
+	uint8_t		printbuf[100];
+	int32_t		len = size;
+	uint32_t	pos = addr;
 
 	p = rt_malloc( len );
 	if( p == RT_NULL )
@@ -464,14 +449,14 @@ int df_read( uint32_t addr, uint16_t size )
 			pdata++;
 		}
 		printbuf[69] = 0;
-		rt_kprintf( "%08x %s\r\n",pos,printbuf );
+		rt_kprintf( "%08x %s\r\n", pos, printbuf );
 		len -= count;
-		pos+=count;
+		pos += count;
 	}
 	if( p != RT_NULL )
 	{
 		rt_free( p );
-		p=RT_NULL;
+		p = RT_NULL;
 	}
 	return size;
 }
@@ -479,19 +464,28 @@ int df_read( uint32_t addr, uint16_t size )
 FINSH_FUNCTION_EXPORT( df_read, read from serial flash );
 
 
-void df_format(uint16_t start_addr,uint16_t sectors)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void df_format( uint16_t start_addr, uint16_t sectors )
 {
-	uint16_t i;
-	uint32_t addr=start_addr;
-	rt_sem_take(&sem_dataflash,RT_TICK_PER_SECOND*2);
-	for(i=0;i<sectors;i++)
+	uint16_t	i;
+	uint32_t	addr = start_addr;
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 2 );
+	for( i = 0; i < sectors; i++ )
 	{
-		sst25_erase_4k(addr);
-		addr+=4096;
-
+		sst25_erase_4k( addr );
+		addr += 4096;
 	}
-	rt_sem_release(&sem_dataflash);
+	rt_sem_release( &sem_dataflash );
 }
+
 FINSH_FUNCTION_EXPORT( df_format, format serial flash );
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

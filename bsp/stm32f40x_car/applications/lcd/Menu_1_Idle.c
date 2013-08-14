@@ -170,7 +170,7 @@ void Disp_Idle( void )
 		sprintf( buf_speed, "---km/h   ---度");
 	}else if( jt808_status & BIT_STATUS_FIXED )                                             /*定位正常显示*/
 	{
-		lcd_text12( 0, 0, mode[gps_status.Position_Moule_Status], 2, LCD_MODE_SET );
+		lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_SET );
 		lcd_bitmap( 12, 1, &img_num0608[gps_status.NoSV / 10], LCD_MODE_SET );
 		lcd_bitmap( 18, 1, &img_num0608[gps_status.NoSV % 10], LCD_MODE_SET );
 
@@ -184,7 +184,7 @@ void Disp_Idle( void )
 		sprintf( buf_speed, "%3dkm/h   %3d度 ", gps_speed, gps_cog );
 	}else /*未定位，反色显示*/
 	{
-		lcd_text12( 0, 0, mode[gps_status.Position_Moule_Status], 2, LCD_MODE_INVERT );
+		lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_INVERT );
 		lcd_bitmap( 12, 1, &img_num0608[gps_status.NoSV / 10], LCD_MODE_SET );
 		lcd_bitmap( 18, 1, &img_num0608[gps_status.NoSV % 10], LCD_MODE_SET );
 		sprintf( buf_datetime, "--/--/-- %02d:%02d:%02d",gps_sec_count/3600,(gps_sec_count%3600)/60,(gps_sec_count%3600)%60);
@@ -199,7 +199,7 @@ void Disp_Idle( void )
 
 	lcd_text12( 48, 0, "GPRS", 4, LCD_MODE_SET );
 
-	if( connect_state.server_state == CONNECTED ) /*gprs连接状态*/
+	if( socket_master.state == CONNECTED ) /*gprs连接状态*/
 	{
 		lcd_bitmap( 72, 2, &BMP_link_on, LCD_MODE_SET );
 	}else

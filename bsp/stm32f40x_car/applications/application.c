@@ -36,14 +36,14 @@ struct rt_thread thread_app;
  */
 void rt_thread_entry_app( void* parameter )
 {
-	uint8_t rtc_need_init=1;
+	uint8_t need_rtc_init=1;
 	while( 1 )
 	{
-		if( rtc_need_init)
+		if( need_rtc_init)
 		{
 			if(rtc_init( )==0)
 			{
-				rtc_need_init=0;
+				need_rtc_init=0;
 				timestamp( );
 			}	
 		}

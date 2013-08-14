@@ -70,6 +70,9 @@ void mytime_to_bcd( uint8_t* buf, MYTIME time );
 uint32_t buf_to_data( uint8_t * psrc, uint8_t width );
 uint16_t data_to_buf( uint8_t * pdest, uint32_t data, uint8_t width );
 
+unsigned short CalcCRC16( unsigned char *ptr, int pos,unsigned int len, unsigned short crc );
+
+
 #endif
 
 

@@ -82,8 +82,6 @@
 unsigned char			printer_data[PRINTER_DATA_SIZE];
 struct rt_ringbuffer	rb_printer_data;
 
-uint8_t					ctrlbit_printer_3v3_on = 0;
-
 
 /*
    要打印的图案 24x24dot 24*3=72byte
@@ -95,7 +93,6 @@ uint8_t					ctrlbit_printer_3v3_on = 0;
 #define GLYPH_ROW	24
 #define GLYPH_COL	48
 
-//static unsigned char print_glyph[GLYPH_ROW][GLYPH_COL] __attribute__( ( at( 0x20001000 ) ) ) = { 0 };
 static unsigned char	print_glyph[GLYPH_ROW][GLYPH_COL] = { 0 };
 
 static struct rt_device dev_printer;
@@ -234,11 +231,15 @@ static void printer_port_init( void )
 	gpio_init.GPIO_Pin = PRINTER_POWER_PIN_5V;
 	GPIO_Init( PRINTER_POWER_PORT_5V, &gpio_init );
 	GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
-
-	gpio_init.GPIO_Pin = PRINTER_POWER_PIN_3V3;
-	GPIO_Init( PRINTER_POWER_PORT_3V3, &gpio_init );
-	GPIO_SetBits( PRINTER_POWER_PORT_3V3, PRINTER_POWER_PIN_3V3 );
-	//ctrlbit_printer_3v3_on = 0x20;
+	if( jt808_param.id_0xF013 == 0x3017 )
+	{
+		gpio_init.GPIO_Pin = PRINTER_POWER_PIN_3V3;
+		GPIO_Init( PRINTER_POWER_PORT_3V3, &gpio_init );
+		GPIO_SetBits( PRINTER_POWER_PORT_3V3, PRINTER_POWER_PIN_3V3 );
+	}else
+	{
+		ctrlbit_printer_3v3_on = 0x20;
+	}
 
 	gpio_init.GPIO_Pin	= PHE_PIN;
 	gpio_init.GPIO_Mode = GPIO_Mode_IN;
@@ -293,15 +294,14 @@ static void printer_load_param( void )
 	printer_param.step_delay	= jt808_param.id_0xF043;    //步进延时,影响行间隔
 	printer_param.gray_level	= jt808_param.id_0xF044;    //灰度等级,加热时间
 	printer_param.heat_delay[0] = jt808_param.id_0xF045;    //加热延时
-	printer_param.heat_delay[1] = jt808_param.id_0xF046;	//加热延时
-	printer_param.heat_delay[2] = jt808_param.id_0xF047;	//加热延时
-	printer_param.heat_delay[3] = jt808_param.id_0xF048;	//加热延时
+	printer_param.heat_delay[1] = jt808_param.id_0xF046;    //加热延时
+	printer_param.heat_delay[2] = jt808_param.id_0xF047;    //加热延时
+	printer_param.heat_delay[3] = jt808_param.id_0xF048;    //加热延时
 
 	printer_param.line_space	= jt808_param.id_0xF040;    //行间隔
 	printer_param.margin_left	= jt808_param.id_0xF041;    //左边界
 	printer_param.margin_right	= jt808_param.id_0xF042;    //右边界
 }
-
 
 #define PRINTER_IDLE					1
 #define PRINTER_GET_DATA_HEAT_1_3		2
@@ -322,7 +322,7 @@ __IO uint8_t	print_stage			= PRINTER_IDLE;
 void TIM3_IRQHandler( void )
 {
 	unsigned char	*p;
-	unsigned char	b, c,col_byte;
+	unsigned char	b, c, col_byte;
 
 	if( TIM_GetITStatus( TIM3, TIM_IT_Update ) == RESET )
 	{
@@ -826,11 +826,9 @@ static void printer_get_str_line( void )
 /**/
 static rt_err_t printer_init( rt_device_t dev )
 {
-//	delay_init( 72 );
-
 	rt_ringbuffer_init( &rb_printer_data, printer_data, PRINTER_DATA_SIZE );
-	printer_load_param( );
-	dotremain = 384 - printer_param.margin_left - printer_param.margin_right; //新的一行可打印字符点阵数
+	printer_load_param( );                                                      /*这个时候加载参数有吗*/
+	dotremain = 384 - printer_param.margin_left - printer_param.margin_right;   //新的一行可打印字符点阵数
 	printer_port_init( );
 	printer_stop( );
 
@@ -848,8 +846,13 @@ static rt_err_t printer_init( rt_device_t dev )
 ***********************************************************/
 static rt_err_t printer_open( rt_device_t dev, rt_uint16_t oflag )
 {
-	//GPIO_SetBits( PRINTER_POWER_PORT_3V3, PRINTER_POWER_PIN_3V3 );
-	ctrlbit_printer_3v3_on = 0x20;
+	if( jt808_param.id_0xF013 == 0x3020 )
+	{
+		ctrlbit_printer_3v3_on = 0x20;
+	} else
+	{
+		GPIO_SetBits( PRINTER_POWER_PORT_3V3, PRINTER_POWER_PIN_3V3 );
+	}
 	return RT_EOK;
 }
 
@@ -952,9 +955,13 @@ static rt_err_t printer_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 ***********************************************************/
 static rt_err_t printer_close( rt_device_t dev )
 {
-	//GPIO_ResetBits( PRINTER_POWER_PORT_3V3, PRINTER_POWER_PIN_3V3 );
-	ctrlbit_printer_3v3_on = 0;
-	GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
+	if( jt808_param.id_0xF013 == 0x3020 )
+	{
+		ctrlbit_printer_3v3_on = 0;
+	} else
+	{
+		GPIO_ResetBits( PRINTER_POWER_PORT_5V, PRINTER_POWER_PIN_5V );
+	}
 	return RT_EOK;
 }
 

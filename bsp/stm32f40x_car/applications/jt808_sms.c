@@ -389,17 +389,17 @@ uint8_t analy_param( char* cmd, char*value )
 	{
 		if( strncmp( value, "BD", 2 ) == 0 )
 		{
-			gps_status.Position_Moule_Status = MODE_BD;
+			gps_status.mode = MODE_BD;
 		}
 		if( strncmp( value, "GP", 2 ) == 0 )
 		{
-			gps_status.Position_Moule_Status = MODE_GPS;
+			gps_status.mode = MODE_GPS;
 		}
 		if( strncmp( value, "GN", 2 ) == 0 )
 		{
-			gps_status.Position_Moule_Status = MODE_BDGPS;
+			gps_status.mode= MODE_BDGPS;
 		}
-		gps_mode( gps_status.Position_Moule_Status );
+		gps_mode( gps_status.mode );
 		return 1;
 	}
 	if( strncmp( cmd, "VIN", 3 ) == 0 )

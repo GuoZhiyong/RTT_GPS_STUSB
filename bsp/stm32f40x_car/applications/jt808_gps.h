@@ -90,9 +90,10 @@ enum BDGPS_MODE
 
 typedef  struct  _gps_status
 {
-	enum BDGPS_MODE Position_Moule_Status;  /* 1: BD   2:  GPS   3: BD+GPS    定位模块的状态*/
-	uint8_t			Antenna_Flag;           //显示提示开路
-	uint8_t			Raw_Output;             //  原始数据输出
+	uint32_t		type;           /*型号 0:未定 0x3020x  0x3017x*/
+	enum BDGPS_MODE mode;           /* 1: BD   2:  GPS   3: BD+GPS    定位模块的状态*/
+	uint8_t			Antenna_Flag;   //显示提示开路
+	uint8_t			Raw_Output;     //  原始数据输出
 	uint8_t			NoSV;
 }GPS_STATUS;
 
@@ -123,8 +124,6 @@ extern uint32_t jt808_8203_manual_ack_seq;  /*人工确认报警的标识位 0,3,20,21,22,
 extern uint16_t jt808_8203_manual_ack_value;
 
 extern uint32_t gps_notfixed_count;
-
-
 
 void gps_rx( uint8_t * pinfo, uint16_t length );
 

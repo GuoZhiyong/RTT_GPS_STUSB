@@ -16,10 +16,10 @@
 
 #include "stm32f4xx.h"
 
+
 /*
    存储区域分配,采用绝对地址,以4K(0x1000)为一个扇区
  */
-
 
 #define ADDR_PARAM 0x000000000
 
@@ -123,40 +123,37 @@ typedef struct _jt808_param
 	char		id_0xF003[32];  /*0xF003 鉴权码*/
 	uint16_t	id_0xF004;      /*0xF004 终端类型*/
 	char		id_0xF005[32];  /*0xF005 VIN*/
-	char		id_0xF006[32];	/*0xF006 CARID 上报的终端手机号，系统原来的mobile */
+	char		id_0xF006[32];  /*0xF006 CARID 上报的终端手机号，系统原来的mobile */
 	char		id_0xF007[32];  /*0xF007 驾驶证代码*/
 	char		id_0xF008[32];  /*0xF008 驾驶员姓名*/
 	char		id_0xF009[32];  /*0xF009 驾驶证号码*/
 	char		id_0xF00A[32];  /*0xF00A 车辆类型*/
 	char		id_0xF00B[32];  /*0xF00B 从业资格证*/
 	char		id_0xF00C[32];  /*0xF00C 发证机构*/
-	
+
 	char		id_0xF010[32];  /*0xF010 软件版本号*/
 	char		id_0xF011[32];  /*0xF011 硬件版本号*/
 	char		id_0xF012[32];  /*0xF012 销售客户代码*/
+	uint32_t	id_0xF013;      /*0xF013 北斗模块型号0,未确定 ,0x3020 0x3017*/
 
+	uint32_t	id_0xF020;      /*0xF020 总里程*/
+	uint32_t	id_0xF021;      /*0xF021 车辆状态*/
 
-	uint32_t id_0xF020;         /*0xF020 总里程*/
-	uint32_t id_0xF021; 		/*0xF021 车辆状态*/
-
-
-	
 /*行车记录仪*/
 	uint32_t	id_0xF030;      /*0xF030 记录仪初次安装时间,mytime格式*/
 	uint32_t	id_0xF031;      /*初始里程*/
 	uint16_t	id_0xF032;      /*车辆脉冲系数*/
 
 /*打印相关*/
-	uint8_t	id_0xF040;		//line_space; 				//行间隔
-	uint8_t	id_0xF041;		//margin_left;				//左边界
-	uint8_t	id_0xF042;		//margin_right;				//右边界
-	uint8_t	id_0xF043;		//step_delay; 				//步进延时,影响行间隔
-	uint8_t	id_0xF044;		//gray_level; 				//灰度等级,加热时间
-	uint8_t	id_0xF045;		//heat_delay[0];			//加热延时
-	uint8_t	id_0xF046;		//heat_delay[1];			//加热延时
-	uint8_t	id_0xF047;		//heat_delay[2];			//加热延时
-	uint8_t	id_0xF048;		//heat_delay[3];			//加热延时
-	
+	uint8_t id_0xF040;          //line_space;               //行间隔
+	uint8_t id_0xF041;          //margin_left;				//左边界
+	uint8_t id_0xF042;          //margin_right;				//右边界
+	uint8_t id_0xF043;          //step_delay;               //步进延时,影响行间隔
+	uint8_t id_0xF044;          //gray_level;               //灰度等级,加热时间
+	uint8_t id_0xF045;          //heat_delay[0];			//加热延时
+	uint8_t id_0xF046;          //heat_delay[1];			//加热延时
+	uint8_t id_0xF047;          //heat_delay[2];			//加热延时
+	uint8_t id_0xF048;          //heat_delay[3];			//加热延时
 }JT808_PARAM;
 
 #if 0

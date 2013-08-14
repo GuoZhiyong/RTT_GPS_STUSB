@@ -26,7 +26,7 @@
 
 JT808_PARAM jt808_param =
 {
-	0x13081101,                         /*0x0000 版本*/
+	0x13081103,                         /*0x0000 版本*/
 	50,                                 /*0x0001 心跳发送间隔*/
 	10,                                 /*0x0002 TCP应答超时时间*/
 	3,                                  /*0x0003 TCP超时重传次数*/
@@ -135,9 +135,11 @@ JT808_PARAM jt808_param =
 	"1.00",                             /*0xF010 软件版本号*/
 	"1.00",                             /*0xF011 硬件版本号*/
 	"TJ.GT",                            /*0xF012 销售客户代码*/
+	0x3020,								/*0xF013 北斗模块型号0,未确定 ,0x3020 默认 0x3017*/
 
 	0,                                  /*0xF020 总里程*/
-	0, 		/*0xF021 车辆状态*/
+	0,                                  /*0xF021 车辆状态*/
+	
 
 	0x35DECC80,                         /*0xF030 记录仪初次安装时间,mytime格式*/
 	0,                                  /*id_0xF031;      初始里程*/
@@ -164,20 +166,25 @@ JT808_PARAM jt808_param =
 void param_save( void )
 {
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
-	rt_kprintf( "parma_save size=%d\n", sizeof( jt808_param ) );
 	sst25_write_back( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
+	rt_kprintf( "parma_save size=%d\n", sizeof( jt808_param ) );
 	rt_sem_release( &sem_dataflash );
 }
 
 FINSH_FUNCTION_EXPORT( param_save, save param );
 
-/*加载参数从serialflash*/
+/*
+加载参数从serialflash
+这个时候可以不用sem_dataflash
+因为没有其他使用
+
+*/
 void param_load( void )
 {
 	/*预读一部分数据*/
 	uint8_t		ver8[4];
 	uint32_t	ver32;
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
+	//rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 	sst25_read( ADDR_PARAM, ver8, 4 );
 	ver32 = ( ver8[0] ) | ( ver8[1] << 8 ) | ( ver8[2] << 16 ) | ( ver8[3] << 24 );
 	if( jt808_param.id_0x0000 != ver32 ) /*不管是不是未初始化*/
@@ -185,7 +192,7 @@ void param_load( void )
 		sst25_write_back( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
 	}
 	sst25_read( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
-	rt_sem_release( &sem_dataflash );
+	//rt_sem_release( &sem_dataflash );
 	rt_kprintf( "parma ver=%x size=%d\n", BYTESWAP4( jt808_param.id_0x0000 ), sizeof( jt808_param ) );
 }
 
@@ -301,23 +308,26 @@ struct _tbl_id_lookup
 	ID_LOOKUP( 0xF008, TYPE_STR ),      /*0xF008 驾驶员姓名*/
 	ID_LOOKUP( 0xF009, TYPE_STR ),      /*0xF009 驾驶证号码*/
 	ID_LOOKUP( 0xF00A, TYPE_STR ),      /*0xF00A 车辆类型*/
-	ID_LOOKUP( 0xF00B, TYPE_STR ),  /*0xF00B 从业资格证*/
-	ID_LOOKUP( 0xF00C, TYPE_STR ), 	 /*0xF00C 发证机构*/
+	ID_LOOKUP( 0xF00B, TYPE_STR ),      /*0xF00B 从业资格证*/
+	ID_LOOKUP( 0xF00C, TYPE_STR ),      /*0xF00C 发证机构*/
 
 	ID_LOOKUP( 0xF010, TYPE_STR ),      /*0xF010 软件版本号*/
 	ID_LOOKUP( 0xF011, TYPE_STR ),      /*0xF011 硬件版本号*/
+	
+	ID_LOOKUP( 0xF013, TYPE_DWORD ),      /*0xF013 硬件版本号*/
+	
 	ID_LOOKUP( 0x0020, TYPE_WORD ),     /*0xF020 总里程*/
-	ID_LOOKUP( 0x0021, TYPE_WORD ), 	/*0xF021 车辆状态*/
+	ID_LOOKUP( 0x0021, TYPE_WORD ),     /*0xF021 车辆状态*/
 
 	ID_LOOKUP( 0xF040, TYPE_BYTE ),     //line_space;               //行间隔
 	ID_LOOKUP( 0xF041, TYPE_BYTE ),     //margin_left;				//左边界
 	ID_LOOKUP( 0xF042, TYPE_BYTE ),     //margin_right;				//右边界
 	ID_LOOKUP( 0xF043, TYPE_BYTE ),     //step_delay;               //步进延时,影响行间隔
 	ID_LOOKUP( 0xF044, TYPE_BYTE ),     //gray_level;               //灰度等级,加热时间
-	ID_LOOKUP( 0xF045, TYPE_BYTE ),     //heat_delay[0];				//加热延时
-	ID_LOOKUP( 0xF046, TYPE_BYTE ),     //heat_delay[1];				//加热延时
-	ID_LOOKUP( 0xF047, TYPE_BYTE ),     //heat_delay[2];				//加热延时
-	ID_LOOKUP( 0xF048, TYPE_BYTE ),     //heat_delay[3];				//加热延时
+	ID_LOOKUP( 0xF045, TYPE_BYTE ),     //heat_delay[0];			//加热延时
+	ID_LOOKUP( 0xF046, TYPE_BYTE ),     //heat_delay[1];			//加热延时
+	ID_LOOKUP( 0xF047, TYPE_BYTE ),     //heat_delay[2];			//加热延时
+	ID_LOOKUP( 0xF048, TYPE_BYTE ),     //heat_delay[3];			//加热延时
 };
 
 

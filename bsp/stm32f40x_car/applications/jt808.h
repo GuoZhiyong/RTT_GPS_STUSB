@@ -108,17 +108,18 @@ typedef enum
 	CONNECT_CLOSE,                  /*连接关闭，区分是主动还是被动*/
 }CONN_STATE;
 
-struct _connect_state
+
+typedef struct
 {
-	uint32_t	disable_connect;    /*禁止链接标志，协议控制 0:允许链接*/
-	CONN_STATE	server_state;
-	uint8_t		server_index;
-	CONN_STATE	auth_state;
-	uint8_t		auth_index;
-};
-
-extern struct _connect_state connect_state ;
-
+	uint8_t		linkno;         /*所使用的link号*/
+	uint8_t		index;          /*连接有多个选择，定义选择连接的序号*/
+	CONN_STATE	state;          /*连接状态*/
+	char		type;           /*连接类型 'u':udp client 't':TCP client  'U' udp server*/
+	char		ipstr[64];      /*域名或地址*/
+	char		ip_addr[16];    /*dns后的IP xxx.xxx.xxx.xxx*/
+	uint16_t	port;           /*端口*/
+	//MsgList			* msglist_tx;
+}GSM_SOCKET;
 
 
 
@@ -155,7 +156,8 @@ typedef __packed struct _jt808_tx_nodedata
 void jt808_init( void );
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 
-void cb_socket_close( uint8_t cid );
+void cb_socket_close(uint8_t cid );
+
 
 
 
@@ -195,6 +197,9 @@ rt_err_t jt808_tx_0x0001(uint16_t seq, uint16_t id, uint8_t res );
 /*专用应答*/
 #define jt808_tx_ack( id, info, len ) jt808_add_tx( 1, SINGLE_FIRST, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
 
+extern GSM_SOCKET socket_master;
+extern GSM_SOCKET socket_slave;
+extern GSM_SOCKET socket_iccard;
 
 #endif
 

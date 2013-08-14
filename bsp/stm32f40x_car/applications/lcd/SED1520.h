@@ -74,6 +74,8 @@ void lcd_asc0608( char left, char top, char *p, const char mode );
 
 void lcd_drawline( int x1, int y1, int x2, int y2, const char mode );
 
+extern uint8_t	ctrlbit_buzzer;
+extern uint8_t	ctrlbit_printer_3v3_on;
 
 #endif
 /************************************** The End Of File **************************************/

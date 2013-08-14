@@ -56,6 +56,8 @@ void thread_gps_check_ver( void* parameter );
 void thread_gps_upgrade_udisk( void* parameter );
 
 rt_size_t gps_mode( uint8_t mode );
+void gps_init( void );
+
 
 #endif
 

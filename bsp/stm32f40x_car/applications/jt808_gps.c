@@ -103,7 +103,7 @@ uint32_t	gps_lati;
 uint32_t	gps_longi;
 uint16_t	gps_speed;
 
-uint16_t	gps_cog;              /*course over ground*/
+uint16_t	gps_cog;        /*course over ground*/
 uint16_t	gps_alti;
 uint8_t		gps_datetime[6];
 
@@ -114,7 +114,7 @@ static uint32_t gps_longi_last	= 0;
 /*保存gps基本位置信息*/
 GPS_BASEINFO	gps_baseinfo;
 /*gps的状态*/
-GPS_STATUS		gps_status = { MODE_BDGPS, 0, 0, 0 };
+GPS_STATUS		gps_status = {0x3020,MODE_BDGPS, 0, 0, 0 };
 
 
 /*
@@ -130,9 +130,7 @@ MYTIME		mytime_now	= 0;
 uint8_t		ACC_status;     /*0:ACC关   1:ACC开  */
 uint32_t	ACC_ticks;      /*ACC状态发生变化时的tick值，此时GPS可能未定位*/
 
-
-uint32_t gps_notfixed_count=0;
-
+uint32_t	gps_notfixed_count = 0;
 
 struct
 {
@@ -188,7 +186,7 @@ static void adjust_mytime_now( void )
 {
 	uint8_t year, month, day, hour, minute, sec;
 
-	if( mytime_now )                  /*mytime_now经过gps定位后的授时*/
+	if( mytime_now )            /*mytime_now经过gps定位后的授时*/
 	{
 		sec		= SEC( mytime_now );
 		minute	= MINUTE( mytime_now );
@@ -546,11 +544,11 @@ static uint8_t process_rmc( uint8_t * pinfo )
 					jt808_status	&= ~BIT_STATUS_FIXED;
 					gps_lati_last	= 0;    /*从新计算距离*/
 					gps_longi_last	= 0;
-					gps_speed=0;
+					gps_speed		= 0;
 					return 2;
 				}
 				jt808_status |= BIT_STATUS_FIXED;
-				
+
 #if 0
 				if( buf[0] == 'A' )
 				{
@@ -811,7 +809,10 @@ uint8_t process_gga( uint8_t * pinfo )
 			case 6: /*定位类型*/
 				break;
 			case 7: /*NoSV,卫星数*/
-				if(count<1) break;
+				if( count < 1 )
+				{
+					break;
+				}
 				NoSV = 0;
 				for( i = 0; i < count; i++ )
 				{
@@ -824,7 +825,10 @@ uint8_t process_gga( uint8_t * pinfo )
 				return 0;
 
 			case 9: /*MSL Altitute*/
-				if(count<1) break;
+				if( count < 1 )
+				{
+					break;
+				}
 				altitute = 0;
 				for( i = 0; i < count; i++ )
 				{
@@ -858,10 +862,9 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 {
 	uint8_t ret;
 	char	* psrc;
-	psrc				= (char*)pinfo;
+	psrc = (char*)pinfo;
 
-	
-	*( psrc + length )	= 0;
+	*( psrc + length ) = 0;
 	/*是否输出原始信息*/
 	if( gps_status.Raw_Output )
 	{
@@ -872,10 +875,19 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 
 	if( strncmp( psrc + 3, "GGA,", 4 ) == 0 )
 	{
+		if( strncmp( psrc + 1, "GN", 2 ) == 0 )
+		{
+			gps_status.mode = MODE_BDGPS;
+		}else if( strncmp( psrc + 1, "GP", 2 ) == 0 )
+		{
+			gps_status.mode = MODE_GPS;
+		}else if( strncmp( psrc + 1, "BD", 2 ) == 0 )
+		{
+			gps_status.mode = MODE_BD;
+		}
 		process_gga( (uint8_t*)psrc );
 	}
 
-	//if( ( strncmp( psrc, "$GNRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$BDRMC,", 7 ) == 0 ) || ( strncmp( psrc, "$GPRMC,", 7 ) == 0 ) )
 	if( strncmp( psrc + 3, "RMC,", 4 ) == 0 )
 	{
 		gps_sec_count++;
@@ -883,7 +895,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 
 		if( ret == 0 )                  /*已定位*/
 		{
-			gps_notfixed_count=0;
+			gps_notfixed_count = 0;
 			process_hmi_15min_speed( ); /*最近15分钟速度*/
 			vdr_rx_gps( );              /*行车记录仪数据处理*/
 			area_process( );            /*区域线路告警*/
@@ -903,19 +915,13 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	 */
 	if( strncmp( psrc + 3, "TXT", 3 ) == 0 )
 	{
-		if( strncmp( psrc, "GN", 2 ) == 0 )
+		if(jt808_param.id_0xF013!=0x3017)		/*型号不对,保存新的，并重启*/
 		{
-			gps_status.Position_Moule_Status = MODE_BDGPS;
+			rt_kprintf("\njt808_param.id_0xF013=%04x",jt808_param.id_0xF013);
+			jt808_param.id_0xF013=0x3017;
+			param_save();
+			reset(0xff);
 		}
-		else if( strncmp( psrc, "GP", 2 ) == 0 )
-		{
-			gps_status.Position_Moule_Status = MODE_GPS;
-		}
-		else if( strncmp( psrc, "BD", 2 ) == 0 )
-		{
-			gps_status.Position_Moule_Status = MODE_BD;
-		}
-
 		if( strncmp( psrc + 24, "OK", 2 ) == 0 )
 		{
 			gps_status.Antenna_Flag = 0;

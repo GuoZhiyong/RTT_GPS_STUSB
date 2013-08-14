@@ -1,55 +1,3 @@
-/**************************************************************************
- *
- *   sed1520.c
- *   LCD display controller interface routines for graphics modules
- *   with onboard SED1520 controller(s) in "write-only" setup
- *
- *   Version 1.02 (20051031)
- *
- *   For Atmel AVR controllers with avr-gcc/avr-libc
- *   Copyright (c) 2005
- *     Martin Thomas, Kaiserslautern, Germany
- *     <eversmith@heizung-thomas.de>
- *     http://www.siwawi.arubi.uni-kl.de/avr_projects
- *
- *   Permission to use in NON-COMMERCIAL projects is herbey granted. For
- *   a commercial license contact the author.
- *
- *   The above copyright notice and this permission notice shall be included in all
- *   copies or substantial portions of the Software.
- *
- *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- *   FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- *   COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- *   IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- *   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
- *   partly based on code published by:
- *   Michael J. Karas and Fabian "ape" Thiele
- *
- *
- ***************************************************************************/
-
-
-/*
-   An Emerging Display EW12A03LY 122x32 Graphics module has been used
-   for testing. This module only supports "write". There is no option
-   to read data from the SED1520 RAM. The SED1520 R/W line on the
-   module is bound to GND according to the datasheet. Because of this
-   Read-Modify-Write using the LCD-RAM is not possible with the 12A03
-   LCD-Module. So this library uses a "framebuffer" which needs
-   ca. 500 bytes of the AVR's SRAM. The libray can of cause be used
-   with read/write modules too.
- */
-
-/* tab-width: 4 */
-
-//#include <LPC213x.H>
-//#include <includes.h>
-
-#include <stdint.h>
 #include "sed1520.h"
 #include "board.h"
 #include "stm32f4xx.h"
@@ -84,6 +32,8 @@ static unsigned char l_display_array[LCD_Y_BYTES][LCD_X_BYTES];
 #define E2		( 1 << 2 )
 #define RW		( 1 << 3 )
 #define A0		( 1 << 4 )
+
+#define BL ( 1 << 6 )
 
 const unsigned char asc_0608[][6] =
 {
@@ -185,6 +135,12 @@ const unsigned char asc_0608[][6] =
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, /*"",95*/
 };
 
+
+uint8_t	ctrlbit_buzzer=0;
+uint8_t	ctrlbit_printer_3v3_on=0;
+
+
+
 /***********************************************************
 * Function:
 * Description:
@@ -202,6 +158,16 @@ void ControlBitShift( unsigned char data )
 	//IOCLR0 = STCP2;
 	GPIO_SetBits( GPIOE, GPIO_Pin_15 );
 	GPIO_ResetBits( GPIOE, GPIO_Pin_13 );
+
+	if(jt808_param.id_0xF013==0x3020)
+	{
+	if(ctrlbit_buzzer) data|=0x80;
+	else data&=0x7f;
+	if(ctrlbit_printer_3v3_on) data|=0x20;
+	else data&=~0x20;
+		}
+
+	
 
 	for( i = 0; i < 8; i++ )
 	{
@@ -276,7 +242,7 @@ void lcd_out_ctl( const unsigned char cmd, const unsigned char ncontr )
 //  LCD_CMD_MODE();
 //	LCDDATAPORT = cmd;
 
-	ControlBitShift( RST0 | 0x0 | 0x60 );
+	ControlBitShift( RST0 | BL);
 	DataBitShift( cmd );
 	ctr = RST0;
 	if( ncontr & 0x01 )
@@ -287,12 +253,12 @@ void lcd_out_ctl( const unsigned char cmd, const unsigned char ncontr )
 	{
 		ctr |= E2;
 	}
-	ControlBitShift( ctr | 0x60 );
+	ControlBitShift( ctr | BL );
 	//delay(1);
 	for( i = 0; i < 0xf; i++ )
 	{
 	}
-	ControlBitShift( RST0 | 0 | 0x60 );
+	ControlBitShift( RST0 | BL );
 }
 
 /*
@@ -310,7 +276,7 @@ void lcd_out_dat( const unsigned char dat, const unsigned char ncontr )
 //   LCDDATAPORT = dat;
 
 	ctr = RST0 | A0;
-	ControlBitShift( ctr | 0x60 );
+	ControlBitShift( ctr | BL );
 	DataBitShift( dat );
 	if( ncontr & 0x01 )
 	{
@@ -320,12 +286,12 @@ void lcd_out_dat( const unsigned char dat, const unsigned char ncontr )
 	{
 		ctr |= E2;
 	}
-	ControlBitShift( ctr | 0x60 );
+	ControlBitShift( ctr | BL );
 	//delay(1);
 	for( i = 0; i < 0xf; i++ )
 	{
 	}
-	ControlBitShift( RST0 | A0 | 0x60 );
+	ControlBitShift( RST0 | A0 | BL );
 }
 
 /*
@@ -377,29 +343,6 @@ void lcd_fill( const unsigned char pattern )
 	}
 	lcd_update_all( );
 	lcd_out_ctl( LCD_DISP_ON, 3 );
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void lcd_fill_2( const unsigned char pattern, unsigned char Pag_start, unsigned char Pag_end, unsigned char Col_start, unsigned char col_end )
-{
-	unsigned char page, col;
-
-	for( page = Pag_start; page < Pag_end; page++ )
-	{
-		for( col = Col_start; col < col_end; col++ )
-		{
-			l_display_array[page][col] = pattern;
-		}
-	}
-	lcd_update_all( );
 }
 
 /***********************************************************
@@ -604,8 +547,8 @@ void lcd_text12( char left, char top, char *pinfo, char len, const char mode )
 	int				i;
 	char			msb, lsb;
 
-	int				addr=0;
-	unsigned char	start_col = left;
+	int				addr		= 0;
+	unsigned char	start_col	= left;
 	unsigned int	val_old, val_new, val_mask;
 
 	unsigned int	glyph[12]; /*保存一个字符的点阵信息，以逐列式*/
@@ -694,7 +637,6 @@ void lcd_text12( char left, char top, char *pinfo, char len, const char mode )
 	}
 }
 
-
 /***********************************************************
 * Function:
 * Description:
@@ -747,7 +689,6 @@ void lcd_asc0608( char left, char top, char *p, const char mode )
 		}
 	}
 }
-
 
 /*绘制点*/
 void lcd_dot( const unsigned char x, const unsigned char y, const unsigned char mode )
@@ -802,7 +743,7 @@ void lcd_drawline( int x1, int y1, int x2, int y2, const char mode )
 	{
 		for( x = x1; x != x2; x += ux )
 		{
-			lcd_dot( x, y,mode );
+			lcd_dot( x, y, mode );
 			eps += dy;
 			if( ( eps << 1 ) >= dx )
 			{
@@ -813,7 +754,7 @@ void lcd_drawline( int x1, int y1, int x2, int y2, const char mode )
 	{
 		for( y = y1; y != y2; y += uy )
 		{
-			lcd_dot( x, y,mode );
+			lcd_dot( x, y, mode );
 			eps += dx;
 			if( ( eps << 1 ) >= dy )
 			{

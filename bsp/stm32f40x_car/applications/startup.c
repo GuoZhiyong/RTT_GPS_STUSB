@@ -24,6 +24,10 @@
 #include "printer.h"
 #include "rs485.h"
 #include "mma8451.h"
+
+#include "gps.h"
+#include "jt808_param.h"
+
 /**
  * @addtogroup STM32
  */
@@ -32,20 +36,25 @@
 
 //extern int  rt_application_init(void);
 #ifdef RT_USING_FINSH
-extern void finsh_system_init(void);
-extern void finsh_set_device(const char* device);
+extern void finsh_system_init( void );
+
+
+extern void finsh_set_device( const char* device );
+
+
 #endif
 
 #ifdef __CC_ARM
 extern int Image$$RW_IRAM1$$ZI$$Limit;
-#define STM32_SRAM_BEGIN    (&Image$$RW_IRAM1$$ZI$$Limit)
+#define STM32_SRAM_BEGIN ( &Image$$RW_IRAM1$$ZI$$Limit )
 #elif __ICCARM__
 #pragma section="HEAP"
-#define STM32_SRAM_BEGIN    (__segment_end("HEAP"))
+#define STM32_SRAM_BEGIN ( __segment_end( "HEAP" ) )
 #else
 extern int __bss_end;
-#define STM32_SRAM_BEGIN    (&__bss_end)
+#define STM32_SRAM_BEGIN ( &__bss_end )
 #endif
+
 
 /*******************************************************************************
 * Function Name  : assert_failed
@@ -56,89 +65,87 @@ extern int __bss_end;
 * Output         : None
 * Return         : None
 *******************************************************************************/
-void assert_failed(u8* file, u32 line)
+void assert_failed( u8* file, u32 line )
 {
-	rt_kprintf("\nWrong parameter value detected on\n");
-	rt_kprintf("       file  %s\n", file);
-	rt_kprintf("       line  %d\n", line);
+	rt_kprintf( "\nWrong parameter value detected on\n" );
+	rt_kprintf( "       file  %s\n", file );
+	rt_kprintf( "       line  %d\n", line );
 
-	while (1) ;
+	while( 1 )
+	{
+		;
+	}
 }
 
 /**
  * This function will startup RT-Thread RTOS.
  */
-void rtthread_startup(void)
+void rtthread_startup( void )
 {
-	/* init board */
-	rt_hw_board_init();
+	rt_hw_board_init( );
+	rt_show_version( );
+	rt_system_tick_init( );
+	rt_system_object_init( );
+	rt_system_timer_init( );
 
-	/* show version */
-	rt_show_version();
+	rt_system_heap_init( (void*)STM32_SRAM_BEGIN, (void*)STM32_SRAM_END );
+	rt_system_scheduler_init( );
 
-	/* init tick */
-	rt_system_tick_init();
-
-	/* init kernel object */
-	rt_system_object_init();
-
-	/* init timer system */
-	rt_system_timer_init();
-
-    rt_system_heap_init((void*)STM32_SRAM_BEGIN, (void*)STM32_SRAM_END);
-
-	/* init scheduler system */
-	rt_system_scheduler_init();
-
-	/* init all device */
-	rt_device_init_all();
+	rt_device_init_all( );
+	rt_kprintf( "\nrcc.csr=%08x", RCC->CSR );
 
 
-	rt_kprintf("\nrcc.csr=%08x",RCC->CSR);
+	sst25_init( );      /*在此初始化,gsm才能读取参数，放在app_thread中不会先执行*/
+	param_load();		/*加载系统参数，没有使用信号量*/
+	gps_init( );
 
-	/* init application */
 	mma8451_driver_init( );
-	printer_driver_init( );
+	printer_driver_init();
+
 	usbh_init( );
-	Init_4442();
+	Init_4442( );
 	spi_sd_init( );
-	sst25_init(); /*在此初始化,gsm才能读取参数，放在app_thread中不会先执行*/
-	rt_application_init();
-	RS485_init();
-	gps_init();
-	gsm_init();
-	hmi_init();
-	jt808_init();
+
+	rt_application_init( );
+	RS485_init( );
+
+	gsm_init( );
+	hmi_init( );
+	jt808_init( );
 #ifdef RT_USING_FINSH
 	/* init finsh */
-	finsh_system_init();
+	finsh_system_init( );
 	finsh_set_device( FINSH_DEVICE_NAME );
 #endif
 
-    /* init timer thread */
-    rt_system_timer_thread_init();
+	/* init timer thread */
+	rt_system_timer_thread_init( );
 
 	/* init idle thread */
-	rt_thread_idle_init();
+	rt_thread_idle_init( );
 
 	/* start scheduler */
-	rt_system_scheduler_start();
+	rt_system_scheduler_start( );
 
 	/* never reach here */
-	return ;
+	return;
 }
 
-
-
-
-
-
-int main(void)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+int main( void )
 {
 	/* disable interrupt first */
-	rt_hw_interrupt_disable();
+	rt_hw_interrupt_disable( );
 	/* startup RT-Thread RTOS */
-	rtthread_startup();
+	rtthread_startup( );
 
 	return 0;
 }
