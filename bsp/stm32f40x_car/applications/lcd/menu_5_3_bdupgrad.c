@@ -121,7 +121,7 @@ static void msg( void *p )
 
 		pinfo	= (char*)p;
 		len		= strlen( pinfo );
-		lcd_text12( 35, 10, pinfo + 1, len - 1, LCD_MODE_SET );
+		lcd_text12( 0, 10, pinfo + 1, len - 1, LCD_MODE_SET );
 		if( pinfo[0] == 'E' )                   /*³ö´í»ò½áÊø*/
 		{
 			fupgrading=BD_COMPLETE;

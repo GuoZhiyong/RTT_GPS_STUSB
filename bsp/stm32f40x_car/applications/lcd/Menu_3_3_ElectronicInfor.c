@@ -15,28 +15,19 @@ static void show(void)
 
 static void keypress(unsigned int key)
 {
+
 switch(key)
 	{
 	case KEY_MENU:
-		pMenuItem=&Menu_3_InforInteract;//scr_CarMulTrans;
+		pMenuItem=&Menu_3_InforInteract;
 		pMenuItem->show();
 		CounterBack=0;
-
 		break;
 	case KEY_OK:
-		/*memset(send_data,0,sizeof(send_data));
-		send_data[0]=0x07;
-		send_data[1]=0x01;
-		send_data[2]=0x00;
-		send_data[3]=0x00;
-		rt_mb_send(&mb_hmi, (rt_uint32_t)&send_data[0]);*/
-
+		jt808_tx(0x0701,"0123456789",10);
 		lcd_fill(0);
-		lcd_text12(10,10,"电子运单发送成功",16,LCD_MODE_SET);
+		lcd_text12(10,10,"电子运单上报完成",16,LCD_MODE_SET);
 		lcd_update_all();
-	#if NEED_TODO
-		//SD_ACKflag.f_Worklist_SD_0701H=1;//按键选择发送电子运单标志
-	#endif
 		break;
 	case KEY_UP:
 		break;

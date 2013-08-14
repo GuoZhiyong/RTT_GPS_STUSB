@@ -828,10 +828,14 @@ void thread_gps_check_ver( void* parameter )
 	void		( *msg )( void *p );
 	int			count = 0;
 	rt_uint8_t	*pdata; /*数据*/
-	uint8_t		ch_h, ch_l;
+
 	char		buf[32];
 	rt_err_t	res;
 	LENGTH_BUF	uart_buf;
+
+	uint8_t		ver[3]; /*版本*/
+	uint32_t	model;  /*型号*/
+	uint8_t		ok = 0; /*是否执行正确*/
 
 	uint8_t		cmd_reset[11] = { 0x40, 0x34, 0xC0, 0x00, 0x34, 0x00, 0x01, 0x84, 0x6B, 0x0D, 0x0A };
 
@@ -872,27 +876,6 @@ void thread_gps_check_ver( void* parameter )
 	{
 		rt_thread_delay( RT_TICK_PER_SECOND / 10 );
 	}
-#if 0
-	dev_gps_write( &dev_gps, 0, "\x40\x10\xC0\x00\x10\x00\x01\xC2\x84\x0D\x0A", 11 );
-	res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
-	if( res == RT_EOK )                                             //收到一包数据
-	{
-		if( ( uart_buf.wr == 15 ) && ( uart_buf.body[4] == 0x02 ) ) /*进入升级状态*/
-		{
-			ch_h	= ( uart_buf.body[7] & 0xf0 ) >> 4;
-			ch_l	= ( uart_buf.body[7] & 0xf );
-			sprintf( buf, "E模块版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
-			msg( buf );
-			rt_kprintf( "\n%s", buf );
-		}else
-		{
-			rt_kprintf( "bd>%s", uart_buf.body );
-		}
-	}else /*超时*/
-	{
-		msg( "E版本查询错误" );
-	}
-#else
 	for( count = 0; count < 5; count++ )
 	{
 		dev_gps_write( &dev_gps, 0, "\x40\x10\xC0\x00\x10\x00\x01\xC2\x84\x0D\x0A", 11 );
@@ -901,12 +884,10 @@ void thread_gps_check_ver( void* parameter )
 		{
 			if( ( uart_buf.wr == 15 ) && ( uart_buf.body[4] == 0x02 ) ) /*进入升级状态*/
 			{
-				ch_h	= ( uart_buf.body[7] & 0xf0 ) >> 4;
-				ch_l	= ( uart_buf.body[7] & 0xf );
-				sprintf( buf, "E模块版本:%d.%d.%d", ch_h, ch_l, uart_buf.body[8] );
-				msg( buf );
-				rt_kprintf( "\n%s", buf );
-				ch_h = 0xAA; /*标记已查到版本*/
+				ver[0]	= ( uart_buf.body[7] & 0xf0 ) >> 4;
+				ver[1]	= ( uart_buf.body[7] & 0xf );
+				ver[2]	= uart_buf.body[8];
+				ok++;
 				break;
 			}else
 			{
@@ -915,11 +896,38 @@ void thread_gps_check_ver( void* parameter )
 		}
 	}
 
-#endif
-	if( ch_h != 0xAA )
+	if( ok == 0 )
 	{
-		msg( "E查询版本错误" );
+		msg( "E查询模块版本错误" );
+		goto lbl_check_ver_err;
 	}
+	for( count = 0; count < 5; count++ )
+	{
+		dev_gps_write( &dev_gps, 0, "\x40\x16\xC0\x00\x16\x00\x01\x22\xE3\x0D\x0A", 11 );
+		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
+		if( res == RT_EOK )                           //收到一包数据
+		{
+			if( ( uart_buf.wr == 28 ) && ( uart_buf.body[5] == 0x0 ) )
+			{
+				model = ( uart_buf.body[6] << 24 ) | ( uart_buf.body[7] << 16 ) | ( uart_buf.body[8] << 8 ) | ( uart_buf.body[9] );
+				ok++;
+				break;
+			}else
+			{
+				rt_kprintf( "bd>%s", uart_buf.body );
+			}
+		}
+	}
+
+	if( ok )
+	{
+		sprintf( buf, "E模块TD%d (%d.%d.%d)", model / 10, ver[0], ver[1], ver[2] );
+		msg( buf );
+	}else
+	{
+		msg( "E查询模块型号错误" );
+	}
+lbl_check_ver_err:
 
 	dev_gps_write( &dev_gps, 0, cmd_reset, 11 );
 
