@@ -199,7 +199,7 @@ void Disp_Idle( void )
 
 	lcd_text12( 48, 0, "GPRS", 4, LCD_MODE_SET );
 
-	if( socket_master.state == CONNECTED ) /*gprs连接状态*/
+	if( gsm_socket[0].state == CONNECTED ) /*gprs连接状态*/
 	{
 		lcd_bitmap( 72, 2, &BMP_link_on, LCD_MODE_SET );
 	}else

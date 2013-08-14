@@ -72,7 +72,7 @@ static uint32_t  keycheck( void )
 			keys[i].tick += 50;                                     /*每次增加50ms*/
 			if( ( keys[i].tick % 1000 ) == 0 )
 			{
-				keys[i].status	= ( 1 << i ) << 4;
+				keys[i].status = ( 1 << i ) << 4;
 				//keys[i].tick	= 0;
 			}
 		}
@@ -160,30 +160,41 @@ static void rt_thread_entry_hmi( void* parameter )
 	{
 		CheckICCard( );
 		key = keycheck( );
-		if( key )			/*有键按下，打开背光*/
+		if( key )                                               /*有键按下，打开背光*/
 		{
-			
 			pMenuItem->tick = rt_tick_get( );
-			pMenuItem->keypress( key );         //每个子菜单的 按键检测  时钟源50ms timer
+			pMenuItem->keypress( key );                         //每个子菜单的 按键检测  时钟源50ms timer
 		}
-		pMenuItem->timetick( rt_tick_get( ) );  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
+		pMenuItem->timetick( rt_tick_get( ) );                  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
 
-		if( beep_count )                        /*声音提示*/
+		if( beep_count )                                        /*声音提示*/
 		{
 			beep_ticks--;
 			if( beep_ticks == 0 )
 			{
-				if( beep_state == 1 )           /*响的状态*/
+				if( beep_state == 1 )                           /*响的状态*/
 				{
-					GPIO_ResetBits( GPIOB, GPIO_Pin_6 );
+					if( jt808_param.id_0xF013 == 0x3017 )
+					{
+						GPIO_ResetBits( GPIOB, GPIO_Pin_6 );    /*发声*/
+					}else
+					{
+						ctrlbit_buzzer = 0x0;
+					}
 					beep_ticks	= beep_low_ticks;
 					beep_state	= 0;
 				}else
 				{
 					beep_count--;
-					if( beep_count ) /*没响够*/
+					if( beep_count )                            /*没响够*/
 					{
-						GPIO_SetBits( GPIOB, GPIO_Pin_6 );
+						if( jt808_param.id_0xF013 == 0x3017 )
+						{
+							GPIO_SetBits( GPIOB, GPIO_Pin_6 );  /*发声*/
+						}else
+						{
+							ctrlbit_buzzer = 0x80;
+						}
 						beep_ticks	= beep_high_ticks;
 						beep_state	= 1;
 					}
@@ -215,10 +226,16 @@ void beep( uint8_t high_50ms_count, uint8_t low_50ms_count, uint16_t count )
 {
 	beep_high_ticks = high_50ms_count;
 	beep_low_ticks	= low_50ms_count;
-	beep_state		= 1;                /*发声*/
+	beep_state		= 1;                    /*发声*/
 	beep_ticks		= beep_high_ticks;
 	beep_count		= count;
-	GPIO_SetBits( GPIOB, GPIO_Pin_6 );  /*发声*/
+	if( jt808_param.id_0xF013 == 0x3017 )
+	{
+		GPIO_SetBits( GPIOB, GPIO_Pin_6 );  /*发声*/
+	}else
+	{
+		ctrlbit_buzzer = 0x80;
+	}
 }
 
 /**/

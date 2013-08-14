@@ -193,7 +193,7 @@ void param_load( void )
 	}
 	sst25_read( ADDR_PARAM, (uint8_t*)&jt808_param, sizeof( jt808_param ) );
 	//rt_sem_release( &sem_dataflash );
-	rt_kprintf( "parma ver=%x size=%d\n", BYTESWAP4( jt808_param.id_0x0000 ), sizeof( jt808_param ) );
+	rt_kprintf( "\nparma ver=%x size=%d\n", BYTESWAP4( jt808_param.id_0x0000 ), sizeof( jt808_param ) );
 }
 
 FINSH_FUNCTION_EXPORT( param_load, load param );

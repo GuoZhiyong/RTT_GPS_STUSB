@@ -1060,7 +1060,7 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 		{
 			return IDLE;
 		}
-		if(socket_master.state != CONNECTED )
+		if(gsm_socket[0].state != CONNECTED )
 		{
 			return IDLE;
 		}
@@ -1091,7 +1091,7 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 			if( total_send_error > 3 )  /*m66 发送失败,如何处理*/
 			{
 				total_send_error			= 0;
-				socket_master.state	= CONNECT_IDLE;
+				gsm_socket[0].state	= CONNECT_IDLE;
 				gsmstate( GSM_POWEROFF );
 			}
 		}
@@ -1138,20 +1138,20 @@ static JT808_MSG_STATE jt808_tx_proc( MsgListNode * node )
 }
 
 /*
-   定义四个socket 0..3 对应的linkno为1..4
+   M66规定三个socket 0..2 对应的linkno为1..3
    其中linkno
    1 上报公共货运平台
    2 上报河北或天津的平台--有可能会同时上报
-   3 上报IC卡中心
-   4 更新服务器操作
+   3 上报IC卡中心或更新服务器操作
 
  */
-GSM_SOCKET gsm_socket[4];
+GSM_SOCKET gsm_socket[3];
 
 
-GSM_SOCKET socket_master;
-GSM_SOCKET socket_slave;
-GSM_SOCKET socket_iccard;
+//GSM_SOCKET socket_master;
+//GSM_SOCKET socket_slave;
+//GSM_SOCKET socket_iccard;
+
 
 
 
@@ -1159,32 +1159,32 @@ GSM_SOCKET socket_iccard;
 static void socket_master_proc( void )
 {
 	uint8_t buf[64];
-	if( socket_master.state == CONNECT_NONE )
+	if( gsm_socket[0].state == CONNECT_NONE )
 	{
 		return;
 	}
-	if( socket_master.state == CONNECT_IDLE )
+	if( gsm_socket[0].state == CONNECT_IDLE )
 	{
-		if( socket_master.index % 2 )           /*连备用服务器*/
+		if( gsm_socket[0].index % 2 )           /*连备用服务器*/
 		{
 			ctl_socket( 1, 't', jt808_param.id_0x0017, jt808_param.id_0x0018, 1 );
 		}else /*连主服务器*/
 		{
 			ctl_socket( 1, 't', jt808_param.id_0x0013, jt808_param.id_0x0018, 1 );
 		}
-		socket_master.state = CONNECT_PEER;     /*此时gsm_state处于 GSM_SOCKET_PROC，连完后返回 GSM_TCPIP*/
+		gsm_socket[0].state = CONNECT_PEER;     /*此时gsm_state处于 GSM_SOCKET_PROC，连完后返回 GSM_TCPIP*/
 		return;
 	}
 
-	if( socket_master.state == CONNECT_PEER )   /*正在连接到服务器*/
+	if( gsm_socket[0].state == CONNECT_PEER )   /*正在连接到服务器*/
 	{
 		if( socketstate( SOCKET_STATE ) == SOCKET_READY )
 		{
-			socket_master.state = CONNECTED;
+			gsm_socket[0].state = CONNECTED;
 		}else /*没有连接成功,切换服务器*/
 		{
-			socket_master.index++;
-			socket_master.state = CONNECT_IDLE;
+			gsm_socket[0].index++;
+			gsm_socket[0].state = CONNECT_IDLE;
 		}
 	}
 
@@ -1193,7 +1193,7 @@ static void socket_master_proc( void )
 		/*判断当前链接是否异常*/
 		if( socketstate( SOCKET_STATE ) == CONNECT_CLOSE )          /*链接被挂断，是主动挂断还是网络原因*/
 		{
-			socket_master.state = CONNECT_IDLE;                     /*还是在cb_socket_close中判断*/
+			gsm_socket[0].state = CONNECT_IDLE;                     /*还是在cb_socket_close中判断*/
 			jt808_state			= AUTH;                             /*重新连接要重新鉴权*/
 			return;
 		}
@@ -1242,9 +1242,9 @@ static void socket_master_proc( void )
 				break;
 		}
 
-		if( socket_master.state == CONNECT_CLOSE )              /*链接关闭，区分主动还是被动关闭*/
+		if( gsm_socket[0].state == CONNECT_CLOSE )              /*链接关闭，区分主动还是被动关闭*/
 		{
-			socket_master.state = CONNECT_IDLE;                 /*重新连接*/
+			gsm_socket[0].state = CONNECT_IDLE;                 /*重新连接*/
 			jt808_state			= AUTH;                         /*重新连接要重新鉴权*/
 		}
 	}
@@ -1253,45 +1253,43 @@ static void socket_master_proc( void )
 /*处理运营商平台*/
 static void socket_slave_proc( void )
 {
-	if( socket_slave.state == SOCKET_IDLE )
+	if( gsm_socket[1].state == SOCKET_IDLE )
 	{
 		return;
 	}
 }
 
-/*处理IC卡平台*/
+/*处理IC卡远程升级平台*/
 static void socket_iccard_proc( void )
 {
-	if( socket_iccard.state == SOCKET_IDLE )
+	if( gsm_socket[2].state == SOCKET_IDLE )
 	{
 		return;
 	}
 
-	if( socket_iccard.state == CONNECT_IDLE )   /*没有连接*/
+	if( gsm_socket[2].state == CONNECT_IDLE )   /*没有连接*/
 	{
-		if( socket_iccard.index % 2 )           /*连备用服务器*/
+		if( gsm_socket[2].index % 2 )           /*连备用服务器*/
 		{
 			ctl_socket( 2, 't', jt808_param.id_0x001A, jt808_param.id_0x001B, 1 );
 		}else /*连主服务器*/
 		{
 			ctl_socket( 2, 't', jt808_param.id_0x001D, jt808_param.id_0x001B, 1 );
 		}
-		socket_iccard.state = CONNECT_PEER;
+		gsm_socket[2].state = CONNECT_PEER;
 		return;
 	}
 
-	if( socket_iccard.state == CONNECT_PEER ) /*正在连接到服务器*/
+	if( gsm_socket[2].state == CONNECT_PEER ) /*正在连接到服务器*/
 	{
 		if( socketstate( SOCKET_STATE ) == SOCKET_READY )
 		{
-			socket_iccard.state = CONNECTED;
+			gsm_socket[2].state = CONNECTED;
 		}else /*没有连接成功,切换服务器*/
 		{
-			//connect_state.auth_index++;
-			//connect_state.auth_state=CONNECT_IDLE;
-			//if(connect_state.auth_index>6)
-			//{
-			//}
+			gsm_socket[2].index++;
+			gsm_socket[2].state = CONNECT_IDLE;
+
 		}
 	}
 }
@@ -1536,8 +1534,8 @@ FINSH_FUNCTION_EXPORT( bkpsram_rd, read from backup sram );
 /*jt808处理线程初始化*/
 void jt808_init( void )
 {
-	/*读取参数，并配置,这个时候应该没有操作flash的*/
-	param_load( );
+	
+	//param_load( );/*不读取，在startup.c中操作了*/
 
 #ifdef BKSRAM
 	bkpsram_init( );

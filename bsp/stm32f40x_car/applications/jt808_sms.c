@@ -290,7 +290,7 @@ void sms_encode_pdu_ucs2( char* info )
 	buf[count + 12] = ASC[TP_UL >> 4];
 	buf[count + 13] = ASC[TP_UL & 0x0F];
 
-	rt_kprintf( "\nSMS>encode UCS2:%s", buf );
+	//rt_kprintf( "\nSMS>encode UCS2:%s", buf );
 	sms_tx( buf, ( strlen( buf ) - 2 ) >> 1 );
 }
 
@@ -350,11 +350,11 @@ uint8_t analy_param( char* cmd, char*value )
 	{
 		if( cmd[4] == '1' )
 		{
-			param_put_int( 0x0018, atoi( value ) );
+			jt808_param.id_0x0018=atoi( value );
 		}
 		if( cmd[4] == '2' )
 		{
-			param_put_int( 0x0019, atoi( value ) );
+			jt808_param.id_0x0019=atoi( value );
 		}
 		return 1;
 	}
@@ -372,7 +372,7 @@ uint8_t analy_param( char* cmd, char*value )
 	}
 	if( strncmp( cmd, "DUR", 3 ) == 0 )
 	{
-		param_put_int( 0x0029, atoi( value ) );
+		jt808_param.id_0x0029=atoi(value);
 		return 1;
 	}
 	if( strncmp( cmd, "SIMID", 6 ) == 0 )
@@ -622,14 +622,17 @@ void jt808_sms_rx( char *info, uint16_t size )
 		p++;
 	}
 	i += analy_param( cmd, value );
+	
 	if( i > 0x7F ) /*要返回信息,有车牌*/
 	{
 		sprintf( tmpbuf, "%s#%-7s#%s", jt808_param.id_0x0083 + 2, jt808_param.id_0xF002, decode_msg + 6 );
 		sms_encode_pdu_ucs2( tmpbuf );
+		param_save();
 	}else if( i > 0 )
 	{
 		sprintf( tmpbuf, "%s#%-7s#%s", jt808_param.id_0x0083 + 2, jt808_param.id_0xF002, decode_msg + 6 );
 		sms_encode_pdu_7bit( tmpbuf );
+		param_save();		/*修改参数*/
 	}
 }
 

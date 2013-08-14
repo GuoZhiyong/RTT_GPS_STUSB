@@ -196,10 +196,12 @@ rt_err_t jt808_tx_0x0001(uint16_t seq, uint16_t id, uint8_t res );
 
 /*×¨ÓÃÓ¦´ð*/
 #define jt808_tx_ack( id, info, len ) jt808_add_tx( 1, SINGLE_FIRST, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
-
+/*
 extern GSM_SOCKET socket_master;
 extern GSM_SOCKET socket_slave;
 extern GSM_SOCKET socket_iccard;
+*/
+extern GSM_SOCKET gsm_socket[3];
 
 #endif
 

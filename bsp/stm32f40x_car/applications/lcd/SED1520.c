@@ -1,3 +1,16 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #include "sed1520.h"
 #include "board.h"
 #include "stm32f4xx.h"
@@ -135,10 +148,8 @@ const unsigned char asc_0608[][6] =
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, /*"",95*/
 };
 
-
-uint8_t	ctrlbit_buzzer=0;
-uint8_t	ctrlbit_printer_3v3_on=0;
-
+uint8_t ctrlbit_buzzer			= 0;
+uint8_t ctrlbit_printer_3v3_on	= 0;
 
 
 /***********************************************************
@@ -159,15 +170,23 @@ void ControlBitShift( unsigned char data )
 	GPIO_SetBits( GPIOE, GPIO_Pin_15 );
 	GPIO_ResetBits( GPIOE, GPIO_Pin_13 );
 
-	if(jt808_param.id_0xF013==0x3020)
+	if( jt808_param.id_0xF013 == 0x3020 )
 	{
-	if(ctrlbit_buzzer) data|=0x80;
-	else data&=0x7f;
-	if(ctrlbit_printer_3v3_on) data|=0x20;
-	else data&=~0x20;
+		if( ctrlbit_buzzer )
+		{
+			data |= 0x80;
+		} else
+		{
+			data &= 0x7f;
 		}
-
-	
+		if( ctrlbit_printer_3v3_on )
+		{
+			data |= 0x20;
+		} else
+		{
+			data &= ~0x20;
+		}
+	}
 
 	for( i = 0; i < 8; i++ )
 	{
@@ -242,7 +261,7 @@ void lcd_out_ctl( const unsigned char cmd, const unsigned char ncontr )
 //  LCD_CMD_MODE();
 //	LCDDATAPORT = cmd;
 
-	ControlBitShift( RST0 | BL);
+	ControlBitShift( RST0 | BL );
 	DataBitShift( cmd );
 	ctr = RST0;
 	if( ncontr & 0x01 )
