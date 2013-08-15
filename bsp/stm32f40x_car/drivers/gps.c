@@ -231,6 +231,7 @@ static rt_err_t dev_gps_init( rt_device_t dev )
 	GPIO_InitTypeDef	GPIO_InitStructure;
 	NVIC_InitTypeDef	NVIC_InitStructure;
 
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB, ENABLE );
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOC, ENABLE );
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOD, ENABLE );
 	RCC_APB1PeriphClockCmd( RCC_APB1Periph_UART5, ENABLE );
@@ -243,6 +244,21 @@ static rt_err_t dev_gps_init( rt_device_t dev )
 	GPIO_InitStructure.GPIO_Pin = GPS_PWR_PIN;
 	GPIO_Init( GPS_PWR_PORT, &GPIO_InitStructure );
 	GPIO_ResetBits( GPS_PWR_PORT, GPS_PWR_PIN );
+
+	
+	//if( jt808_param.id_0xF013 == 0x3020 )
+	{
+		
+		GPIO_InitStructure.GPIO_Mode	=GPIO_Mode_IN;
+		GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_NOPULL;
+		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+		GPIO_Init( GPIOD, &GPIO_InitStructure );
+		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+		GPIO_Init( GPIOB, &GPIO_InitStructure );
+
+	}
+
+	
 
 /*uart5 管脚设置*/
 
@@ -399,6 +415,7 @@ static void rt_thread_entry_gps( void* parameter )
 	LENGTH_BUF	buf;
 	uint8_t		count_check_antenna = 0;
 	rt_tick_t	tick_lastrx			= rt_tick_get( );
+
 	while( 1 )
 	{
 		res = rt_mq_recv( &mq_gps, (void*)&buf, NEMA_SIZE, RT_TICK_PER_SECOND / 20 );   //等待100ms,实际上就是变长的延时,最长100ms
@@ -453,6 +470,7 @@ static void rt_thread_entry_gps( void* parameter )
 				// 2013-4-20	更改PCB   用PD4 : GPS 天线开路		PB6 : GPS  天线短路
 				if( GPIO_ReadOutputDataBit( GPS_PWR_PORT, GPS_PWR_PIN ) )   // 在GPS 有电时有效
 				{
+					rt_kprintf("G");
 					if( GPIO_ReadInputDataBit( GPIOD, GPIO_Pin_4 ) )        //开路检测	1:天线开路
 					{
 						//if((jt808_status&BIT_ALARM_GPS_OPEN)==0)

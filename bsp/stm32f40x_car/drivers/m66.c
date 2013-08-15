@@ -854,7 +854,13 @@ static void rt_thread_gsm_socket( void* parameter )
 	/*挂断连接*/
 	if( curr_socket.state == SOCKET_CLOSE )
 	{
-		return;
+		sprintf( buf, "AT%%IPCLOSE=%d\r\n", curr_socket.linkno );
+		err = gsm_send( buf, RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 1 );
+		if( err != RT_EOK )
+		{
+			curr_socket.state = CONNECT_IDLE;
+		}
+		goto lbl_gsm_socket_end;
 	}
 
 	/*建立连接*/
@@ -1047,22 +1053,23 @@ void ctl_gprs( char* apn, char* user, char*psw, uint8_t fdial )
 }
 
 /*连接远程地址*/
-void ctl_socket( uint8_t linkno, char type, char* remoteip, uint16_t remoteport, uint8_t fconnect )
+void ctl_socket_open( uint8_t linkno, char type, char* remoteip, uint16_t remoteport )
 {
 	curr_socket.linkno	= linkno;
 	curr_socket.type	= type;
-
 	strcpy( &( curr_socket.ipstr[0] ), remoteip );
 	curr_socket.port = remoteport;
-	if( fconnect )
-	{
-		curr_socket.state = SOCKET_START;
-	}else
-	{
-		curr_socket.state = SOCKET_CLOSE;
-	}
+	curr_socket.state = SOCKET_START;	/**/
 	gsm_state = GSM_SOCKET_PROC;
 }
+
+void ctl_socket_close( uint8_t linkno )
+{
+	curr_socket.linkno	= linkno;
+	curr_socket.state = SOCKET_CLOSE;
+	gsm_state = GSM_SOCKET_PROC;
+}
+
 
 #define TTS_PROCESS
 

@@ -159,7 +159,7 @@ DECL_BMP( 6, 6, empty );    DECL_BMP( 6, 6, full_0 );  DECL_BMP( 6, 6, full_1 );
 #if 1
 void Disp_Idle( void )
 {
-	char	*mode[] = { "	", "BD", "GP", "GN" };
+	char	*mode[] = { "  ", "BD", "GP", "GN" };
 	char	buf_datetime[22];
 	char	buf_speed[20];
 	lcd_fill( 0 );

@@ -112,7 +112,8 @@ void gsm_init( void );
 void ctl_gprs( char* apn, char* user, char*psw, uint8_t fdial );
 
 
-void ctl_socket( uint8_t linkno, char type, char* remoteip, uint16_t remoteport, uint8_t fconnect );
+void ctl_socket_open( uint8_t linkno, char type, char* remoteip, uint16_t remoteport );
+void ctl_socket_close( uint8_t linkno );
 
 
 rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count );

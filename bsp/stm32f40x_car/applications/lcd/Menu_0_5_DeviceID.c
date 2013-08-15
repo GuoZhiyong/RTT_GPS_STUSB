@@ -33,13 +33,13 @@ static void display( void )
 	lcd_fill( 0 );
 	if( pos < 12 )
 	{
-		lcd_text12( 0, 4, "车辆ID", 3, LCD_MODE_INVERT );
+		lcd_text12( 0, 4, "车辆ID", 6, LCD_MODE_INVERT );
 		lcd_text12( 20, 4, deviceid, strlen( deviceid ), LCD_MODE_SET );
 		lcd_text12( 0, 18, num, 10, LCD_MODE_SET );
 		lcd_text12( 0 + pos * 6, 18, num + pos, 1, LCD_MODE_INVERT );
 	}else
 	{
-		lcd_text12( 16, 16, "车辆ID设置完成", 15, LCD_MODE_SET );
+		lcd_text12( 16, 16, "车辆ID设置完成", 14, LCD_MODE_SET );
 	}
 	lcd_update_all( );
 }

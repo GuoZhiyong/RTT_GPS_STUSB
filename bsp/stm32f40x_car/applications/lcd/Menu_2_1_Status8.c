@@ -17,33 +17,51 @@
 
 #include "jt808_vehicle.h"
 
-char* caption[10]={"紧急","启动","输入","远光","车门","喇叭","左转","右转","刹车","雨刷"};
+/*北斗使用两路AD检测 PA1 喇叭 PC3 左转*/
+char			* caption[8] = { "紧急", "启动", "输入", "远光", "车门", "右转", "刹车", "雨刷" };
+static uint8_t	page;
 
 
-static void draw(void)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void draw( void )
 {
 	uint8_t i;
-	lcd_fill(0);
-	for(i=0;i<5;i++)
+	char buf[24];
+	lcd_fill( 0 );
+	if( page == 0 )
 	{
-		lcd_text12(i*24,4,caption[i],4,PIN_IN[i].value*2+1);  // SET=1 INVERT=3
-		lcd_text12(i*24,20,caption[i+5],4,PIN_IN[i+5].value*2+1);  // SET=1 INVERT=3
+		for( i = 0; i < 4; i++ )
+		{
+			lcd_text12( i * 32, 4, caption[i], 4, PIN_IN[i].value * 2 + 1 );            // SET=1 INVERT=3
+			lcd_text12( i * 32, 20, caption[i + 4], 4, PIN_IN[i + 4].value * 2 + 1 );   // SET=1 INVERT=3
+		}
+	}else if( page == 1 )
+	{
+		sprintf(buf,"电源电压 %d",AD_Volte);
+		lcd_text12( 0, 4, buf, strlen(buf),LCD_MODE_SET );
 	}
-	lcd_update_all();
+	lcd_update_all( );
 }
-
 
 /**/
 static void msg( void *p )
 {
-
 }
 
 /**/
 static void show( void )
 {
-	pMenuItem->tick=rt_tick_get();
-	draw();
+	pMenuItem->tick = rt_tick_get( );
+	page			= 0;
+	draw( );
 }
 
 /**/
@@ -54,26 +72,45 @@ static void keypress( unsigned int key )
 		case KEY_MENU:
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );
-			CounterBack = 0;
 			break;
-		default:	
-			draw();
+		case KEY_UP:
+			if( page == 0 )
+			{
+				page = 2;
+			}
+			page--;
+			draw( );
+			break;
+		case KEY_DOWN:
+			page++;
+			page %= 2;
+			draw( );
+			break;
+		default:
+			draw( );
 			break;
 	}
 }
 
-
-static void timetick(unsigned int tick)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static void timetick( unsigned int tick )
 {
-	draw();
-	timetick_default(tick);
+	draw( );
+	timetick_default( tick );
 }
-
 
 MENUITEM Menu_2_1_Status8 =
 {
 	"信号线状态",
-	10,0,
+	10,			 0,
 	&show,
 	&keypress,
 	&timetick,

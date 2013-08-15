@@ -52,6 +52,7 @@ typedef struct _auxio_in
 
 
 
+extern uint32_t AD_Volte;;
 
 
 extern AUX_IN	PIN_IN[10];
