@@ -381,6 +381,7 @@ void jt808_vehicle_init( void )
 
 	rt_timer_start( &tmr_50ms );
 	pulse_init( );                              /*½ÓÂö³å¼ÆÊý*/
+	ad_init();
 }
 
 /************************************** The End Of File **************************************/
