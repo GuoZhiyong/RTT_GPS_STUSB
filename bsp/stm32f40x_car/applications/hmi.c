@@ -82,7 +82,7 @@ static uint32_t  keycheck( void )
 	{
 		keys[i].status = 0;
 	}
-#if 0
+#if 1
 	if( tmp_key )
 	{
 		rt_kprintf( "%04x\r\n", tmp_key );
@@ -129,13 +129,16 @@ static void key_lcd_port_init( void )
 	GPIO_Init( GPIOE, &GPIO_InitStructure );
 
 	//BUZZER
-	GPIO_InitStructure.GPIO_Pin		= GPIO_Pin_6;
-	GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
-	GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_100MHz;
-	GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_NOPULL;
-	GPIO_Init( GPIOB, &GPIO_InitStructure );
 
+	if( jt808_param.id_0xF013 == 0x3017 )
+	{
+		GPIO_InitStructure.GPIO_Pin		= GPIO_Pin_6;
+		GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
+		GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
+		GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_100MHz;
+		GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_NOPULL;
+		GPIO_Init( GPIOB, &GPIO_InitStructure );
+	}
 	//GPIO_SetBits(GPIOB,GPIO_Pin_6);
 }
 

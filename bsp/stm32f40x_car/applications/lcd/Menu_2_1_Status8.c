@@ -45,7 +45,11 @@ static void draw( void )
 		}
 	}else if( page == 1 )
 	{
-		sprintf(buf,"电源电压 %d",AD_Volte);
+		sprintf(buf,"电压 %d [%d-%d]",AD_Volte,AD_Volte_Min,AD_Volte_Max);
+		lcd_text12( 0, 4, buf, strlen(buf),LCD_MODE_SET );
+	}else if( page == 2 )
+	{
+		sprintf(buf,"脉速 %d ",Frequency);
 		lcd_text12( 0, 4, buf, strlen(buf),LCD_MODE_SET );
 	}
 	lcd_update_all( );
@@ -76,17 +80,14 @@ static void keypress( unsigned int key )
 		case KEY_UP:
 			if( page == 0 )
 			{
-				page = 2;
+				page = 3;
 			}
 			page--;
 			draw( );
 			break;
 		case KEY_DOWN:
 			page++;
-			page %= 2;
-			draw( );
-			break;
-		default:
+			page %= 3;
 			draw( );
 			break;
 	}

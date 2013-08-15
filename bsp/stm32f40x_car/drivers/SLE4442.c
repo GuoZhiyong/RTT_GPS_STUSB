@@ -719,9 +719,7 @@ void CheckICCard( void )
 					IC_Card_Checked=1;
 					strncpy(jt808_param.id_0xF008,buf1,10);
 					strncpy(jt808_param.id_0xF009,buf1,18);
-					
 					beep(5,5,2);
-					
 				}
 				else
 				{

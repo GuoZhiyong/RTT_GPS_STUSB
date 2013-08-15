@@ -82,16 +82,22 @@ AUX_OUT PIN_OUT[] = {
 /*外接车速信号*/
 __IO uint16_t	IC2Value	= 0;
 __IO uint16_t	DutyCycle	= 0;
-__IO uint32_t	Frequency	= 0;
+//__IO uint32_t	Frequency	= 0;
+uint32_t	Frequency	= 0;
+
+
 
 #define ADC1_DR_Address			( (uint32_t)0X4001204C )
-#define    BD_IO_Pin6_7_A1C3                //  北斗应用用 PA1    6   灰线 PC3   7  绿线
+#define    BD_IO_Pin6_7_A1C3            //  北斗应用用 PA1    6   灰线 PC3   7  绿线
 
-uint16_t		ADC_ConValue[3];            //   3  个通道ID    0 : 电池 1: 灰线   2:  绿线
+uint16_t		ADC_ConValue[3];        //   3  个通道ID    0 : 电池 1: 灰线   2:  绿线
 
-static uint32_t ADC_ConvertedValue	= 0;    //电池电压AD数值
-uint32_t AD_Volte			= 0;
-static uint32_t AD_2through[2];             //  另外2 路AD 的数值
+static uint32_t ADC_ConvertedValue = 0; //电池电压AD数值
+
+uint32_t		AD_Volte		= 0;
+uint32_t		AD_Volte_Min	= 0xFFFFFFF, AD_Volte_Max = 0;
+
+static uint32_t AD_2through[2];         //  另外2 路AD 的数值
 
 static uint8_t	power_lost_counter	= 0;
 static uint8_t	power_low_counter	= 0;
@@ -139,6 +145,14 @@ static void cb_tmr_50ms( void* parameter )
 	//rt_kprintf ("\r\n  获取到的电池AD数值为:	%d	 AD电压为: %d V  电源电压: %d V\r\n",ADC_ConvertedValue,a,a+11);
 	//  ---电源欠压报警----
 	AD_Volte = AD_Volte + 11 + 10;
+	if( AD_Volte < AD_Volte_Min )
+	{
+		AD_Volte_Min = AD_Volte;
+	}
+	if( AD_Volte > AD_Volte_Max )
+	{
+		AD_Volte_Max = AD_Volte;
+	}
 
 	//  -----	另外2 路  AD 的采集电压值转换
 	// 1 .through	1  Voltage Value
@@ -187,7 +201,7 @@ static void cb_tmr_50ms( void* parameter )
 		power_low_counter = 0;
 		if( jt808_alarm & BIT_ALARM_LOW_PWR )
 		{
-			jt808_alarm &=~BIT_ALARM_LOW_PWR;
+			jt808_alarm &= ~BIT_ALARM_LOW_PWR;
 			rt_kprintf( "\n从欠压中还原正常!" );
 		}
 	}
@@ -297,9 +311,9 @@ void ad_init( void )
 //  3. ADC Common Init
 	/* ADC Common configuration *************************************************/
 	ADC_CommonInitStructure.ADC_Mode				= ADC_Mode_Independent; /*在独立模式下 每个ADC接口独立工作*/
-	ADC_CommonInitStructure.ADC_Prescaler			= ADC_Prescaler_Div4;
+	ADC_CommonInitStructure.ADC_Prescaler			= ADC_Prescaler_Div8;//ADC_Prescaler_Div4;
 	ADC_CommonInitStructure.ADC_DMAAccessMode		= ADC_DMAAccessMode_1;  // ADC_DMAAccessMode_Disabled;
-	ADC_CommonInitStructure.ADC_TwoSamplingDelay	= ADC_TwoSamplingDelay_5Cycles;
+	ADC_CommonInitStructure.ADC_TwoSamplingDelay	= ADC_TwoSamplingDelay_20Cycles;//ADC_TwoSamplingDelay_5Cycles;
 	ADC_CommonInit( &ADC_CommonInitStructure );
 
 	ADC_InitStructure.ADC_Resolution			= ADC_Resolution_12b;
@@ -381,7 +395,8 @@ void jt808_vehicle_init( void )
 
 	rt_timer_start( &tmr_50ms );
 	pulse_init( );                              /*接脉冲计数*/
-	ad_init();
+	ad_init( );
+	Init_4442( );
 }
 
 /************************************** The End Of File **************************************/

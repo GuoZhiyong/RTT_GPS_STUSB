@@ -97,14 +97,16 @@ void rtthread_startup( void )
 
 	sst25_init( );      /*在此初始化,gsm才能读取参数，放在app_thread中不会先执行*/
 	param_load();		/*加载系统参数，没有使用信号量*/
+	rt_kprintf("\n北斗型号:TD%04x",jt808_param.id_0xF013);
 	gps_init( );
+
 
 	mma8451_driver_init( );
 	printer_driver_init();
 
 	usbh_init( );
-	Init_4442( );
-	spi_sd_init( );
+	
+	//spi_sd_init( );
 
 	rt_application_init( );
 	RS485_init( );
@@ -112,6 +114,7 @@ void rtthread_startup( void )
 	gsm_init( );
 	hmi_init( );
 	jt808_init( );
+	
 #ifdef RT_USING_FINSH
 	/* init finsh */
 	finsh_system_init( );
