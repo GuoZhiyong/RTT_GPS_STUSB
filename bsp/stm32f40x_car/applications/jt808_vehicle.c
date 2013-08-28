@@ -141,6 +141,10 @@ static void cb_tmr_50ms( void* parameter )
 	}
 
 	ADC_ConvertedValue	= ADC_ConValue[0]; //ADC_GetConversionValue(ADC1);
+
+	rt_kprintf("\n=%d",ADC_ConvertedValue);
+
+	
 	AD_Volte			= ( ( ADC_ConvertedValue * 543 ) >> 12 );
 	//rt_kprintf ("\r\n  获取到的电池AD数值为:	%d	 AD电压为: %d V  电源电压: %d V\r\n",ADC_ConvertedValue,a,a+11);
 	//  ---电源欠压报警----
