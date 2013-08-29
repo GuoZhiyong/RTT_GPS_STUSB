@@ -457,6 +457,7 @@ uint8_t analy_param( char* cmd, char*value )
 	}
 	if( strncmp( cmd, "ISP", 3 ) == 0 )         /*	ISP(202.89.23.210£∫9000)*/
 	{
+
 		return 1;
 	}
 	if( strncmp( cmd, "PLATENUM", 8 ) == 0 )    /*PLATENUM(ΩÚA8888)	*/
@@ -658,10 +659,18 @@ void sms_test( uint8_t index )
 	jt808_sms_rx( s[index], strlen( s[index] ) );
 }
 
-FINSH_FUNCTION_EXPORT( sms_test, test sms )
+FINSH_FUNCTION_EXPORT( sms_test, test sms );
 
 
+void oiap_conn(char *ip,uint16_t port)
+{
+	gsm_socket[2].index=0;
+	strcpy(gsm_socket[2].ipstr,ip);
+	gsm_socket[2].port=port;
+	gsm_socket[2].state=CONNECT_IDLE;
 
+}
+FINSH_FUNCTION_EXPORT( oiap_conn, conn onair iap );
 
 #endif
 

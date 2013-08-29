@@ -135,6 +135,8 @@ struct _dial_param
 
 /*当前操作的链接*/
 static GSM_SOCKET curr_socket;
+static GSM_SOCKET* pcurr_socket;
+
 
 /*短信息相关*/
 static uint32_t		sms_index		= 0; /*要操作短信的索引号*/
@@ -1033,7 +1035,7 @@ FINSH_FUNCTION_EXPORT( gsmstate, control gsm state );
 /*控制socket状态 0 查询*/
 T_SOCKET_STATE socketstate( T_SOCKET_STATE cmd )
 {
-	if( cmd )
+	if( cmd!=SOCKET_STATE_GET )
 	{
 		curr_socket.state = cmd;
 	}
@@ -1052,6 +1054,7 @@ void ctl_gprs( char* apn, char* user, char*psw, uint8_t fdial )
 	gsm_state			= GSM_GPRS;
 }
 
+
 /*连接远程地址*/
 void ctl_socket_open( uint8_t linkno, char type, char* remoteip, uint16_t remoteport )
 {
@@ -1062,6 +1065,16 @@ void ctl_socket_open( uint8_t linkno, char type, char* remoteip, uint16_t remote
 	curr_socket.state = SOCKET_START;	/**/
 	gsm_state = GSM_SOCKET_PROC;
 }
+
+
+void ctl_socket_open_old(GSM_SOCKET *psocket)
+{
+	pcurr_socket=psocket;
+	pcurr_socket->state = SOCKET_START;	/**/
+	gsm_state = GSM_SOCKET_PROC;
+}
+
+
 
 void ctl_socket_close( uint8_t linkno )
 {

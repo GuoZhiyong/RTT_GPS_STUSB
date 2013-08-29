@@ -81,7 +81,7 @@ typedef enum
 
 typedef enum
 {
-	SOCKET_STATE	= 0,        /*查询socket状态*/
+	SOCKET_STATE_GET	= 0,        /*查询socket状态*/
 	SOCKET_IDLE		= 1,        /*无需启动*/
 	SOCKET_ERR,
 	SOCKET_START,               /*启动连接远程*/
@@ -115,6 +115,7 @@ void ctl_gprs( char* apn, char* user, char*psw, uint8_t fdial );
 void ctl_socket_open( uint8_t linkno, char type, char* remoteip, uint16_t remoteport );
 void ctl_socket_close( uint8_t linkno );
 
+//void ctl_socket_open(GSM_SOCKET *psocket);
 
 rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count );
 

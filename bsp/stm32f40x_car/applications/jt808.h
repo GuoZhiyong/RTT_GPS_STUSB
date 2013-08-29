@@ -24,22 +24,14 @@
 #include "jt808_util.h"
 #include "jt808_vehicle.h"
 
-#define NEED_TODO	0
-
-
+#define NEED_TODO 0
 
 #define   MsgQ_Timeout		3
 #define JT808_PACKAGE_MAX	512
 
-
-
-
 /*for new use*/
 
-#define FLASH_SEM_DELAY	5
-
-
-
+#define FLASH_SEM_DELAY 5
 
 typedef struct
 {
@@ -54,24 +46,21 @@ typedef struct
 	char	interval;   /*持续时间,秒*/
 }GPS_AREA_CIRCLE;
 
- 
-
 typedef enum
 {
-	IDLE = 1,                   /*空闲等待发送*/
-	WAIT_ACK,                   /*等待ACK中*/
-	ACK_OK,                     /*已收到ACK应答*/
-	WAIT_DELETE,                /*等待删除*/
+	IDLE = 1,           /*空闲等待发送*/
+	WAIT_ACK,           /*等待ACK中*/
+	ACK_OK,             /*已收到ACK应答*/
+	WAIT_DELETE,        /*等待删除*/
 } JT808_MSG_STATE;
 
-
 typedef enum
 {
-	SINGLE_FIRST=0,
-	SINGLE_CMD = 1,
-	SINGLE_ACK=2,
-	MULTI_CMD=3,
-	MULTI_ACK=4
+	SINGLE_FIRST	= 0,
+	SINGLE_CMD		= 1,
+	SINGLE_ACK		= 2,
+	MULTI_CMD		= 3,
+	MULTI_ACK		= 4
 }JT808_MSG_TYPE;
 
 typedef __packed struct
@@ -97,30 +86,49 @@ typedef __packed struct
 #define JT808HEAD_LEN( head )	( ( *( head + 2 ) << 8 ) | ( *( head + 3 ) ) ) & 0x3FF
 #define JT808HEAD_SEQ( head )	( ( *( head + 10 ) << 8 ) | ( *( head + 11 ) ) )
 
-
 typedef enum
 {
-	CONNECT_NONE	= 0,            /*不连接*/
-	CONNECT_IDLE	= 1,            /*空闲，准备连接*/
-	CONNECT_PEER,                   /*正在连接到对端*/
-	CONNECTED,                      /*连接成功*/
-	CONNECT_ERROR,                  /*连接错误*/
-	CONNECT_CLOSE,                  /*连接关闭，区分是主动还是被动*/
+	CONNECT_NONE	= 0,        /*不连接*/
+	CONNECT_IDLE	= 1,        /*空闲，准备连接*/
+	CONNECT_PEER,               /*正在连接到对端*/
+	CONNECTED,                  /*连接成功*/
+	CONNECT_ERROR,              /*连接错误*/
+	CONNECT_CLOSING,            /*正在关闭连接*/
+	CONNECT_CLOSED,             /*连接关闭，区分是主动还是被动*/
 }CONN_STATE;
 
+#if 0
+
+typedef struct
+{
+	char		type;           /*连接类型 'u':udp client 't':TCP client  'U' udp server*/
+	char		ipstr[64];      /*域名或地址*/
+	uint16_t	port;           /*端口*/
+}IP_PORT;
 
 typedef struct
 {
 	uint8_t		linkno;         /*所使用的link号*/
 	uint8_t		index;          /*连接有多个选择，定义选择连接的序号*/
 	CONN_STATE	state;          /*连接状态*/
-	char		type;           /*连接类型 'u':udp client 't':TCP client  'U' udp server*/
-	char		ipstr[64];      /*域名或地址*/
-	char		ip_addr[16];    /*dns后的IP xxx.xxx.xxx.xxx*/
-	uint16_t	port;           /*端口*/
-	//MsgList			* msglist_tx;
+	uint32_t	timecount;      /*连接时长*/
+	char		ipv4[16];       /*dns后的IP xxx.xxx.xxx.xxx*/
+	IP_PORT		ip_port[4];     /*有几个备选的连接*/
 }GSM_SOCKET;
 
+#endif
+
+typedef struct
+{
+	uint8_t		linkno;         /*所使用的link号*/
+	uint8_t		index;          /*连接有多个选择，定义选择连接的序号*/
+	uint32_t	connect_count;  /*需要连接的次数,是否重连*/
+	CONN_STATE	state;          /*连接状态*/
+	char		ip_addr[16];    /*dns后的IP xxx.xxx.xxx.xxx*/
+	char		type;           /*连接类型 'u':udp client 't':TCP client  'U' udp server*/
+	char		ipstr[64];      /*域名或地址*/
+	uint16_t	port;           /*端口*/
+}GSM_SOCKET;
 
 
 /*
@@ -130,7 +138,7 @@ typedef struct
 typedef __packed struct _jt808_tx_nodedata
 {
 /*发送机制相关*/
-	uint8_t			linkno;                                                                             /*传输使用的link,包括了协议和远端socket*/
+	uint8_t linkno;                                                                                     /*传输使用的link,包括了协议和远端socket*/
 //	uint8_t			multipacket;                                                                        /*是不是多包发送*/
 	JT808_MSG_TYPE	type;                                                                               /*发送消息的类型*/
 	JT808_MSG_STATE state;                                                                              /*发送状态*/
@@ -154,11 +162,12 @@ typedef __packed struct _jt808_tx_nodedata
 }JT808_TX_NODEDATA;
 
 void jt808_init( void );
+
+
 rt_err_t gprs_rx( uint8_t linkno, uint8_t *pinfo, uint16_t length );
 
-void cb_socket_close(uint8_t cid );
 
-
+void cb_socket_close( uint8_t cid );
 
 
 JT808_TX_NODEDATA * node_begin( uint8_t linkno,
@@ -169,38 +178,39 @@ JT808_TX_NODEDATA * node_begin( uint8_t linkno,
 
 
 JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA * pnodedata,
-                               uint8_t * pinfo, uint16_t len);
+                               uint8_t * pinfo, uint16_t len );
 
-void node_end( JT808_TX_NODEDATA* pnodedata,
+
+void node_end( JT808_TX_NODEDATA * pnodedata,
                JT808_MSG_STATE ( *cb_tx_timeout )( ),
                JT808_MSG_STATE ( *cb_tx_response )( ),
                void  *userpara );
 
-
 void jt808_add_tx( uint8_t linkno,
-                       JT808_MSG_TYPE msgtype, /*是否为多包*/
-                       uint16_t id,
-                       int32_t seq,
-                       JT808_MSG_STATE ( *cb_tx_timeout )( ),
-                       JT808_MSG_STATE ( *cb_tx_response )( ),
-                       uint16_t info_len,           /*信息长度*/
-                       uint8_t * pinfo,
-                       void  *userpara );
-
+                   JT808_MSG_TYPE msgtype,      /*是否为多包*/
+                   uint16_t id,
+                   int32_t seq,
+                   JT808_MSG_STATE ( *cb_tx_timeout )( ),
+                   JT808_MSG_STATE ( *cb_tx_response )( ),
+                   uint16_t info_len,           /*信息长度*/
+                   uint8_t * pinfo,
+                   void  *userpara );
 
 /*通用应答*/
-rt_err_t jt808_tx_0x0001(uint16_t seq, uint16_t id, uint8_t res );
+rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res );
 
 
 #define jt808_tx( id, info, len ) jt808_add_tx( 1, SINGLE_CMD, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
 
 /*专用应答*/
 #define jt808_tx_ack( id, info, len ) jt808_add_tx( 1, SINGLE_FIRST, id, -1, RT_NULL, RT_NULL, len, info, RT_NULL )
+
+
 /*
-extern GSM_SOCKET socket_master;
-extern GSM_SOCKET socket_slave;
-extern GSM_SOCKET socket_iccard;
-*/
+   extern GSM_SOCKET socket_master;
+   extern GSM_SOCKET socket_slave;
+   extern GSM_SOCKET socket_iccard;
+ */
 extern GSM_SOCKET gsm_socket[3];
 
 #endif
