@@ -142,7 +142,7 @@ static void cb_tmr_50ms( void* parameter )
 
 	ADC_ConvertedValue	= ADC_ConValue[0]; //ADC_GetConversionValue(ADC1);
 
-	rt_kprintf("\n=%d",ADC_ConvertedValue);
+	//rt_kprintf("\n=%d",ADC_ConvertedValue);
 
 	
 	AD_Volte			= ( ( ADC_ConvertedValue * 543 ) >> 12 );

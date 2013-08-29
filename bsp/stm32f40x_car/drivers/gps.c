@@ -431,7 +431,7 @@ static void rt_thread_entry_gps( void* parameter )
 				}
 			}
 		}
-		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
+		rt_thread_delay( RT_TICK_PER_SECOND / 20 );	/*为了保证可靠的挂起线程*/
 		if( ( rt_tick_get( ) - tick_lastrx ) > RT_TICK_PER_SECOND * 10 )    /*长时间没有语句输出,模块损坏*/
 		{
 			rt_kprintf( "%d>gps no output\r\n", rt_tick_get( ) );
@@ -561,6 +561,7 @@ void thread_gps_check_ver( void* parameter )
 	LENGTH_BUF	uart_buf;
 
 	uint8_t		ver[3]; /*版本*/
+	uint32_t	model;  /*型号*/
 	uint8_t		ok = 0; /*是否执行正确*/
 
 	uint8_t		cmd_reset[11] = { 0x40, 0x34, 0xC0, 0x00, 0x34, 0x00, 0x01, 0x84, 0x6B, 0x0D, 0x0A };
@@ -573,9 +574,9 @@ void thread_gps_check_ver( void* parameter )
 	while( rt_thread_suspend( &thread_gps ) != RT_EOK )
 	{
 		rt_kprintf( "S" );
-		rt_thread_delay( 20 );
+		rt_thread_delay( 2 );
 		count++;
-		if( count > 100 )
+		if( count > 200 )
 		{
 			msg( "E查询版本失败" );
 			//GPIO_SetBits( GPIOD, GPIO_Pin_10 );  /*开模块*/
@@ -613,8 +614,6 @@ void thread_gps_check_ver( void* parameter )
 				ver[0]	= ( uart_buf.body[7] & 0xf0 ) >> 4;
 				ver[1]	= ( uart_buf.body[7] & 0xf );
 				ver[2]	= uart_buf.body[8];
-				sprintf( buf, "E模块TD%04x (%d.%d.%d)", jt808_param.id_0xF013, ver[0], ver[1], ver[2] );
-				msg( buf );
 				ok = 1;
 				break;
 			}else
@@ -628,6 +627,35 @@ void thread_gps_check_ver( void* parameter )
 	{
 		msg( "E查询模块版本错误" );
 	}
+
+	for( count = 0; count < 5; count++ )
+	{
+		dev_gps_write( &dev_gps, 0, "\x40\x16\xC0\x00\x16\x00\x01\x22\xE3\x0D\x0A", 11 );
+		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
+		if( res == RT_EOK )                           //收到一包数据
+		{
+			if( ( uart_buf.wr == 28 ) && ( uart_buf.body[5] == 0x0 ) )
+			{
+				model = ( uart_buf.body[6] << 24 ) | ( uart_buf.body[7] << 16 ) | ( uart_buf.body[8] << 8 ) | ( uart_buf.body[9] );
+				ok++;
+				break;
+			}else
+			{
+				rt_kprintf( "bd>%s", uart_buf.body );
+			}
+		}
+	}
+
+	if( ok )
+	{
+		sprintf( buf, "E模块TD%d (%d.%d.%d)", model / 10, ver[0], ver[1], ver[2] );
+		msg( buf );
+	}else
+	{
+		msg( "E查询模块型号错误" );
+	}
+
+lbl_check_ver_err:
 	dev_gps_write( &dev_gps, 0, cmd_reset, 11 );
 
 	rt_thread_delay( RT_TICK_PER_SECOND * 2 );
@@ -757,9 +785,17 @@ void thread_gps_upgrade_udisk( void* parameter )
 /*尝试停止gps线程*/
 	while( rt_thread_suspend( &thread_gps ) != RT_EOK )
 	{
-		rt_kprintf( "\try to suspend gps" );
-		rt_thread_delay( 10 );
+		rt_kprintf( "S" );
+		rt_thread_delay( 2 );
+		count++;
+		if( count > 200 )
+		{
+			msg( "E查询版本失败" );
+			//GPIO_SetBits( GPIOD, GPIO_Pin_10 );  /*开模块*/
+			return;
+		}
 	}
+
 #if 0
 	GPIO_ResetBits( GPIOD, GPIO_Pin_10 );   /*off gps*/
 	rt_thread_delay( RT_TICK_PER_SECOND * 2 );

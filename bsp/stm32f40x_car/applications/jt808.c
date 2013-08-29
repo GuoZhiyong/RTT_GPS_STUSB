@@ -1256,7 +1256,7 @@ static void socket_slave_proc( void )
 	}
 }
 
-/*处理IC卡远程升级平台*/
+/*处理IC卡或远程升级平台*/
 static void socket_iccard_proc( void )
 {
 	if( gsm_socket[2].state == SOCKET_IDLE )
@@ -1611,10 +1611,11 @@ FINSH_FUNCTION_EXPORT( factory, reset to factory );
 * Return:
 * Others:
 ***********************************************************/
-void list_node( void )
+uint8_t list_node( void )
 {
 	MsgListNode			* iter;
 	JT808_TX_NODEDATA	* pnodedata;
+	uint8_t	count=0;
 
 	iter = list_jt808_tx->first;
 	while( iter != NULL )
@@ -1622,8 +1623,9 @@ void list_node( void )
 		pnodedata = ( JT808_TX_NODEDATA* )( iter->data );
 		rt_kprintf( "\nid=%04x\tseq=%04x len=%d", pnodedata->head_id, pnodedata->head_sn, pnodedata->msg_len );
 		iter = iter->next;
+		count++;
 	}
-	return;
+	return count;
 }
 
 FINSH_FUNCTION_EXPORT( list_node, list node );
