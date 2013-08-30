@@ -73,9 +73,7 @@ typedef enum
 	GSM_GPRS,                   /*登录GPRS中*/
 	GSM_TCPIP,                  /*已经登网，可以进行socket控制*/
 	GSM_SOCKET_PROC,            /*正在进行socket控制*/
-	GSM_ERR_POWERON,
-	GSM_ERR_GPRS,
-	GSM_ERR_TCPIP,
+	GSM_ERR,
 	GSM_POWEROFF,               /*已经断电*/
 }T_GSM_STATE;
 

@@ -42,13 +42,11 @@ enum _sms_state {
 	SMS_WAIT_CMGR_DATA,
 	SMS_WAIT_CMGR_OK,
 	SMS_WAIT_CMGD_OK,
-	SMS_WAIT_CMGS_GREATER,		/*等待发送的>*/
-	SMS_WAIT_CMGS_OK,		/*等待发送的>*/
+	SMS_WAIT_CMGS_GREATER,  /*等待发送的>*/
+	SMS_WAIT_CMGS_OK,       /*等待发送的>*/
 };
 
 enum _sms_state sms_state = SMS_IDLE;
-
-
 
 #define GSM_GPIO			GPIOC
 #define GSM_TX_PIN			GPIO_Pin_10
@@ -134,12 +132,12 @@ struct _dial_param
 } dial_param;
 
 /*当前操作的链接*/
-static GSM_SOCKET curr_socket;
-static GSM_SOCKET* pcurr_socket;
-
+static GSM_SOCKET	curr_socket;
+//static GSM_SOCKET	* pcurr_socket;
 
 /*短信息相关*/
-static uint32_t		sms_index		= 0; /*要操作短信的索引号*/
+static uint32_t sms_index = 0;   /*要操作短信的索引号*/
+
 
 /***********************************************************
 * Function:
@@ -372,7 +370,7 @@ static void uart4_putc( const char c )
 static rt_size_t m66_write( rt_device_t dev, rt_off_t pos, const void* buff, rt_size_t count )
 {
 	rt_size_t	len = count;
-	uint8_t		*p	= (uint8_t*)buff+pos;
+	uint8_t		*p	= (uint8_t*)buff + pos;
 
 	while( len )
 	{
@@ -381,7 +379,6 @@ static rt_size_t m66_write( rt_device_t dev, rt_off_t pos, const void* buff, rt_
 		{
 		}
 		len--;
-
 	}
 	return RT_EOK;
 }
@@ -719,7 +716,7 @@ static void rt_thread_gsm_power_on( void* parameter )
 		{ "ATE0\r\n",		 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 5, 1  },
 		{ "ATV1\r\n",		 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 5, 1  },
 		{ "AT%TSIM\r\n",	 RESP_TYPE_STR_WITHOK,	RT_NULL,	"%TSIM 1",		RT_TICK_PER_SECOND * 2, 5  },
-		
+
 		{ "AT+CMGF=0\r\n",	 RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 3, 3  },
 		{ "AT+CNMI=3,1\r\n", RESP_TYPE_STR,			RT_NULL,	"OK",			RT_TICK_PER_SECOND * 3, 3  },
 
@@ -841,7 +838,7 @@ static void rt_thread_gsm_gprs( void* parameter )
 		goto lbl_gsm_gprs_end;
 	}
 lbl_gsm_gprs_end_err:
-	gsm_state = GSM_ERR_GPRS;
+	gsm_state = GSM_ERR;
 lbl_gsm_gprs_end:
 	rt_kprintf( "\n%08d gsm_gprs>end state=%d", rt_tick_get( ), gsm_state );
 }
@@ -854,7 +851,7 @@ static void rt_thread_gsm_socket( void* parameter )
 	AT_CMD_RESP at_cmd_resp;
 
 	/*挂断连接*/
-	if( curr_socket.state == SOCKET_CLOSE )
+	if( curr_socket.state == CONNECT_CLOSING )
 	{
 		sprintf( buf, "AT%%IPCLOSE=%d\r\n", curr_socket.linkno );
 		err = gsm_send( buf, RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 1 );
@@ -880,7 +877,7 @@ static void rt_thread_gsm_socket( void* parameter )
 		curr_socket.state = SOCKET_DNS;
 	}
 
-	if( curr_socket.state == SOCKET_DNS )
+	if( curr_socket.state == SOCKET_DNS ) /*要去掉SOCKET_DNS这个状态吗*/
 	{
 		sprintf( buf, "AT%%DNSR=\"%s\"\r\n", curr_socket.ipstr );
 		err = gsm_send( buf, resp_DNSR, RT_NULL, RESP_TYPE_FUNC_WITHOK, RT_TICK_PER_SECOND * 10, 1 );
@@ -1035,7 +1032,7 @@ FINSH_FUNCTION_EXPORT( gsmstate, control gsm state );
 /*控制socket状态 0 查询*/
 T_SOCKET_STATE socketstate( T_SOCKET_STATE cmd )
 {
-	if( cmd!=SOCKET_STATE_GET )
+	if( cmd != SOCKET_STATE_GET )
 	{
 		curr_socket.state = cmd;
 	}
@@ -1054,35 +1051,26 @@ void ctl_gprs( char* apn, char* user, char*psw, uint8_t fdial )
 	gsm_state			= GSM_GPRS;
 }
 
-
 /*连接远程地址*/
 void ctl_socket_open( uint8_t linkno, char type, char* remoteip, uint16_t remoteport )
 {
 	curr_socket.linkno	= linkno;
 	curr_socket.type	= type;
 	strcpy( &( curr_socket.ipstr[0] ), remoteip );
-	curr_socket.port = remoteport;
-	curr_socket.state = SOCKET_START;	/**/
-	gsm_state = GSM_SOCKET_PROC;
-}
-
-
-void ctl_socket_open_old(GSM_SOCKET *psocket)
-{
-	pcurr_socket=psocket;
-	pcurr_socket->state = SOCKET_START;	/**/
-	gsm_state = GSM_SOCKET_PROC;
+	curr_socket.port	= remoteport;
+	curr_socket.state	= SOCKET_START; /**/
+	gsm_state			= GSM_SOCKET_PROC;
 }
 
 
 
+/**/
 void ctl_socket_close( uint8_t linkno )
 {
 	curr_socket.linkno	= linkno;
-	curr_socket.state = SOCKET_CLOSE;
-	gsm_state = GSM_SOCKET_PROC;
+	curr_socket.state	= SOCKET_CLOSE;
+	gsm_state			= GSM_SOCKET_PROC;
 }
-
 
 #define TTS_PROCESS
 
@@ -1260,7 +1248,7 @@ uint8_t sms_rx( char *pinfo, uint16_t size )
 		if( sscanf( pinfo + 12, "%d", &index ) )
 		{
 			sms_index = index;
-			rt_mb_send( &mb_sms, 0x1 );               /*通知要读短信*/
+			rt_mb_send( &mb_sms, 0x1 );                         /*通知要读短信*/
 			return 1;
 		}
 	}else if( strncmp( pinfo, "+CMGR: ", 7 ) == 0 )             /*+CMGR: 0,156,有可能是串口读的短信*/
@@ -1277,13 +1265,13 @@ uint8_t sms_rx( char *pinfo, uint16_t size )
 	switch( sms_state )
 	{
 		case SMS_WAIT_CMGR_DATA:                                /*收到短信数据*/
-			jt808_sms_rx( pinfo, size );                      /*解析数据*/
-			sms_state	= SMS_WAIT_CMGR_OK;
+			jt808_sms_rx( pinfo, size );                        /*解析数据*/
+			sms_state = SMS_WAIT_CMGR_OK;
 			break;
 		case SMS_WAIT_CMGR_OK:
 			if( strncmp( pinfo, "OK", 2 ) == 0 )                /*读完了信息,删除*/
 			{
-				rt_mb_send( &mb_sms, 2 );           /*通知要删除*/
+				rt_mb_send( &mb_sms, 2 );                       /*通知要删除*/
 				sms_state = SMS_IDLE;
 			}
 			break;
@@ -1308,16 +1296,16 @@ uint8_t sms_rx( char *pinfo, uint16_t size )
 }
 
 /*发送短信息,包含接收方,SMSC,7bit编码后的信息*/
-void sms_tx(char* info,uint8_t tp_len )
+void sms_tx( char* info, uint8_t tp_len )
 {
-	uint8_t len=strlen(info);
-	char *p;
-	p=rt_malloc(len+2);
-	if(p!=RT_NULL)
+	uint8_t len = strlen( info );
+	char	*p;
+	p = rt_malloc( len + 2 );
+	if( p != RT_NULL )
 	{
-		p[0]=tp_len;		/*tp_len AT+CMGS时需要*/
-		strcpy(p+1,info);
-		rt_mb_send(&mb_sms,(uint32_t)p);
+		p[0] = tp_len; /*tp_len AT+CMGS时需要*/
+		strcpy( p + 1, info );
+		rt_mb_send( &mb_sms, (uint32_t)p );
 	}
 }
 
@@ -1328,10 +1316,10 @@ void sms_tx(char* info,uint8_t tp_len )
 void sms_proc( void )
 {
 	uint32_t	i;
-	char *sms_send;
+	char		*sms_send;
 	char		buf[40];
 	rt_err_t	ret;
-	uint16_t 	len;
+	uint16_t	len;
 
 	T_GSM_STATE oldstate;
 
@@ -1355,11 +1343,11 @@ void sms_proc( void )
 	gsm_state	= GSM_AT_SEND;
 	switch( i )
 	{
-		case 0x1:        /*读信息0x1*/
+		case 0x1:   /*读信息0x1*/
 			sprintf( buf, "AT+CMGR=%d\r\n", sms_index );
 			ret = gsm_send( buf, RT_NULL, RT_NULL, RESP_TYPE_NONE, RT_TICK_PER_SECOND, 1 );
 			break;
-		case 0x2:        /*删除信息0x2*/
+		case 0x2:   /*删除信息0x2*/
 			if( sms_index )
 			{
 				sprintf( buf, "AT+CMGD=%d\r\n", sms_index );
@@ -1367,24 +1355,23 @@ void sms_proc( void )
 				sms_state	= SMS_WAIT_CMGD_OK;
 			}
 			break;
-		default:	/*发送信息*/
-			sms_send=(char*)i;
-			len=sms_send[0];		/*tp_len*/
-			sprintf(buf,"AT+CMGS=%d\r",len);
-			ret=gsm_send(buf,RT_NULL,">",RESP_TYPE_STR,RT_TICK_PER_SECOND*5,1);
-			if(ret==RT_EOK)
+		default:                                /*发送信息*/
+			sms_send	= (char*)i;
+			len			= sms_send[0];          /*tp_len*/
+			sprintf( buf, "AT+CMGS=%d\r", len );
+			ret = gsm_send( buf, RT_NULL, ">", RESP_TYPE_STR, RT_TICK_PER_SECOND * 5, 1 );
+			if( ret == RT_EOK )
 			{
-				len=strlen(sms_send+1);		/*真实消息长度,包括CTRL_Z*/
-				m66_write(&dev_gsm,1,sms_send,len);
+				len = strlen( sms_send + 1 );   /*真实消息长度,包括CTRL_Z*/
+				m66_write( &dev_gsm, 1, sms_send, len );
 				//rt_kprintf("\nSMS>SEND(len=%d):%s",len,sms_send+1);
 			}
 			//rt_thread_delay(RT_TICK_PER_SECOND/4);
-			buf[0]=0x1A;
-			buf[1]=0x0;
-			ret=gsm_send(buf,RT_NULL,"+CMGS:",RESP_TYPE_STR_WITHOK,RT_TICK_PER_SECOND*20,1);
-			rt_free((void*)i);
+			buf[0]	= 0x1A;
+			buf[1]	= 0x0;
+			ret		= gsm_send( buf, RT_NULL, "+CMGS:", RESP_TYPE_STR_WITHOK, RT_TICK_PER_SECOND * 20, 1 );
+			rt_free( (void*)i );
 			break;
-			
 	}
 	gsm_state = oldstate;
 }
@@ -1400,7 +1387,7 @@ void sms_proc( void )
 ***********************************************************/
 static void gsmrx_cb( char *pInfo, uint16_t size )
 {
-	int		i,  len = size;
+	int		i, len = size;
 	uint8_t tbl[24] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf };
 	char	c, *pmsg;
 	char	*psrc = RT_NULL, *pdst = RT_NULL;
@@ -1459,19 +1446,11 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 		return;
 	}
 
-#if 0
-
-	if( SMS_rx_pro( pInfo, size ) )
-	{
-		return;
-	}
-#else
-
 	if( sms_rx( pInfo, size ) ) /*一个完整的处理过程?*/
 	{
 		return;
 	}
-#endif
+
 	/*直接发送到Mailbox中,内部处理*/
 	pmsg = rt_malloc( len + 2 );
 	if( pmsg != RT_NULL )
@@ -1498,27 +1477,33 @@ static void rt_thread_entry_gsm( void* parameter )
 {
 	while( 1 )
 	{
-		if( gsm_state == GSM_POWERON )
+		switch( gsm_state )
 		{
-			rt_thread_gsm_power_on( RT_NULL );
+			case GSM_POWERON:
+				rt_thread_gsm_power_on( RT_NULL );
+				break;
+			case GSM_POWEROFF:
+				GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
+				rt_thread_delay( RT_TICK_PER_SECOND * 5 ); /*延时5秒再启动*/
+				gsm_state = GSM_IDLE;
+				break;
+			case  GSM_GPRS:
+				rt_thread_gsm_gprs( RT_NULL );
+				break;
+			case GSM_SOCKET_PROC:
+				rt_thread_gsm_socket( RT_NULL );
+				break;
+			case GSM_IDLE:
+				break;
+			case GSM_TCPIP:
+				break;
+			case GSM_AT:
+				break;
+			case GSM_AT_SEND:
+				break;				
+			case GSM_ERR:
+				break;
 		}
-		if( gsm_state == GSM_POWEROFF )
-		{
-			GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
-			rt_thread_delay( RT_TICK_PER_SECOND * 5 ); /*延时5秒再启动*/
-			gsm_state = GSM_IDLE;
-		}
-
-		if( gsm_state == GSM_GPRS )
-		{
-			rt_thread_gsm_gprs( RT_NULL );
-		}
-
-		if( gsm_state == GSM_SOCKET_PROC )
-		{
-			rt_thread_gsm_socket( RT_NULL );
-		}
-
 		sms_proc( );
 		tts_proc( );    /*tts处理*/
 		at_cmd_proc( ); /*at命令处理*/
@@ -1564,7 +1549,7 @@ static void rt_thread_entry_gsm_rx( void* parameter )
 		{
 			if( gsm_rx_wr )
 			{
-				gsmrx_cb((char*) gsm_rx, gsm_rx_wr );                      /*接收信息的处理函数*/
+				gsmrx_cb( (char*)gsm_rx, gsm_rx_wr );               /*接收信息的处理函数*/
 				gsm_rx_wr = 0;
 			}
 		}
@@ -1582,7 +1567,6 @@ static void rt_thread_entry_gsm_rx( void* parameter )
 ***********************************************************/
 void gsm_init( void )
 {
-
 	rt_sem_init( &sem_at, "sem_at", 1, RT_IPC_FLAG_FIFO );
 	rt_mb_init( &mb_gsmrx, "mb_gsmrx", &mb_gsmrx_pool, MB_GSMRX_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );
 	rt_mb_init( &mb_tts, "mb_tts", &mb_tts_pool, MB_TTS_POOL_SIZE / 4, RT_IPC_FLAG_FIFO );

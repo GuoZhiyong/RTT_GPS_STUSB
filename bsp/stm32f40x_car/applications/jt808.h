@@ -122,7 +122,7 @@ typedef struct
 {
 	uint8_t		linkno;         /*所使用的link号*/
 	uint8_t		index;          /*连接有多个选择，定义选择连接的序号*/
-	uint32_t	connect_count;  /*需要连接的次数,是否重连*/
+	uint8_t		need_connect;	/*外部通知需要连接，会根据当前连接状态处理*/
 	CONN_STATE	state;          /*连接状态*/
 	char		ip_addr[16];    /*dns后的IP xxx.xxx.xxx.xxx*/
 	char		type;           /*连接类型 'u':udp client 't':TCP client  'U' udp server*/
@@ -212,6 +212,8 @@ rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res );
    extern GSM_SOCKET socket_iccard;
  */
 extern GSM_SOCKET gsm_socket[3];
+extern GSM_SOCKET *pcurr_socket;
+
 
 #endif
 
