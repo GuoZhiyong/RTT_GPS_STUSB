@@ -303,6 +303,9 @@ void sms_encode_pdu_ucs2( char* info )
 uint8_t analy_param( char* cmd, char*value )
 {
 	char buf[160];
+	char *ip;
+	int port;
+	
 	if( strlen( cmd ) == 0 )
 	{
 		return 0;
@@ -457,7 +460,11 @@ uint8_t analy_param( char* cmd, char*value )
 	}
 	if( strncmp( cmd, "ISP", 3 ) == 0 )         /*	ISP(202.89.23.210£∫9000)*/
 	{
-
+		sscanf(value,"%s:%d",ip,&port);
+		gsm_socket[2].index=2;
+		strcpy(gsm_socket[2].ipstr,ip);
+		gsm_socket[2].port=port;
+		gsm_socket[2].active=1;
 		return 1;
 	}
 	if( strncmp( cmd, "PLATENUM", 8 ) == 0 )    /*PLATENUM(ΩÚA8888)	*/
@@ -662,15 +669,14 @@ void sms_test( uint8_t index )
 FINSH_FUNCTION_EXPORT( sms_test, test sms );
 
 
-void oiap_conn(char *ip,uint16_t port)
+void oiap_test(char *ip,uint16_t port)
 {
-	gsm_socket[2].index=0;
+	gsm_socket[2].index=2;
 	strcpy(gsm_socket[2].ipstr,ip);
 	gsm_socket[2].port=port;
-	gsm_socket[2].state=CONNECT_IDLE;
-
+	gsm_socket[2].active=1;
 }
-FINSH_FUNCTION_EXPORT( oiap_conn, conn onair iap );
+FINSH_FUNCTION_EXPORT( oiap_test, conn onair iap );
 
 #endif
 

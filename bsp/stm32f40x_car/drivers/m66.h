@@ -77,6 +77,8 @@ typedef enum
 	GSM_POWEROFF,               /*已经断电*/
 }T_GSM_STATE;
 
+
+#if 0
 typedef enum
 {
 	SOCKET_STATE_GET	= 0,        /*查询socket状态*/
@@ -90,6 +92,7 @@ typedef enum
 	SOCKET_READY,               /*已完成，可以建立链接*/
 	SOCKET_CLOSE,
 }T_SOCKET_STATE;
+#endif
 
 enum RESP_TYPE
 {
@@ -129,7 +132,7 @@ rt_size_t socket_write( uint8_t linkno, uint8_t* buff, rt_size_t count );
 T_GSM_STATE gsmstate( T_GSM_STATE cmd );
 
 
-T_SOCKET_STATE socketstate( T_SOCKET_STATE cmd );
+//T_SOCKET_STATE socketstate( T_SOCKET_STATE cmd );
 
 
 rt_size_t tts_write( char* info, uint16_t len );

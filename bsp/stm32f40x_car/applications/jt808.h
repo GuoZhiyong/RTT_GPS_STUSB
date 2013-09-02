@@ -90,11 +90,11 @@ typedef enum
 {
 	CONNECT_NONE	= 0,        /*不连接*/
 	CONNECT_IDLE	= 1,        /*空闲，准备连接*/
-	CONNECT_PEER,               /*正在连接到对端*/
-	CONNECTED,                  /*连接成功*/
-	CONNECT_ERROR,              /*连接错误*/
-	CONNECT_CLOSING,            /*正在关闭连接*/
-	CONNECT_CLOSED,             /*连接关闭，区分是主动还是被动*/
+	CONNECT_PEER	= 2,        /*正在连接到对端*/
+	CONNECTED		= 3,        /*连接成功*/
+	CONNECT_ERROR	= 4,        /*连接错误*/
+	CONNECT_CLOSING = 5,        /*正在关闭连接*/
+	CONNECT_CLOSED	= 6,        /*连接关闭，区分是主动还是被动*/
 }CONN_STATE;
 
 #if 0
@@ -120,9 +120,11 @@ typedef struct
 
 typedef struct
 {
-	uint8_t		linkno;         /*所使用的link号*/
-	uint8_t		index;          /*连接有多个选择，定义选择连接的序号*/
-	uint8_t		need_connect;	/*外部通知需要连接，会根据当前连接状态处理*/
+	uint8_t linkno;             /*所使用的link号*/
+	uint8_t index;              /*连接有多个选择，定义选择连接的序号*/
+	int8_t	active;             /*外部通知需要连接，0:默认 -1:挂断 >1:连接*/
+	uint8_t err_no;             /*记录错误编号*/
+
 	CONN_STATE	state;          /*连接状态*/
 	char		ip_addr[16];    /*dns后的IP xxx.xxx.xxx.xxx*/
 	char		type;           /*连接类型 'u':udp client 't':TCP client  'U' udp server*/
@@ -211,9 +213,8 @@ rt_err_t jt808_tx_0x0001( uint16_t seq, uint16_t id, uint8_t res );
    extern GSM_SOCKET socket_slave;
    extern GSM_SOCKET socket_iccard;
  */
-extern GSM_SOCKET gsm_socket[3];
-extern GSM_SOCKET *pcurr_socket;
-
+extern GSM_SOCKET	gsm_socket[3];
+extern GSM_SOCKET	*pcurr_socket;
 
 #endif
 
