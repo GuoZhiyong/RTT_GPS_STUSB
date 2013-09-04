@@ -122,7 +122,7 @@ typedef struct
 {
 	uint8_t linkno;             /*所使用的link号*/
 	uint8_t index;              /*连接有多个选择，定义选择连接的序号*/
-	int8_t	active;             /*外部通知需要连接，0:默认 -1:挂断 >1:连接*/
+	//int8_t	active;             /*外部通知需要连接，0:默认 -1:挂断 >1:连接*/
 	uint8_t err_no;             /*记录错误编号*/
 
 	CONN_STATE	state;          /*连接状态*/

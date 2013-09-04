@@ -852,75 +852,55 @@ static void rt_thread_gsm_socket( void* parameter )
 	{
 		return;
 	}
-
-	if( pcurr_socket->active == 0 )             /*没有动作*/
+	if( pcurr_socket->state == CONNECT_CLOSING ) /*挂断连接*/
 	{
-		return;
-	}
-
-	if( pcurr_socket->active < -1 )             /*挂断连接*/
-	{
-		if( pcurr_socket->state == CONNECTED )  /*挂断连接*/
+		sprintf( buf, "AT%%IPCLOSE=%d\r\n", pcurr_socket->linkno );
+		err = gsm_send( buf, RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 1 );
+		if( err != RT_EOK )
 		{
-			sprintf( buf, "AT%%IPCLOSE=%d\r\n", pcurr_socket->linkno );
-			err = gsm_send( buf, RT_NULL, "OK", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 1 );
-			if( err != RT_EOK )
-			{
-				pcurr_socket->state		= CONNECT_ERROR;
-				pcurr_socket->err_no	= 0x80 | CONNECT_CLOSING;
-			}else
-			{
-				pcurr_socket->state = CONNECT_CLOSING;
-			}
-			goto lbl_gsm_socket_end;
+			pcurr_socket->state		= CONNECT_ERROR;
+			pcurr_socket->err_no	= 0x80 | CONNECT_CLOSING;
 		}else
 		{
-			pcurr_socket->state		= CONNECT_CLOSING;
-			pcurr_socket->active	= 0;
+			pcurr_socket->state = CONNECT_CLOSED;
 		}
+		goto lbl_gsm_socket_end;
 	}
-	if( pcurr_socket->active )/*建立连接*/
-	{
-		if( pcurr_socket->state == CONNECT_PEER )       /*建立连接*/
-		{
-			if( is_ipaddr( pcurr_socket->ipstr ) == 0 ) /*不是IP地址，执行DNS*/
-			{
-				sprintf( buf, "AT%%DNSR=\"%s\"\r\n", pcurr_socket->ipstr );
-				err = gsm_send( buf, resp_DNSR, RT_NULL, RESP_TYPE_FUNC_WITHOK, RT_TICK_PER_SECOND * 10, 1 );
-				if( err != RT_EOK )
-				{
-					pcurr_socket->state		= CONNECT_ERROR;
-					pcurr_socket->err_no	= 0x80 | CONNECT_PEER;
-					goto lbl_gsm_socket_end;
-				}
-			}else
-			{
-				strcpy( pcurr_socket->ip_addr, pcurr_socket->ipstr );
-			}
 
-			if( pcurr_socket->type == 'u' )
-			{
-				sprintf( buf, "AT%%IPOPENX=%d,\"UDP\",\"%s\",%d\r\n", pcurr_socket->linkno, pcurr_socket->ip_addr, pcurr_socket->port );
-			}else
-			{
-				sprintf( buf, "AT%%IPOPENX=%d,\"TCP\",\"%s\",%d\r\n", pcurr_socket->linkno, pcurr_socket->ip_addr, pcurr_socket->port );
-			}
-			err = gsm_send( buf, RT_NULL, "CONNECT", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 1 );
+	if( pcurr_socket->state == CONNECT_PEER )       /*建立连接*/
+	{
+		if( is_ipaddr( pcurr_socket->ipstr ) == 0 ) /*不是IP地址，执行DNS*/
+		{
+			sprintf( buf, "AT%%DNSR=\"%s\"\r\n", pcurr_socket->ipstr );
+			err = gsm_send( buf, resp_DNSR, RT_NULL, RESP_TYPE_FUNC_WITHOK, RT_TICK_PER_SECOND * 30, 1 );
 			if( err != RT_EOK )
 			{
 				pcurr_socket->state		= CONNECT_ERROR;
 				pcurr_socket->err_no	= 0x80 | CONNECT_PEER;
 				goto lbl_gsm_socket_end;
 			}
+		}
+		strcpy( pcurr_socket->ip_addr, pcurr_socket->ipstr );
+		if( pcurr_socket->type == 'u' )
+		{
+			sprintf( buf, "AT%%IPOPENX=%d,\"UDP\",\"%s\",%d\r\n", pcurr_socket->linkno, pcurr_socket->ip_addr, pcurr_socket->port );
+		}else
+		{
+			sprintf( buf, "AT%%IPOPENX=%d,\"TCP\",\"%s\",%d\r\n", pcurr_socket->linkno, pcurr_socket->ip_addr, pcurr_socket->port );
+		}
+		err = gsm_send( buf, RT_NULL, "CONNECT", RESP_TYPE_STR, RT_TICK_PER_SECOND * 10, 1 );
+		if( err != RT_EOK )
+		{
+			pcurr_socket->state		= CONNECT_ERROR;
+			pcurr_socket->err_no	= 0x80 | CONNECT_PEER;
+		}else
+		{
 			pcurr_socket->state = CONNECTED;
-			if( pcurr_socket->active )  /*当前是要连接，现在已经连接成功*/
-			{
-				pcurr_socket->active = 0;
-			}
 		}
 	}
+
 lbl_gsm_socket_end:
-	gsm_state = GSM_TCPIP;              /*socket过程处理完成，结果在state中*/
+	gsm_state = GSM_TCPIP;       /*socket过程处理完成，结果在state中*/
 	rt_kprintf( "\n%d gsm_socket>socket_state=%d", rt_tick_get( ), pcurr_socket->state );
 }
 

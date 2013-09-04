@@ -464,7 +464,7 @@ uint8_t analy_param( char* cmd, char*value )
 		gsm_socket[2].index=2;
 		strcpy(gsm_socket[2].ipstr,ip);
 		gsm_socket[2].port=port;
-		gsm_socket[2].active=1;
+		gsm_socket[2].state=CONNECT_IDLE;
 		return 1;
 	}
 	if( strncmp( cmd, "PLATENUM", 8 ) == 0 )    /*PLATENUM(ΩÚA8888)	*/
@@ -674,7 +674,7 @@ void oiap_test(char *ip,uint16_t port)
 	gsm_socket[2].index=2;
 	strcpy(gsm_socket[2].ipstr,ip);
 	gsm_socket[2].port=port;
-	gsm_socket[2].active=1;
+	gsm_socket[2].state=CONNECT_IDLE;
 }
 FINSH_FUNCTION_EXPORT( oiap_test, conn onair iap );
 

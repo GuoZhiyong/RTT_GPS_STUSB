@@ -59,6 +59,7 @@ static void show( void )
 ***********************************************************/
 static void keypress( unsigned int key )
 {
+	char buf[16];
 	switch( key )
 	{
 		case KEY_MENU:
@@ -69,7 +70,12 @@ static void keypress( unsigned int key )
 			fsend++;
 			if( fsend == 1 )
 			{
-				jt808_tx( 0x0701, "0123456789", 10 );
+				buf[0]=0;
+				buf[1]=0;
+				buf[2]=0;
+				buf[3]=1;
+				buf[4]='1';
+				jt808_tx( 0x0701,buf, 5 );
 				lcd_fill( 0 );
 				lcd_text12( 10, 10, "电子运单上报完成", 16, LCD_MODE_SET );
 				lcd_update_all( );

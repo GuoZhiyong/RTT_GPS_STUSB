@@ -179,20 +179,15 @@ rt_err_t rtc_init(void )
 			rt_kprintf( "\n%s(%d) RTC error", __func__, __LINE__ );
 			goto lbl_rtc_err;
 		}
-		/* Display the RTC Time and Alarm */
-		datetime( );
-		rt_kprintf("\nRTC OK\n");
+		rt_kprintf("\nRTC ReInit OK");
 		goto lbl_rtc_ok;
 	}else
 	{
-		rt_kprintf( "\nwait ForSynchro\n" );
-
+		rt_kprintf( "\nwait ForSynchro" );
 		/* Enable the PWR clock */
 		RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
-
 		/* Allow access to RTC */
 		PWR_BackupAccessCmd( ENABLE );
-
 		/* Wait for RTC APB registers synchronisation */
 		if( RTC_WaitForSynchro( ) == SUCCESS )
 		{
