@@ -871,7 +871,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		rt_kprintf( "\n%d gps<%s", rt_tick_get( ), psrc );
 	}
 	/*±£´æRAWÊý¾Ý*/
-	jt808_gps_pack( (char*)pinfo, length );
+	//jt808_gps_pack( (char*)pinfo, length );
 
 	if( strncmp( psrc + 3, "GGA,", 4 ) == 0 )
 	{

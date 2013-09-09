@@ -21,7 +21,6 @@
 
 static uint32_t lasttick;
 unsigned char	dispstat		= 0;
-unsigned int	reset_firstset	= 0;
 
 unsigned char	gsm_g[] = {
 	0x1c,                                                                       /*[   ***  ]*/
@@ -449,7 +448,6 @@ static void msg( void *p )
 static void show( void )
 {
 	Disp_Idle( );
-	reset_firstset = 0;
 }
 
 /***********************************************************
@@ -468,43 +466,16 @@ static void keypress( unsigned int key )
 	switch( key )
 	{
 		case KEY_MENU:
-			CounterBack = 0;
-			SetVIN_NUM	= 1;
-			OK_Counter	= 0;
-
-			CounterBack = 0;
-			UpAndDown	= 1;
-
 			pMenuItem = &Menu_2_InforCheck;
 			pMenuItem->show( );
-			reset_firstset = 0;
 			break;
 		case KEY_OK:
-			if( reset_firstset == 0 )
-			{
-				reset_firstset = 1;
-			} else if( reset_firstset == 3 )
-			{
-				reset_firstset = 4;
-			} else if( reset_firstset == 4 )
-			{
-				reset_firstset = 5;
-			}
+
 			break;
 		case KEY_UP:
-			if( reset_firstset == 1 )
-			{
-				reset_firstset = 2;
-			} else if( reset_firstset == 2 )
-			{
-				reset_firstset = 3;
-			} else if( reset_firstset == 5 )
-			{
-				reset_firstset = 6;
-			}
+
 			break;
 		case KEY_DOWN:
-			reset_firstset = 0;
 			//´òÓ¡¿ªµç
 			//GPIO_SetBits( GPIOB, GPIO_Pin_6 );
 

@@ -67,7 +67,7 @@ static void display( void )
 		pMenuItem = &Menu_0_5_DeviceID;
 		pMenuItem->show( );
 		
-	}else
+	}else /*ÊäÈë×ÖÄ¸Êı×Ö*/
 	{
 		if( pos < 0 )
 		{
@@ -115,7 +115,6 @@ static void keypress( unsigned int key )
 				input_pos += 2;
 			}else
 			{
-				//memcpy( &chepai[input_pos], asc + pos, 1 );
 				chepai[input_pos]=*(asc+pos);
 				input_pos++;
 			}
@@ -123,10 +122,12 @@ static void keypress( unsigned int key )
 			display( );
 			break;
 		case KEY_UP:
+		case KEY_UP_REPEAT:
 			pos--;
 			display( );
 			break;
 		case KEY_DOWN:
+		case KEY_DOWN_REPEAT:
 			pos++;
 			display( );
 			break;

@@ -76,7 +76,7 @@ static void keypress( unsigned int key )
 			{
 				if( strncmp( (char*)input, ENTER_CODE1, 6 ) == 0 )	/**/
 				{
-					pMenuItem = &Menu_0_4_Colour;
+					pMenuItem = &Menu_0_7_VehicleSet;
 					pMenuItem->show( );
 				}
 				else if( strncmp( (char*)input, ENTER_CODE2, 6 ) == 0 ) /*π§≥Ã…Ë÷√*/

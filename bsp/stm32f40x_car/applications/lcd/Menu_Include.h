@@ -144,6 +144,7 @@ extern MENUITEM			Menu_0_3_vin;
 extern MENUITEM			Menu_0_4_Colour;
 extern MENUITEM			Menu_0_5_DeviceID;
 extern MENUITEM			Menu_0_6_Engineer;
+extern MENUITEM			Menu_0_7_VehicleSet;
 
 extern MENUITEM			Menu_0_loggingin;
 

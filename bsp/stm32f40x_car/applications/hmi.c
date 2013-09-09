@@ -161,6 +161,7 @@ static void rt_thread_entry_hmi( void* parameter )
 	pMenuItem->tick = rt_tick_get( );
 	while( 1 )
 	{
+		rt_thread_delay( RT_TICK_PER_SECOND / 20 ); /*50ms调用一次*/
 		CheckICCard( );
 		key = keycheck( );
 		if( key )                                               /*有键按下，打开背光*/
@@ -168,7 +169,7 @@ static void rt_thread_entry_hmi( void* parameter )
 			pMenuItem->tick = rt_tick_get( );
 			pMenuItem->keypress( key );                         //每个子菜单的 按键检测  时钟源50ms timer
 		}
-		pMenuItem->timetick( rt_tick_get( ) );                  // 每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
+		pMenuItem->timetick( rt_tick_get( ) );                  //每个子菜单下 显示的更新 操作  时钟源是 任务执行周期
 
 		if( beep_count )                                        /*声音提示*/
 		{
@@ -204,7 +205,7 @@ static void rt_thread_entry_hmi( void* parameter )
 				}
 			}
 		}
-		rt_thread_delay( RT_TICK_PER_SECOND / 20 ); /*50ms调用一次*/
+		
 	}
 }
 
