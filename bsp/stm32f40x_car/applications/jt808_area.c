@@ -128,14 +128,6 @@ static char				msgpool_area[256];
 
 static u16				test_speed;
 
-//*********************************************************************************
-//声明外部函数
-//*********************************************************************************
-extern u32 Times_To_LongInt( T_TIMES *T );
-
-
-//extern void printer_data_hex( u8 *pSrc, u16 nSrcLength );
-
 
 /*********************************************************************************
   *函数名称:rt_err_t area_jt808_0x8600(uint16_t fram_num,uint8_t *pmsg,u16 msg_len)
@@ -416,31 +408,13 @@ u8 Check_CooisInRect( TypeStruct_Coor *pCoo, TypeDF_AreaHead *pHead )
 *********************************************************************************/
 u8 Check_Area_Time( u8 * StartTime, u8 *EndTime )
 {
-	u8	i;
-	u8	T0[6];
-	u8	T1[6];
-	u8	T2[6];
-	u32 temp0, temp1, temp2;
-	memset( T0, 0, 6 );
-	memset( T1, 0, 6 );
-	memset( T2, 0, 6 );
+	MYTIME	start;
+	MYTIME	end;
 
-	for( i = 0; i < 6; i++ )
-	{
-		if( StartTime[i] )
-		{
-			break;
-		}
-	}
-	memcpy( T0 + i, gps_datetime + i, 6 - i );
-	memcpy( T1 + i, StartTime + i, 6 - i );
-	memcpy( T2 + i, EndTime + i, 6 - i );
+	start	= mytime_from_bcd( StartTime );
+	end		= mytime_from_bcd( EndTime );
 
-	temp0	= Times_To_LongInt( (T_TIMES*)T0 );
-	temp1	= Times_To_LongInt( (T_TIMES*)T1 );
-	temp2	= Times_To_LongInt( (T_TIMES*)T2 );
-
-	if( ( temp0 >= temp1 ) && ( temp0 < temp2 ) )
+	if( ( mytime_now >= start ) && ( mytime_now < end ) )
 	{
 		return 1;
 	}

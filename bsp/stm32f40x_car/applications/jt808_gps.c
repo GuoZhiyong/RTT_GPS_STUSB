@@ -52,7 +52,7 @@ uint32_t		jt808_status_last	= 0x0;          /*上一次的状态信息*/
 static uint32_t jt808_report_interval	= 60;       /*GPS上报时间间隔，为0:停止上报*/
 static uint32_t jt808_report_distance	= 1000;     /*GPS上报距离间隔,为0 停止上报*/
 
-static uint32_t distance		= 0;                /*定距上报当前距离值*/
+static float distance		= 0;                /*定距上报当前距离值*/
 static uint32_t total_distance	= 0;                /*总的累计里程*/
 
 uint16_t		jt808_8202_track_interval	= 0;    /*jt808_8202 临时位置跟踪控制*/
@@ -123,7 +123,7 @@ GPS_STATUS		gps_status = {0x3020,MODE_BDGPS, 0, 0, 0 };
    是从Epoch（1970年1月1日00:00:00 UTC）开始所经过的秒数，不考虑闰秒。
 
  */
-uint32_t	utc_last	= 0;
+
 uint32_t	utc_now		= 0;
 MYTIME		mytime_now	= 0;
 
@@ -272,6 +272,8 @@ static __inline unsigned long linux_mktime( unsigned int year, unsigned int mon,
 /*计算距离*/
 uint32_t calc_distance( void )
 {
+	static uint32_t utc_distance_last=0;
+#if 0
 	if( gps_lati_last )                             /*首次定位*/
 	{
 		distance				= dis_Point2Point( gps_lati_last, gps_longi_last, gps_lati, gps_longi );
@@ -282,6 +284,14 @@ uint32_t calc_distance( void )
 	gps_longi_last	= gps_longi;
 	/**/
 	return distance;
+#endif
+/*速度积分*/
+	if(((utc_now-utc_distance_last)==1)||(utc_distance_last==0))
+	{
+		distance				+= gps_speed/3.6;			/*单位kmh->m/s*/
+		total_distance			+= gps_speed/3.6;
+		jt808_param.id_0xF020	= total_distance;   /*总里程m*/
+	}
 }
 
 #if 0
@@ -343,6 +353,7 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 ***********************************************************/
 static void process_gps_report( void )
 {
+	static uint32_t	utc_report_last	= 0;
 	uint32_t	tmp;
 	uint8_t		flag_send	= 0; /*默认不上报*/
 	uint8_t		*palarmdata = RT_NULL;
@@ -403,7 +414,7 @@ static void process_gps_report( void )
 			{
 				jt808_report_interval = jt808_param.id_0x0027;
 			}
-			utc_last = utc_now;                         /*重新计时*/
+			utc_report_last = utc_now;                         /*重新计时*/
 		}
 		if( jt808_param.id_0x0020 )                     /*有定距上报*/
 		{
@@ -429,7 +440,7 @@ static void process_gps_report( void )
 		if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
 		{
 			jt808_report_interval	= jt808_param.id_0x0028;
-			utc_last				= utc_now;
+			utc_report_last				= utc_now;
 		}
 		if( jt808_param.id_0x0020 )                     /*有定距上报*/
 		{
@@ -441,10 +452,10 @@ static void process_gps_report( void )
 /*计算定时上报*/
 	if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 ) /*有定时上报*/
 	{
-		if( utc_now - utc_last >= jt808_report_interval )
+		if( utc_now - utc_report_last >= jt808_report_interval )
 		{
 			flag_send	|= FLAG_SEND_FIX_TIME;
-			utc_last	= utc_now;
+			utc_report_last	= utc_now;
 		}
 	}
 /*计算定距上报*/
@@ -469,8 +480,6 @@ static void process_gps_report( void )
  */
 /*生成要上报的数据*/
 #if 1
-
-	//if( gps_datetime[5] == 0 )
 	if( flag_send )
 	{
 		jt808_tx( 0x0200, buf, 28 + alarm_length );

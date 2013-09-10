@@ -304,7 +304,7 @@ void vdr_08_put( MYTIME datetime, uint8_t speed, uint8_t status )
 			}
 			sst25_write_through( addr, vdr_08_info, sizeof( vdr_08_info ) );
 			rt_sem_release( &sem_dataflash );
-			rt_kprintf( "\n%d>写入08 地址:%08x(sect:count=%d:%d) 值:%08x", rt_tick_get( ), addr, sect_info[0].sector, sect_info[0].index, vdr_08_time );
+			//rt_kprintf( "\n%d>写入08 地址:%08x(sect:count=%d:%d) 值:%08x", rt_tick_get( ), addr, sect_info[0].sector, sect_info[0].index, vdr_08_time );
 
 #endif
 			memset( vdr_08_info, 0xFF, sizeof( vdr_08_info ) ); /*新的记录，初始化为0xFF*/
@@ -360,7 +360,7 @@ void vdr_09_put( MYTIME datetime )
 	sst25_write_through( addr, buf, 11 );
 	rt_sem_release( &sem_dataflash );
 
-	rt_kprintf( "\n%d>save 09 data addr=%08x", rt_tick_get( ), addr );
+	//rt_kprintf( "\n%d>save 09 data addr=%08x", rt_tick_get( ), addr );
 }
 
 /*
@@ -410,7 +410,7 @@ void vdr_10_put( MYTIME datetime )
 	sst25_write_through( addr, buf, 238 );
 
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "\n%d>save 10 data addr=%08x", rt_tick_get( ), addr );
+	//rt_kprintf( "\n%d>save 10 data addr=%08x", rt_tick_get( ), addr );
 }
 
 /***********************************************************
@@ -463,7 +463,7 @@ void vdr_11_put( MYTIME start, MYTIME end )
 	sst25_write_through( addr, buf, 54 );
 
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "\n%d>save 11 data addr=%08x", rt_tick_get( ), addr );
+	//rt_kprintf( "\n%d>save 11 data addr=%08x", rt_tick_get( ), addr );
 }
 
 /*
@@ -530,7 +530,7 @@ void vdr_16_put( MYTIME start, MYTIME end, uint16_t speed_min, uint16_t speed_ma
 
 	sst25_write_back( addr, buf, 22 );
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "\n%d>save16 data id=%d,addr=%08x", rt_tick_get( ), vdr16_id_curr, addr );
+	//rt_kprintf( "\n%d>save16 data id=%d,addr=%08x", rt_tick_get( ), vdr16_id_curr, addr );
 }
 
 /*

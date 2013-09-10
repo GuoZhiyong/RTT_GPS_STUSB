@@ -26,13 +26,13 @@ typedef u8 bool;
 
 /*串口接收缓存区定义*/
 #define UART2_RXBUF_SIZE 1024
-extern uint8_t	uart2_rxbuf[UART2_RXBUF_SIZE];
-extern uint16_t uart2_rxbuf_wr, uart2_rxbuf_rd;
-extern uint32_t last_rx_tick;
+//extern uint8_t	uart2_rxbuf[UART2_RXBUF_SIZE];
+//extern uint16_t uart2_rxbuf_wr, uart2_rxbuf_rd;
+//extern uint32_t last_rx_tick;
 
 #define UART2_RX_SIZE 1024
-extern uint8_t	uart2_rx[UART2_RX_SIZE];
-extern uint16_t uart2_rx_wr;
+//extern uint8_t	uart2_rx[UART2_RX_SIZE];
+//extern uint16_t uart2_rx_wr;
 
 
 

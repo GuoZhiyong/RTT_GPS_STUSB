@@ -21,6 +21,7 @@
 #include "math.h"
 #include "jt808_gps.h"
 
+
 /*
    软件模拟I2C 同MMA8451通讯
 
@@ -194,11 +195,11 @@
 #define OFF_Y_REG	0x30
 #define OFF_Z_REG	0x31
 
-
 static struct rt_device dev_mma8451;
 
 /*是否是首次运行，首次运行不上报状态*/
-static uint8_t firstrun=1;
+static uint8_t firstrun = 1;
+
 
 /***********************************************************
 * Function:       // 函数名称
@@ -605,30 +606,45 @@ uint8_t				PL_P_L_THS_REG_vlaue	= 0xcf;
 
 
 /*
-读取
+   读取
  */
 
-static uint32_t tick_debonce;		/*去抖*/
+static uint32_t tick_debonce = 0;  /*去抖*/
+
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 void EXTI9_5_IRQHandler( void )
 {
-	uint8_t ret,value1,value2,value3;
+	uint8_t ret, value1, value2, value3;
 	rt_interrupt_enter( );
 	if( EXTI_GetITStatus( EXTI_Line5 ) != RESET )
 	{
-		ret=IIC_RegRead( MMA845X_ADDR, INT_SOURCE_REG, &value1 );
-		ret=IIC_RegRead( MMA845X_ADDR, PL_STATUS_REG, &value2 );
-		ret=IIC_RegRead( MMA845X_ADDR, PULSE_SRC_REG, &value3 );
+		ret = IIC_RegRead( MMA845X_ADDR, INT_SOURCE_REG, &value1 );
+		ret = IIC_RegRead( MMA845X_ADDR, PL_STATUS_REG, &value2 );
+		ret = IIC_RegRead( MMA845X_ADDR, PULSE_SRC_REG, &value3 );
 		//if((value2&0x7F)<0x40)	/*有倾斜发生  0x8x 倾斜发生*/
-		if(value2<0xc0)
+		if( value2 < 0xc0 ) /*翻了*/
 		{
-			beep(2,1,1);
-			jt808_alarm|=BIT_ALARM_TILT;
-		}
-		else					/*0xcx 倾斜还原*/
+			beep( 2, 1, 1 );
+			tick_debonce++;
+			if( tick_debonce > 50 )
+			{
+				jt808_alarm |= BIT_ALARM_TILT;
+			}
+		}else /*0xcx 倾斜还原*/
 		{
-			jt808_alarm&=~BIT_ALARM_TILT;
+			tick_debonce	= 0;
+			jt808_alarm		&= ~BIT_ALARM_TILT;
 		}
-		rt_kprintf("\nINT=%02x %02x %02x\n",value1,value2,value3);
+		//rt_kprintf("\nINT=%02x %02x %02x\n",value1,value2,value3);
 		EXTI_ClearITPendingBit( EXTI_Line5 );
 	}
 	rt_interrupt_leave( );
@@ -685,8 +701,8 @@ void EXTILine5_Config( void )
 static uint8_t mma8451_config( uint16_t param1, uint16_t param2 )
 {
 	unsigned char res, value;
-	param_mma8451_word1=param1;
-	param_mma8451_word2=param2;
+	param_mma8451_word1 = param1;
+	param_mma8451_word2 = param2;
 
 //standby
 	if( IIC_RegWrite( MMA845X_ADDR, CTRL_REG1, ( CTRL_REG1_value & ~ACTIVE_MASK ) ) )
@@ -898,8 +914,32 @@ static uint8_t mma8451_config( uint16_t param1, uint16_t param2 )
 	}
 
 	//加速度门限 0.1g 1-79	扩展为0.0625  1-127  扩大1.6倍
+
+
 /*
-	res = ( ( param_mma8451_word2 & 0xff00 ) >> 8 ) * 1.6;
+   res = ( ( param_mma8451_word2 & 0xff00 ) >> 8 ) * 1.6;
+
+   if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSX_REG, res ) )
+   {
+   goto lbl_mma8451_config_err;
+   }
+   if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSY_REG, res ) )
+   {
+   goto lbl_mma8451_config_err;
+   }
+   if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSZ_REG, res ) )
+   {
+   goto lbl_mma8451_config_err;
+   }
+
+   res = param_mma8451_word2 & 0xff;
+   if( IIC_RegWrite( MMA845X_ADDR, PULSE_TMLT_REG, res ) )
+   {
+   goto lbl_mma8451_config_err;
+   }
+ */
+
+	res = ( param_mma8451_word2 & 0xff ) * 1.6;
 
 	if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSX_REG, res ) )
 	{
@@ -914,35 +954,11 @@ static uint8_t mma8451_config( uint16_t param1, uint16_t param2 )
 		goto lbl_mma8451_config_err;
 	}
 
-	res = param_mma8451_word2 & 0xff;
+	res = ( param_mma8451_word2 & 0xff00 ) >> 8;
 	if( IIC_RegWrite( MMA845X_ADDR, PULSE_TMLT_REG, res ) )
 	{
 		goto lbl_mma8451_config_err;
 	}
-*/
-
-	res = ( param_mma8451_word2 & 0xff)*1.6;
-
-	if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSX_REG, res ) )
-	{
-		goto lbl_mma8451_config_err;
-	}
-	if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSY_REG, res ) )
-	{
-		goto lbl_mma8451_config_err;
-	}
-	if( IIC_RegWrite( MMA845X_ADDR, PULSE_THSZ_REG, res ) )
-	{
-		goto lbl_mma8451_config_err;
-	}
-
-	res = (param_mma8451_word2 & 0xff00)>>8;
-	if( IIC_RegWrite( MMA845X_ADDR, PULSE_TMLT_REG, res ) )
-	{
-		goto lbl_mma8451_config_err;
-	}
-
-
 
 	if( IIC_RegWrite( MMA845X_ADDR, CTRL_REG1, ( CTRL_REG1_value | ACTIVE_MASK ) ) )
 	{
@@ -954,16 +970,13 @@ static uint8_t mma8451_config( uint16_t param1, uint16_t param2 )
 		goto lbl_mma8451_config_err;
 	}
 
-
 	return ERR_NONE;
 
 lbl_mma8451_config_err:
 	return res;
 }
 
-FINSH_FUNCTION_EXPORT(mma8451_config ,setup sensor);
-
-
+FINSH_FUNCTION_EXPORT( mma8451_config, setup sensor );
 
 
 /*
@@ -974,7 +987,6 @@ FINSH_FUNCTION_EXPORT(mma8451_config ,setup sensor);
  */
 
 static uint8_t sensor_info[2] = { 0 };
-
 
 
 /***********************************************************
@@ -1106,6 +1118,16 @@ ALIGN( RT_ALIGN_SIZE )
 static char thread_sensor_stack[512];
 struct rt_thread thread_sensor;
 
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
 static void rt_thread_entry_sensor( void* parameter )
 {
 	uint8_t		int_source, pl;
@@ -1219,11 +1241,5 @@ void mma8451_driver_init( void )
 	rt_device_register( &dev_mma8451, "sensor", RT_DEVICE_FLAG_RDWR );
 	rt_device_init( &dev_mma8451 );
 }
-
-
-
-
-
-
 
 /************************************** The End Of File **************************************/

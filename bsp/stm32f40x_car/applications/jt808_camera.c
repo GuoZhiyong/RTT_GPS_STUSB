@@ -744,7 +744,7 @@ rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 	TempPackageHead.Channel_ID		= pmsg[1];
 	TempPackageHead.TiggerStyle		= pmsg[2];
 	///查找符合条件的图片，并将图片地址存入ptempbuf中
-	mediatotal = Cam_Flash_SearchPic( (T_TIMES*)( pmsg + 3 ), (T_TIMES*)( pmsg + 9 ), &TempPackageHead, ptempbuf );
+	mediatotal = Cam_Flash_SearchPic( mytime_from_bcd( pmsg + 3 ), mytime_from_bcd( pmsg + 9 ), &TempPackageHead, ptempbuf );
 
 	if( mediatotal > ( JT808_PACKAGE_MAX - 4 ) / 35 )
 	{
@@ -832,7 +832,7 @@ rt_err_t Cam_jt808_0x8803( uint8_t linkno, uint8_t *pmsg )
 	TempPackageHead.TiggerStyle		= pmsg[2];
 	media_delete					= pmsg[15];
 	///查找符合条件的图片，并将图片地址存入ptempbuf中
-	mediatotal = Cam_Flash_SearchPic( (T_TIMES*)( pmsg + 3 ), (T_TIMES*)( pmsg + 9 ), &TempPackageHead, ptempbuf );
+	mediatotal = Cam_Flash_SearchPic( mytime_from_bcd( pmsg + 3 ), mytime_from_bcd( pmsg + 9 ), &TempPackageHead, ptempbuf );
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	for( i = 0; i < mediatotal; i++ )
 	{
