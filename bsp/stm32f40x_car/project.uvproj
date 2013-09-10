@@ -1346,6 +1346,11 @@
               <FileType>1</FileType>
               <FilePath>.\applications\lcd\Menu_0_6_Engineer.c</FilePath>
             </File>
+            <File>
+              <FileName>Menu_0_7_VehicleSet.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\lcd\Menu_0_7_VehicleSet.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

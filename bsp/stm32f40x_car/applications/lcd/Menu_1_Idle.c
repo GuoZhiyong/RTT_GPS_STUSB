@@ -582,9 +582,10 @@ static void timetick( unsigned int systick )
 	Cent_To_Disp( );
 #endif
 
-	if( systick - lasttick >= RT_TICK_PER_SECOND )
+	if( systick - lasttick >= 50 )
 	{
 		Disp_Idle( );
+		lasttick=systick;
 	}
 }
 
