@@ -129,6 +129,8 @@ void gps_rx( uint8_t * pinfo, uint16_t length );
 
 
 void jt808_gps_init( void );
+void jt808_report_get( void );
+
 
 
 #endif
