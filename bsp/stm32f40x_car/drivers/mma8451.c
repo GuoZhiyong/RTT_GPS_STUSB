@@ -608,8 +608,14 @@ uint8_t				PL_P_L_THS_REG_vlaue	= 0xcf;
 /*
    读取
  */
+#define TILT_NONE	0
+#define TILT_ON		1
+#define TILT_OFF	2
 
-static uint32_t tick_debonce = 0;  /*去抖*/
+static uint32_t tilt_tick	= 0;            /*状态变化的时刻*/
+static uint32_t tilt_status = TILT_NONE;    /*状态 0:正常 1:倾斜 2:倾斜回正*/
+/*声明一个定时器，用来定时检查sensor*/
+struct rt_timer tmr_sensor;
 
 
 /***********************************************************
@@ -627,24 +633,24 @@ void EXTI9_5_IRQHandler( void )
 	rt_interrupt_enter( );
 	if( EXTI_GetITStatus( EXTI_Line5 ) != RESET )
 	{
-		ret = IIC_RegRead( MMA845X_ADDR, INT_SOURCE_REG, &value1 );
+		//ret = IIC_RegRead( MMA845X_ADDR, INT_SOURCE_REG, &value1 );	/*总是0x10*/
 		ret = IIC_RegRead( MMA845X_ADDR, PL_STATUS_REG, &value2 );
 		ret = IIC_RegRead( MMA845X_ADDR, PULSE_SRC_REG, &value3 );
 		//if((value2&0x7F)<0x40)	/*有倾斜发生  0x8x 倾斜发生*/
-		if( value2 < 0xc0 ) /*翻了*/
+		if( value2 < 0xc0 )                     /*翻了*/
 		{
 			beep( 2, 1, 1 );
-			tick_debonce++;
-			if( tick_debonce > 50 )
+			if( tilt_status != TILT_ON )
 			{
-				jt808_alarm |= BIT_ALARM_TILT;
+				tilt_tick	= rt_tick_get( );   /*记录当前翻的时刻*/
+				tilt_status = TILT_ON;
 			}
 		}else /*0xcx 倾斜还原*/
 		{
-			tick_debonce	= 0;
-			jt808_alarm		&= ~BIT_ALARM_TILT;
+			tilt_tick	= rt_tick_get( );       /*记录当前翻的时刻*/
+			tilt_status = TILT_OFF;
 		}
-		//rt_kprintf("\nINT=%02x %02x %02x\n",value1,value2,value3);
+		//rt_kprintf( "\nINT=%02x %02x\n", value2, value3 );
 		EXTI_ClearITPendingBit( EXTI_Line5 );
 	}
 	rt_interrupt_leave( );
@@ -1114,6 +1120,7 @@ static rt_err_t mma8451_close( rt_device_t dev )
 #define MMA8451_TILT	2   /*倾斜检测*/
 #define MMA8451_TAP		3   /*震动检测*/
 
+#if 0
 ALIGN( RT_ALIGN_SIZE )
 static char thread_sensor_stack[512];
 struct rt_thread thread_sensor;
@@ -1209,6 +1216,9 @@ static void rt_thread_entry_sensor( void* parameter )
 	}
 }
 
+#endif
+
+
 /***********************************************************
 * Function:
 * Description:
@@ -1218,6 +1228,31 @@ static void rt_thread_entry_sensor( void* parameter )
 * Return:
 * Others:
 ***********************************************************/
+static void cb_tmr_sensor( void* parameter )
+{
+	if( tilt_status == TILT_ON )
+	{
+		if( rt_tick_get( ) - tilt_tick > 300 ) /*3秒*/
+		{
+			if( ( jt808_alarm & BIT_ALARM_TILT ) == 0 )
+			{
+				rt_kprintf( "\n侧翻" );
+			}
+			jt808_alarm |= ( BIT_ALARM_TILT );
+		}
+	}
+	if( tilt_status == TILT_OFF )
+	{
+		if( rt_tick_get( ) - tilt_tick > 300 ) /*3秒*/
+		{
+			jt808_alarm &= ~( BIT_ALARM_TILT );
+			tilt_status = TILT_NONE;
+			rt_kprintf( "\n侧翻回正" );
+		}
+	}
+}
+
+/***/
 void mma8451_driver_init( void )
 {
 /*
@@ -1240,6 +1275,14 @@ void mma8451_driver_init( void )
 
 	rt_device_register( &dev_mma8451, "sensor", RT_DEVICE_FLAG_RDWR );
 	rt_device_init( &dev_mma8451 );
+
+	rt_timer_init( &tmr_sensor, "tmr_sensor",   /* 定时器名字是 tmr_sensor */
+	               cb_tmr_sensor,               /* 超时时回调的处理函数 */
+	               RT_NULL,                     /* 超时函数的入口参数 */
+	               RT_TICK_PER_SECOND / 10,     /* 定时长度，以OS Tick为单位 */
+	               RT_TIMER_FLAG_PERIODIC );    /* 周期性定时器 */
+
+	rt_timer_start( &tmr_sensor );
 }
 
 /************************************** The End Of File **************************************/

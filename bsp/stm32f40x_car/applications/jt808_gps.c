@@ -52,7 +52,7 @@ uint32_t		jt808_status_last	= 0x0;          /*上一次的状态信息*/
 static uint32_t jt808_report_interval	= 60;       /*GPS上报时间间隔，为0:停止上报*/
 static uint32_t jt808_report_distance	= 1000;     /*GPS上报距离间隔,为0 停止上报*/
 
-static float distance		= 0;                /*定距上报当前距离值*/
+static float	distance		= 0;                /*定距上报当前距离值*/
 static uint32_t total_distance	= 0;                /*总的累计里程*/
 
 uint16_t		jt808_8202_track_interval	= 0;    /*jt808_8202 临时位置跟踪控制*/
@@ -103,7 +103,7 @@ uint32_t	gps_lati;
 uint32_t	gps_longi;
 uint16_t	gps_speed;
 
-uint16_t	gps_cog;        /*course over ground*/
+uint16_t	gps_cog; /*course over ground*/
 uint16_t	gps_alti;
 uint8_t		gps_datetime[6];
 
@@ -114,7 +114,7 @@ static uint32_t gps_longi_last	= 0;
 /*保存gps基本位置信息*/
 GPS_BASEINFO	gps_baseinfo;
 /*gps的状态*/
-GPS_STATUS		gps_status = {0x3020,MODE_BDGPS, 0, 0, 0 };
+GPS_STATUS		gps_status = { 0x3020, MODE_BDGPS, 0, 0, 0 };
 
 
 /*
@@ -186,7 +186,7 @@ static void adjust_mytime_now( void )
 {
 	uint8_t year, month, day, hour, minute, sec;
 
-	if( mytime_now )            /*mytime_now经过gps定位后的授时*/
+	if( mytime_now ) /*mytime_now经过gps定位后的授时*/
 	{
 		sec		= SEC( mytime_now );
 		minute	= MINUTE( mytime_now );
@@ -256,23 +256,23 @@ static __inline unsigned long linux_mktime( unsigned int year, unsigned int mon,
                                             unsigned int day, unsigned int hour,
                                             unsigned int min, unsigned int sec )
 {
-	if( 0 >= (int)( mon -= 2 ) )                    /**//* 1..12 -> 11,12,1..10 */
+	if( 0 >= (int)( mon -= 2 ) )    /**//* 1..12 -> 11,12,1..10 */
 	{
-		mon		+= 12;                              /**//* Puts Feb last since it has leap day */
+		mon		+= 12;              /**//* Puts Feb last since it has leap day */
 		year	-= 1;
 	}
 
 	return ( ( ( (unsigned long)( year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day ) +
 	             year * 365 - 719499
-	             ) * 24 + hour                      /**//* now have hours */
-	           ) * 60 + min                         /**//* now have minutes */
-	         ) * 60 + sec;                          /**//* finally seconds */
+	             ) * 24 + hour      /**//* now have hours */
+	           ) * 60 + min         /**//* now have minutes */
+	         ) * 60 + sec;          /**//* finally seconds */
 }
 
 /*计算距离*/
 uint32_t calc_distance( void )
 {
-	static uint32_t utc_distance_last=0;
+	static uint32_t utc_distance_last = 0;
 #if 0
 	if( gps_lati_last )                             /*首次定位*/
 	{
@@ -286,10 +286,10 @@ uint32_t calc_distance( void )
 	return distance;
 #endif
 /*速度积分*/
-	if(((utc_now-utc_distance_last)==1)||(utc_distance_last==0))
+	if( ( ( utc_now - utc_distance_last ) == 1 ) || ( utc_distance_last == 0 ) )
 	{
-		distance				+= gps_speed/3.6;			/*单位kmh->m/s*/
-		total_distance			+= gps_speed/3.6;
+		distance				+= gps_speed / 3.6; /*单位kmh->m/s*/
+		total_distance			+= gps_speed / 3.6;
 		jt808_param.id_0xF020	= total_distance;   /*总里程m*/
 	}
 }
@@ -329,6 +329,122 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 
 #endif
 
+#define DF_POSTREPORT_START		0x00298000
+#define DF_POSTREPORT_END		0x002FC000
+#define DF_POSTREPORT_SECTORS	100
+
+typedef __packed struct
+{
+	uint32_t	mn;
+	uint32_t	id;
+	uint8_t		attr;
+	uint8_t		unused;
+	uint16_t	len;
+}GPS_REPORT_HEAD;
+
+static uint32_t postreport_curr_addr	= 0;    /*当前记录的地址*/
+static uint32_t postreport_curr_id		= 0;    /*当前记录的最大id*/
+static uint32_t postreport_curr_len		= 0;    /*当前记录的用户信息长度*/
+
+static uint32_t postreport_addr_rd	= 0;        /*要读记录的位置,第一个未上报的数据位置*/
+static uint32_t postreport_count	= 0;        /*还没有上报的记录数*/
+
+
+/*
+   查找第一个未上报数据的位置，最新写入位置
+ */
+void jt808_postreport_init( void )
+{
+	uint32_t		addr;
+	GPS_REPORT_HEAD head;
+	uint32_t		id = 0;
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
+	for( addr = DF_POSTREPORT_START; addr < DF_POSTREPORT_END; addr += 64 )
+	{
+		sst25_read( addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+		if( head.mn == 0x474E5353 )             /*有效记录*/
+		{
+			if( head.id >= postreport_curr_id ) /*查找最近记录*/
+			{
+				postreport_curr_id		= head.id;
+				postreport_curr_addr	= addr; /*当前记录的地址*/
+				postreport_curr_len		= head.len;
+			}
+			if( head.attr == 0xFF )             /*还没有发送*/
+			{
+				postreport_count++;             /*统计未上报记录数*/
+				if( postreport_addr_rd == 0 )   /*还没有找到要发送的地址*/
+				{
+					postreport_addr_rd = addr;  /*记录第一个要发送数据的地址*/
+				}
+			}
+		}
+	}
+	rt_sem_release( &sem_dataflash );
+}
+
+/*补报数据保存*/
+void jt808_postreport_put( uint8_t* pinfo, uint16_t len )
+{
+	GPS_REPORT_HEAD head;
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
+
+	if( postreport_curr_addr )
+	{
+		postreport_curr_addr	+= ( 12 + postreport_curr_len + 63 );
+		postreport_curr_addr	&= 0xFFFFFFC0;  /*指向下一个地址*/
+	}else                                       /*还没有记录*/
+	{
+		postreport_curr_addr = DF_POSTREPORT_START;
+	}
+
+	if( postreport_curr_addr >= DF_POSTREPORT_END )
+	{
+		postreport_curr_addr = DF_POSTREPORT_START;
+	}
+	if( ( postreport_curr_addr & 0xFFF ) == 0 )
+	{
+		sst25_erase_4k( postreport_curr_addr );
+	}
+
+	postreport_curr_id++;
+
+	head.mn		= 0x474E5353;
+	head.id		= postreport_curr_id;
+	head.len	= len;
+	head.attr	= 0xFF;
+
+	sst25_write_through( postreport_curr_addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+	sst25_write_through( postreport_curr_addr + 12, pinfo, len );
+	postreport_count++;                          /*增加未上报记录数*/
+	postreport_curr_len = len;
+
+	rt_sem_release( &sem_dataflash );
+}
+
+/*
+补报数据更新原先的并读取新纪录
+每次收到中心应答后调用
+*/
+void jt808_postreport_get( void )
+{
+	if( postreport_count )                                      /*没有有未上报记录*/
+	{
+		return;
+	}
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
+	/*原先没有记录,现在有新的记录了，应该是最近写入的,也可能多条*/
+	if( postreport_addr_rd == 0 )                               
+	{
+		
+	}else /*修改原先记录为已上报*/
+	{
+	}
+/*读取当前的记录*/
+
+	rt_sem_release( &sem_dataflash );
+}
 
 /*
    处理gps信息,有多种条件组合，上报
@@ -353,14 +469,14 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 ***********************************************************/
 static void process_gps_report( void )
 {
-	static uint32_t	utc_report_last	= 0;
-	uint32_t	tmp;
-	uint8_t		flag_send	= 0; /*默认不上报*/
-	uint8_t		*palarmdata = RT_NULL;
-	uint16_t	alarm_length;
-	uint32_t	alarm_bits;
+	static uint32_t utc_report_last = 0;
+	uint32_t		tmp;
+	uint8_t			flag_send	= 0; /*默认不上报*/
+	uint8_t			*palarmdata = RT_NULL;
+	uint16_t		alarm_length;
+	uint32_t		alarm_bits;
 
-	uint8_t		buf[300];
+	uint8_t			buf[300];
 
 /*区域路线处理*/
 	alarm_bits = area_get_alarm( palarmdata, &alarm_length );
@@ -414,7 +530,7 @@ static void process_gps_report( void )
 			{
 				jt808_report_interval = jt808_param.id_0x0027;
 			}
-			utc_report_last = utc_now;                         /*重新计时*/
+			utc_report_last = utc_now;                  /*重新计时*/
 		}
 		if( jt808_param.id_0x0020 )                     /*有定距上报*/
 		{
@@ -440,7 +556,7 @@ static void process_gps_report( void )
 		if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
 		{
 			jt808_report_interval	= jt808_param.id_0x0028;
-			utc_report_last				= utc_now;
+			utc_report_last			= utc_now;
 		}
 		if( jt808_param.id_0x0020 )                     /*有定距上报*/
 		{
@@ -454,8 +570,8 @@ static void process_gps_report( void )
 	{
 		if( utc_now - utc_report_last >= jt808_report_interval )
 		{
-			flag_send	|= FLAG_SEND_FIX_TIME;
-			utc_report_last	= utc_now;
+			flag_send		|= FLAG_SEND_FIX_TIME;
+			utc_report_last = utc_now;
 		}
 	}
 /*计算定距上报*/
@@ -471,15 +587,15 @@ static void process_gps_report( void )
 	jt808_status_last	= jt808_status;
 	jt808_alarm_last	= jt808_alarm;
 
-
-/*
-   if( flag_send == 0 )
-   {
-   return;
-   }
- */
-/*生成要上报的数据*/
+/*生成要上报的数据,在线时直接上报，还是都暂存再上报，后者。*/
 #if 1
+	if( flag_send )
+	{
+		jt808_postreport_put( buf, 28 + alarm_length );
+	}
+#endif
+
+#if 0
 	if( flag_send )
 	{
 		jt808_tx( 0x0200, buf, 28 + alarm_length );
@@ -902,19 +1018,19 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		gps_sec_count++;
 		ret = process_rmc( (uint8_t*)psrc );
 
-		if( ret == 0 )                  /*已定位*/
+		if( ret == 0 )                          /*已定位*/
 		{
 			gps_notfixed_count = 0;
-			process_hmi_15min_speed( ); /*最近15分钟速度*/
-			vdr_rx_gps( );              /*行车记录仪数据处理*/
-			area_process( );            /*区域线路告警*/
+			process_hmi_15min_speed( );         /*最近15分钟速度*/
+			vdr_rx_gps( );                      /*行车记录仪数据处理*/
+			area_process( );                    /*区域线路告警*/
 			calc_distance( );
 		}else
 		{
-			adjust_mytime_now( );       /*调整mytime_now*/
+			adjust_mytime_now( );               /*调整mytime_now*/
 			gps_notfixed_count++;
 		}
-		process_gps_report( );          /*处理GPS上报信息*/
+		process_gps_report( );                  /*处理GPS上报信息*/
 	}
 
 
@@ -924,12 +1040,12 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	 */
 	if( strncmp( psrc + 3, "TXT", 3 ) == 0 )
 	{
-		if(jt808_param.id_0xF013!=0x3017)		/*型号不对,保存新的，并重启*/
+		if( jt808_param.id_0xF013 != 0x3017 )   /*型号不对,保存新的，并重启*/
 		{
-			rt_kprintf("\njt808_param.id_0xF013=%04x",jt808_param.id_0xF013);
-			jt808_param.id_0xF013=0x3017;
-			param_save();
-			reset(0xff);
+			rt_kprintf( "\njt808_param.id_0xF013=%04x", jt808_param.id_0xF013 );
+			jt808_param.id_0xF013 = 0x3017;
+			param_save( );
+			reset( 0xff );
 		}
 		if( strncmp( psrc + 24, "OK", 2 ) == 0 )
 		{
@@ -950,7 +1066,8 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 /*初始化jt808 gps相关的处理*/
 void jt808_gps_init( void )
 {
-	jt808_vehicle_init( );
+	jt808_postreport_init( );   /*上报区域初始化*/
+	jt808_vehicle_init( );      /*车辆信息初始化*/
 	area_init( );
 	gps_pack_init( );
 }

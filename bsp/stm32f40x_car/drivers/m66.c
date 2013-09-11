@@ -900,7 +900,7 @@ static void rt_thread_gsm_socket( void* parameter )
 	}
 
 lbl_gsm_socket_end:
-	gsm_state = GSM_TCPIP;       /*socket过程处理完成，结果在state中*/
+	gsm_state = GSM_TCPIP;    /*socket过程处理完成，结果在state中*/
 	rt_kprintf( "\n%d gsm_socket>socket_state=%d", rt_tick_get( ), pcurr_socket->state );
 }
 
@@ -1363,8 +1363,9 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 		{
 			return;
 		}
-		if( infolen < 11 )
+		if( (infolen+1)*2 != strlen( pdst ) )		/*有时会长度不足*/
 		{
+			rt_kprintf("\n长度不足");
 			return;
 		}
 		if( *pdst != '"' )

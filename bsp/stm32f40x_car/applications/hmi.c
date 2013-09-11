@@ -82,7 +82,7 @@ static uint32_t  keycheck( void )
 	{
 		keys[i].status = 0;
 	}
-#if 1
+#if 0
 	if( tmp_key )
 	{
 		rt_kprintf( "%04x\r\n", tmp_key );
@@ -250,7 +250,7 @@ void hmi_init( void )
 	                rt_thread_entry_hmi,
 	                RT_NULL,
 	                &thread_hmi_stack[0],
-	                sizeof( thread_hmi_stack ), 17, 5 );
+	                sizeof( thread_hmi_stack ), 8, 5 );
 	rt_thread_startup( &thread_hmi );
 }
 
