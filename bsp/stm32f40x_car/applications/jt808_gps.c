@@ -334,6 +334,11 @@ static double getDistance( GPSPoint latFrom, GPSPoint lngFrom, GPSPoint latTo, G
 #define DF_POSTREPORT_END		0x002FC000
 #define DF_POSTREPORT_SECTORS	100
 
+/*只能做1->0的写入*/
+#define ATTR_NONET_NOREPORT 0xFF    /*未登网 未上报 */
+#define ATTR_ONNET_NOREPORT 0xFE    /*已登网 上报失败 */
+#define ATTR_REPORTED		0xFC    /*已上报 11111100*/
+
 typedef __packed struct
 {
 	uint32_t	mn;
@@ -341,8 +346,26 @@ typedef __packed struct
 	uint8_t		attr;
 	uint8_t		unused;
 	uint16_t	len;
+	//uint32_t	msg_id;		/*上报的消息头0x0200*/
 }GPS_REPORT_HEAD;
 
+typedef struct
+{
+	uint32_t	addr;
+	uint32_t	id;
+	uint8_t		attr;
+	uint16_t	len;
+}REPORT_INFO;
+
+REPORT_INFO		report_curr = { 0, 0, 0, 0 };
+REPORT_INFO		report_get[20];
+static uint8_t	report_get_count	= 0;    /*获取的未上报记录数*/
+static uint8_t	report_get_addr		= 0;    /*获取的未上报记录最小id的地址*/
+
+static uint16_t report_count	= 0;        /*还没有上报的记录数*/
+static uint8_t	report_first	= 1;        /*第一条上报不需要搽除以前的*/
+
+#if 0
 static uint32_t report_curr_addr	= 0;    /*当前记录的地址*/
 static uint32_t report_curr_id		= 0;    /*当前记录的最大id*/
 static uint32_t report_curr_len		= 0;    /*当前记录的用户信息长度*/
@@ -350,6 +373,7 @@ static uint32_t report_curr_len		= 0;    /*当前记录的用户信息长度*/
 static uint32_t report_addr_rd	= 0;        /*要读记录的位置,第一个未上报的数据位置*/
 static uint32_t report_count	= 0;        /*还没有上报的记录数*/
 static uint8_t	report_first	= 1;        /*第一条上报不需要搽除以前的*/
+#endif
 
 
 /*
@@ -361,32 +385,33 @@ void jt808_report_init( void )
 	uint32_t		addr;
 	GPS_REPORT_HEAD head;
 	uint32_t		read_id = 0xFFFFFFFF;
-	if( rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 ) != RT_EOK )
-	{
-		rt_kprintf( "\n初始化上报失败" );
-	}
-	report_count		= 0;                /*重新查找*/
-	report_addr_rd		= 0;
-	report_curr_addr	= 0;
-	report_curr_id		= 0;
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
+
+	report_count		= 0; /*重新查找*/
+	report_curr.addr	= 0;
+	report_curr.id		= 0;
+	report_curr.len		= 0;
+
+	memset( report_get, 0, sizeof( report_get ) );
+
 	for( addr = DF_POSTREPORT_START; addr < DF_POSTREPORT_END; addr += 64 )
 	{
 		sst25_read( addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
-		if( head.mn == 0x474E5353 )         /*有效记录*/
+		if( head.mn == 0x474E5353 )                 /*有效记录*/
 		{
-			if( head.id >= report_curr_id ) /*查找最近记录*/
+			if( head.id >= report_curr.id )         /*查找最近记录,当前写入的位置*/
 			{
-				report_curr_id		= head.id;
-				report_curr_addr	= addr; /*当前记录的地址*/
-				report_curr_len		= head.len;
+				report_curr.id		= head.id;
+				report_curr.addr	= addr;         /*当前记录的地址*/
+				report_curr.len		= head.len;
 			}
-			if( head.attr == 0xFF )         /*还没有发送*/
+			if( head.attr >= ATTR_ONNET_NOREPORT )  /*还没有发送*/
 			{
-				report_first = 1;           /*第一包数据*/
-				report_count++;             /*统计未上报记录数*/
-				if( read_id > head.id )     /*要找到最小的*/
+				report_first = 1;                   /*第一包数据*/
+				report_count++;                     /*统计未上报记录数*/
+				if( read_id > head.id )             /*要找到最小id的地址*/
 				{
-					report_addr_rd	= addr;
+					report_get_addr = addr;
 					read_id			= head.id;
 				}
 			}
@@ -396,9 +421,9 @@ void jt808_report_init( void )
 	rt_kprintf( "\n%d>(%d)写入位置:%x id=%d 读出位置:%x id=%d",
 	            rt_tick_get( ),
 	            report_count,
-	            report_curr_addr,
-	            report_curr_id,
-	            report_addr_rd,
+	            report_curr.addr,
+	            report_curr.id,
+	            report_get_addr,
 	            read_id );
 }
 
@@ -409,47 +434,55 @@ void jt808_report_put( uint8_t* pinfo, uint16_t len )
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 
-	if( report_curr_addr )                  /*当先的上报地址*/
+	if( report_curr.addr )                  /*当先的上报地址*/
 	{
-		report_curr_addr	+= ( 12 + report_curr_len + 63 );
-		report_curr_addr	&= 0xFFFFFFC0;  /*指向下一个地址*/
+		report_curr.addr	+= ( 12 + report_curr.len + 63 );
+		report_curr.addr	&= 0xFFFFFFC0;  /*指向下一个地址*/
 	}else                                   /*还没有记录*/
 	{
-		report_curr_addr = DF_POSTREPORT_START;
+		report_curr.addr = DF_POSTREPORT_START;
 	}
 
-	if( report_curr_addr >= DF_POSTREPORT_END )
+	if( report_curr.addr >= DF_POSTREPORT_END )
 	{
-		report_curr_addr = DF_POSTREPORT_START;
+		report_curr.addr = DF_POSTREPORT_START;
 	}
-	if( ( report_curr_addr & 0xFFF ) == 0 )
+	if( ( report_curr.addr & 0xFFF ) == 0 )
 	{
-		sst25_erase_4k( report_curr_addr );
+		sst25_erase_4k( report_curr.addr );
 	}
 
-	report_curr_id++;
+	report_curr.id++;
 
 	head.mn		= 0x474E5353;
-	head.id		= report_curr_id;
+	head.id		= report_curr.id;
 	head.len	= len;
-	head.attr	= 0xFF;
 
-	sst25_write_through( report_curr_addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
-	sst25_write_through( report_curr_addr + 12, pinfo, len );
-	report_count++;             /*增加未上报记录数*/
-	if( report_count == 1 )     /*要找到最小的*/
+	if( gsm_socket[0].state == CONNECTED )  /*当前在线，保存并直接上报*/
 	{
-		report_addr_rd	= report_curr_addr;
-		report_first	= 1;    /*首条上报*/
+		head.attr = ATTR_ONNET_NOREPORT;
+		jt808_add_tx( 1, SINGLE_FIRST, 0x0200, -1, RT_NULL, RT_NULL, len, pinfo, RT_NULL );
+	}else /*是需要补报的信息*/
+	{
+		head.attr = ATTR_NONET_NOREPORT;
+		report_count++;                     /*增加未上报记录数*/
+		if( report_count == 1 )             /*要找到最小的*/
+		{
+			report_get_addr = report_curr.addr;
+			report_first	= 1;            /*首条上报*/
+		}
+		report_curr.len = len;
 	}
-	report_curr_len = len;
+
+	sst25_write_through( report_curr.addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+	sst25_write_through( report_curr.addr + 12, pinfo, len );
 
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "\n%d>(%d)写入位置:%x id=%d", rt_tick_get( ), report_count, report_curr_addr, report_curr_id );
+	rt_kprintf( "\n%d>(%d)写入位置:%x id=%d", rt_tick_get( ), report_count, report_curr.addr, report_curr.id );
 }
 
 /*查找第一个未上报的记录,不一定就是记录号最小的*/
-static uint32_t jt808_report_get_next( uint32_t start_addr )
+static uint8_t jt808_report_get_next( uint32_t start_addr )
 {
 	uint32_t		addr = start_addr;
 	GPS_REPORT_HEAD head;
@@ -471,7 +504,7 @@ static uint32_t jt808_report_get_next( uint32_t start_addr )
 			addr = DF_POSTREPORT_START;
 		}
 	}
-	return 0;                                                   /*没找到*/
+	return 0;                               /*没找到*/
 }
 
 /*
@@ -479,46 +512,100 @@ static uint32_t jt808_report_get_next( uint32_t start_addr )
    每次收到中心应答后调用
    每次重新拨号成功后都要从新确认一下
    区分首次读还是上报中的读记录
+
+   使用0704上报，要拼包
  */
 void jt808_report_get( void )
 {
 	GPS_REPORT_HEAD head;
-	uint8_t			buf[256];                                   /*单包上报的字节不大于256*/
-	if( report_count == 0 )                                     /*没有有未上报记录*/
+	uint8_t			buf[1024];              /*单包上报的字节不大于256*/
+	uint32_t		i;
+	uint32_t		addr;
+	uint16_t		get_size;               /*获取记录的大小*/
+	uint16_t		pos;
+	uint8_t			count;
+	if( report_count == 0 )                 /*没有有未上报记录*/
 	{
 		return;
 	}
+
+	if( gsm_socket[0].state != CONNECTED )  /*不在线*/
+	{
+		return;
+	}
+
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 
-	if( report_first == 0 )                                     /*不是首条上报,需要删除本次记录*/
+	if( report_first == 0 )                 /*不是首条上报,需要删除本次记录*/
 	{
-		sst25_read( report_addr_rd, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
-		if( head.mn == 0x474E5353 )                             /*有效记录*/
+		for( i = 0; i < report_get_count; i++ )
 		{
-			head.attr = 0xFE;                                   /*已发送*/
-			sst25_write_through( report_addr_rd, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+			sst25_read( report_get[i].addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+			if( head.mn == 0x474E5353 )     /*有效记录*/
+			{
+				head.attr = ATTR_REPORTED;  /*已发送*/
+				sst25_write_through( report_get[i].addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+			}
+			if( report_count )
+			{
+				report_count--;             /*未上报记录数-1*/
+			}
 		}
-		report_count--;                                         /*未上报记录数-1*/
 	}
 	report_first = 0;
 
-	report_addr_rd = jt808_report_get_next( report_addr_rd );   /*从开始找*/
-	if( report_addr_rd == 0 )                                   /*没找到!!!!*/
+/*批量查找记录*/
+	addr				= report_get_addr;
+	report_get_count	= 0;
+	get_size			= 3;
+	pos					= 3;                            /*0x0704数据包，开始的偏移*/
+	count				= report_count;
+	if( report_count > 10 )                             /**/
 	{
-		report_count = 0;
-		rt_kprintf( "\n没找到!!!" );
-		report_first = 1;
-	}else
+		count = 10;
+	}
+	for( i = 0; i < DF_POSTREPORT_SECTORS * 64; i++ )   /*每记录64字节,每sector(4096Byte)有64记录*/
 	{
-		sst25_read( report_addr_rd, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
-		if( head.len < 255 )
+		sst25_read( addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+		if( head.mn == 0x474E5353 )                     /*有效记录*/
 		{
-			sst25_read( report_addr_rd + 12, buf, head.len );
-			jt808_tx( 0x0200, buf, head.len );
+			if( head.attr >= ATTR_ONNET_NOREPORT )      /*还没有发送*/
+			{
+				report_get_count++;
+				if( report_get_count > count )
+				{
+					report_get_addr = addr;
+					break;
+				}
+				get_size += ( 2 + head.len );
+				if( get_size > 1023 )
+				{
+					report_get_addr = addr;
+					break;
+				}
+				buf[pos]		= head.len >> 8;
+				buf[pos + 1]	= head.len;
+				sst25_read( addr + 12, buf + pos + 2, head.len );
+				pos += ( head.len + 2 );
+			}
+		}
+		addr += 64;
+		if( addr >= DF_POSTREPORT_END )
+		{
+			addr = DF_POSTREPORT_START;
 		}
 	}
+
+	if( report_get_count )
+	{
+		buf[0]	= report_get_count >> 8;
+		buf[1]	= report_get_count & 0xff;
+		buf[2]	= 1;
+		jt808_tx( 0x0704, buf, pos );
+	}
+
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "\n%d>(%d)读出位置:%x,长度:%d", rt_tick_get( ), report_count, report_addr_rd, head.len );
+	rt_kprintf( "\n%d>(%d)读出位置:%x,记录数:%d,长度", rt_tick_get( ), report_count, report_get_count, pos );
 }
 
 /*

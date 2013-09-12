@@ -917,7 +917,7 @@ static JT808_MSG_STATE vdr_08_12_tx_response( JT808_TX_NODEDATA * pnodedata, uin
 	pnodedata->retry++;
 	if( pnodedata->retry >= pnodedata->max_retry )
 	{
-		return WAIT_DELETE;
+		return ACK_TIMEOUT;
 	}
 	return vdr_08_12_fill_data( pnodedata );
 }
@@ -930,7 +930,7 @@ static JT808_MSG_STATE vdr_08_12_tx_timeout( JT808_TX_NODEDATA * pnodedata )
 	{
 		if( vdr_08_12_fill_data( pnodedata ) == 0 )
 		{
-			return WAIT_DELETE;
+			return ACK_TIMEOUT;
 		}
 		return IDLE;
 	}

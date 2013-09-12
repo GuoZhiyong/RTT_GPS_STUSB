@@ -51,7 +51,7 @@ typedef enum
 	IDLE = 1,           /*空闲等待发送*/
 	WAIT_ACK,           /*等待ACK中*/
 	ACK_OK,             /*已收到ACK应答*/
-	WAIT_DELETE,        /*等待删除*/
+	ACK_TIMEOUT,        /*ACK超时*/
 } JT808_MSG_STATE;
 
 typedef enum

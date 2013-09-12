@@ -161,9 +161,7 @@ static JT808_MSG_STATE Cam_jt808_timeout( JT808_TX_NODEDATA * nodedata )
 			if( nodedata->packet_no == nodedata->packet_num )   /*都上报完了，还超时*/
 			{
 				rt_kprintf( "\n全部上报完成\n" );               /*等待应答0x8800*/
-				nodedata->state = ACK_OK;
-
-				return WAIT_DELETE;
+				return nodedata->state = ACK_OK;
 			}
 			ret = Cam_add_tx_pic_getdata( nodedata );
 			if( ret == 0xFFFF )                                 /*bitter 没有找到图片id*/
@@ -227,8 +225,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 
 		if( nodedata->packet_no > nodedata->packet_num )                        /*超时等待0x8800应答*/
 		{
-			nodedata->state = ACK_OK;
-			return WAIT_DELETE;
+			return nodedata->state = ACK_OK;
 		}
 
 		ret = Cam_add_tx_pic_getdata( nodedata );
@@ -238,8 +235,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 			p_para = RT_NULL;
 			rt_free( nodedata );
 			rt_kprintf( "\n%s有问题", __func__ );
-			nodedata->state = ACK_OK;
-			return WAIT_DELETE;
+			return nodedata->state = ACK_OK;
 		}
 		nodedata->state = IDLE;                     /*正常发送*/
 		return IDLE;
@@ -253,8 +249,8 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 		if( tempu32data != p_para->Data_ID )
 		{
 			rt_kprintf( "\n应答ID不正确 %08x %08x",tempu32data,p_para->Data_ID );
-			nodedata->state = ACK_OK;
-			return WAIT_DELETE;
+			 nodedata->state = ACK_OK;
+			return ACK_OK;
 		}
 		if( pmsg[16] == 0 )       /*重传包总数*/
 		{
@@ -264,7 +260,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 			}
 			rt_kprintf( "\n单幅图片上报完成" );
 			nodedata->state = ACK_OK;
-			return WAIT_DELETE;
+			return ACK_OK;
 		}
 
 		p_para = (TypePicMultTransPara*)( iterdata->user_para );
@@ -288,7 +284,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 			rt_free( nodedata );
 			rt_kprintf( "\n%s有问题", __func__ );
 			nodedata->state = ACK_OK;
-			return WAIT_DELETE;
+			return ACK_OK;
 		}
 		nodedata->state=IDLE;
 		return IDLE;

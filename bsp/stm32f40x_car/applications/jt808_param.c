@@ -753,7 +753,7 @@ static JT808_MSG_STATE jt808_0x8104_response( JT808_TX_NODEDATA * pnodedata, uin
 	{
 		rt_kprintf( "0x8104_response_delete\n" );
 		pnodedata->state = ACK_OK;
-		return WAIT_DELETE;
+
 	}
 	rt_kprintf( "0x8104_response_idle\n" );
 	jt808_0x8104_fill_data( pnodedata );
@@ -767,7 +767,6 @@ static JT808_MSG_STATE jt808_0x8104_timeout( JT808_TX_NODEDATA * pnodedata )
 	{
 		rt_kprintf( "0x8104_timeout_delete\n" );
 		pnodedata->state = ACK_OK;
-		return WAIT_DELETE;
 	}
 	rt_kprintf( "0x8104_timeout_idle\n" );
 	jt808_0x8104_fill_data( pnodedata );
