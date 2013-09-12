@@ -249,30 +249,24 @@ IMG_DEF					img_arrow[8] =
 	{ 35, 32, arrow_225 },
 	{ 35, 32, arrow_270 },
 	{ 35, 32, arrow_315 },
+
 };
 
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/*0度周围的角度 337-359 0-23作为缺省情况处理*/
 static uint8_t check_arrow_index( uint16_t cog )
 {
 	uint8_t		i;
-	uint16_t	arrow_scope[9] = { 337, 23, 68, 113, 158, 203, 248, 293, 337 };
-	for( i = 0; i < 8; i++ )
+	uint16_t	arrow_scope[8] = {23, 68, 113, 158, 203, 248, 293, 337 };
+	for( i = 1; i < 8; i++ )
 	{
-		if( ( cog > arrow_scope[i] ) && ( cog < arrow_scope[i + 1] ) )
+		if( ( cog > arrow_scope[i-1] ) && ( cog <= arrow_scope[i] ) )
 		{
-			break;
+			return i;
 		}
 	}
-	return i;
+	return 0;
+	
 }
 
 //电池 是否校验特征系数的标志
