@@ -123,18 +123,8 @@ static JT808_MSG_STATE jt808_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t 
 
 static JT808_MSG_STATE jt808_tx_timeout( JT808_TX_NODEDATA * nodedata )
 {
-#if 0
-	pnodedata->retry++;
-	if( pnodedata->retry > pnodedata->max_retry )
-	{
-		/*处理,保存*/
-		return WAIT_DELETE;
-	}
-	return IDLE; /*等待再次发送*/
-#else
 	rt_kprintf( "\nsend %04x timeout\n", nodedata->head_id );
 	return ACK_TIMEOUT;
-#endif
 }
 
 /***********************************************************
@@ -1182,7 +1172,8 @@ static void jt808_tx_proc( MsgListNode * node )
 			pnodedata->retry++;
 			if( pnodedata->retry >= pnodedata->max_retry )
 			{
-				pnodedata->state = pnodedata->cb_tx_timeout( pnodedata );   /*20130912 不够简练,已经判断超时了,对于多媒体信息有用*/
+				pnodedata->state=pnodedata->cb_tx_timeout( pnodedata );   /*20130912 不够简练,已经判断超时了,对于多媒体信息有用*/
+				 
 			}else
 			{
 				pnodedata->state = IDLE;                                    /*等待下次发送*/

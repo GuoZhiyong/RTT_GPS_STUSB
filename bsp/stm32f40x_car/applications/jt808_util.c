@@ -357,4 +357,22 @@ void bkpsram_rd( uint32_t addr,uint16_t count )
 FINSH_FUNCTION_EXPORT( bkpsram_rd, read from backup sram );
 #endif
 
+/*log¹¦ÄÜ*/
+void trace_log(uint8_t model,uint8_t level,char *fmt,...)
+{
+		va_list args;
+		rt_size_t length;
+		static char log_buf[4096];
+	
+		va_start(args, fmt);
+		length = vsnprintf(log_buf, sizeof(log_buf), fmt, args);
+		rt_hw_console_output(log_buf);
+
+		va_end(args);
+
+
+}
+
+
+
 /************************************** The End Of File **************************************/
