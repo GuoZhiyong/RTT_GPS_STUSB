@@ -83,9 +83,7 @@ AUX_OUT PIN_OUT[] = {
 __IO uint16_t	IC2Value	= 0;
 __IO uint16_t	DutyCycle	= 0;
 //__IO uint32_t	Frequency	= 0;
-uint32_t	Frequency	= 0;
-
-
+uint32_t		Frequency = 0;
 
 #define ADC1_DR_Address			( (uint32_t)0X4001204C )
 #define    BD_IO_Pin6_7_A1C3            //  北斗应用用 PA1    6   灰线 PC3   7  绿线
@@ -140,12 +138,11 @@ static void cb_tmr_50ms( void* parameter )
 		}
 	}
 
-	ADC_ConvertedValue	= ADC_ConValue[0]; //ADC_GetConversionValue(ADC1);
+	ADC_ConvertedValue = ADC_ConValue[0]; //ADC_GetConversionValue(ADC1);
 
 	//rt_kprintf("\n=%d",ADC_ConvertedValue);
 
-	
-	AD_Volte			= ( ( ADC_ConvertedValue * 543 ) >> 12 );
+	AD_Volte = ( ( ADC_ConvertedValue * 543 ) >> 12 );
 	//rt_kprintf ("\r\n  获取到的电池AD数值为:	%d	 AD电压为: %d V  电源电压: %d V\r\n",ADC_ConvertedValue,a,a+11);
 	//  ---电源欠压报警----
 	AD_Volte = AD_Volte + 11 + 10;
@@ -211,31 +208,57 @@ static void cb_tmr_50ms( void* parameter )
 	}
 }
 
+
+extern __IO uint32_t uwPeriodValue;
+extern __IO uint32_t uwCaptureNumber;
+uint16_t tmpCC4[2] = {0, 0};
+
+
 /*TIM5_CH1,脉冲判断速度*/
 void TIM5_IRQHandler( void )
 {
+	
 	RCC_ClocksTypeDef RCC_Clocks;
 	RCC_GetClocksFreq( &RCC_Clocks );
 
-	TIM_ClearITPendingBit( TIM5, TIM_IT_CC2 );
-
-	/* Get the Input Capture value */
-	IC2Value = TIM_GetCapture2( TIM5 );
-
-	if( IC2Value != 0 )
+	if( TIM_GetITStatus( TIM5, TIM_IT_CC2 ) != RESET )
 	{
-		/* Duty cycle computation */
-		//DutyCycle = ( TIM_GetCapture1( TIM5 ) * 100 ) / IC2Value;
-		/* Frequency computation   TIM4 counter clock = (RCC_Clocks.HCLK_Frequency)/2 */
-		//Frequency = (RCC_Clocks.HCLK_Frequency)/2 / IC2Value;
+		TIM_ClearITPendingBit( TIM5, TIM_IT_CC2 );
+
+		/* Get the Input Capture value */
+		IC2Value = TIM_GetCapture2( TIM5 );
+
+		if( IC2Value != 0 )
+		{
+			/* Duty cycle computation */
+			//DutyCycle = ( TIM_GetCapture1( TIM5 ) * 100 ) / IC2Value;
+			/* Frequency computation   TIM4 counter clock = (RCC_Clocks.HCLK_Frequency)/2 */
+			//Frequency = (RCC_Clocks.HCLK_Frequency)/2 / IC2Value;
 /*是不是反向电路?*/
-		DutyCycle	= ( IC2Value * 100 ) / TIM_GetCapture1( TIM5 );
-		Frequency	= ( RCC_Clocks.HCLK_Frequency ) / 2 / TIM_GetCapture1( TIM5 );
-	}else
-	{
-		DutyCycle	= 0;
-		Frequency	= 0;
+			DutyCycle	= ( IC2Value * 100 ) / TIM_GetCapture1( TIM5 );
+			Frequency	= ( RCC_Clocks.HCLK_Frequency ) / 2 / TIM_GetCapture1( TIM5 );
+		}else
+		{
+			DutyCycle	= 0;
+			Frequency	= 0;
+		}
 	}
+#if USE_IWDG
+	if( TIM_GetITStatus( TIM5, TIM_IT_CC4 ) != RESET )
+	{
+		/* Get the Input Capture value */
+		tmpCC4[uwCaptureNumber++] = TIM_GetCapture4( TIM5 );
+
+		/* Clear CC4 Interrupt pending bit */
+		TIM_ClearITPendingBit( TIM5, TIM_IT_CC4 );
+
+		if( uwCaptureNumber >= 2 )
+		{
+			/* Compute the period length */
+			uwPeriodValue = (uint16_t)( 0xFFFF - tmpCC4[0] + tmpCC4[1] + 1 );
+		}
+	}
+#endif	
 }
 
 /*采用PA.0 作为外部脉冲计数*/
@@ -314,19 +337,19 @@ void ad_init( void )
 
 //  3. ADC Common Init
 	/* ADC Common configuration *************************************************/
-	ADC_CommonInitStructure.ADC_Mode				= ADC_Mode_Independent; /*在独立模式下 每个ADC接口独立工作*/
-	ADC_CommonInitStructure.ADC_Prescaler			= ADC_Prescaler_Div8;//ADC_Prescaler_Div4;
-	ADC_CommonInitStructure.ADC_DMAAccessMode		= ADC_DMAAccessMode_1;  // ADC_DMAAccessMode_Disabled;
-	ADC_CommonInitStructure.ADC_TwoSamplingDelay	= ADC_TwoSamplingDelay_20Cycles;//ADC_TwoSamplingDelay_5Cycles;
+	ADC_CommonInitStructure.ADC_Mode				= ADC_Mode_Independent;             /*在独立模式下 每个ADC接口独立工作*/
+	ADC_CommonInitStructure.ADC_Prescaler			= ADC_Prescaler_Div8;               //ADC_Prescaler_Div4;
+	ADC_CommonInitStructure.ADC_DMAAccessMode		= ADC_DMAAccessMode_1;              // ADC_DMAAccessMode_Disabled;
+	ADC_CommonInitStructure.ADC_TwoSamplingDelay	= ADC_TwoSamplingDelay_20Cycles;    //ADC_TwoSamplingDelay_5Cycles;
 	ADC_CommonInit( &ADC_CommonInitStructure );
 
 	ADC_InitStructure.ADC_Resolution			= ADC_Resolution_12b;
-	ADC_InitStructure.ADC_ScanConvMode			= ENABLE;                   // if used  multi channels set enable
+	ADC_InitStructure.ADC_ScanConvMode			= ENABLE;                               // if used  multi channels set enable
 	ADC_InitStructure.ADC_ContinuousConvMode	= ENABLE;
 	ADC_InitStructure.ADC_ExternalTrigConvEdge	= ADC_ExternalTrigConvEdge_None;
 	ADC_InitStructure.ADC_ExternalTrigConv		= ADC_ExternalTrigConv_T1_CC1;
 	ADC_InitStructure.ADC_DataAlign				= ADC_DataAlign_Right;
-	ADC_InitStructure.ADC_NbrOfConversion		= 3;                        // number of   channel
+	ADC_InitStructure.ADC_NbrOfConversion		= 3;                                    // number of   channel
 	ADC_Init( ADC1, &ADC_InitStructure );
 
 //  4. DMA  Config

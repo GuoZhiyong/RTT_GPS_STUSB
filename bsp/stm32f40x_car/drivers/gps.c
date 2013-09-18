@@ -445,9 +445,9 @@ static void rt_thread_entry_gps( void* parameter )
 			GPIO_SetBits( GPIOD, GPIO_Pin_10 );                             /*on gps*/
 			tick_lastrx = rt_tick_get( );
 		}
-		if( gps_notfixed_count > 15 * 60 )                                  /*15分钟未定位*/
+		if( gps_notfixed_count > 10 * 60 )                                  /*15分钟未定位*/
 		{
-			rt_kprintf( "\n15分钟未定位" );
+			rt_kprintf( "\n10分钟未定位" );
 			beep( 5, 5, 5 );
 			GPIO_ResetBits( GPIOD, GPIO_Pin_10 );                           /*off gps*/
 			while( rt_mq_recv( &mq_gps, (void*)&buf, NEMA_SIZE, RT_TICK_PER_SECOND / 20 ) == RT_EOK )
@@ -648,7 +648,7 @@ void thread_gps_check_ver( void* parameter )
 
 	if( ok )
 	{
-		sprintf( buf, "E模块TD%d (%d.%d.%d)", model / 10, ver[0], ver[1], ver[2] );
+		sprintf( buf, "E模块TD%d (%d.%d.%d)", model , ver[0], ver[1], ver[2] );
 		msg( buf );
 	}else
 	{

@@ -192,10 +192,8 @@ uint8_t param_get( uint16_t id, uint8_t* value );
 
 uint32_t param_get_int( uint16_t id );
 
-
+void jt808_param_0x8103( uint8_t *pmsg );
 void jt808_param_0x8104( uint8_t *pmsg );
-
-
 void jt808_param_0x8106( uint8_t *pmsg );
 
 

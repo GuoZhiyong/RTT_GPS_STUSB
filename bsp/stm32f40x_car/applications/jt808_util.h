@@ -73,6 +73,12 @@ uint16_t data_to_buf( uint8_t * pdest, uint32_t data, uint8_t width );
 unsigned short CalcCRC16( unsigned char *ptr, int pos,unsigned int len, unsigned short crc );
 
 
+uint8_t bkpsram_init( void );
+uint8_t bkpsram_write( uint32_t addr, uint8_t * data, uint16_t len );
+uint16_t bkpsram_read( uint32_t addr, uint8_t * data, uint16_t len );
+
+
+
 #endif
 
 

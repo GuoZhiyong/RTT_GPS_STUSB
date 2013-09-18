@@ -20,7 +20,7 @@
 #include "printer.h"
 
 static uint32_t lasttick;
-unsigned char	dispstat		= 0;
+unsigned char	dispstat = 0;
 
 unsigned char	gsm_g[] = {
 	0x1c,                                                                       /*[   ***  ]*/
@@ -135,7 +135,7 @@ static unsigned char	empty[] = { 0x84, 0x84, 0x84, 0x84, 0x84, 0xFC };       /*¿
 static unsigned char	full_0[] = { 0x84, 0x84, 0x84, 0xFC, 0xFC, 0xFC };      /*°ëÂú*/
 static unsigned char	full_1[] = { 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC };      /*ÖØ³µ*/
 
-static unsigned char		arrow_0[] = {
+static unsigned char	arrow_0[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0xE0, 0x00, 0x00, 0x00,
 	0x01, 0xF0, 0x00, 0x00, 0x7F, 0x83, 0xF8, 0x3F, 0xC0, 0x41, 0x07, 0xFC, 0x10, 0x40, 0x42, 0x0F,
 	0xFE, 0x08, 0x40, 0x44, 0x00, 0x00, 0x04, 0x40, 0x49, 0x55, 0x55, 0x52, 0x40, 0x50, 0x00, 0x00,
@@ -249,24 +249,21 @@ IMG_DEF					img_arrow[8] =
 	{ 35, 32, arrow_225 },
 	{ 35, 32, arrow_270 },
 	{ 35, 32, arrow_315 },
-
 };
-
 
 /*0¶ÈÖÜÎ§µÄ½Ç¶È 337-359 0-23×÷ÎªÈ±Ê¡Çé¿ö´¦Àí*/
 static uint8_t check_arrow_index( uint16_t cog )
 {
 	uint8_t		i;
-	uint16_t	arrow_scope[8] = {23, 68, 113, 158, 203, 248, 293, 337 };
+	uint16_t	arrow_scope[8] = { 23, 68, 113, 158, 203, 248, 293, 337 };
 	for( i = 1; i < 8; i++ )
 	{
-		if( ( cog > arrow_scope[i-1] ) && ( cog <= arrow_scope[i] ) )
+		if( ( cog > arrow_scope[i - 1] ) && ( cog <= arrow_scope[i] ) )
 		{
 			return i;
 		}
 	}
 	return 0;
-	
 }
 
 //µç³Ø ÊÇ·ñÐ£ÑéÌØÕ÷ÏµÊýµÄ±êÖ¾
@@ -288,7 +285,6 @@ DECL_BMP( 6, 6, empty );    DECL_BMP( 6, 6, full_0 );  DECL_BMP( 6, 6, full_1 );
    rtcÊ±¼ä£¬ÐèÒªÆµ·±¶ÁÈ¡(1Ãë1´Î)£¬ÈçºÎÅÐ¶ÏÐ£Ê±
    Ê¹ÓÃ×Ô¼ºµÄmytime£¬ÈçºÎ¸üÐÂ(Ê¹ÓÃÏµÍ³µÄ1s¶¨Ê±Æ÷ÊÇ·ñ×¼È·)
  */
-
 #if 1
 void Disp_Idle( void )
 {
@@ -297,39 +293,36 @@ void Disp_Idle( void )
 	char	buf_time[22];
 	char	buf_speed[20];
 
-
 	lcd_fill( 0 );
 	if( jt808_alarm & ( BIT_ALARM_GPS_ERR | BIT_ALARM_GPS_OPEN | BIT_ALARM_GPS_SHORT ) )    /*±±¶·Òì³££¬²»ÏÔÊ¾*/
 	{
 		lcd_text12( 0, 0, mode[0], 2, LCD_MODE_SET );
 		sprintf( buf_date, "--/--/--" );
 		sprintf( buf_time, "--:--:--" );
-	}else if( jt808_status & BIT_STATUS_FIXED )                                             /*¶¨Î»Õý³£ÏÔÊ¾*/
+	}else                                                                                   /*¶¨Î»Õý³£ÏÔÊ¾*/
 	{
-		lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_SET );
+		if( jt808_status & BIT_STATUS_FIXED )
+		{
+			lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_SET );
+		}else
+		{
+			lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_INVERT );
+		}
 		lcd_bitmap( 12, 1, &img_num0608[gps_status.NoSV / 10], LCD_MODE_SET );
 		lcd_bitmap( 18, 1, &img_num0608[gps_status.NoSV % 10], LCD_MODE_SET );
 
 		sprintf( buf_date, "%02d-%02d-%02d",
 		         YEAR( mytime_now ),
 		         MONTH( mytime_now ),
-		         DAY( mytime_now ));
-	
+		         DAY( mytime_now ) );
+
 		sprintf( buf_time, "%02d:%02d:%02d",
 		         HOUR( mytime_now ),
 		         MINUTE( mytime_now ),
 		         SEC( mytime_now ) );
-		lcd_bitmap( 86, 0, &img_arrow[check_arrow_index(gps_cog)], LCD_MODE_SET );
+		lcd_bitmap( 86, 0, &img_arrow[check_arrow_index( gps_cog )], LCD_MODE_SET );
 		sprintf( buf_speed, "%03d", gps_speed );
 		lcd_text12( 95, 9, (char*)buf_speed, strlen( buf_speed ), LCD_MODE_SET );
-		
-	}else /*Î´¶¨Î»£¬·´É«ÏÔÊ¾*/
-	{
-		lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_INVERT );
-		lcd_bitmap( 12, 1, &img_num0608[gps_status.NoSV / 10], LCD_MODE_SET );
-		lcd_bitmap( 18, 1, &img_num0608[gps_status.NoSV % 10], LCD_MODE_SET );
-		sprintf( buf_date, "--/--/--");
-		sprintf( buf_time, "%02d:%02d:%02d", gps_sec_count / 3600, ( gps_sec_count % 3600 ) / 60, ( gps_sec_count % 3600 ) % 60 );
 	}
 
 	lcd_text12( 0, 10, (char*)buf_date, strlen( buf_date ), LCD_MODE_SET );
@@ -340,7 +333,7 @@ void Disp_Idle( void )
 
 	lcd_text12( 48, 0, "GPRS", 4, LCD_MODE_SET );
 
-	if( gsm_socket[0].state == CONNECTED )    /*gprsÁ¬½Ó×´Ì¬*/
+	if( gsm_socket[0].state == CONNECTED ) /*gprsÁ¬½Ó×´Ì¬*/
 	{
 		lcd_bitmap( 72, 2, &BMP_link_on, LCD_MODE_SET );
 	}else
@@ -348,13 +341,8 @@ void Disp_Idle( void )
 		lcd_bitmap( 72, 2, &BMP_link_off, LCD_MODE_SET );
 	}
 
-
-
-
-	
-
 #if 0
-	if( JT808Conf_struct.LOAD_STATE == 1 )    //³µÁ¾ÔØÖØ±êÖ¾
+	if( JT808Conf_struct.LOAD_STATE == 1 ) //³µÁ¾ÔØÖØ±êÖ¾
 	{
 		lcd_bitmap( 95, 2, &BMP_empty, LCD_MODE_SET );
 	}else if( JT808Conf_struct.LOAD_STATE == 2 )
@@ -365,7 +353,7 @@ void Disp_Idle( void )
 		lcd_bitmap( 95, 2, &BMP_full_1, LCD_MODE_SET );
 	}
 
-	if( ModuleStatus & 0x04 )    //µçÔ´±êÖ¾
+	if( ModuleStatus & 0x04 ) //µçÔ´±êÖ¾
 	{
 		lcd_bitmap( 105, 2, &BMP_Battery, LCD_MODE_SET );
 	}else
@@ -373,7 +361,7 @@ void Disp_Idle( void )
 		lcd_bitmap( 105, 2, &BMP_NOBattery, LCD_MODE_SET );
 	}
 
-	if( DF_K_adjustState )    //ÊÇ·ñÐ£ÑéÌØÕ÷ÏµÊý
+	if( DF_K_adjustState ) //ÊÇ·ñÐ£ÑéÌØÕ÷ÏµÊý
 	{
 		lcd_bitmap( 115, 2, &BMP_TriangleS, LCD_MODE_SET );
 	}else
@@ -399,35 +387,89 @@ void Disp_Idle( void )
 ***********************************************************/
 void Disp_Idle( void )
 {
-	char	buf[20];
-	float	angle;
+	char	*mode[] = { "  ", "BD", "GP", "GN" };
+	char	buf_date[22];
+	char	buf_time[22];
+	char	buf_speed[20];
 
 	lcd_fill( 0 );
+	if( jt808_alarm & ( BIT_ALARM_GPS_ERR | BIT_ALARM_GPS_OPEN | BIT_ALARM_GPS_SHORT ) )    /*±±¶·Òì³££¬²»ÏÔÊ¾*/
+	{
+		lcd_text12( 0, 0, mode[0], 2, LCD_MODE_SET );
+		sprintf( buf_date, "--/--/--" );
+		sprintf( buf_time, "--:--:--" );
+	}else if( jt808_status & BIT_STATUS_FIXED )                                             /*¶¨Î»Õý³£ÏÔÊ¾*/
+	{
+		lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_SET );
+		lcd_bitmap( 12, 1, &img_num0608[gps_status.NoSV / 10], LCD_MODE_SET );
+		lcd_bitmap( 18, 1, &img_num0608[gps_status.NoSV % 10], LCD_MODE_SET );
 
-	sprintf( buf, "20%02d/%02d/%02d",
-	         YEAR( mytime_now ),
-	         MONTH( mytime_now ),
-	         DAY( mytime_now ) );
+		sprintf( buf_date, "%02d-%02d-%02d",
+		         YEAR( mytime_now ),
+		         MONTH( mytime_now ),
+		         DAY( mytime_now ) );
 
-	lcd_text12( 0, 10, (char*)buf, strlen( buf ), LCD_MODE_SET );
+		sprintf( buf_time, "%02d:%02d:%02d",
+		         HOUR( mytime_now ),
+		         MINUTE( mytime_now ),
+		         SEC( mytime_now ) );
+		lcd_bitmap( 86, 0, &img_arrow[check_arrow_index( gps_cog )], LCD_MODE_SET );
+		sprintf( buf_speed, "%03d", gps_speed );
+		lcd_text12( 95, 9, (char*)buf_speed, strlen( buf_speed ), LCD_MODE_SET );
+	}else /*Î´¶¨Î»£¬·´É«ÏÔÊ¾*/
+	{
+		lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_INVERT );
+		lcd_bitmap( 12, 1, &img_num0608[gps_status.NoSV / 10], LCD_MODE_SET );
+		lcd_bitmap( 18, 1, &img_num0608[gps_status.NoSV % 10], LCD_MODE_SET );
+		sprintf( buf_date, "--/--/--" );
+		sprintf( buf_time, "%02d:%02d:%02d", gps_sec_count / 3600, ( gps_sec_count % 3600 ) / 60, ( gps_sec_count % 3600 ) % 60 );
+	}
 
-	sprintf( buf, "%02d:%02d:%02d",
-	         HOUR( mytime_now ),
-	         MINUTE( mytime_now ),
-	         SEC( mytime_now ) );
-	lcd_text12( 0, 20, (char*)buf, strlen( buf ), LCD_MODE_SET );
+	lcd_text12( 0, 10, (char*)buf_date, strlen( buf_date ), LCD_MODE_SET );
+	lcd_text12( 0, 21, (char*)buf_time, strlen( buf_time ), LCD_MODE_SET );
 
-	sprintf( buf, "%03d", gps_speed );
+	lcd_bitmap( 30, 2, &BMP_gsm_g, LCD_MODE_SET );
+	lcd_bitmap( 38, 2, &BMP_gsm_3, LCD_MODE_SET );
 
-	angle = gps_cog * 2.0 * 3.14 / 360.0;
+	lcd_text12( 48, 0, "GPRS", 4, LCD_MODE_SET );
 
-	lcd_text12( 90, 12, (char*)buf, strlen( buf ), LCD_MODE_SET );
+	if( gsm_socket[0].state == CONNECTED ) /*gprsÁ¬½Ó×´Ì¬*/
+	{
+		lcd_bitmap( 72, 2, &BMP_link_on, LCD_MODE_SET );
+	}else
+	{
+		lcd_bitmap( 72, 2, &BMP_link_off, LCD_MODE_SET );
+	}
 
-	lcd_drawline( 106, 16, 106 + cos( angle ), 16 + sin( angle ), LCD_MODE_SET );
+#if 0
+	if( JT808Conf_struct.LOAD_STATE == 1 ) //³µÁ¾ÔØÖØ±êÖ¾
+	{
+		lcd_bitmap( 95, 2, &BMP_empty, LCD_MODE_SET );
+	}else if( JT808Conf_struct.LOAD_STATE == 2 )
+	{
+		lcd_bitmap( 95, 2, &BMP_full_0, LCD_MODE_SET );
+	}else if( JT808Conf_struct.LOAD_STATE == 3 )
+	{
+		lcd_bitmap( 95, 2, &BMP_full_1, LCD_MODE_SET );
+	}
 
-	lcd_bitmap( 0, 3, &BMP_gsm_g, LCD_MODE_SET );
-	lcd_bitmap( 8, 3, &BMP_gsm_3, LCD_MODE_SET );
-	GPSGPRS_Status( );
+	if( ModuleStatus & 0x04 ) //µçÔ´±êÖ¾
+	{
+		lcd_bitmap( 105, 2, &BMP_Battery, LCD_MODE_SET );
+	}else
+	{
+		lcd_bitmap( 105, 2, &BMP_NOBattery, LCD_MODE_SET );
+	}
+
+	if( DF_K_adjustState ) //ÊÇ·ñÐ£ÑéÌØÕ÷ÏµÊý
+	{
+		lcd_bitmap( 115, 2, &BMP_TriangleS, LCD_MODE_SET );
+	}else
+	{
+		lcd_bitmap( 115, 2, &BMP_TriangleK, LCD_MODE_SET );
+	}
+#endif
+
 	lcd_update_all( );
 }
 
@@ -579,7 +621,7 @@ static void timetick( unsigned int systick )
 	if( systick - lasttick >= 50 )
 	{
 		Disp_Idle( );
-		lasttick=systick;
+		lasttick = systick;
 	}
 }
 

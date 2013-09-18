@@ -107,7 +107,6 @@ void rtthread_startup( void )
 	usbh_init( );
 	
 	//spi_sd_init( );
-
 	rt_application_init( );
 	RS485_init( );
 

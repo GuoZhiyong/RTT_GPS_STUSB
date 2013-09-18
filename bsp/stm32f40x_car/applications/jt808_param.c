@@ -26,7 +26,7 @@
 
 JT808_PARAM jt808_param =
 {
-	0x13081103,                         /*0x0000 版本*/
+	0x13091305,                         /*0x0000 版本*/
 	50,                                 /*0x0001 心跳发送间隔*/
 	10,                                 /*0x0002 TCP应答超时时间*/
 	3,                                  /*0x0003 TCP超时重传次数*/
@@ -37,12 +37,12 @@ JT808_PARAM jt808_param =
 	"CMNET",                            /*0x0010 主服务器APN*/
 	"",                                 /*0x0011 用户名*/
 	"",                                 /*0x0012 密码*/
-	"60.28.50.210",                     /*0x0013 主服务器地址*/
+	"jt1.gghypt.net",                   /*0x0013 主服务器地址*/
 	"CMNET",                            /*0x0014 备份APN*/
 	"",                                 /*0x0015 备份用户名*/
 	"",                                 /*0x0016 备份密码*/
-	"www.google.com",                   /*0x0017 备份服务器地址，ip或域名*/
-	9791,                               /*0x0018 TCP端口*/
+	"jt2.gghypt.net",                   /*0x0017 备份服务器地址，ip或域名*/
+	7008,                               /*0x0018 TCP端口*/
 	5678,                               /*0x0019 UDP端口*/
 	"www.google.com",                   /*0x001A ic卡主服务器地址，ip或域名*/
 	9901,                               /*0x001B ic卡服务器TCP端口*/
@@ -94,8 +94,8 @@ JT808_PARAM jt808_param =
 	3,                                  /*0x0074 色度*/
 	5,                                  /*0x0080 车辆里程表读数0.1km*/
 	12,                                 /*0x0081 省域ID*/
-	0,                                  /*0x0082 市域ID*/
-	"津712001",                         /*0x0083 机动车号牌*/
+	101,                                /*0x0082 市域ID*/
+	"津AP6834",                         /*0x0083 机动车号牌*/
 	2,                                  /*0x0084 车牌颜色	1蓝色 2黄色 3黑色 4白色 9其他*/
 	0x0f,                               /*0x0090 GNSS 定位模式*/
 	0x01,                               /*0x0091 GNSS 波特率*/
@@ -118,13 +118,13 @@ JT808_PARAM jt808_param =
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },         /*0x0118 其他CAN 总线 ID 单独采集设置*/
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },         /*0x0119 其他CAN 总线 ID 单独采集设置*/
 
-	"70420",                            /*0xF000 制造商ID*/
-	"TW703-BD",                         /*0xF001 终端型号*/
-	"1234567",                          /*0xF002 终端ID*/
+	"70420",                            /*0xF000 制造商ID  70420*/
+	"TW703",                            /*0xF001 终端型号TW703-BD*/
+	"0614100",                          /*0xF002 终端ID*/
 	"12345",                            /*0xF003 鉴权码*/
 	0x07,                               /*0xF004 终端类型*/
 	"0000000000000000",                 /*0xF005 车辆VIN*/
-	"021022612645",                     /*0xF006 DeviceID*/
+	"013920614100",                     /*0xF006 DeviceID*/
 	"驾驶证代码",                       /*0xF007 驾驶证代码*/
 	"张三",                             /*0xF008 驾驶员姓名*/
 	"120104197712015381",               /*0xF009 驾驶证号码*/
@@ -135,11 +135,10 @@ JT808_PARAM jt808_param =
 	"1.00",                             /*0xF010 软件版本号*/
 	"1.00",                             /*0xF011 硬件版本号*/
 	"TJ.GT",                            /*0xF012 销售客户代码*/
-	0x3020,								/*0xF013 北斗模块型号0,未确定 ,0x3020 默认 0x3017*/
+	0x3020,                             /*0xF013 北斗模块型号0,未确定 ,0x3020 默认 0x3017*/
 
 	0,                                  /*0xF020 总里程*/
 	0,                                  /*0xF021 车辆状态*/
-	
 
 	0x35DECC80,                         /*0xF030 记录仪初次安装时间,mytime格式*/
 	0,                                  /*id_0xF031;      初始里程*/
@@ -173,12 +172,13 @@ void param_save( void )
 
 FINSH_FUNCTION_EXPORT( param_save, save param );
 
-/*
-加载参数从serialflash
-这个时候可以不用sem_dataflash
-因为没有其他使用
 
-*/
+/*
+   加载参数从serialflash
+   这个时候可以不用sem_dataflash
+   因为没有其他使用
+
+ */
 void param_load( void )
 {
 	/*预读一部分数据*/
@@ -313,9 +313,9 @@ struct _tbl_id_lookup
 
 	ID_LOOKUP( 0xF010, TYPE_STR ),      /*0xF010 软件版本号*/
 	ID_LOOKUP( 0xF011, TYPE_STR ),      /*0xF011 硬件版本号*/
-	
-	ID_LOOKUP( 0xF013, TYPE_DWORD ),      /*0xF013 硬件版本号*/
-	
+
+	ID_LOOKUP( 0xF013, TYPE_DWORD ),    /*0xF013 硬件版本号*/
+
 	ID_LOOKUP( 0x0020, TYPE_WORD ),     /*0xF020 总里程*/
 	ID_LOOKUP( 0x0021, TYPE_WORD ),     /*0xF021 车辆状态*/
 
@@ -535,14 +535,14 @@ void param_print( void )
 		val = 0;
 		switch( tbl_id_lookup[i].type )
 		{
-			case TYPE_DWORD: /*字节对齐方式 little_endian*/
+			case TYPE_DWORD:    /*字节对齐方式 little_endian*/
 				val |= ( *p++ );
 				val |= ( ( *p++ ) << 8 );
 				val |= ( ( *p++ ) << 16 );
 				val |= ( ( *p ) << 24 );
-				rt_kprintf( "\nid=%04x value=%08x\n", id, val );
+				rt_kprintf( "\nid=%04x value=%08x", id, val );
 				break;
-			case TYPE_CAN:
+			case TYPE_CAN:      /*8个字节*/
 				val |= ( *p++ );
 				val |= ( ( *p++ ) << 8 );
 				val |= ( ( *p++ ) << 16 );
@@ -553,10 +553,10 @@ void param_print( void )
 				val |= ( ( *p++ ) << 8 );
 				val |= ( ( *p++ ) << 16 );
 				val |= ( ( *p ) << 24 );
-				rt_kprintf( " %08x\n", val );
+				rt_kprintf( " %08x", val );
 				break;
 			case TYPE_STR:
-				rt_kprintf( "\nid=%04x value=%s\n", id, p );
+				rt_kprintf( "\nid=%04x value=%s", id, p );
 				break;
 		}
 	}
@@ -753,7 +753,6 @@ static JT808_MSG_STATE jt808_0x8104_response( JT808_TX_NODEDATA * pnodedata, uin
 	{
 		rt_kprintf( "0x8104_response_delete\n" );
 		pnodedata->state = ACK_OK;
-
 	}
 	rt_kprintf( "0x8104_response_idle\n" );
 	jt808_0x8104_fill_data( pnodedata );
@@ -941,6 +940,57 @@ void jt808_param_0x8106( uint8_t *pmsg )
 	pnodedata->timeout	= RT_TICK_PER_SECOND * 5;
 	node_data( pnodedata, buf, count + 3 );
 	node_end( pnodedata, jt808_0x8104_timeout, jt808_0x8104_response, RT_NULL );
+}
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void jt808_param_0x8103( uint8_t *pmsg )
+{
+	uint8_t		* p;
+	uint8_t		res = 0;
+	uint32_t	param_id;
+	uint8_t		param_len;
+	uint8_t		param_count;
+	uint16_t	offset;
+	uint16_t	seq, id;
+
+	id	= ( pmsg[0] << 8 ) | pmsg[1];
+	seq = ( pmsg[10] << 8 ) | pmsg[11];
+
+	if( *( pmsg + 2 ) >= 0x20 ) /*如果是多包的设置参数*/
+	{
+		rt_kprintf( "\n>%s multi packet no support!", __func__ );
+		jt808_tx_0x0001( seq, id, 1 );
+	}else
+	{
+		param_count = pmsg[12];
+		offset		= 13;
+		for( param_count = 0; param_count < pmsg[12]; param_count++ )
+		{
+			p			= pmsg + offset;
+			param_id	= ( p[0] << 24 ) | ( p[1] << 16 ) | ( p[2] << 8 ) | ( p[3] );
+			param_len	= p[4];
+			res			|= param_put( param_id, param_len, &p[5] );
+			offset		+= ( param_len + 5 );
+			//rt_kprintf( "\n0x8103>id=%x res=%d \n", param_id, res );
+		}
+
+		if( res ) /*有错误*/
+		{
+			jt808_tx_0x0001( seq, id, 1 );
+		}else
+		{
+			jt808_tx_0x0001( seq, id, 0 );
+			param_save( );
+		}
+	}
 }
 
 /************************************** The End Of File **************************************/

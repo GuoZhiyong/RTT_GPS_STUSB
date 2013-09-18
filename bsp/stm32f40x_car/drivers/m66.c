@@ -726,7 +726,7 @@ static void rt_thread_gsm_power_on( void* parameter )
 	};
 
 lbl_poweron_start:
-	rt_kprintf( "\n%08d gsm_power_on>start", rt_tick_get( ) );
+	rt_kprintf( "\n%d gsm_power_on>start", rt_tick_get( ) );
 
 	GPIO_ResetBits( GSM_PWR_PORT, GSM_PWR_PIN );
 	GPIO_ResetBits( GSM_TERMON_PORT, GSM_TERMON_PIN );
@@ -744,7 +744,7 @@ lbl_poweron_start:
 		              at_init[i].retry ) != RT_EOK )
 		{
 			/*todo 错误计数，通知显示*/
-			rt_kprintf( "\n%08d stage=%d", rt_tick_get( ), i );
+			rt_kprintf( "\n%d gsm_power_on>error index=%d", rt_tick_get( ), i );
 			goto lbl_poweron_start;
 		}
 	}
@@ -793,7 +793,7 @@ static void rt_thread_gsm_gprs( void* parameter )
 
 	if( dial_param.fconnect == 1 ) /*允许登网*/
 	{
-		err = gsm_send( "AT+CGATT?\r\n", RT_NULL, "+CGATT: 1", RESP_TYPE_STR_WITHOK, RT_TICK_PER_SECOND * 2, 50 );
+		err = gsm_send( "AT+CGATT?\r\n", RT_NULL, "+CGATT: 1", RESP_TYPE_STR_WITHOK, RT_TICK_PER_SECOND * 2, 20 );
 		if( err != RT_EOK )
 		{
 			goto lbl_gsm_gprs_end_err;
@@ -836,7 +836,8 @@ static void rt_thread_gsm_gprs( void* parameter )
 		goto lbl_gsm_gprs_end;
 	}
 lbl_gsm_gprs_end_err:
-	gsm_state = GSM_ERR;
+	rt_kprintf("\n登网错误");
+	gsm_state = GSM_POWEROFF;	
 lbl_gsm_gprs_end:
 	rt_kprintf( "\n%08d gsm_gprs>gsm_state=%d", rt_tick_get( ), gsm_state );
 }
@@ -879,8 +880,10 @@ static void rt_thread_gsm_socket( void* parameter )
 				pcurr_socket->err_no	= 0x80 | CONNECT_PEER;
 				goto lbl_gsm_socket_end;
 			}
+		}else
+		{
+			strcpy( pcurr_socket->ip_addr, pcurr_socket->ipstr );
 		}
-		strcpy( pcurr_socket->ip_addr, pcurr_socket->ipstr );
 		if( pcurr_socket->type == 'u' )
 		{
 			sprintf( buf, "AT%%IPOPENX=%d,\"UDP\",\"%s\",%d\r\n", pcurr_socket->linkno, pcurr_socket->ip_addr, pcurr_socket->port );
@@ -900,7 +903,7 @@ static void rt_thread_gsm_socket( void* parameter )
 	}
 
 lbl_gsm_socket_end:
-	gsm_state = GSM_TCPIP;    /*socket过程处理完成，结果在state中*/
+	gsm_state = GSM_TCPIP; /*socket过程处理完成，结果在state中*/
 	rt_kprintf( "\n%d gsm_socket>socket_state=%d", rt_tick_get( ), pcurr_socket->state );
 }
 
@@ -1051,10 +1054,10 @@ void tts_proc( void )
 
 	char		buf[20];
 	char		tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-/*gsm在处理其他命令*/
-	if( gsm_state != GSM_TCPIP )
+
+	if( gsm_state != GSM_TCPIP )/*gsm在处理其他命令*/
 	{
-		if( gsm_state != GSM_AT )
+		if( gsm_state != GSM_AT ) /*tcpip中处理线程*/
 		{
 			return;
 		}
@@ -1069,6 +1072,7 @@ void tts_proc( void )
 	oldstate	= gsm_state;
 	gsm_state	= GSM_AT_SEND;
 	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
+	rt_kprintf("\n%d>",rt_tick_get());
 	sprintf( buf, "AT%%TTS=2,3,5,\"" );
 	rt_device_write( &dev_gsm, 0, buf, strlen( buf ) );
 	rt_kprintf( "%s", buf );
@@ -1088,9 +1092,12 @@ void tts_proc( void )
 	buf[3]	= 0;
 	rt_device_write( &dev_gsm, 0, buf, 3 );
 	rt_kprintf( "%s", buf );
-/*不判断，在gsmrx_cb中处理*/
+/*不判断，在gsmrx_cb中处理 %TTS: 0*/
 	rt_free( pinfo );
-	gsm_send( "", RT_NULL, "%TTS: 0", RESP_TYPE_STR, RT_TICK_PER_SECOND * 35, 1 );
+	if(gsm_send( "", RT_NULL, "%TTS: 0", RESP_TYPE_STR, RT_TICK_PER_SECOND * 50, 1 )==RT_EOK)
+		{
+		rt_kprintf("\n播报结束");
+		}
 	GPIO_SetBits( GPIOD, GPIO_Pin_9 ); /*关功放*/
 	gsm_state = oldstate;
 }
@@ -1319,7 +1326,6 @@ void sms_proc( void )
 			m66_write( &dev_gsm, 1, sms_send, len );
 			//rt_kprintf("\nSMS>SEND(len=%d):%s",len,sms_send+1);
 		}
-		//rt_thread_delay(RT_TICK_PER_SECOND/4);
 		buf[0]	= 0x1A;
 		buf[1]	= 0x0;
 		ret		= gsm_send( buf, RT_NULL, "+CMGS:", RESP_TYPE_STR_WITHOK, RT_TICK_PER_SECOND * 20, 1 );
@@ -1363,9 +1369,9 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 		{
 			return;
 		}
-		if( (infolen+1)*2 != strlen( pdst ) )		/*有时会长度不足*/
+		if( ( infolen + 1 ) * 2 != strlen( pdst ) ) /*有时会长度不足*/
 		{
-			rt_kprintf("\n长度不足");
+			rt_kprintf( "\n长度不足" );
 			return;
 		}
 		if( *pdst != '"' )
@@ -1453,8 +1459,6 @@ static void rt_thread_entry_gsm( void* parameter )
 			case GSM_AT:
 				break;
 			case GSM_AT_SEND:
-				break;
-			case GSM_ERR:
 				break;
 		}
 		sms_proc( );

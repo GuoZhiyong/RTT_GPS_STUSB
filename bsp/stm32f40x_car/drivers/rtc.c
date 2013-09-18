@@ -16,12 +16,10 @@
 #include <finsh.h>
 #include "rtc.h"
 
-
-__IO uint32_t			AsynchPrediv = 0, SynchPrediv = 0;
-RTC_TimeTypeDef			RTC_TimeStructure;
-RTC_InitTypeDef			RTC_InitStructure;
-RTC_DateTypeDef			RTC_DateStructure;
-
+__IO uint32_t	AsynchPrediv = 0, SynchPrediv = 0;
+RTC_TimeTypeDef RTC_TimeStructure;
+RTC_InitTypeDef RTC_InitStructure;
+RTC_DateTypeDef RTC_DateStructure;
 
 #define RTC_CONFIGED_FLAG 0x32f3
 
@@ -108,9 +106,6 @@ static ErrorStatus RTC_Config( void )
 	}
 }
 
-
-
-
 /**
  * @brief  Display the current time.
  * @param  None
@@ -120,144 +115,144 @@ void datetime( void )
 {
 	/* Get the current Time */
 	RTC_GetTime( RTC_Format_BIN, &RTC_TimeStructure );
-	RTC_GetDate(RTC_Format_BIN,&RTC_DateStructure);
-	/* Display time Format : hh:mm:ss */
-	rt_kprintf( "\nRTC=%02d-%02d-%02d %02d:%02d:%02d",\
-		RTC_DateStructure.RTC_Year,\
-		RTC_DateStructure.RTC_Month,\
-		RTC_DateStructure.RTC_Date,\
-		RTC_TimeStructure.RTC_Hours,\
-		RTC_TimeStructure.RTC_Minutes,\
-		RTC_TimeStructure.RTC_Seconds );
+	RTC_GetDate( RTC_Format_BIN, &RTC_DateStructure );
+	rt_kprintf( "\nRTC=%02d-%02d-%02d %02d:%02d:%02d", \
+	            RTC_DateStructure.RTC_Year, \
+	            RTC_DateStructure.RTC_Month, \
+	            RTC_DateStructure.RTC_Date, \
+	            RTC_TimeStructure.RTC_Hours, \
+	            RTC_TimeStructure.RTC_Minutes, \
+	            RTC_TimeStructure.RTC_Seconds );
 }
 
-FINSH_FUNCTION_EXPORT(datetime,show time);
+FINSH_FUNCTION_EXPORT( datetime, show time );
 
 /*设置时间*/
-void time_set(uint8_t hour,uint8_t min,uint8_t sec)
+void time_set( uint8_t hour, uint8_t min, uint8_t sec )
 {
-	RTC_TimeStructure.RTC_H12	  = RTC_H12_AM;
-	RTC_TimeStructure.RTC_Hours   = hour;
-	RTC_TimeStructure.RTC_Minutes = min;
-	RTC_TimeStructure.RTC_Seconds = sec; 
-	
-	RTC_SetTime(RTC_Format_BIN, &RTC_TimeStructure);  
-}
-FINSH_FUNCTION_EXPORT(time_set,set time);
+	RTC_TimeStructure.RTC_H12		= RTC_H12_AM;
+	RTC_TimeStructure.RTC_Hours		= hour;
+	RTC_TimeStructure.RTC_Minutes	= min;
+	RTC_TimeStructure.RTC_Seconds	= sec;
 
+	RTC_SetTime( RTC_Format_BIN, &RTC_TimeStructure );
+}
+
+FINSH_FUNCTION_EXPORT( time_set, set time );
 
 /*设置日期*/
-void date_set(uint8_t year,uint8_t month,uint8_t day)
+void date_set( uint8_t year, uint8_t month, uint8_t day )
 {
-	RTC_DateStructure.RTC_Year   = year;
+	RTC_DateStructure.RTC_Year	= year;
 	RTC_DateStructure.RTC_Month = month;
-	RTC_DateStructure.RTC_Date = day; 
-	
-	RTC_SetDate(RTC_Format_BIN, &RTC_DateStructure);  
+	RTC_DateStructure.RTC_Date	= day;
+
+	RTC_SetDate( RTC_Format_BIN, &RTC_DateStructure );
 }
-FINSH_FUNCTION_EXPORT(date_set,set date);
 
+FINSH_FUNCTION_EXPORT( date_set, set date );
 
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-rt_err_t rtc_init(void )
+/**/
+#if 0
+rt_err_t rtc_init( void )
 {
 	if( RTC_ReadBackupRegister( RTC_BKP_DR0 ) != RTC_CONFIGED_FLAG )
 	{
 		rt_kprintf( "\n>RTC_CONFIGED_FLAG ERR" );
-		/* RTC configuration	*/
 		if( RTC_Config( ) == ERROR )
 		{
 			rt_kprintf( "\n%s(%d) RTC error", __func__, __LINE__ );
-			goto lbl_rtc_err;
 		}
-		rt_kprintf("\nRTC ReInit OK");
-		goto lbl_rtc_ok;
+		rt_kprintf( "\nRTC ReInit OK" );
 	}else
 	{
 		rt_kprintf( "\nwait ForSynchro" );
-		/* Enable the PWR clock */
-		RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
-		/* Allow access to RTC */
-		PWR_BackupAccessCmd( ENABLE );
-		/* Wait for RTC APB registers synchronisation */
-		if( RTC_WaitForSynchro( ) == SUCCESS )
+		RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );   /* Enable the PWR clock */
+		PWR_BackupAccessCmd( ENABLE );                          /* Allow access to RTC */
+		if( RTC_WaitForSynchro( ) == SUCCESS )                  /* Wait for RTC APB registers synchronisation */
 		{
 			datetime( );
-			rt_kprintf("\nRTC OK");
-			goto lbl_rtc_ok;
+			rt_kprintf( "\nRTC OK" );
+			return 0;
 		}else
 		{
 			rt_kprintf( "\n%s(%d) error", __func__, __LINE__ );
-			goto lbl_rtc_err;
 		}
 	}
-lbl_rtc_err:
 	return 1;
-lbl_rtc_ok:
-	return 0;
 }
 
+#endif
+
+/*不管什么原因，初始化不成功就反复配置*/
+rt_err_t rtc_init( void )
+{
+	if( RTC_ReadBackupRegister( RTC_BKP_DR0 ) != RTC_CONFIGED_FLAG )
+	{
+		RTC_Config( );
+	}else
+	{
+		RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );   /* Enable the PWR clock */
+		PWR_BackupAccessCmd( ENABLE );                          /* Allow access to RTC */
+		if( RTC_WaitForSynchro( ) == SUCCESS )                  /* Wait for RTC APB registers synchronisation */
+		{
+			datetime( );
+			return 0;
+		}
+	}
+	return 1;
+}
+
+#if 0
 /*
-返回系统的时间戳
-为了避免频繁计算
-调用间隔小于10s的直接给累加上去
-
-
+   返回系统的时间戳
+   为了避免频繁计算
+   调用间隔小于10s的直接给累加上去
 */
 
-
-unsigned long timestamp(void)
+unsigned long timestamp( void )
 {
-	RTC_TimeTypeDef ts;
-	RTC_DateTypeDef ds;
-	unsigned int year,mon,day;
-	unsigned int hour,min, sec;
+	RTC_TimeTypeDef			ts;
+	RTC_DateTypeDef			ds;
+	unsigned int			year, mon, day;
+	unsigned int			hour, min, sec;
 
-	static rt_time_t	last_get_tick=0;
-	static unsigned long last_ts=0;
+	static rt_time_t		last_get_tick	= 0;
+	static unsigned long	last_ts			= 0;
 
-	__IO int32_t delta;
-	delta=rt_tick_get()-last_get_tick;
+	__IO int32_t			delta;
+	delta = rt_tick_get( ) - last_get_tick;
 
-	if(delta<RT_TICK_PER_SECOND*10)
+	if( delta < RT_TICK_PER_SECOND * 10 )
 	{
-		return last_ts+delta/RT_TICK_PER_SECOND;
-
+		return last_ts + delta / RT_TICK_PER_SECOND;
 	}
-	
+
 	RTC_GetTime( RTC_Format_BIN, &ts );
-	RTC_GetDate(RTC_Format_BIN,&ds);
-	year=ds.RTC_Year+2000;
-	mon=ds.RTC_Month;
-	day=ds.RTC_Date;
-	hour=ts.RTC_Hours;
-	min=ts.RTC_Minutes;
-	sec=ts.RTC_Seconds;
-	if( 0 >= (int)( mon-= 2 ) )    /**//* 1..12 -> 11,12,1..10 */
+	RTC_GetDate( RTC_Format_BIN, &ds );
+	year	= ds.RTC_Year + 2000;
+	mon		= ds.RTC_Month;
+	day		= ds.RTC_Date;
+	hour	= ts.RTC_Hours;
+	min		= ts.RTC_Minutes;
+	sec		= ts.RTC_Seconds;
+	if( 0 >= (int)( mon -= 2 ) )            /**//* 1..12 -> 11,12,1..10 */
 	{
-		mon		+= 12;              /**//* Puts Feb last since it has leap day */
+		mon		+= 12;                      /**//* Puts Feb last since it has leap day */
 		year	-= 1;
 	}
 
-	last_get_tick=rt_tick_get();
-	last_ts= ( ( ( (unsigned long)( year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day ) +
-	               year * 365 - 719499
-	               ) * 24 + hour    /**//* now have hours */
-	           ) * 60 + min         /**//* now have minutes */
-	         ) * 60 + sec;   
+	last_get_tick	= rt_tick_get( );
+	last_ts			= ( ( ( (unsigned long)( year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day ) +
+	                        year * 365 - 719499
+	                        ) * 24 + hour   /**//* now have hours */
+	                      ) * 60 + min      /**//* now have minutes */
+	                    ) * 60 + sec;
 
 	return last_ts;
 }
-FINSH_FUNCTION_EXPORT(timestamp,get timestamp);
 
+FINSH_FUNCTION_EXPORT( timestamp, get timestamp );
+#endif
 
 /************************************** The End Of File **************************************/

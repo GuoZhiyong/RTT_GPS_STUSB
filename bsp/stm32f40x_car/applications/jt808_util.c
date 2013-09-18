@@ -1,5 +1,19 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #include "jt808_util.h"
-
+#include <rtthread.h>
+#include <finsh.h>
 
 const unsigned short tbl_crc[256] = { /* CRC 余式表 MODBUS 协议余式表*/
 	0x0000, 0xC1C0, 0x81C1, 0x4001, 0x01C3, 0xC003, 0x8002, 0x41C2,
@@ -37,7 +51,6 @@ const unsigned short tbl_crc[256] = { /* CRC 余式表 MODBUS 协议余式表*/
 };
 
 
-
 /***********************************************************
 * Function:
 * Description:
@@ -59,7 +72,6 @@ __inline MYTIME buf_to_mytime( uint8_t *p )
 	return ret;
 }
 
-
 /*
    从buf中获取时间信息
    如果是0xFF 组成的!!!!!!!特殊对待
@@ -67,8 +79,8 @@ __inline MYTIME buf_to_mytime( uint8_t *p )
  */
 MYTIME mytime_from_hex( uint8_t* buf )
 {
-	MYTIME ret=0;
-	uint8_t *p = buf;
+	MYTIME	ret = 0;
+	uint8_t *p	= buf;
 	if( *p == 0xFF ) /*不是有效的数据*/
 	{
 		return 0xFFFFFFFF;
@@ -120,8 +132,6 @@ void mytime_to_bcd( uint8_t* buf, MYTIME time )
 	*psrc	= HEX2BCD( SEC( time ) );
 }
 
-
-
 /*********************************************************************************
   *函数名称:uint16_t data_to_buf( uint8_t * pdest, uint32_t data, uint8_t width )
   *功能描述:将不同类型的数据存入buf中，数据在buf中为大端模式
@@ -139,7 +149,7 @@ void mytime_to_bcd( uint8_t* buf, MYTIME time )
 *********************************************************************************/
 uint16_t data_to_buf( uint8_t * pdest, uint32_t data, uint8_t width )
 {
-	u8 *buf;
+	uint8_t *buf;
 	buf = pdest;
 
 	switch( width )
@@ -177,8 +187,8 @@ uint16_t data_to_buf( uint8_t * pdest, uint32_t data, uint8_t width )
 *********************************************************************************/
 uint32_t buf_to_data( uint8_t * psrc, uint8_t width )
 {
-	u8	i;
-	u32 outData = 0;
+	uint8_t		i;
+	uint32_t	outData = 0;
 
 	for( i = 0; i < width; i++ )
 	{
@@ -187,8 +197,6 @@ uint32_t buf_to_data( uint8_t * psrc, uint8_t width )
 	}
 	return outData;
 }
-
-
 
 /*********************************************************************************
   *函数名称:unsigned int CRC16_ModBusEx(unsigned char *ptr, unsigned int len,unsigned int crc)
@@ -205,20 +213,148 @@ uint32_t buf_to_data( uint8_t * psrc, uint8_t width )
   *修改日期:
   *修改描述:
 *********************************************************************************/
-unsigned short CalcCRC16( unsigned char *ptr, int pos,unsigned int len, unsigned short crc )
+unsigned short CalcCRC16( unsigned char *ptr, int pos, unsigned int len, unsigned short crc )
 {
-	unsigned char da;
-	unsigned char *p=ptr+pos;
+	unsigned char	da;
+	unsigned char	*p = ptr + pos;
 	while( len-- != 0 )
 	{
 		da	= (unsigned char)( crc / 256 ); /* 以 8 位二进制数的形式暂存CRC 的高8 位 */
 		crc <<= 8;                          /* 左移 8 位，相当于CRC 的低8 位乘以28 */
-		crc ^= tbl_crc[da ^ *p];         /* 高 8 位和当前字节相加后再查表求CRC ，再加上以前的CRC */
+		crc ^= tbl_crc[da ^ *p];            /* 高 8 位和当前字节相加后再查表求CRC ，再加上以前的CRC */
 		p++;
 	}
 	return ( crc );
 }
 
+/*********************************************************************************
+  *函数名称:uint8_t BkpSram_write(uint32_t addr,uint8_t *data, uint16_t len)
+  *功能描述:backup sram 数据写入
+  *输	入:	addr	:写入的地址
+   data	:写入的数据指针
+   len		:写入的长度
+  *输	出:	none
+  *返 回 值:uint8_t	:	0:表示操作失败，	1:表示操作成功
+  *作	者:白养民
+  *创建日期:2013-06-18
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
+*********************************************************************************/
+uint8_t bkpsram_write( uint32_t addr, uint8_t * data, uint16_t len )
+{
+	uint32_t i;
+	//addr &= 0xFFFC;
+	//*(__IO uint32_t *) (BKPSRAM_BASE + addr) = data;
+	for( i = 0; i < len; i++ )
+	{
+		if( addr < 0x1000 )
+		{
+			*(__IO uint8_t*)( BKPSRAM_BASE + addr ) = *data++;
+		}else
+		{
+			return 0;
+		}
+		++addr;
+	}
+	return 1;
+}
+
+/*********************************************************************************
+  *函数名称:uint16_t bkpSram_read(uint32_t addr,uint8_t *data, uint16_t len)
+  *功能描述:backup sram 数据读取
+  *输	入:	addr	:读取的地址
+   data	:读取的数据指针
+   len		:读取的长度
+  *输	出:	none
+  *返 回 值:uint16_t	:表示实际读取的长度
+  *作	者:白养民
+  *创建日期:2013-06-18
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
+*********************************************************************************/
+uint16_t bkpsram_read( uint32_t addr, uint8_t * data, uint16_t len )
+{
+	uint32_t i;
+	//addr &= 0xFFFC;
+	//data = *(__IO uint32_t *) (BKPSRAM_BASE + addr);
+	for( i = 0; i < len; i++ )
+	{
+		if( addr < 0x1000 )
+		{
+			*data++ = *(__IO uint8_t*)( BKPSRAM_BASE + addr );
+		}else
+		{
+			break;
+		}
+		++addr;
+	}
+	return i;
+}
+
+/*初始化bkp sram 成功返回0，失败回1*/
+uint8_t bkpsram_init( void )
+{
+	__IO uint32_t	tmp;
+	uint8_t			buf[8];
+
+	RCC_APB1PeriphClockCmd( RCC_APB1Periph_PWR, ENABLE );
+	PWR_BackupAccessCmd( ENABLE );
+	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_BKPSRAM, ENABLE );
+	PWR_BackupRegulatorCmd( ENABLE );
+	while( PWR_GetFlagStatus( PWR_FLAG_BRR ) == RESET )
+	{
+		tmp++;
+		if( tmp > 0xFFFFFF )
+		{
+			rt_kprintf( "\nBKPSRAM错误" );
+			return 1;		
+		}
+	}
+	/*检查标志,是否首末都检查*/
+	bkpsram_read( 0x0000, buf, 4 );
+	if( memcmp( buf, "WXDH", 4 ) == 0 )
+	{
+		return 0;
+	} else
+	{
+		bkpsram_write( 0x0000, "WXDH", 4 );
+		rt_kprintf("\nbkp参数丢失");
+		return 2;	/*参数丢失*/
+	}
+}
+
+#define BKPSRAM_TEST
+#ifdef BKPSRAM_TEST
+/**/
+void bkpsram_wr( uint32_t addr, char *psrc )
+{
+	char pstr[128];
+	memset( pstr, 0, sizeof( pstr ) );
+	memcpy( pstr, psrc, strlen( psrc ) );
+	bkpsram_write( addr, (uint8_t*)pstr, strlen( pstr ) + 1 );
+}
+
+FINSH_FUNCTION_EXPORT( bkpsram_wr, write from backup sram );
+
+/**/
+void bkpsram_rd( uint32_t addr,uint16_t count )
+{
+	uint16_t i;
+	for( i = 0; i < count; i++ )
+	{
+		if(i%16==0) rt_kprintf("\n");
+		rt_kprintf("%02x ",*(__IO uint8_t*)( BKPSRAM_BASE + addr+i ));
+	}
+	rt_kprintf("\n");
 
 
+}
 
+FINSH_FUNCTION_EXPORT( bkpsram_rd, read from backup sram );
+#endif
+
+/************************************** The End Of File **************************************/

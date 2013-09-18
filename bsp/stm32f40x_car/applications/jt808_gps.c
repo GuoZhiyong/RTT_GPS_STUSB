@@ -179,77 +179,6 @@ static void process_hmi_15min_speed( void )
 }
 
 /*
-   通过gps语句触发的1秒定时
-   未定位时也有疲劳驾驶
- */
-static void adjust_mytime_now( void )
-{
-	uint8_t year, month, day, hour, minute, sec;
-
-	if( mytime_now ) /*mytime_now经过gps定位后的授时*/
-	{
-		sec		= SEC( mytime_now );
-		minute	= MINUTE( mytime_now );
-		hour	= HOUR( mytime_now );
-		day		= DAY( mytime_now );
-		month	= MONTH( mytime_now );
-		year	= YEAR( mytime_now );
-		sec++;
-
-		if( sec == 60 )
-		{
-			sec = 0;
-			minute++;
-		}
-		if( minute == 60 )
-		{
-			minute = 0;
-			hour++;
-		}
-		if( hour == 24 )
-		{
-			hour = 0;
-			day++;
-		}
-		if( ( month == 4 ) || ( month == 6 ) || ( month == 9 ) || ( month == 11 ) )
-		{
-			if( day == 31 )
-			{
-				day = 1;
-				month++;
-			}
-		}else if( month == 2 )
-		{
-			if( year % 4 == 0 ) /*闰年29天*/
-			{
-				if( day == 30 )
-				{
-					day = 1;
-					month++;
-				}
-			}else
-			{
-				if( day == 29 )
-				{
-					day = 1;
-					month++;
-				}
-			}
-		}else if( day == 32 )
-		{
-			day = 1;
-			month++;
-		}
-		if( month == 13 )
-		{
-			month = 1;
-			year++;
-		}
-		mytime_now = MYDATETIME( year, month, day, hour, minute, sec );
-	}
-}
-
-/*
    Linux源码中的mktime算法解析
  */
 static __inline unsigned long linux_mktime( unsigned int year, unsigned int mon,
@@ -358,23 +287,75 @@ typedef struct
 }REPORT_INFO;
 
 REPORT_INFO		report_curr = { 0, 0, 0, 0 };
-REPORT_INFO		report_get[20];
+
+static uint32_t report_addr[20];            /*上报记录的地址*/
 static uint8_t	report_get_count	= 0;    /*获取的未上报记录数*/
-static uint8_t	report_get_addr		= 0;    /*获取的未上报记录最小id的地址*/
+static uint32_t report_get_addr		= 0;    /*获取的未上报记录最小id的地址*/
 
-static uint16_t report_count	= 0;        /*还没有上报的记录数*/
-static uint8_t	report_first	= 1;        /*第一条上报不需要搽除以前的*/
+static uint16_t report_count = 0;           /*还没有上报的记录数*/
 
-#if 0
-static uint32_t report_curr_addr	= 0;    /*当前记录的地址*/
-static uint32_t report_curr_id		= 0;    /*当前记录的最大id*/
-static uint32_t report_curr_len		= 0;    /*当前记录的用户信息长度*/
 
-static uint32_t report_addr_rd	= 0;        /*要读记录的位置,第一个未上报的数据位置*/
-static uint32_t report_count	= 0;        /*还没有上报的记录数*/
-static uint8_t	report_first	= 1;        /*第一条上报不需要搽除以前的*/
-#endif
+/*
+   上报信息收到响应,通用应答 0x8001
+ */
+static JT808_MSG_STATE jt808_report_response( JT808_TX_NODEDATA * nodedata, uint8_t *pmsg )
+{
+	uint8_t			* msg = pmsg + 12;
+	uint16_t		ack_id;
+	uint16_t		ack_seq;
+	uint8_t			ack_res;
+	uint32_t		addr;
 
+	GPS_REPORT_HEAD head;
+	uint32_t		i;
+
+	ack_seq = ( msg[0] << 8 ) | msg[1];
+	ack_id	= ( msg[2] << 8 ) | msg[3];
+	ack_res = *( msg + 4 );
+	rt_kprintf( "\n%d>ACK %04x:%04x:%d", rt_tick_get( ), ack_id, ack_seq, ack_res );
+	if( ack_res == 0 )
+	{
+		rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
+		if( ack_id == 0x0200 )              /*在线上报*/
+		{
+			addr = *( (uint32_t*)&( nodedata->user_para ) );
+			sst25_read( addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+			if( head.mn == 0x474E5353 )
+			{
+				head.attr &= 0x7F;          /*最高位置0*/
+				sst25_write_through( addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+			}
+			nodedata->user_para = RT_NULL;  /*传递进来只是指明flash地址，并不是要释放*/
+		}
+		if( ack_id == 0x0704 )              /*批量上报*/
+		{
+			for( i = 0; i < report_get_count; i++ )
+			{
+				sst25_read( report_addr[i], (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+				if( head.mn == 0x474E5353 )
+				{
+					head.attr &= 0x7F;      /*最高位置0*/
+					sst25_write_through( report_addr[i], (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
+				}
+				if( report_count )
+				{
+					report_count--;
+				}
+			}
+		}
+		rt_sem_release( &sem_dataflash );
+	}
+
+	return ACK_OK;
+}
+
+/*
+   消息发送超时,保存数据为补报
+ */
+static JT808_MSG_STATE jt808_report_timeout( JT808_TX_NODEDATA * nodedata )
+{
+	return ACK_OK;
+}
 
 /*
    查找最后一个写入的位置
@@ -392,24 +373,23 @@ void jt808_report_init( void )
 	report_curr.id		= 0;
 	report_curr.len		= 0;
 
-	memset( report_get, 0, sizeof( report_get ) );
+	memset( report_addr, 0, sizeof( report_addr ) );
 
 	for( addr = DF_POSTREPORT_START; addr < DF_POSTREPORT_END; addr += 64 )
 	{
 		sst25_read( addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
-		if( head.mn == 0x474E5353 )                 /*有效记录*/
+		if( head.mn == 0x474E5353 )         /*有效记录*/
 		{
-			if( head.id >= report_curr.id )         /*查找最近记录,当前写入的位置*/
+			if( head.id >= report_curr.id ) /*查找最近记录,当前写入的位置*/
 			{
 				report_curr.id		= head.id;
-				report_curr.addr	= addr;         /*当前记录的地址*/
+				report_curr.addr	= addr; /*当前记录的地址*/
 				report_curr.len		= head.len;
 			}
-			if( head.attr >= ATTR_ONNET_NOREPORT )  /*还没有发送*/
+			if( head.attr > 0x7F )          /*bit7=1 还没有发送*/
 			{
-				report_first = 1;                   /*第一包数据*/
-				report_count++;                     /*统计未上报记录数*/
-				if( read_id > head.id )             /*要找到最小id的地址*/
+				report_count++;             /*统计未上报记录数*/
+				if( read_id > head.id )     /*要找到最小id的地址*/
 				{
 					report_get_addr = addr;
 					read_id			= head.id;
@@ -461,7 +441,7 @@ void jt808_report_put( uint8_t* pinfo, uint16_t len )
 	if( gsm_socket[0].state == CONNECTED )  /*当前在线，保存并直接上报*/
 	{
 		head.attr = ATTR_ONNET_NOREPORT;
-		jt808_add_tx( 1, SINGLE_FIRST, 0x0200, -1, RT_NULL, RT_NULL, len, pinfo, RT_NULL );
+		jt808_add_tx( 1, SINGLE_FIRST, 0x0200, -1, RT_NULL, jt808_report_response, len, pinfo, (void*)report_curr.addr );
 	}else /*是需要补报的信息*/
 	{
 		head.attr = ATTR_NONET_NOREPORT;
@@ -469,7 +449,6 @@ void jt808_report_put( uint8_t* pinfo, uint16_t len )
 		if( report_count == 1 )             /*要找到最小的*/
 		{
 			report_get_addr = report_curr.addr;
-			report_first	= 1;            /*首条上报*/
 		}
 		report_curr.len = len;
 	}
@@ -478,33 +457,7 @@ void jt808_report_put( uint8_t* pinfo, uint16_t len )
 	sst25_write_through( report_curr.addr + 12, pinfo, len );
 
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "\n%d>(%d)写入位置:%x id=%d", rt_tick_get( ), report_count, report_curr.addr, report_curr.id );
-}
-
-/*查找第一个未上报的记录,不一定就是记录号最小的*/
-static uint8_t jt808_report_get_next( uint32_t start_addr )
-{
-	uint32_t		addr = start_addr;
-	GPS_REPORT_HEAD head;
-	uint32_t		i;
-
-	for( i = 0; i < DF_POSTREPORT_SECTORS * 64; i++ )   /*每记录64字节,每sector(4096Byte)有64记录*/
-	{
-		sst25_read( addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
-		if( head.mn == 0x474E5353 )                     /*有效记录*/
-		{
-			if( head.attr == 0xFF )                     /*还没有发送*/
-			{
-				return addr;
-			}
-		}
-		addr += 64;
-		if( addr >= DF_POSTREPORT_END )
-		{
-			addr = DF_POSTREPORT_START;
-		}
-	}
-	return 0;                               /*没找到*/
+	//rt_kprintf( "\n%d>(%d)写入位置:%x id=%d", rt_tick_get( ), report_count, report_curr.addr, report_curr.id );
 }
 
 /*
@@ -523,7 +476,7 @@ void jt808_report_get( void )
 	uint32_t		addr;
 	uint16_t		get_size;               /*获取记录的大小*/
 	uint16_t		pos;
-	uint8_t			count;
+	uint8_t			read_count;             /*要读取的记录数*/
 	if( report_count == 0 )                 /*没有有未上报记录*/
 	{
 		return;
@@ -536,33 +489,15 @@ void jt808_report_get( void )
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
 
-	if( report_first == 0 )                 /*不是首条上报,需要删除本次记录*/
-	{
-		for( i = 0; i < report_get_count; i++ )
-		{
-			sst25_read( report_get[i].addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
-			if( head.mn == 0x474E5353 )     /*有效记录*/
-			{
-				head.attr = ATTR_REPORTED;  /*已发送*/
-				sst25_write_through( report_get[i].addr, (uint8_t*)&head, sizeof( GPS_REPORT_HEAD ) );
-			}
-			if( report_count )
-			{
-				report_count--;             /*未上报记录数-1*/
-			}
-		}
-	}
-	report_first = 0;
-
 /*批量查找记录*/
 	addr				= report_get_addr;
 	report_get_count	= 0;
 	get_size			= 3;
 	pos					= 3;                            /*0x0704数据包，开始的偏移*/
-	count				= report_count;
-	if( report_count > 10 )                             /**/
+	read_count			= report_count;                 /*还没有报的记录总数*/
+	if( report_count > 10 )                             /*最多1次上报10条记录 303字节*/
 	{
-		count = 10;
+		read_count = 10;
 	}
 	for( i = 0; i < DF_POSTREPORT_SECTORS * 64; i++ )   /*每记录64字节,每sector(4096Byte)有64记录*/
 	{
@@ -571,22 +506,17 @@ void jt808_report_get( void )
 		{
 			if( head.attr >= ATTR_ONNET_NOREPORT )      /*还没有发送*/
 			{
-				report_get_count++;
-				if( report_get_count > count )
-				{
-					report_get_addr = addr;
-					break;
-				}
-				get_size += ( 2 + head.len );
-				if( get_size > 1023 )
-				{
-					report_get_addr = addr;
-					break;
-				}
 				buf[pos]		= head.len >> 8;
 				buf[pos + 1]	= head.len;
 				sst25_read( addr + 12, buf + pos + 2, head.len );
-				pos += ( head.len + 2 );
+				pos								+= ( head.len + 2 );
+				report_addr[report_get_count]	= addr;
+				report_get_count++;
+				if( report_get_count == read_count ) /*收到指定条数数据*/
+				{
+					report_get_addr = addr;
+					break;
+				}
 			}
 		}
 		addr += 64;
@@ -596,16 +526,19 @@ void jt808_report_get( void )
 		}
 	}
 
-	if( report_get_count )
+	if( report_get_count ) /*得到的记录数*/
 	{
 		buf[0]	= report_get_count >> 8;
 		buf[1]	= report_get_count & 0xff;
 		buf[2]	= 1;
-		jt808_tx( 0x0704, buf, pos );
+		jt808_add_tx( 1, SINGLE_CMD, 0x0704, -1, RT_NULL, jt808_report_response, pos, buf, RT_NULL );
+	}else
+	{
+		report_count = 0; /*没有得到要上报的数据*/
 	}
 
 	rt_sem_release( &sem_dataflash );
-	rt_kprintf( "\n%d>(%d)读出位置:%x,记录数:%d,长度", rt_tick_get( ), report_count, report_get_count, pos );
+	//rt_kprintf( "\n%d>(%d)读出位置:%x,记录数:%d,长度:%d", rt_tick_get( ), report_count, report_get_addr, report_get_count, pos );
 }
 
 /*
@@ -618,6 +551,145 @@ void jt808_report_get( void )
 #define FLAG_SEND_ALARM			0x02
 #define FLAG_SEND_FIX_TIME		0x04
 #define FLAG_SEND_FIX_DISTANCE	0x08
+
+/*处理上报*/
+#if 1
+static void process_gps_report( void )
+{
+	static uint32_t utc_report_last = 0;
+	uint32_t		tmp;
+	uint8_t			flag_send	= 0; /*默认不上报*/
+	uint8_t			*palarmdata = RT_NULL;
+	uint16_t		alarm_length;
+	uint32_t		alarm_bits;
+
+	uint8_t			buf[300];
+
+/*区域路线处理*/
+	alarm_bits = area_get_alarm( palarmdata, &alarm_length );
+	if( alarm_bits ) /*有告警*/
+	{
+		rt_kprintf( "\n区域有告警" );
+		memcpy( buf + 28, palarmdata, alarm_length );
+		flag_send = FLAG_SEND_AREA;
+	}
+	jt808_alarm			|= alarm_bits;
+	gps_baseinfo.alarm	= BYTESWAP4( jt808_alarm );
+	gps_baseinfo.status = BYTESWAP4( jt808_status );
+	memcpy( buf, (uint8_t*)&gps_baseinfo, 28 );
+
+/*中心追踪,直接上报，并返回*/
+	if( jt808_8202_track_duration ) /*要追踪*/
+	{
+		jt808_8202_track_counter++;
+		if( jt808_8202_track_counter >= jt808_8202_track_interval )
+		{
+			jt808_8202_track_counter = 0;
+			jt808_tx( 0x0200, buf, 28 + alarm_length );
+			if( jt808_8202_track_duration > jt808_8202_track_interval )
+			{
+				jt808_8202_track_duration -= jt808_8202_track_interval;
+			}else
+			{
+				jt808_8202_track_duration = 0;
+			}
+		}
+		return;
+	}
+
+/*数据上报方式,如何组合出各种情况 */
+	tmp = jt808_status ^ jt808_status_last;
+	if( tmp )                                       /*状态发生变化，要上报,*/
+	{
+		flag_send				|= FLAG_SEND_STATUS;
+		jt808_report_distance	= 0;
+		jt808_report_interval	= 0;
+		utc_report_last			= utc_now;          /*重新计时*/
+		distance				= 0;                /*重新计算距离*/
+	}
+/*判断上报方式，中心下发修改参数时，要及时改变*/
+	if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
+	{
+		if( jt808_status & BIT_STATUS_ACC )         /*当前状态为ACC开*/
+		{
+			jt808_report_interval = jt808_param.id_0x0029;
+		}else
+		{
+			jt808_report_interval = jt808_param.id_0x0027;
+		}
+	}
+	if( jt808_param.id_0x0020 )             /*有定距上报*/
+	{
+		if( jt808_status & BIT_STATUS_ACC ) /*当前状态为ACC开*/
+		{
+			jt808_report_distance = jt808_param.id_0x002C;
+		}else
+		{
+			jt808_report_distance = jt808_param.id_0x002E;
+		}
+	}
+
+	tmp = ( jt808_alarm ^ jt808_alarm_last );           /*告警位变化*/
+	if( tmp )                                           /*告警发生变化，立即上报,*/
+	{
+		flag_send		|= FLAG_SEND_ALARM;
+		utc_report_last = utc_now;
+		distance		= 0;
+	}
+
+	if( jt808_alarm & BIT_ALARM_EMG )                   /*紧急告警*/
+	{
+		if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
+		{
+			jt808_report_interval = jt808_param.id_0x0028;
+		}
+		if( jt808_param.id_0x0020 )                     /*有定距上报*/
+		{
+			jt808_report_distance = jt808_param.id_0x002F;
+		}
+	}
+
+/*计算定时上报*/
+	if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )       /*有定时上报*/
+	{
+		if( utc_now - utc_report_last >= jt808_report_interval )
+		{
+			flag_send		|= FLAG_SEND_FIX_TIME;
+			utc_report_last = utc_now;
+		}
+	}
+/*计算定距上报*/
+	if( jt808_param.id_0x0020 ) /*有定距上报*/
+	{
+		if( distance >= jt808_report_distance )
+		{
+			flag_send	|= FLAG_SEND_FIX_DISTANCE;
+			distance	= 0;
+		}
+	}
+
+	jt808_status_last	= jt808_status;
+	jt808_alarm_last	= jt808_alarm;
+
+/*生成要上报的数据,在线时直接上报，还是都暂存再上报，后者。*/
+#if 1
+	if( flag_send )
+	{
+		rt_kprintf( "\n%d>上报gps(%02x)", rt_tick_get( ), flag_send );
+		jt808_report_put( buf, 28 + alarm_length );
+	}
+#endif
+
+#if 0
+	if( flag_send )
+	{
+		jt808_tx( 0x0200, buf, 28 + alarm_length );
+		rt_kprintf( "\n%d>上报gps(%02x)", rt_tick_get( ), flag_send );
+	}
+#endif
+}
+
+#else
 
 
 /***********************************************************
@@ -674,56 +746,57 @@ static void process_gps_report( void )
 
 /*数据上报方式,如何组合出各种情况 */
 	tmp = jt808_status ^ jt808_status_last;
-	if( tmp )                                           /*状态发生变化，要上报,*/
+	if( tmp )                                               /*状态发生变化，要上报,*/
 	{
 		flag_send |= FLAG_SEND_STATUS;
-	}
-	/*不理解这个登录状态*/
-	if( tmp & BIT_STATUS_ACC )                          /*ACC变化,修改汇报的间隔或距离*/
-	{
-		jt808_report_distance	= 0;
-		jt808_report_interval	= 0;
-		if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
+
+		/*不理解这个登录状态*/
+		if( tmp & BIT_STATUS_ACC )                          /*ACC变化,修改汇报的间隔或距离*/
 		{
-			if( jt808_status & BIT_STATUS_ACC )         /*当前状态为ACC开*/
+			jt808_report_distance	= 0;
+			jt808_report_interval	= 0;
+			if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
 			{
-				jt808_report_interval = jt808_param.id_0x0029;
-			}else
-			{
-				jt808_report_interval = jt808_param.id_0x0027;
+				if( jt808_status & BIT_STATUS_ACC )         /*当前状态为ACC开*/
+				{
+					jt808_report_interval = jt808_param.id_0x0029;
+				}else
+				{
+					jt808_report_interval = jt808_param.id_0x0027;
+				}
+				utc_report_last = utc_now;                  /*重新计时*/
 			}
-			utc_report_last = utc_now;                  /*重新计时*/
-		}
-		if( jt808_param.id_0x0020 )                     /*有定距上报*/
-		{
-			if( jt808_status & BIT_STATUS_ACC )         /*当前状态为ACC开*/
+			if( jt808_param.id_0x0020 )                     /*有定距上报*/
 			{
-				jt808_report_distance = jt808_param.id_0x002C;
-			}else
-			{
-				jt808_report_distance = jt808_param.id_0x002E;
+				if( jt808_status & BIT_STATUS_ACC )         /*当前状态为ACC开*/
+				{
+					jt808_report_distance = jt808_param.id_0x002C;
+				}else
+				{
+					jt808_report_distance = jt808_param.id_0x002E;
+				}
+				distance = 0;                               /*重新计算距离*/
 			}
-			distance = 0;                               /*重新计算距离*/
 		}
 	}
 
-	tmp = ( jt808_alarm ^ jt808_alarm_last );           /*告警位变化*/
-	if( tmp )                                           /*告警发生变化，要上报,*/
+	tmp = ( jt808_alarm ^ jt808_alarm_last );               /*告警位变化*/
+	if( tmp )                                               /*告警发生变化，要上报,*/
 	{
 		flag_send |= FLAG_SEND_ALARM;
-	}
 
-	if( tmp & BIT_ALARM_EMG )                           /*紧急告警*/
-	{
-		if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
+		if( tmp & BIT_ALARM_EMG )                           /*紧急告警*/
 		{
-			jt808_report_interval	= jt808_param.id_0x0028;
-			utc_report_last			= utc_now;
-		}
-		if( jt808_param.id_0x0020 )                     /*有定距上报*/
-		{
-			jt808_report_distance	= jt808_param.id_0x002F;
-			distance				= 0;
+			if( ( jt808_param.id_0x0020 & 0x01 ) == 0x0 )   /*有定时上报*/
+			{
+				jt808_report_interval	= jt808_param.id_0x0028;
+				utc_report_last			= utc_now;
+			}
+			if( jt808_param.id_0x0020 )                     /*有定距上报*/
+			{
+				jt808_report_distance	= jt808_param.id_0x002F;
+				distance				= 0;
+			}
 		}
 	}
 
@@ -753,6 +826,7 @@ static void process_gps_report( void )
 #if 1
 	if( flag_send )
 	{
+		rt_kprintf( "\n%d>上报gps(%02x)", rt_tick_get( ), flag_send );
 		jt808_report_put( buf, 28 + alarm_length );
 	}
 #endif
@@ -765,6 +839,9 @@ static void process_gps_report( void )
 	}
 #endif
 }
+
+#endif
+
 
 /*
    $GNRMC,074001.00,A,3905.291037,N,11733.138255,E,0.1,,171212,,,A*655220.9*3F0E
@@ -1014,8 +1091,8 @@ static uint8_t process_rmc( uint8_t * pinfo )
 				gps_baseinfo.speed_10x	= BYTESWAP2( speed_10x );
 				gps_baseinfo.cog		= BYTESWAP2( cog );
 
-				utc_now						= linux_mktime( year, mon, day, hour, min, sec );
-				mytime_now					= MYDATETIME( year, mon, day, hour, min, sec );
+				utc_now = linux_mktime( 2000 + year, mon, day, hour, min, sec );
+
 				gps_baseinfo.datetime[0]	= HEX2BCD( year );
 				gps_baseinfo.datetime[1]	= HEX2BCD( mon );
 				gps_baseinfo.datetime[2]	= HEX2BCD( day );
@@ -1026,15 +1103,22 @@ static uint8_t process_rmc( uint8_t * pinfo )
 				/*首次定位,校时*/
 				if( ( jt808_status_last & BIT_STATUS_FIXED ) == 0 )
 				{
+					mytime_now								= MYDATETIME( year, mon, day, hour, min, sec );
+					*(__IO uint32_t*)( BKPSRAM_BASE + 4 )	= utc_now;
 					date_set( year, mon, day );
 					time_set( hour, min, sec );
 					rt_kprintf( "\n%d>rtc sync %02d-%02d-%02d %02d:%02d:%02d", rt_tick_get( ), year, mon, day, hour, min, sec );
 				}
-				/*整小时校准*/
-				if( ( gps_datetime[4] == 0 ) && ( gps_datetime[5] == 0 ) )
+
+				if( gps_datetime[5] == 0 )      /*整分钟*/
 				{
-					date_set( year, mon, day );
-					time_set( hour, min, sec );
+					mytime_now								= MYDATETIME( year, mon, day, hour, min, sec );
+					*(__IO uint32_t*)( BKPSRAM_BASE + 4 )	= utc_now;
+					if( gps_datetime[4] == 0 )  /*整小时校准*/
+					{
+						date_set( year, mon, day );
+						time_set( hour, min, sec );
+					}
 				}
 
 				return 0;
@@ -1180,19 +1264,19 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 		gps_sec_count++;
 		ret = process_rmc( (uint8_t*)psrc );
 
-		if( ret == 0 )                          /*已定位*/
+		if( ret == 0 )                  /*已定位*/
 		{
 			gps_notfixed_count = 0;
-			process_hmi_15min_speed( );         /*最近15分钟速度*/
-			vdr_rx_gps( );                      /*行车记录仪数据处理*/
-			area_process( );                    /*区域线路告警*/
+			process_hmi_15min_speed( ); /*最近15分钟速度*/
+			vdr_rx_gps( );              /*行车记录仪数据处理*/
+			area_process( );            /*区域线路告警*/
 			calc_distance( );
+			process_gps_report( );      /*处理GPS上报信息*/
 		}else
 		{
-			adjust_mytime_now( );               /*调整mytime_now*/
+			//adjust_mytime_now( );       /*调整mytime_now*/
 			gps_notfixed_count++;
 		}
-		process_gps_report( );                  /*处理GPS上报信息*/
 	}
 
 
@@ -1202,7 +1286,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	 */
 	if( strncmp( psrc + 3, "TXT", 3 ) == 0 )
 	{
-		if( jt808_param.id_0xF013 != 0x3017 )   /*型号不对,保存新的，并重启*/
+		if( jt808_param.id_0xF013 != 0x3017 ) /*型号不对,保存新的，并重启*/
 		{
 			rt_kprintf( "\njt808_param.id_0xF013=%04x", jt808_param.id_0xF013 );
 			jt808_param.id_0xF013 = 0x3017;
@@ -1228,6 +1312,7 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 /*初始化jt808 gps相关的处理*/
 void jt808_gps_init( void )
 {
+	rt_kprintf( "\njt808_gps_init" );
 	jt808_report_init( );   /*上报区域初始化*/
 	jt808_vehicle_init( );  /*车辆信息初始化*/
 	area_init( );
