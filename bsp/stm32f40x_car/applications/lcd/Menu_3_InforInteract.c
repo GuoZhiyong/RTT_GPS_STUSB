@@ -23,13 +23,13 @@ DECL_BMP( 8, 8, select_inter );
 DECL_BMP( 8, 8, noselect_inter );
 
 static unsigned char	menu_pos	= 0;
-static PMENUITEM		psubmenu[8] =
+static PMENUITEM		psubmenu[] =
 {
 	&Menu_3_1_CenterQuesSend,
 	&Menu_3_2_FullorEmpty,
 	&Menu_3_3_ElectronicInfor,
 	&Menu_3_4_Multimedia,
-	&Menu_3_5_MultimediaTrans,
+	//&Menu_3_5_MultimediaTrans,
 	&Menu_3_6_Record,
 	&Menu_3_7_Affair,
 	&Menu_3_8_LogOut,
@@ -83,7 +83,7 @@ static void keypress( unsigned int key )
 		case KEY_UP:
 			if( menu_pos == 0 )
 			{
-				menu_pos = 7;
+				menu_pos = 6;
 			} else
 			{
 				menu_pos--;
@@ -92,7 +92,7 @@ static void keypress( unsigned int key )
 			break;
 		case KEY_DOWN:
 			menu_pos++;
-			if( menu_pos > 7 )
+			if( menu_pos > 6 )
 			{
 				menu_pos = 0;
 			}

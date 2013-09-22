@@ -1,133 +1,105 @@
+/************************************************************
+ * Copyright (C), 2008-2012,
+ * FileName:		// 文件名
+ * Author:			// 作者
+ * Date:			// 日期
+ * Description:		// 模块描述
+ * Version:			// 版本信息
+ * Function List:	// 主要函数及其功能
+ *     1. -------
+ * History:			// 历史修改记录
+ *     <author>  <time>   <version >   <desc>
+ *     David    96/10/12     1.0     build this moudle
+ ***********************************************************/
 #include "Menu_Include.h"
 #include "sed1520.h"
 
 
-unsigned char Menu_Multimedia=0;
-unsigned char Multimedia_change=1;//选择
-unsigned char Multimedia_screen=0;//界面切换使用
+/*
+   要能查看记录?
 
+   图片记录
+    获取图片记录数据 允许导出或发送
+   拍照上传
+   当前拍照
+ */
+static uint8_t pos;
 
-void Multimedia(unsigned char type)
+#define SCR_PHOTO_MENU		0
+#define SCR_PHOTO_SELECT	1
+#define SCR_PHOTO_TAKE		2
+
+static uint8_t scr_mode = SCR_PHOTO_MENU;  /*当前显示的界面状态*/
+
+/**/
+static void display( void )
 {
-	lcd_fill(0);
-	lcd_text12(18,3,"多媒体信息选择",14,LCD_MODE_SET);	
-	if(type==1)
-		{
-		lcd_text12(24,19,"音频",4,LCD_MODE_INVERT);
-		lcd_text12(72,19,"视频",4,LCD_MODE_SET);
-		}
-	else if(type==2)
-		{
-		lcd_text12(24,19,"音频",4,LCD_MODE_SET);
-		lcd_text12(72,19,"视频",4,LCD_MODE_INVERT);
-		}
-	lcd_update_all();
-
-}
-
-static void msg( void *p)
-{
-}
-static void show(void)
-{
-	pMenuItem->tick=rt_tick_get();
-
-	Multimedia(1);
-}
-
-
-static void keypress(unsigned int key)
-{
-switch(key)
+	lcd_fill( 0 );
+	switch( scr_mode )
 	{
-	case KEY_MENU:
-		pMenuItem=&Menu_3_InforInteract;
-		pMenuItem->show();
-		CounterBack=0;
-		
-		Menu_Multimedia=0;
-		Multimedia_change=1;//选择
-		Multimedia_screen=0;//界面切换使用
-		break;
-	case KEY_OK:
-		if(Multimedia_screen==0)
-			{
-			Multimedia_screen=1;
-			lcd_fill(0);
-			
-			if(Multimedia_change==1)
-				{
-				//CarLoadState_Write();
-				lcd_text12(7,10,"多媒体数据类型:音频",19,LCD_MODE_SET);  
-				}
-			else if(Multimedia_change==2)
-				{
-				//CarLoadState_Write(); 
-				lcd_text12(7,10,"多媒体数据类型:视频",19,LCD_MODE_SET);  
-				}
-			lcd_update_all();
-			}
-		else if(Multimedia_screen==1)
-			{
-			Multimedia_screen=2;
+		case SCR_PHOTO_MENU:
+			pos &= 0x01;
+			lcd_text12( 5, 4, "1.图片记录", 10, 3 - pos * 2 );
+			lcd_text12( 5, 20, "2.拍照上传", 10, pos * 2 + 1 );
+			break;
+		case SCR_PHOTO_SELECT:
+			break;
+		case SCR_PHOTO_TAKE:
+			break;
+	}
+	lcd_update_all( );
+}
 
-//bitter:			MediaObj.SD_Data_Flag=1;//发送多媒体数据标志
-			if(Multimedia_change==1)
-				{
-//bitter:					MediaObj.Media_Type=1;//音频1
-				/*memset(send_data,0,sizeof(send_data));
-				send_data[0]=0x08;
-				send_data[1]=0x01;
-				send_data[2]=0x00;
-				send_data[3]=0x01;
-				send_data[4]=0x01;//音频
-				rt_mb_send(&mb_hmi, (rt_uint32_t)&send_data[0]);*/
-				
-				lcd_fill(0);
-				lcd_text12(18,10,"音频  开始发送",14,LCD_MODE_SET);
-				lcd_update_all();
-				}
-			else if(Multimedia_change==2)
-				{
-//bitter:					MediaObj.Media_Type=2;//音频2
-				/*memset(send_data,0,sizeof(send_data));
-				send_data[0]=0x08;
-				send_data[1]=0x01;
-				send_data[2]=0x00;
-				send_data[3]=0x01;
-				send_data[4]=0x02;//视频
-				rt_mb_send(&mb_hmi, (rt_uint32_t)&send_data[0]);*/
-				
-				lcd_fill(0);
-				lcd_text12(18,10,"视频  开始发送",14,LCD_MODE_SET);	
-				lcd_update_all();
-				}
-			
-			}
-		break;
-	case KEY_UP:
-		if(Multimedia_screen==0)
+/*处理拍照及上传的过程*/
+static void msg( void *p )
+{
+	pMenuItem->tick = rt_tick_get( );
+}
+
+/**/
+static void show( void )
+{
+	pMenuItem->tick = rt_tick_get( );
+	pos				= 0;
+	scr_mode		= SCR_PHOTO_MENU;
+	display( );
+}
+
+/*按键处理，拍照或上传过程中如何判断?*/
+static void keypress( unsigned int key )
+{
+	switch( key )
+	{
+		case KEY_MENU:
+			pMenuItem = &Menu_3_InforInteract;
+			pMenuItem->show( );
+			break;
+		case KEY_OK:
+			if( scr_mode == SCR_PHOTO_MENU )
 			{
-			Multimedia_change=1;
-			Multimedia(1);
+				if( pos == 0 ) /*图片记录*/
+				{
+				}else
+				{
+				}
 			}
-		break;
-	case KEY_DOWN:
-		if(Multimedia_screen==0)
-			{
-			Multimedia_change=2;
-			Multimedia(2);
-			}
-		break;
+
+			break;
+		case KEY_UP:
+			pos--;
+			display( );
+			break;
+		case KEY_DOWN:
+			pos++;
+			display( );
+			break;
 	}
 }
 
-
-
-MENUITEM	Menu_3_4_Multimedia=
+MENUITEM Menu_3_4_Multimedia =
 {
-	"发送多媒体数据",
-	14,0,
+	"图片拍照",
+	8,				  0,
 	&show,
 	&keypress,
 	&timetick_default,
@@ -135,3 +107,4 @@ MENUITEM	Menu_3_4_Multimedia=
 	(void*)0
 };
 
+/************************************** The End Of File **************************************/

@@ -557,7 +557,7 @@ void Cam_jt808_0x8801_cam_ok( struct _Style_Cam_Requset_Para *para, uint32_t pic
 #if 1
 	if( para->SendPhoto )
 	{
-		rt_kprintf( "\n%s pic_id=%d", __func__, pic_id );
+		rt_kprintf( "\n>(%s) pic_id=%d", __func__, pic_id );
 		Cam_jt808_0x0801( RT_NULL, pic_id, !para->SavePhoto );
 	}
 #endif
@@ -595,7 +595,8 @@ void Cam_jt808_0x8801_cam_end( struct _Style_Cam_Requset_Para *para )
 	//data_to_buf( pdestbuf + 3, para->PhotoNum, 2 ); ///写入应答流水号
 	pdestbuf[3] = para->PhotoNum >> 8;
 	pdestbuf[4] = para->PhotoNum & 0xFF;
-	jt808_tx_ack( 0x0805, pdestbuf, datalen );
+	//jt808_tx_ack( 0x0805, pdestbuf, datalen );  /*不把它放到发送头*/
+	jt808_tx( 0x0805, pdestbuf, datalen );
 
 	rt_free( para->user_para );
 	para->user_para = RT_NULL;

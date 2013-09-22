@@ -1086,7 +1086,7 @@ u8 Camera_Process( void )
 				///保存数据
 				Cam_Flash_WrPic( photo_rx, photo_rx_wr, &pack_head );
 				photo_rx_wr = 0;
-			}else if( rt_tick_get( ) - tick > RT_TICK_PER_SECOND * 2 ) ///判读是否超时
+			}else if( rt_tick_get( ) - tick > RT_TICK_PER_SECOND * 5 ) ///判读是否超时，启动拍照需要时间稍长
 			{
 				Current_Cam_Para.State = CAM_START;
 			}
@@ -1095,7 +1095,7 @@ u8 Camera_Process( void )
 			++Current_Cam_Para.Para.PhotoNum;
 			rt_kprintf( "\n拍照成功!" );
 			getpicpara( );
-#if 1
+
 			if( Current_Cam_Para.Para.cb_response_cam_ok != RT_NULL ) ///调用单张照片拍照成功回调函数
 			{
 				Current_Cam_Para.Para.cb_response_cam_ok( &Current_Cam_Para.Para, pack_head.Data_ID );
@@ -1103,7 +1103,6 @@ u8 Camera_Process( void )
 			{
 				Cam_response_ok( &Current_Cam_Para.Para, pack_head.Data_ID );
 			}
-#endif
 
 			if( Current_Cam_Para.Para.PhotoNum >= Current_Cam_Para.Para.PhotoTotal )
 			{

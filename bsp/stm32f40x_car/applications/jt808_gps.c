@@ -840,10 +840,10 @@ static uint8_t process_rmc( uint8_t * pinfo )
 				}
 
 #endif
-				//speed_10x *= 1.852;
-				i=speed_10x;
-				speed_10x=(i<<10)|(i<<9)|(i<<8)|(i<<5)|(i<<4)|(i<<3)|(i<<2);
-				speed_10x/=1000;
+				speed_10x *= 1.852;
+				//i=speed_10x;
+				//speed_10x=(i<<10)|(i<<9)|(i<<8)|(i<<5)|(i<<4)|(i<<3)|(i<<2);
+				//speed_10x/=1000;
 
 				gps_speed = speed_10x / 10;
 
