@@ -1098,7 +1098,7 @@ void vdr_08_12_get_ready( uint8_t vdr_id, uint16_t seq, MYTIME start, MYTIME end
 
 	vdr_08_12_fill_data( pnodedata );
 
-	node_end( pnodedata, vdr_08_12_tx_timeout, vdr_08_12_tx_response, puserdata );
+	node_end( SINGLE_ACK,pnodedata, vdr_08_12_tx_timeout, vdr_08_12_tx_response, puserdata );
 }
 
 FINSH_FUNCTION_EXPORT_ALIAS( vdr_08_12_get_ready, vdr_get, get_vdr_data );

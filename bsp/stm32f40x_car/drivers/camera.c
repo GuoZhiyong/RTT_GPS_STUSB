@@ -68,7 +68,7 @@ typedef  __packed struct
 
 #define DF_CAM_START		0x108000    ///图片数据存储开始位置
 #define DF_CAM_END			0X1D0000    ///图片数据存储结束位置
-#define DF_CAM_SECTOR_COUNT 0x400       ///图片数据大小
+#define DF_CAM_SECTOR_COUNT 1024       ///图片数据记录单元大小
 
 
 //static CAM_STATE				cam_state;      ///处理过程状态，
@@ -207,7 +207,7 @@ static u16 Cam_Flash_InitPara( u8 printf_info )
 	DF_PicParameter.LastPic.Address		= DF_CAM_START;
 	if( printf_info )
 	{
-		rt_kprintf( "\n PIC_ADDRESS,  %PIC_ID,  %PIC_LEN,  NO_DEL\n" );
+		rt_kprintf( "\nADDR      ID     LEN   NO_DEL\n" );
 	}
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
 	for( TempAddress = DF_CAM_START; TempAddress < DF_CAM_END; )
@@ -235,7 +235,7 @@ static u16 Cam_Flash_InitPara( u8 printf_info )
 			}
 			if( printf_info )
 			{
-				rt_kprintf( "  0x%08x,    %05d,      %04d,     %d\n", TempAddress, TempPackageInfo.Data_ID, TempPackageInfo.Len, TempPackageHead.State & ( BIT( 0 ) ) );
+				rt_kprintf( "0x%08x  %05d  %04d  %d\n", TempAddress, TempPackageInfo.Data_ID, TempPackageInfo.Len, TempPackageHead.State & ( BIT( 0 ) ) );
 			}
 			TempAddress += ( TempPackageInfo.Len + DF_CAM_SECTOR_COUNT - 1 ) / DF_CAM_SECTOR_COUNT * DF_CAM_SECTOR_COUNT;
 		}else
@@ -246,7 +246,7 @@ static u16 Cam_Flash_InitPara( u8 printf_info )
 	rt_sem_release( &sem_dataflash );
 	if( printf_info )
 	{
-		rt_kprintf( "  PIC_NUM =  %04d\n", DF_PicParameter.Number );
+		rt_kprintf( "PIC_NUM =%04d\n", DF_PicParameter.Number );
 	}
 	return DF_PicParameter.Number;
 }
@@ -281,13 +281,13 @@ static rt_err_t Cam_Flash_WrPic( u8 *pData, u16 len, TypeDF_PackageHead *pHead )
 	u8				strBuf[256];
 
 	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
-	//if( memcmp( &LastTime, &pHead->Time, sizeof( LastTime ) ) != 0 )
+	if( LastTime!=pHead->Time)	/*没有保存，首次写入*/
 	{
 		LastTime			= pHead->Time;
-		WriteAddressStart	= ( DF_PicParameter.LastPic.Address + DF_PicParameter.LastPic.Len + DF_CAM_SECTOR_COUNT - 1 ) / DF_CAM_SECTOR_COUNT * DF_CAM_SECTOR_COUNT;
+		WriteAddressStart	= ( DF_PicParameter.LastPic.Address + DF_PicParameter.LastPic.Len + DF_CAM_SECTOR_COUNT - 1 ) &0xFFFFC000;	/*1024对齐*/
 		WriteAddressStart	= Cam_Flash_AddrCheck( WriteAddressStart );
 		WriteAddress		= WriteAddressStart + 64;
-		if( ( WriteAddressStart & 0xFFF ) == 0 )
+		if( ( WriteAddressStart & 0xFFF ) == 0 ) /*4K对齐处*/
 		{
 			Cam_Flash_FirstPicProc( WriteAddressStart );
 		}else
@@ -306,6 +306,7 @@ static rt_err_t Cam_Flash_WrPic( u8 *pData, u16 len, TypeDF_PackageHead *pHead )
 					}
 
 					WriteFuncUserBack = 1;
+					rt_kprintf("\n数据异常");
 					break;
 				}
 			}
@@ -659,7 +660,7 @@ void Cam_Device_init( void )
 	rt_mq_init( &mq_Cam, "mq_cam", &msgpool_cam[0], sizeof( Style_Cam_Requset_Para ), sizeof( msgpool_cam ), RT_IPC_FLAG_FIFO );
 
 	///初始化flash参数
-	Cam_Flash_InitPara( 0 );
+	Cam_Flash_InitPara(0 );
 
 	///初始化照相状态参数
 	memset( (u8*)&Current_Cam_Para, 0, sizeof( Current_Cam_Para ) );
@@ -685,7 +686,7 @@ static void Cam_Start_Cmd( u16 Cam_ID )
 	Take_photo[4]	= (u8)Cam_ID;
 	Take_photo[5]	= (u8)( Cam_ID >> 8 );
 	RS485_write( Take_photo, 10 );
-//	uart2_rxbuf_rd = uart2_rxbuf_wr;
+	//uart2_rxbuf_rd = uart2_rxbuf_wr;
 	rt_kprintf( "\n发送拍照命令" );
 }
 
@@ -1000,7 +1001,6 @@ u8 Camera_Process( void )
 			{
 				Current_Cam_Para.State				= CAM_IDLE;
 				Current_Cam_Para.Para.start_tick	= rt_tick_get( );
-				//rt_kprintf( "\n收到拍照消息" );
 			}else
 			{
 				return 0;
@@ -1269,7 +1269,7 @@ static char				msgpool_cam[256];
 
 extern MsgList			* list_jt808_tx;
 
-
+#if 0
 /*********************************************************************************
   *函数名称:u8 HEX2BCD(u8 HEX)
   *功能描述:将1个字节大小的HEX码转换为BCD码；返回BCD码
@@ -1311,6 +1311,8 @@ u8 BCD2HEX( u8 BCD )
 	HEX_code	+= ( BCD >> 4 ) * 10;
 	return HEX_code;
 }
+
+#endif
 
 /*********************************************************************************
   *函数名称:bool leap_year(u16 year)

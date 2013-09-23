@@ -200,36 +200,37 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 	uint16_t				i, pack_num;
 	uint32_t				tempu32data;
 	uint16_t				ret;
-	uint16_t				ack_seq;                                            /*应答序号*/
+	uint16_t				ack_seq;                        /*应答序号*/
 
 	temp_msg_id = buf_to_data( pmsg, 2 );
-	p_para=nodedata->user_para;
-	
-	if( 0x8001 == temp_msg_id )                                                 ///通用应答,有可能应答延时
+	p_para		= nodedata->user_para;
+
+	if( 0x8001 == temp_msg_id )                             ///通用应答,有可能应答延时
 	{
-		ack_seq = ( pmsg[12] << 8 ) | pmsg[13];                                 /*判断应答流水号*/
-		if( ack_seq != nodedata->head_sn )                                      /*流水号对应*/
+		ack_seq = ( pmsg[12] << 8 ) | pmsg[13];             /*判断应答流水号*/
+		if( ack_seq != nodedata->head_sn )                  /*流水号对应*/
 		{
-			nodedata->timeout_tick	= rt_tick_get( ) + 15 * RT_TICK_PER_SECOND; /*等15秒*/
-			nodedata->state			= WAIT_ACK;
+			nodedata->timeout	= 15 * RT_TICK_PER_SECOND;  /*等15秒*/
+			nodedata->state		= WAIT_ACK;
 			return WAIT_ACK;
 		}
-		if( nodedata->packet_no == nodedata->packet_num )                       /*所有数据包上报完成，等待中心下发0x8800*/
+		if( nodedata->packet_no == nodedata->packet_num )   /*所有数据包上报完成，等待中心下发0x8800*/
 		{
 			rt_kprintf( "\n等待8800应答\n" );
-			nodedata->timeout_tick	= rt_tick_get( ) + 15 * RT_TICK_PER_SECOND; /*等15秒*/
-			nodedata->state			= WAIT_ACK;
+			nodedata->timeout	= 15 * RT_TICK_PER_SECOND;  /*等15秒*/
+			nodedata->state		= WAIT_ACK;
 			nodedata->packet_no++;
 			return WAIT_ACK;
 		}
 
-		if( nodedata->packet_no > nodedata->packet_num )                        /*超时等待0x8800应答*/
+		if( nodedata->packet_no > nodedata->packet_num )    /*超时等待0x8800应答*/
 		{
-			return nodedata->state = ACK_OK;
+			nodedata->state = ACK_OK;
+			return ACK_OK;
 		}
 
 		ret = Cam_add_tx_pic_getdata( nodedata );
-		if( ret == 0xFFFF )                                                     /*bitter 没有找到图片id*/
+		if( ret == 0xFFFF )                                 /*bitter 没有找到图片id*/
 		{
 			rt_free( p_para );
 			p_para = RT_NULL;
@@ -248,11 +249,11 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 
 		if( tempu32data != p_para->Data_ID )
 		{
-			rt_kprintf( "\n应答ID不正确 %08x %08x",tempu32data,p_para->Data_ID );
-			 nodedata->state = ACK_OK;
+			rt_kprintf( "\n应答ID不正确 %08x %08x", tempu32data, p_para->Data_ID );
+			nodedata->state = ACK_OK;
 			return ACK_OK;
 		}
-		if( pmsg[16] == 0 )       /*重传包总数*/
+		if( pmsg[16] == 0 ) /*重传包总数*/
 		{
 			if( p_para->Delete )
 			{
@@ -286,7 +287,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 			nodedata->state = ACK_OK;
 			return ACK_OK;
 		}
-		nodedata->state=IDLE;
+		nodedata->state = IDLE;
 		return IDLE;
 	}
 
@@ -360,8 +361,8 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 		pnodedata->user_para	= p_para;
 	}else
 	{
-		pnodedata				= nodedata;
-		pnodedata->type	= MULTI_CMD;
+		pnodedata		= nodedata;
+		pnodedata->type = MULTI_CMD;
 	}
 
 	ret = Cam_add_tx_pic_getdata( pnodedata );
@@ -376,7 +377,7 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 		pnodedata->retry		= 0;
 		pnodedata->max_retry	= 5;
 		pnodedata->timeout		= 10 * RT_TICK_PER_SECOND;
-		node_end( pnodedata, Cam_jt808_timeout, Cam_jt808_0x0801_response, p_para );
+		node_end( SINGLE_ACK,pnodedata, Cam_jt808_timeout, Cam_jt808_0x0801_response, p_para );
 	}
 	return RT_EOK;
 }
@@ -520,7 +521,7 @@ rt_err_t Cam_jt808_0x0800( u32 mdeia_id, u8 media_delete )
 	pnodedata->packet_no	= 0;
 
 	node_data( pnodedata, ptempbuf, datalen );
-	node_end( pnodedata, Cam_jt808_timeout, Cam_jt808_0x0800_response, p_para );
+	node_end( SINGLE_ACK,pnodedata, Cam_jt808_timeout, Cam_jt808_0x0800_response, p_para );
 
 	return RT_EOK;
 }
@@ -695,8 +696,6 @@ rt_err_t Cam_jt808_0x8801( uint8_t linkno, uint8_t *pmsg )
 	take_pic_request( &cam_para );
 	return RT_EOK;
 }
-
-
 
 /***********************************************************
 * Function:

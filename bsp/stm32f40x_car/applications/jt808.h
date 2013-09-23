@@ -183,10 +183,12 @@ JT808_TX_NODEDATA * node_data( JT808_TX_NODEDATA * pnodedata,
                                uint8_t * pinfo, uint16_t len );
 
 
-void node_end( JT808_TX_NODEDATA * pnodedata,
+void node_end( JT808_MSG_TYPE msgtype,
+               JT808_TX_NODEDATA* pnodedata,
                JT808_MSG_STATE ( *cb_tx_timeout )( ),
                JT808_MSG_STATE ( *cb_tx_response )( ),
                void  *userpara );
+
 
 void jt808_add_tx( uint8_t linkno,
                    JT808_MSG_TYPE msgtype,      /*是否为多包*/
