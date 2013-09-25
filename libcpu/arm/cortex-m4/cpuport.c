@@ -169,6 +169,8 @@ void rt_hw_hard_fault_exception( struct exception_stack_frame * exception_stack 
 	list_thread( );
 #endif
 
+	rt_kprintf("\nsys_tick=%d",rt_tick_get());
+
 /*÷¥––÷ÿ∆Ù*/
 	{
 		reset( 0xFFFFFFFF );

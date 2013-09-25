@@ -312,7 +312,6 @@ static JT808_MSG_STATE jt808_report_response( JT808_TX_NODEDATA * nodedata, uint
 	ack_seq = ( msg[0] << 8 ) | msg[1];
 	ack_id	= ( msg[2] << 8 ) | msg[3];
 	ack_res = *( msg + 4 );
-	rt_kprintf( "\n%d>ACK %04x:%04x:%d", rt_tick_get( ), ack_id, ack_seq, ack_res );
 	if( ack_res == 0 )
 	{
 		rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * 5 );
@@ -327,7 +326,7 @@ static JT808_MSG_STATE jt808_report_response( JT808_TX_NODEDATA * nodedata, uint
 			}
 			nodedata->user_para = RT_NULL;  /*传递进来只是指明flash地址，并不是要释放*/
 		}
-		if( ack_id == 0x0704 )              /*批量上报*/
+		else if( ack_id == 0x0704 )              /*批量上报*/
 		{
 			for( i = 0; i < report_get_count; i++ )
 			{
@@ -442,7 +441,7 @@ void jt808_report_put( uint8_t* pinfo, uint16_t len )
 	if( gsm_socket[0].state == CONNECTED )  /*当前在线，保存并直接上报*/
 	{
 		head.attr = ATTR_ONNET_NOREPORT;
-		jt808_add_tx( 1, SINGLE_FIRST, 0x0200, -1, jt808_report_timeout, jt808_report_response, len, pinfo, (void*)report_curr.addr );
+		jt808_add_tx( 1, SINGLE_CMD, 0x0200, -1, jt808_report_timeout, jt808_report_response, len, pinfo, (void*)report_curr.addr );
 	}else /*是需要补报的信息*/
 	{
 		head.attr = ATTR_NONET_NOREPORT;
