@@ -121,6 +121,49 @@ static u32 Cam_Flash_AddrCheck( u32 pro_Address )
 	return pro_Address;
 }
 
+typedef uint32_t  (*PHOTO_FUNC)(void* ctx, void* data);
+
+/*初始化照片数据，找到当前最新图片的位置、和图片数*/
+uint32_t photo_init(void *ctx,void *data)
+{
+
+
+}
+
+/*获取图片头*/
+uint32_t photo_get_head(void *ctx,void *data)
+{
+
+
+}
+
+
+
+
+/*遍历所有图片记录*/
+static void foreach(PHOTO_FUNC visit,void * ctx)
+{
+	u32					TempAddress;
+	TypeDF_PackageHead	TempPackageHead;
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
+	for( TempAddress = DF_CAM_START; TempAddress < DF_CAM_END; )
+	{
+		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
+		if( TempPackageHead.Head == CAM_HEAD )                      /*有效数据*/
+		{
+			visit(&TempPackageHead);
+			TempAddress += ( TempPackageHead.Len + DF_CAM_REC_COUNT - 1 ) & DF_CAM_REC_MASK;
+		}else
+		{
+			TempAddress += DF_CAM_REC_COUNT;
+		}
+	}
+	rt_sem_release( &sem_dataflash );
+}
+
+
+
 
 /*********************************************************************************
   *函数名称:u16 Cam_Flash_InitPara(u8 printf_info)
