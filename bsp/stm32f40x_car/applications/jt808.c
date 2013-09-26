@@ -78,10 +78,10 @@ static JT808_MSG_STATE jt808_tx_response( JT808_TX_NODEDATA * nodedata, uint8_t 
 {
 	uint8_t		* msg = pmsg + 12;
 	uint16_t	ack_id;
-	uint16_t	ack_seq;
+//	uint16_t	ack_seq;
 	uint8_t		ack_res;
 
-	ack_seq = ( msg[0] << 8 ) | msg[1];
+//	ack_seq = ( msg[0] << 8 ) | msg[1];
 	ack_id	= ( msg[2] << 8 ) | msg[3];
 	ack_res = *( msg + 4 );
 
@@ -364,7 +364,7 @@ static int handle_rx_0x8001( uint8_t linkno, uint8_t *pmsg )
 
 	uint16_t	ack_id;
 	uint16_t	ack_seq;
-	uint8_t		ack_res;
+//	uint8_t		ack_res;
 /*跳过消息头12byte*/
 	ack_seq = ( *( pmsg + 12 ) << 8 ) | *( pmsg + 13 );
 	ack_id	= ( *( pmsg + 14 ) << 8 ) | *( pmsg + 15 );

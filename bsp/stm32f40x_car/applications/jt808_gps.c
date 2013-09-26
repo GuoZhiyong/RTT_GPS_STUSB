@@ -114,7 +114,7 @@ static uint32_t gps_longi_last	= 0;
 /*保存gps基本位置信息*/
 GPS_BASEINFO	gps_baseinfo;
 /*gps的状态*/
-GPS_STATUS		gps_status = { 0x3020, MODE_BDGPS, 0, 0, 0 };
+GPS_STATUS		gps_status = { 0x3020, MODE_BDGPS, 0, 0xFF, 0 };
 
 
 /*
@@ -673,7 +673,7 @@ static void process_gps_report( void )
 /*生成要上报的数据,在线时直接上报，还是都暂存再上报，后者。*/
 	if( flag_send )
 	{
-		rt_kprintf( "\n%d>上报gps(%02x)", rt_tick_get( ), flag_send );
+		//rt_kprintf( "\n%d>上报gps(%02x)", rt_tick_get( ), flag_send );
 		jt808_report_put( buf, 28 + alarm_length );
 	}
 }
@@ -1076,7 +1076,8 @@ void gps_rx( uint8_t * pinfo, uint16_t length )
 	/*是否输出原始信息*/
 	if( gps_status.Raw_Output )
 	{
-		rt_kprintf( "\n%d gps<%s", rt_tick_get( ), psrc );
+		//rt_kprintf( "\n%d gps<%s", rt_tick_get( ), psrc );
+		rt_kprintf( "%s",psrc );
 	}
 	/*保存RAW数据*/
 	//jt808_gps_pack( (char*)pinfo, length );
@@ -1169,8 +1170,10 @@ void gps_dump( uint8_t mode )
 {
 	gps_status.Raw_Output = ~gps_status.Raw_Output;
 }
-
 FINSH_FUNCTION_EXPORT( gps_dump, dump gps raw info );
+
+
+
 
 /************************************** The End Of File **************************************/
 

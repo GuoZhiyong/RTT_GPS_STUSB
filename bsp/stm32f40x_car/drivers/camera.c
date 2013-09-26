@@ -121,50 +121,6 @@ static u32 Cam_Flash_AddrCheck( u32 pro_Address )
 	return pro_Address;
 }
 
-typedef uint32_t  (*PHOTO_FUNC)(void* ctx, void* data);
-
-/*初始化照片数据，找到当前最新图片的位置、和图片数*/
-uint32_t photo_init(void *ctx,void *data)
-{
-
-
-}
-
-/*获取图片头*/
-uint32_t photo_get_head(void *ctx,void *data)
-{
-
-
-}
-
-
-
-
-/*遍历所有图片记录*/
-static void foreach(PHOTO_FUNC visit,void * ctx)
-{
-	u32					TempAddress;
-	TypeDF_PackageHead	TempPackageHead;
-
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
-	for( TempAddress = DF_CAM_START; TempAddress < DF_CAM_END; )
-	{
-		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
-		if( TempPackageHead.Head == CAM_HEAD )                      /*有效数据*/
-		{
-			visit(&TempPackageHead);
-			TempAddress += ( TempPackageHead.Len + DF_CAM_REC_COUNT - 1 ) & DF_CAM_REC_MASK;
-		}else
-		{
-			TempAddress += DF_CAM_REC_COUNT;
-		}
-	}
-	rt_sem_release( &sem_dataflash );
-}
-
-
-
-
 /*********************************************************************************
   *函数名称:u16 Cam_Flash_InitPara(u8 printf_info)
   *功能描述:初始化Pic参数，包括读取FLASH中的图片信息，获取到图片的数量及开始位置，结束位置等，
@@ -179,6 +135,67 @@ static void foreach(PHOTO_FUNC visit,void * ctx)
   *修改日期:20130924
   *修改描述:考虑循环存储时id编号并不是与flash一样递增的
 *********************************************************************************/
+#if 1
+
+typedef uint32_t ( *PHOTO_FUNC )( TypeDF_PackageHead* ctx, uint32_t addr,void* data );
+
+/*初始化照片数据，找到当前最新图片的位置、和图片数*/
+uint32_t ctx_photo_init( TypeDF_PackageHead* TempPackageHead, uint32_t addr,void *data )
+{
+	DF_PicParam.Number++;
+	if( DF_PicParam.First.Data_ID >= TempPackageHead->id )  /*第一个应该是id最小的*/
+	{
+		DF_PicParam.First.Address	= (int)data;
+		DF_PicParam.First.Len		= TempPackageHead->Len;
+		DF_PicParam.First.Data_ID	= TempPackageHead->id;
+	}
+
+	if( DF_PicParam.Last.Data_ID <= TempPackageHead->id )   /*最后一个应该是id最大的*/
+	{
+		DF_PicParam.Last.Address	= (int)data;
+		DF_PicParam.Last.Len		= TempPackageHead->Len;
+		DF_PicParam.Last.Data_ID	= TempPackageHead->id;
+	}
+	return DF_PicParam.Number;
+}
+
+/*获取图片头,返回有效头对应的地址*/
+uint32_t ctx_photo_get_head_byid( TypeDF_PackageHead* TempPackageHead, uint32_t addr,void *data )
+{
+
+
+}
+
+/*打印图片记录*/
+uint32_t ctx_photo_print( TypeDF_PackageHead* TempPackageHead,uint32_t addr, void *data )
+{
+	rt_kprintf( "\n%05d 0x%08x  %04d  %d", TempPackageHead->id, (int)data, TempPackageHead->Len, TempPackageHead->State & ( BIT( 0 ) ) );
+	return 0;
+}
+
+/*遍历所有图片记录*/
+static uint32_t foreach_photo( PHOTO_FUNC visit ,void *data)
+{
+	u32					TempAddress;
+	TypeDF_PackageHead	TempPackageHead;
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
+	for( TempAddress = DF_CAM_START; TempAddress < DF_CAM_END; )
+	{
+		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
+		if( TempPackageHead.Head == CAM_HEAD )                /*有效数据*/
+		{
+			visit( &TempPackageHead, TempAddress ,data);
+			TempAddress += ( TempPackageHead.Len + DF_CAM_REC_COUNT - 1 ) & DF_CAM_REC_MASK;
+		}else
+		{
+			TempAddress += DF_CAM_REC_COUNT;
+		}
+	}
+	rt_sem_release( &sem_dataflash );
+}
+
+/**/
 static u16 Cam_Flash_InitPara( u8 printf_info )
 {
 	u32					TempAddress;
@@ -192,62 +209,13 @@ static u16 Cam_Flash_InitPara( u8 printf_info )
 	DF_PicParam.Last.Address	= DF_CAM_START;
 	DF_PicParam.Last.Data_ID	= 0;
 	DF_PicParam.Last.Len		= 0;
-	if( printf_info )
-	{
-		rt_kprintf( "\nNO    ADDR        ID     LEN   NO_DEL\n" );
-	}
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
-	for( TempAddress = DF_CAM_START; TempAddress < DF_CAM_END; )
-	{
-		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
-		if( TempPackageHead.Head == CAM_HEAD )                      /*有效数据*/
-		{
-			DF_PicParam.Number++;
-			if( DF_PicParam.First.Data_ID >= TempPackageHead.id )   /*第一个应该是id最小的*/
-			{
-				DF_PicParam.First.Address	= TempAddress;
-				DF_PicParam.First.Len		= TempPackageHead.Len;
-				DF_PicParam.First.Data_ID	= TempPackageHead.id;
-			}
 
-			if( DF_PicParam.Last.Data_ID <= TempPackageHead.id )    /*最后一个应该是id最大的*/
-			{
-				DF_PicParam.Last.Address	= TempAddress;
-				DF_PicParam.Last.Len		= TempPackageHead.Len;
-				DF_PicParam.Last.Data_ID	= TempPackageHead.id;
-			}
+	foreach_photo( ctx_photo_init,0 );
 
-			if( printf_info )
-			{
-				rt_kprintf( "%05d 0x%08x  %05d  %04d  %d\n", DF_PicParam.Number, TempAddress, TempPackageHead.id, TempPackageHead.Len, TempPackageHead.State & ( BIT( 0 ) ) );
-			}
-			TempAddress += ( TempPackageHead.Len + DF_CAM_REC_COUNT - 1 ) & DF_CAM_REC_MASK;
-		}else
-		{
-			TempAddress += DF_CAM_REC_COUNT;
-		}
-	}
-	rt_sem_release( &sem_dataflash );
 	return DF_PicParam.Number;
 }
 
-/*********************************************************************************
-  *函数名称:rt_err_t Cam_Flash_WrPic(u8 *pData,u16 len, TypeDF_PackageHead *pHead)
-  *功能描述:向FLASH中写入图片数据，如果传递的数据的pHead->len为非0值表示为最后一包数据
-  *输	入:	pData:写入的数据指针，指向数据buf；
-   len:数据长度，注意，该长度必须小于4096
-   pHead:数据包头信息，该包头信息需要包含时间Timer，该值每次都必须传递，并且同样的包该值不能变化，
-    最后一包数据需将len设置为数据长度len的长度包括包头部分，包头部分为固定64字节，其它包
-    len为0.
-  *输	出:none
-  *返 回 值:re_err_t
-  *作	者:白养民
-  *创建日期:2013-06-5
-  *---------------------------------------------------------------------------------
-  *修 改 人:
-  *修改日期:
-  *修改描述:
-*********************************************************************************/
+
 static rt_err_t Cam_Flash_WrPic( u8 *pData, u16 len, TypeDF_PackageHead *pHead )
 {
 	u32				temp_Len;
@@ -327,10 +295,12 @@ u32 Cam_Flash_FindPicID( u32 id, TypeDF_PackageHead *p_head )
 		return 0xFFFFFFFF;
 	}
 
+	foreach_photo(ctx_photo_get_head_byid,0);
+
 	for( TempAddress = DF_CAM_START; TempAddress < DF_CAM_END; )
 	{
 		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
-		if( TempPackageHead.Head == CAM_HEAD )          /*有效数据*/
+		if( TempPackageHead.Head == CAM_HEAD )    /*有效数据*/
 		{
 			if( id == TempPackageHead.id )
 			{
@@ -539,6 +509,399 @@ u16 Cam_Flash_SearchPic( MYTIME start_time, MYTIME end_time, TypeDF_PackageHead 
 	rt_sem_release( &sem_dataflash );
 	return ret_num;
 }
+
+
+
+
+
+/*打印图片信息*/
+static uint16_t photo_get_info( void )
+{
+	rt_kprintf( "\n图片信息" );
+	rt_kprintf( "\nID	 ADDR		 LEN   NO_DEL");
+	foreach_photo( ctx_photo_print,0);
+}
+
+FINSH_FUNCTION_EXPORT( photo_get_info, get photo info );
+
+#else
+
+
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+static u16 Cam_Flash_InitPara( u8 printf_info )
+{
+	u32					TempAddress;
+	TypeDF_PackageHead	TempPackageHead;
+
+	DF_PicParam.Number			= 0;
+	DF_PicParam.First.Address	= DF_CAM_START; /*没有有效地址*/
+	DF_PicParam.First.Data_ID	= 0;
+	DF_PicParam.First.Len		= 0;
+
+	DF_PicParam.Last.Address	= DF_CAM_START;
+	DF_PicParam.Last.Data_ID	= 0;
+	DF_PicParam.Last.Len		= 0;
+	if( printf_info )
+	{
+		rt_kprintf( "\nNO    ADDR        ID     LEN   NO_DEL\n" );
+	}
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
+	for( TempAddress = DF_CAM_START; TempAddress < DF_CAM_END; )
+	{
+		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
+		if( TempPackageHead.Head == CAM_HEAD )                      /*有效数据*/
+		{
+			DF_PicParam.Number++;
+			if( DF_PicParam.First.Data_ID >= TempPackageHead.id )   /*第一个应该是id最小的*/
+			{
+				DF_PicParam.First.Address	= TempAddress;
+				DF_PicParam.First.Len		= TempPackageHead.Len;
+				DF_PicParam.First.Data_ID	= TempPackageHead.id;
+			}
+
+			if( DF_PicParam.Last.Data_ID <= TempPackageHead.id )    /*最后一个应该是id最大的*/
+			{
+				DF_PicParam.Last.Address	= TempAddress;
+				DF_PicParam.Last.Len		= TempPackageHead.Len;
+				DF_PicParam.Last.Data_ID	= TempPackageHead.id;
+			}
+
+			if( printf_info )
+			{
+				rt_kprintf( "%05d 0x%08x  %05d  %04d  %d\n", DF_PicParam.Number, TempAddress, TempPackageHead.id, TempPackageHead.Len, TempPackageHead.State & ( BIT( 0 ) ) );
+			}
+			TempAddress += ( TempPackageHead.Len + DF_CAM_REC_COUNT - 1 ) & DF_CAM_REC_MASK;
+		}else
+		{
+			TempAddress += DF_CAM_REC_COUNT;
+		}
+	}
+	rt_sem_release( &sem_dataflash );
+	return DF_PicParam.Number;
+}
+
+
+
+
+/*********************************************************************************
+  *函数名称:rt_err_t Cam_Flash_WrPic(u8 *pData,u16 len, TypeDF_PackageHead *pHead)
+  *功能描述:向FLASH中写入图片数据，如果传递的数据的pHead->len为非0值表示为最后一包数据
+  *输	入:	pData:写入的数据指针，指向数据buf；
+   len:数据长度，注意，该长度必须小于4096
+   pHead:数据包头信息，该包头信息需要包含时间Timer，该值每次都必须传递，并且同样的包该值不能变化，
+    最后一包数据需将len设置为数据长度len的长度包括包头部分，包头部分为固定64字节，其它包
+    len为0.
+  *输	出:none
+  *返 回 值:re_err_t
+  *作	者:白养民
+  *创建日期:2013-06-5
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
+*********************************************************************************/
+static rt_err_t Cam_Flash_WrPic( u8 *pData, u16 len, TypeDF_PackageHead *pHead )
+{
+	u32				temp_Len;
+	uint32_t		addr;
+	static u32		WriteAddress		= 0;
+	static u32		WriteAddressStart	= 0;
+	static MYTIME	LastTime			= 0xFFFFFFFF;
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
+	if( LastTime != pHead->Time )                                                                                           /*首次写入*/
+	{
+		LastTime			= pHead->Time;
+		WriteAddressStart	= ( DF_PicParam.Last.Address + DF_PicParam.Last.Len + DF_CAM_REC_COUNT - 1 ) & DF_CAM_REC_MASK; /*4096对齐*/
+		WriteAddressStart	= Cam_Flash_AddrCheck( WriteAddressStart );
+		WriteAddress		= WriteAddressStart + 64;
+		sst25_erase_4k( WriteAddressStart );                                                                                /*删除数据*/
+	}
+	addr = Cam_Flash_AddrCheck( WriteAddress + len );
+	if( ( WriteAddress & DF_SECTOR_MASK ) != ( addr & DF_SECTOR_MASK ) )                                                    ///跨越两个扇区的处理
+	{
+		temp_Len = 0x1000 - ( WriteAddress & 0xFFF );
+		sst25_erase_4k( addr );
+		sst25_write_through( WriteAddress, pData, temp_Len );
+		sst25_write_through( addr & DF_SECTOR_MASK, pData + temp_Len, len - temp_Len );
+	}else
+	{
+		sst25_write_through( WriteAddress, pData, len );
+	}
+
+	WriteAddress = addr;    /*下一个要写入的位置*/
+
+	if( pHead->Len )        /*最后一包*/
+	{
+		DF_PicParam.Number++;
+		DF_PicParam.Last.Data_ID++;
+		DF_PicParam.Last.Address	= WriteAddressStart;
+		DF_PicParam.Last.Len		= pHead->Len;
+
+		pHead->Head			= CAM_HEAD;
+		pHead->id			= DF_PicParam.Last.Data_ID;
+		pHead->Media_Style	= 0;
+		pHead->Media_Format = 0;
+		sst25_write_through( WriteAddressStart, (u8*)pHead, sizeof( TypeDF_PackageHead ) );
+	}
+
+	rt_sem_release( &sem_dataflash );
+	return RT_EOK;
+}
+
+/*********************************************************************************
+  *函数名称:u32 Cam_Flash_FindPicID(u32 id,TypeDF_PackageHead *p_head)
+  *功能描述:从FLASH中查找指定ID的图片，并将图片包头新新存储在p_head中
+  *输	入:	id:多媒体ID号
+   p_head:输出参数，输出为图片多媒体数据包头信息(类型为TypeDF_PackageHead)
+  *输	出:p_head
+  *返 回 值:u32 0xFFFFFFFF表示没有找到图片，其它表示找到了图片，返回值为图片在flash中的地址
+  *作	者:白养民
+  *创建日期:2013-06-5
+  *---------------------------------------------------------------------------------
+  *修 改 人:bai
+  *修改日期:2013-06-23
+  *修改描述:修改了拍照数据存储异常时的检索功能
+*********************************************************************************/
+u32 Cam_Flash_FindPicID( u32 id, TypeDF_PackageHead *p_head )
+{
+//	u32					i;
+	u32					TempAddress;
+//	u32					tempu32data;
+	TypeDF_PackageHead	TempPackageHead;
+
+	if( DF_PicParam.Number == 0 )
+	{
+		return 0xFFFFFFFF;
+	}
+	if( ( id < DF_PicParam.First.Data_ID ) || ( id > DF_PicParam.Last.Data_ID ) )
+	{
+		return 0xFFFFFFFF;
+	}
+
+	for( TempAddress = DF_CAM_START; TempAddress < DF_CAM_END; )
+	{
+		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
+		if( TempPackageHead.Head == CAM_HEAD )    /*有效数据*/
+		{
+			if( id == TempPackageHead.id )
+			{
+				memcpy( p_head, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
+				return TempAddress;
+			}
+			TempAddress += ( TempPackageHead.Len + DF_CAM_REC_COUNT - 1 ) & DF_CAM_REC_MASK;
+		}else
+		{
+			TempAddress += DF_CAM_REC_COUNT;
+		}
+	}
+	return 0xFFFFFFFF;
+}
+
+/*********************************************************************************
+  *函数名称:rt_err_t Cam_Flash_RdPic(void *pData,u16 *len, u32 id,u8 offset )
+  *功能描述:从FLASH中读取图片数据
+  *输	入:	pData:写入的数据指针，指向数据buf；
+   len:返回的数据长度指针注意，该长度最大为512
+   id:多媒体ID号
+   offset:多媒体数据偏移量，从0开始，0表示读取多媒体图片包头信息，包头信息长度固定为64字节，采用
+    结构体TypeDF_PackageHead格式存储
+  *输	出:none
+  *返 回 值:re_err_t
+  *作	者:白养民
+  *创建日期:2013-06-5
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
+*********************************************************************************/
+rt_err_t Cam_Flash_RdPic( void *pData, u16 *len, u32 id, u8 offset )
+{
+	u32					TempAddress;
+	u32					temp_Len;
+	TypeDF_PackageHead	TempPackageHead;
+	u8					ret;
+
+	*len = 0;
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
+
+	TempAddress = Cam_Flash_FindPicID( id, &TempPackageHead );
+	if( TempAddress == 0xFFFFFFFF )
+	{
+		ret = RT_ERROR;  goto FUNC_RET;
+	}
+	if( TempPackageHead.id == 0xFFFFFFFF )
+	{
+		ret = RT_ERROR;  goto FUNC_RET;
+	}
+	if( offset > ( TempPackageHead.Len - 1 ) / 512 )
+	{
+		ret = RT_ENOMEM; goto FUNC_RET;
+	}
+	if( offset == ( TempPackageHead.Len - 1 ) / 512 )
+	{
+		temp_Len = TempPackageHead.Len - ( offset * 512 );
+	}else
+	{
+		temp_Len = 512;
+	}
+	sst25_read( TempAddress + offset * 512, (u8*)pData, temp_Len );
+	*len = temp_Len;
+
+	ret = RT_EOK;
+
+FUNC_RET:
+	rt_sem_release( &sem_dataflash );
+	return ret;
+}
+
+/*********************************************************************************
+  *函数名称:rt_err_t Cam_Flash_DelPic(u32 id)
+  *功能描述:从FLASH中删除图片，实际上并没有删除，而是将删除标记清0，这样下次就再也不查询该图片
+  *输	入:	id:多媒体ID号
+  *输	出:none
+  *返 回 值:re_err_t
+  *作	者:白养民
+  *创建日期:2013-06-13
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
+*********************************************************************************/
+rt_err_t Cam_Flash_DelPic( u32 id )
+{
+	u32					TempAddress;
+	TypeDF_PackageHead	TempPackageHead;
+	u8					ret;
+
+	if( DF_PicParam.Number == 0 ) /*没有图片*/
+	{
+		return RT_EOK;
+	}
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
+	TempAddress = Cam_Flash_FindPicID( id, &TempPackageHead );
+	if( TempAddress == 0xFFFFFFFF )
+	{
+		ret = RT_ERROR;  goto FUNC_RET;
+	}
+	TempPackageHead.State &= ~( BIT( 0 ) );
+	sst25_write_through( TempAddress, (u8*)&TempPackageHead, sizeof( TypeDF_PackageHead ) );
+	ret = RT_EOK;
+
+FUNC_RET:
+	rt_sem_release( &sem_dataflash );
+	return ret;
+}
+
+/*********************************************************************************
+  *函数名称:rt_err_t Cam_Flash_TransOkSet(u32 id)
+  *功能描述:将该ID的图片标记为发送成功
+  *输	入:	id:多媒体ID号
+  *输	出:none
+  *返 回 值:re_err_t
+  *作	者:白养民
+  *创建日期:2013-06-13
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
+*********************************************************************************/
+rt_err_t Cam_Flash_TransOkSet( u32 id )
+{
+	u32					TempAddress;
+	TypeDF_PackageHead	TempPackageHead;
+	u8					ret;
+
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
+	TempAddress = Cam_Flash_FindPicID( id, &TempPackageHead );
+	if( TempAddress == 0xFFFFFFFF )
+	{
+		ret = RT_ERROR;  goto FUNC_RET;
+	}
+	TempPackageHead.State &= ~( BIT( 1 ) );
+	sst25_write_through( TempAddress, (u8*)&TempPackageHead, sizeof( TypeDF_PackageHead ) );
+	ret = RT_EOK;
+
+FUNC_RET:
+	rt_sem_release( &sem_dataflash );
+	return ret;
+}
+
+/*********************************************************************************
+  *函数名称:u16 Cam_Flash_SearchPic(T_TIMES *start_time,T_TIMES *end_time,TypeDF_PackageHead *para,u8 *pdest)
+  *功能描述:从FLASH中查找指定时间段的图片索引
+  *输	入:	start_time	开始时间，
+   end_time		结束时间，
+   para			查找图片的属性
+   pdest			存储查找到得图片的位置，每个多媒体图片占用4个字节
+  *输	出: u16 类型，表示查找到得图片数量
+  *返 回 值:re_err_t
+  *作	者:白养民
+  *创建日期:2013-06-5
+  *---------------------------------------------------------------------------------
+  *修 改 人:
+  *修改日期:
+  *修改描述:
+*********************************************************************************/
+u16 Cam_Flash_SearchPic( MYTIME start_time, MYTIME end_time, TypeDF_PackageHead *para, u8 *pdest )
+{
+	u16					i;
+	u32					TempAddress;
+//	u32					temp_u32;
+	TypeDF_PackageHead	TempPackageHead;
+	u16					ret_num = 0;
+
+	if( DF_PicParam.Number == 0 )
+	{
+		return 0;
+	}
+	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
+	TempAddress = DF_PicParam.First.Address;
+	for( i = 0; i < DF_PicParam.Number; i++ )
+	{
+		TempAddress = Cam_Flash_AddrCheck( TempAddress );
+		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
+		if( TempPackageHead.Head == CAM_HEAD )
+		{
+			///查看该图片是否被删除
+			if( TempPackageHead.State & BIT( 0 ) )
+			{
+				///比较多媒体类型，多媒体通道，多媒体触发源
+				if( ( TempPackageHead.Media_Style == para->Media_Style ) && ( ( TempPackageHead.Channel_ID == para->Channel_ID ) || ( para->Channel_ID == 0 ) ) && ( ( TempPackageHead.TiggerStyle == para->TiggerStyle ) || ( para->TiggerStyle == 0xFF ) ) )
+				{
+					///比较时间是否在范围
+					if( ( TempPackageHead.Time > start_time ) && ( TempPackageHead.Time <= end_time ) )
+					{
+						///找到了数据
+						data_to_buf( pdest, TempAddress, 4 );
+						//memcpy(pdest,&TempAddress,4);
+						pdest += 4;
+						ret_num++;
+					}
+				}
+			}
+			TempAddress += ( TempPackageHead.Len + DF_CAM_REC_COUNT - 1 ) / DF_CAM_REC_COUNT * DF_CAM_REC_COUNT;
+		}else
+		{
+			TempAddress += DF_CAM_REC_COUNT; ///修改存储异常，在此增加该代码，之前代码直接返回OXffff
+		}
+	}
+
+	rt_sem_release( &sem_dataflash );
+	return ret_num;
+}
+#endif
+
+
 
 /*********************************************************************************
   *函数名称:void Cam_Device_init( void )

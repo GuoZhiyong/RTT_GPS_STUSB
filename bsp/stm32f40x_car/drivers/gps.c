@@ -1043,4 +1043,13 @@ rt_size_t gps_reset( uint8_t start_mode )
 	dev_gps_write( &dev_gps, 0, reset_str[start_mode * 3 + gps_status.mode - 1], 15 );
 }
 
+
+
+void gps_write( char* s)
+{
+	dev_gps_write( &dev_gps, 0, s, strlen(s) );
+}
+FINSH_FUNCTION_EXPORT( gps_write, write to gps );
+
+
 /************************************** The End Of File **************************************/
