@@ -836,8 +836,8 @@ static void rt_thread_gsm_gprs( void* parameter )
 		goto lbl_gsm_gprs_end;
 	}
 lbl_gsm_gprs_end_err:
-	rt_kprintf("\n登网错误");
-	gsm_state = GSM_POWEROFF;	
+	rt_kprintf( "\n登网错误" );
+	gsm_state = GSM_POWEROFF;
 lbl_gsm_gprs_end:
 	rt_kprintf( "\n%08d gsm_gprs>gsm_state=%d", rt_tick_get( ), gsm_state );
 }
@@ -1055,9 +1055,9 @@ void tts_proc( void )
 	char		buf[20];
 	char		tbl[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-	if( gsm_state != GSM_TCPIP )/*gsm在处理其他命令*/
+	if( gsm_state != GSM_TCPIP )    /*gsm在处理其他命令*/
 	{
-		if( gsm_state != GSM_AT ) /*tcpip中处理线程*/
+		if( gsm_state != GSM_AT )   /*tcpip中处理线程*/
 		{
 			return;
 		}
@@ -1072,7 +1072,7 @@ void tts_proc( void )
 	oldstate	= gsm_state;
 	gsm_state	= GSM_AT_SEND;
 	GPIO_ResetBits( GPIOD, GPIO_Pin_9 ); /*开功放*/
-	rt_kprintf("\n%d>",rt_tick_get());
+	rt_kprintf( "\n%d>", rt_tick_get( ) );
 	sprintf( buf, "AT%%TTS=2,3,5,\"" );
 	rt_device_write( &dev_gsm, 0, buf, strlen( buf ) );
 	rt_kprintf( "%s", buf );
@@ -1094,10 +1094,10 @@ void tts_proc( void )
 	rt_kprintf( "%s", buf );
 /*不判断，在gsmrx_cb中处理 %TTS: 0*/
 	rt_free( pinfo );
-	if(gsm_send( "", RT_NULL, "%TTS: 0", RESP_TYPE_STR, RT_TICK_PER_SECOND * 50, 1 )==RT_EOK)
-		{
-		rt_kprintf("\n播报结束");
-		}
+	if( gsm_send( "", RT_NULL, "%TTS: 0", RESP_TYPE_STR, RT_TICK_PER_SECOND * 50, 1 ) == RT_EOK )
+	{
+		rt_kprintf( "\n播报结束" );
+	}
 	GPIO_SetBits( GPIOD, GPIO_Pin_9 ); /*关功放*/
 	gsm_state = oldstate;
 }
@@ -1434,8 +1434,13 @@ struct rt_thread thread_gsm;
  */
 static void rt_thread_entry_gsm( void* parameter )
 {
+	uint16_t tick_checksq = 0;
 	while( 1 )
 	{
+		if( gsm_state != GSM_TCPIP )	/*不在tcp状态，不检查sq*/
+		{
+			tick_checksq = 0;
+		}
 		switch( gsm_state )
 		{
 			case GSM_POWERON:
@@ -1454,7 +1459,8 @@ static void rt_thread_entry_gsm( void* parameter )
 				break;
 			case GSM_IDLE:
 				break;
-			case GSM_TCPIP:
+			case GSM_TCPIP: /*在TCPIP状态下检测sq信号*/
+				tick_checksq++;
 				break;
 			case GSM_AT:
 				break;

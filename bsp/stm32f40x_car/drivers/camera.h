@@ -45,8 +45,8 @@ typedef __packed struct
 typedef __packed struct
 {
 	u16					Number;                                                             ///图片数量
-	TypeDF_PackageInfo	First;                                                           ///第一个图片
-	TypeDF_PackageInfo	Last;                                                            ///最后一个图片
+	TypeDF_PackageInfo	First;                                                              ///第一个图片
+	TypeDF_PackageInfo	Last;                                                               ///最后一个图片
 }TypeDF_PICPara;
 
 typedef  __packed struct _Style_Cam_Requset_Para
@@ -66,7 +66,7 @@ typedef  __packed struct _Style_Cam_Requset_Para
 
 typedef __packed struct
 {
-	u32		Head;                                                                             ///幻数部分，表示当前数据区域为某固定数据开始
+	u32		Head;                                                                           ///幻数部分，表示当前数据区域为某固定数据开始
 	u32		id;                                                                             ///数据ID,顺序递增方式记录
 	u32		Len;                                                                            ///数据长度，包括数据头部分内容,数据头部分固定为64字节
 	u8		State;                                                                          ///表示图片状态标记，0xFF为初始化状态，bit0==0表示已经删除,bit1==0表示成功上传,bit2==0表示该数据为不存盘数据
@@ -87,10 +87,9 @@ rt_err_t Cam_Flash_DelPic( u32 id );
 rt_err_t Cam_Flash_TransOkSet( u32 id );
 
 
-u16 Cam_Flash_SearchPic( MYTIME start_time, MYTIME end_time, TypeDF_PackageHead *para, u8 *pdest );
-
-
-rt_err_t Cam_Flash_RdPic( void *pData, u16 *len, u32 id, u8 offset );
+//u16 Cam_Flash_SearchPic( MYTIME start_time, MYTIME end_time, TypeDF_PackageHead *para, u8 *pdest );
+void*		Cam_Flash_SearchPicHead( MYTIME start_time, MYTIME end_time, uint8_t channel, uint8_t trigger, uint16_t *findcount );
+rt_err_t	Cam_Flash_RdPic( void *pData, u16 *len, u32 id, u8 offset );
 
 
 TypeDF_PICPara Cam_get_state( void );

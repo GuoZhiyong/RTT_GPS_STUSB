@@ -51,8 +51,8 @@ static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 	JT808_TX_NODEDATA		* iterdata	= nodedata;
 	TypePicMultTransPara	* p_para	= (TypePicMultTransPara*)nodedata->user_para;
 	TypeDF_PackageHead		TempPackageHead;
-	uint16_t				i, wrlen;//, pack_num;
-	uint16_t				body_len; /*消息体长度*/
+	uint16_t				i, wrlen;   //, pack_num;
+	uint16_t				body_len;   /*消息体长度*/
 //	uint8_t					* msg;
 	uint32_t				tempu32data;
 	u16						ret = 0;
@@ -94,7 +94,7 @@ static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 			if( i == 0 )
 			{
 				sst25_read( tempu32data, (u8*)&TempPackageHead, sizeof( TypeDF_PackageHead ) );
-				wrlen	+= data_to_buf( iterdata->tag_data + wrlen, TempPackageHead.id, 4 );       ///多媒体ID
+				wrlen	+= data_to_buf( iterdata->tag_data + wrlen, TempPackageHead.id, 4 );            ///多媒体ID
 				wrlen	+= data_to_buf( iterdata->tag_data + wrlen, TempPackageHead.Media_Style, 1 );   ///多媒体类型
 				wrlen	+= data_to_buf( iterdata->tag_data + wrlen, TempPackageHead.Media_Format, 1 );  ///多媒体格式编码
 				wrlen	+= data_to_buf( iterdata->tag_data + wrlen, TempPackageHead.TiggerStyle, 1 );   ///事件项编码
@@ -116,7 +116,6 @@ static u16 Cam_add_tx_pic_getdata( JT808_TX_NODEDATA * nodedata )
 			pdata[14]			= ( iterdata->packet_no >> 8 );
 			pdata[15]			= ( iterdata->packet_no & 0xFF );
 			nodedata->state		= IDLE;
-			nodedata->timeout	= RT_TICK_PER_SECOND * 5;
 			nodedata->retry		= 0;
 			nodedata->max_retry = 5;
 			nodedata->timeout	= 10 * RT_TICK_PER_SECOND;
@@ -197,7 +196,7 @@ static JT808_MSG_STATE Cam_jt808_0x0801_response( JT808_TX_NODEDATA * nodedata, 
 	TypePicMultTransPara	* p_para;
 	uint16_t				temp_msg_id;
 //	uint16_t				temp_msg_len;
-	uint16_t				i;//, pack_num;
+	uint16_t				i;                              //, pack_num;
 	uint32_t				tempu32data;
 	uint16_t				ret;
 	uint16_t				ack_seq;                        /*应答序号*/
@@ -316,9 +315,9 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 	TypeDF_PackageHead		TempPackageHead;
 //	rt_err_t				rt_ret;
 
-	uint16_t				ret;
+	uint16_t			ret;
 
-	JT808_TX_NODEDATA		* pnodedata;
+	JT808_TX_NODEDATA	* pnodedata;
 
 	///查找多媒体ID是否存在
 
@@ -377,7 +376,7 @@ rt_err_t Cam_jt808_0x0801( JT808_TX_NODEDATA *nodedata, u32 mdeia_id, u8 media_d
 		pnodedata->retry		= 0;
 		pnodedata->max_retry	= 5;
 		pnodedata->timeout		= 10 * RT_TICK_PER_SECOND;
-		node_end( SINGLE_ACK,pnodedata, Cam_jt808_timeout, Cam_jt808_0x0801_response, p_para );
+		node_end( SINGLE_ACK, pnodedata, Cam_jt808_timeout, Cam_jt808_0x0801_response, p_para );
 	}
 	return RT_EOK;
 }
@@ -401,9 +400,9 @@ static JT808_MSG_STATE Cam_jt808_0x0800_response( JT808_TX_NODEDATA * nodedata, 
 //	TypePicMultTransPara	* p_para;
 //	TypeDF_PackageHead		TempPackageHead;
 //	uint32_t				TempAddress;
-	uint16_t				temp_msg_id;
+	uint16_t	temp_msg_id;
 //	uint16_t				body_len; /*消息体长度*/
-	uint8_t					* msg;
+	uint8_t		* msg;
 
 	if( pmsg == RT_NULL )
 	{
@@ -412,14 +411,14 @@ static JT808_MSG_STATE Cam_jt808_0x0800_response( JT808_TX_NODEDATA * nodedata, 
 
 	temp_msg_id = buf_to_data( pmsg, 2 );
 //	body_len	= buf_to_data( pmsg + 2, 2 ) & 0x3FF;
-	msg			= pmsg + 12;
+	msg = pmsg + 12;
 	if( 0x8001 == temp_msg_id ) ///通用应答
 	{
 		if( ( nodedata->head_sn == buf_to_data( msg, 2 ) ) &&
 		    ( nodedata->head_id == buf_to_data( msg + 2, 2 ) ) &&
 		    ( msg[4] == 0 ) )
 		{
-	//		p_para = nodedata->user_para;
+			//		p_para = nodedata->user_para;
 
 			nodedata->state = ACK_OK;
 			return ACK_OK;
@@ -521,7 +520,7 @@ rt_err_t Cam_jt808_0x0800( u32 mdeia_id, u8 media_delete )
 	pnodedata->packet_no	= 0;
 
 	node_data( pnodedata, ptempbuf, datalen );
-	node_end( SINGLE_ACK,pnodedata, Cam_jt808_timeout, Cam_jt808_0x0800_response, p_para );
+	node_end( SINGLE_ACK, pnodedata, Cam_jt808_timeout, Cam_jt808_0x0800_response, p_para );
 
 	return RT_EOK;
 }
@@ -625,14 +624,10 @@ void Cam_jt808_0x8801_cam_end( struct _Style_Cam_Requset_Para *para )
 
 rt_err_t Cam_jt808_0x8801( uint8_t linkno, uint8_t *pmsg )
 {
-//	u8						*ptempbuf;
 	u8						*pdestbuf;
 	u16						datalen;
-//	u16						i, mediatotal;
-//	TypeDF_PackageHead		TempPackageHead;
 	Style_Cam_Requset_Para	cam_para;
 	u32						Tempu32data;
-//	rt_err_t				ret;
 	u16						msg_len;
 	msg_len = buf_to_data( pmsg + 2, 2 ) & 0x3FF;
 
@@ -641,9 +636,7 @@ rt_err_t Cam_jt808_0x8801( uint8_t linkno, uint8_t *pmsg )
 		return RT_ERROR;
 	}
 	memset( &cam_para, 0, sizeof( cam_para ) );
-
-	///设置触发类型为平台触发
-	cam_para.TiggerStyle = Cam_TRIGGER_PLANTFORM;
+	cam_para.TiggerStyle = Cam_TRIGGER_PLANTFORM; ///设置触发类型为平台触发
 
 	///通道 ID 1BYTE
 	datalen				= 0;
@@ -676,135 +669,87 @@ rt_err_t Cam_jt808_0x8801( uint8_t linkno, uint8_t *pmsg )
 		cam_para.SendPhoto	= 1;
 	}
 	///和用户回调函数相关的数据参数
-	datalen		= cam_para.PhotoTotal * 4 + 5;  /*5字节头+4*n*/
+	datalen		= cam_para.PhotoTotal * 4 + 5;                  /*5字节头+4*n*/
 	pdestbuf	= rt_malloc( datalen );
 	if( pdestbuf == RT_NULL )
 	{
 		return RT_ERROR;
 	}
-	memset( pdestbuf, 0, datalen );             ///清空数据
+	memset( pdestbuf, 0, datalen );                             ///清空数据
 
-	pdestbuf[0]			= pmsg[10];
-	pdestbuf[1]			= pmsg[11];
-	cam_para.user_para	= (void*)pdestbuf;
-	///一张照片拍照成功回调函数
-	cam_para.cb_response_cam_ok = Cam_jt808_0x8801_cam_ok;
-	///所有照片拍照结束回调函数
-	cam_para.cb_response_cam_end = Cam_jt808_0x8801_cam_end;
-
-	///发送拍照请求
-	take_pic_request( &cam_para );
+	pdestbuf[0]						= pmsg[10];
+	pdestbuf[1]						= pmsg[11];
+	cam_para.user_para				= (void*)pdestbuf;
+	cam_para.cb_response_cam_ok		= Cam_jt808_0x8801_cam_ok;  ///一张照片拍照成功回调函数
+	cam_para.cb_response_cam_end	= Cam_jt808_0x8801_cam_end; ///所有照片拍照结束回调函数
+	take_pic_request( &cam_para );                              ///发送拍照请求
 	return RT_EOK;
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/*多媒体信息检索*/
 rt_err_t Cam_jt808_0x8802( uint8_t linkno, uint8_t *pmsg )
 {
-	u8					*ptempbuf;
 	u8					*pdestbuf;
 	u16					datalen = 0;
 	u16					i, mediatotal;
-	TypeDF_PackageHead	TempPackageHead;
-	u32					TempAddress;
-	rt_err_t			ret;
+	TypeDF_PackageHead	*pHead;
+	u16					seq;
+	uint8_t				buf[16];
 
-//	u16					msg_len;
-	u16					fram_num;
-
-//	msg_len		= buf_to_data( pmsg + 2, 2 ) & 0x3FF;
-	fram_num	= buf_to_data( pmsg + 10, 2 );
-	pmsg		+= 12;
+	seq		= buf_to_data( pmsg + 10, 2 );
+	pmsg	+= 12;
 
 	if( pmsg[0] )
 	{
 		return RT_ERROR;
 	}
-
-	ptempbuf = rt_malloc( Cam_get_state( ).Number * 4 );
-	if( ptempbuf == NULL )
-	{
-		return RT_ERROR;
-	}
-
-	memset( &TempPackageHead, 0, sizeof( Style_Cam_Requset_Para ) );
-	TempPackageHead.Media_Format	= 0;
-	TempPackageHead.Media_Style		= 0;
-	TempPackageHead.Channel_ID		= pmsg[1];
-	TempPackageHead.TiggerStyle		= pmsg[2];
 	///查找符合条件的图片，并将图片地址存入ptempbuf中
-	mediatotal = Cam_Flash_SearchPic( mytime_from_bcd( pmsg + 3 ), mytime_from_bcd( pmsg + 9 ), &TempPackageHead, ptempbuf );
 
-	if( mediatotal > ( JT808_PACKAGE_MAX - 4 ) / 35 )
+	pdestbuf = Cam_Flash_SearchPicHead( mytime_from_bcd( pmsg + 3 ),
+	                                    mytime_from_bcd( pmsg + 9 ),
+	                                    pmsg[1],
+	                                    pmsg[2],
+	                                    &mediatotal );
+
+	if( mediatotal == 0 )
 	{
-		mediatotal = ( JT808_PACKAGE_MAX - 4 ) / 35;
+		data_to_buf( buf, seq, 2 );
+		data_to_buf( buf + 2, mediatotal, 2 );
+		jt808_tx_ack( 0x0802, buf, 4 );
+		return RT_EOK;
 	}
 
-	pdestbuf = rt_malloc( mediatotal * 35 + 4 );
-	if( pdestbuf == NULL )
-	{
-		rt_free( ptempbuf );
-		return RT_ERROR;
-	}
+	/*整理上报数据格式*/
+	datalen = 4; /*跳过开始的应答流水号word 和 多媒体数据总项数word*/
 
-	datalen += data_to_buf( pdestbuf + datalen, fram_num, 2 );
-	datalen += data_to_buf( pdestbuf + datalen, mediatotal, 2 );
 	for( i = 0; i < mediatotal; i++ )
 	{
-		TempAddress = buf_to_data( ptempbuf, 4 );
-		ptempbuf	+= 4;
-		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
-		datalen += data_to_buf( pdestbuf + datalen, TempPackageHead.id, 4 );
-		datalen += data_to_buf( pdestbuf + datalen, TempPackageHead.Media_Style, 1 );
-		datalen += data_to_buf( pdestbuf + datalen, TempPackageHead.Channel_ID, 1 );
-		datalen += data_to_buf( pdestbuf + datalen, TempPackageHead.TiggerStyle, 1 );
-		memcpy( pdestbuf + datalen, TempPackageHead.position, 28 ); ///位置信息汇报
+		pHead	= (TypeDF_PackageHead*)( pdestbuf + i * sizeof( TypeDF_PackageHead ) );
+		datalen += data_to_buf( pdestbuf + datalen, pHead->id, 4 );
+		datalen += data_to_buf( pdestbuf + datalen, pHead->Media_Style, 1 );
+		datalen += data_to_buf( pdestbuf + datalen, pHead->Channel_ID, 1 );
+		datalen += data_to_buf( pdestbuf + datalen, pHead->TiggerStyle, 1 );
+		memcpy( pdestbuf + datalen, pHead->position, 28 ); ///位置信息汇报
 		datalen += 28;
 	}
-	jt808_tx_ack( 0x802, pdestbuf, datalen );
 
-	rt_free( ptempbuf );
+	data_to_buf( pdestbuf, seq, 2 );
+	data_to_buf( pdestbuf + 2, mediatotal, 2 );
+	jt808_tx_ack( 0x0802, pdestbuf, datalen );
+
 	rt_free( pdestbuf );
-	return ret;
+	return RT_EOK;
 }
 
-/*********************************************************************************
-  *函数名称:rt_err_t Cam_jt808_0x8803(uint8_t *pmsg,u16 msg_len)
-  *功能描述:存储多媒体数据上传
-  *输	入:	pmsg	:808消息体数据
-   msg_len	:808消息体长度
-  *输	出:none
-  *返 回 值:rt_err_t
-  *作	者:白养民
-  *创建日期:2013-06-16
-  *---------------------------------------------------------------------------------
-  *修 改 人:
-  *修改日期:
-  *修改描述:
-*********************************************************************************/
+/*查找并上报多媒体数据*/
 rt_err_t Cam_jt808_0x8803( uint8_t linkno, uint8_t *pmsg )
 {
-	u8					media_delete = 0;
 	u8					*ptempbuf;
-//	u16					datalen = 0;
 	u16					i, mediatotal;
-	TypeDF_PackageHead	TempPackageHead;
+	TypeDF_PackageHead*	pHead;
 	u32					TempAddress;
-//	rt_err_t			ret;
 
-//	u16					msg_len;
-//	u16					fram_num;
-
-//	msg_len		= buf_to_data( pmsg + 2, 2 ) & 0x3FF;
-//	fram_num	= buf_to_data( pmsg + 10, 2 );
-	pmsg		+= 12;
+	pmsg += 12;
 
 	if( pmsg[0] )
 	{
@@ -815,44 +760,33 @@ rt_err_t Cam_jt808_0x8803( uint8_t linkno, uint8_t *pmsg )
 		return RT_ERROR;
 	}
 
-	ptempbuf = rt_malloc( Cam_get_state( ).Number * 4 );
-	if( ptempbuf == NULL )
-	{
-		return RT_ERROR;
-	}
 
-	memset( &TempPackageHead, 0, sizeof( Style_Cam_Requset_Para ) );
-	TempPackageHead.Media_Format	= 0;
-	TempPackageHead.Media_Style		= 0;
-	TempPackageHead.Channel_ID		= pmsg[1];
-	TempPackageHead.TiggerStyle		= pmsg[2];
-	media_delete					= pmsg[15];
-	///查找符合条件的图片，并将图片地址存入ptempbuf中
-	mediatotal = Cam_Flash_SearchPic( mytime_from_bcd( pmsg + 3 ), mytime_from_bcd( pmsg + 9 ), &TempPackageHead, ptempbuf );
-	rt_sem_take( &sem_dataflash, RT_TICK_PER_SECOND * FLASH_SEM_DELAY );
+	ptempbuf = Cam_Flash_SearchPicHead( mytime_from_bcd( pmsg + 3 ),
+	                                    mytime_from_bcd( pmsg + 9 ),
+	                                    pmsg[1],
+	                                    pmsg[2],
+	                                    &mediatotal );
+
+	if((mediatotal==0)||(mediatotal>10))	/*没有或找到的图片过多*/
+	{
+
+	}
 	for( i = 0; i < mediatotal; i++ )
 	{
-		TempAddress = buf_to_data( ptempbuf, 4 );
-		ptempbuf	+= 4;
-		sst25_read( TempAddress, (u8*)&TempPackageHead, sizeof( TempPackageHead ) );
-		Cam_jt808_0x0801( RT_NULL, TempPackageHead.id, media_delete );
+		pHead	= (TypeDF_PackageHead*)( ptempbuf + i * sizeof( TypeDF_PackageHead ) );
+		Cam_jt808_0x0801( RT_NULL, pHead->id, pmsg[15] );
 	}
-	rt_sem_release( &sem_dataflash );
 	rt_free( ptempbuf );
 	return RT_EOK;
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
+/*单条多媒体检索上传*/
 rt_err_t Cam_jt808_0x8805( uint8_t linkno, uint8_t *pmsg )
 {
+	uint16_t id=(pmsg[12]<<8)|pmsg[13];
+	uint16_t delete=pmsg[14];
+	
+	Cam_jt808_0x0801( RT_NULL, id, delete );
 	return RT_EOK;
 }
 

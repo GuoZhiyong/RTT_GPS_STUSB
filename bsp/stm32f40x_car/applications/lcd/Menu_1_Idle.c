@@ -285,7 +285,7 @@ DECL_BMP( 6, 6, empty );    DECL_BMP( 6, 6, full_0 );  DECL_BMP( 6, 6, full_1 );
    rtc时间，需要频繁读取(1秒1次)，如何判断校时
    使用自己的mytime，如何更新(使用系统的1s定时器是否准确)
  */
-#if 1
+
 void Disp_Idle( void )
 {
 	char	*mode[] = { "  ", "BD", "GP", "GN" };
@@ -373,107 +373,7 @@ void Disp_Idle( void )
 	lcd_update_all( );
 }
 
-#else
 
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void Disp_Idle( void )
-{
-	char	*mode[] = { "  ", "BD", "GP", "GN" };
-	char	buf_date[22];
-	char	buf_time[22];
-	char	buf_speed[20];
-
-	lcd_fill( 0 );
-	if( jt808_alarm & ( BIT_ALARM_GPS_ERR | BIT_ALARM_GPS_OPEN | BIT_ALARM_GPS_SHORT ) )    /*北斗异常，不显示*/
-	{
-		lcd_text12( 0, 0, mode[0], 2, LCD_MODE_SET );
-		sprintf( buf_date, "--/--/--" );
-		sprintf( buf_time, "--:--:--" );
-	}else if( jt808_status & BIT_STATUS_FIXED )                                             /*定位正常显示*/
-	{
-		lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_SET );
-		lcd_bitmap( 12, 1, &img_num0608[gps_status.NoSV / 10], LCD_MODE_SET );
-		lcd_bitmap( 18, 1, &img_num0608[gps_status.NoSV % 10], LCD_MODE_SET );
-
-		sprintf( buf_date, "%02d-%02d-%02d",
-		         YEAR( mytime_now ),
-		         MONTH( mytime_now ),
-		         DAY( mytime_now ) );
-
-		sprintf( buf_time, "%02d:%02d:%02d",
-		         HOUR( mytime_now ),
-		         MINUTE( mytime_now ),
-		         SEC( mytime_now ) );
-		lcd_bitmap( 86, 0, &img_arrow[check_arrow_index( gps_cog )], LCD_MODE_SET );
-		sprintf( buf_speed, "%03d", gps_speed );
-		lcd_text12( 95, 9, (char*)buf_speed, strlen( buf_speed ), LCD_MODE_SET );
-	}else /*未定位，反色显示*/
-	{
-		lcd_text12( 0, 0, mode[gps_status.mode], 2, LCD_MODE_INVERT );
-		lcd_bitmap( 12, 1, &img_num0608[gps_status.NoSV / 10], LCD_MODE_SET );
-		lcd_bitmap( 18, 1, &img_num0608[gps_status.NoSV % 10], LCD_MODE_SET );
-		sprintf( buf_date, "--/--/--" );
-		sprintf( buf_time, "%02d:%02d:%02d", gps_sec_count / 3600, ( gps_sec_count % 3600 ) / 60, ( gps_sec_count % 3600 ) % 60 );
-	}
-
-	lcd_text12( 0, 10, (char*)buf_date, strlen( buf_date ), LCD_MODE_SET );
-	lcd_text12( 0, 21, (char*)buf_time, strlen( buf_time ), LCD_MODE_SET );
-
-	lcd_bitmap( 30, 2, &BMP_gsm_g, LCD_MODE_SET );
-	lcd_bitmap( 38, 2, &BMP_gsm_3, LCD_MODE_SET );
-
-	lcd_text12( 48, 0, "GPRS", 4, LCD_MODE_SET );
-
-	if( gsm_socket[0].state == CONNECTED ) /*gprs连接状态*/
-	{
-		lcd_bitmap( 72, 2, &BMP_link_on, LCD_MODE_SET );
-	}else
-	{
-		lcd_bitmap( 72, 2, &BMP_link_off, LCD_MODE_SET );
-	}
-
-#if 0
-	if( JT808Conf_struct.LOAD_STATE == 1 ) //车辆载重标志
-	{
-		lcd_bitmap( 95, 2, &BMP_empty, LCD_MODE_SET );
-	}else if( JT808Conf_struct.LOAD_STATE == 2 )
-	{
-		lcd_bitmap( 95, 2, &BMP_full_0, LCD_MODE_SET );
-	}else if( JT808Conf_struct.LOAD_STATE == 3 )
-	{
-		lcd_bitmap( 95, 2, &BMP_full_1, LCD_MODE_SET );
-	}
-
-	if( ModuleStatus & 0x04 ) //电源标志
-	{
-		lcd_bitmap( 105, 2, &BMP_Battery, LCD_MODE_SET );
-	}else
-	{
-		lcd_bitmap( 105, 2, &BMP_NOBattery, LCD_MODE_SET );
-	}
-
-	if( DF_K_adjustState ) //是否校验特征系数
-	{
-		lcd_bitmap( 115, 2, &BMP_TriangleS, LCD_MODE_SET );
-	}else
-	{
-		lcd_bitmap( 115, 2, &BMP_TriangleK, LCD_MODE_SET );
-	}
-#endif
-
-	lcd_update_all( );
-}
-
-#endif
 
 /**/
 static void msg( void *p )

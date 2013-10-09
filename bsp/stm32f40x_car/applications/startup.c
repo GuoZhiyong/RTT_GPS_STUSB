@@ -110,7 +110,7 @@ void rtthread_startup( void )
 	rt_application_init( );
 	RS485_init( );
 
-//	gsm_init( );
+	gsm_init( );
 	hmi_init( );
 	jt808_init( );
 	

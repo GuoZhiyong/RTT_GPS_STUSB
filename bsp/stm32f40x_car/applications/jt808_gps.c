@@ -114,7 +114,7 @@ static uint32_t gps_longi_last	= 0;
 /*保存gps基本位置信息*/
 GPS_BASEINFO	gps_baseinfo;
 /*gps的状态*/
-GPS_STATUS		gps_status = { 0x3020, MODE_BDGPS, 0, 0xFF, 0 };
+GPS_STATUS		gps_status = { 0x3020, MODE_BDGPS, 0, 0x0, 0 };
 
 
 /*
