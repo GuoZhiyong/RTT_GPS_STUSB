@@ -45,7 +45,6 @@ switch(key)
 	case KEY_MENU:
 		pMenuItem=&Menu_5_other;
 		pMenuItem->show();
-		CounterBack=0;
 		break;
 	case KEY_OK:
 			pMenuItem=psubmenu[menu_pos];//∆£¿Õº› ª

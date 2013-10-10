@@ -24,7 +24,6 @@ switch(key)
 	case KEY_MENU:
 		pMenuItem=&Menu_3_InforInteract;
 		pMenuItem->show();
-		CounterBack=0;
 		CarMulTrans_screen=0;
 		break;
 	case KEY_OK:

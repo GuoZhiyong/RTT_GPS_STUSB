@@ -1425,7 +1425,7 @@ static void gsmrx_cb( char *pInfo, uint16_t size )
 #define RT_THREAD_ENTRY_GSM
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_gsm_stack[512];
+static char thread_gsm_stack[512]  __attribute__((section("CCM_RT_STACK")));
 struct rt_thread thread_gsm;
 
 
@@ -1477,7 +1477,7 @@ static void rt_thread_entry_gsm( void* parameter )
 #define RT_THREAD_ENTRY_GSM_RX
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_gsm_rx_stack[1024];
+static char thread_gsm_rx_stack[1024]  __attribute__((section("CCM_RT_STACK")));
 struct rt_thread thread_gsm_rx;
 
 

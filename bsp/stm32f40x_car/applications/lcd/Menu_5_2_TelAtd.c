@@ -64,7 +64,6 @@ static void keypress( unsigned int key )
 		case KEY_MENU:
 			pMenuItem = &Menu_5_other;
 			pMenuItem->show( );
-			CounterBack = 0;
 
 			tel_screen = 0;
 			break;
@@ -73,7 +72,7 @@ static void keypress( unsigned int key )
 			{
 				tel_screen = 1;
 
-				OneKeyCallFlag = 1;
+				//OneKeyCallFlag = 1;
 
 				lcd_fill( 0 );
 				lcd_text12( 42, 10, "»Ø²¦ÖÐ", 6, LCD_MODE_SET );

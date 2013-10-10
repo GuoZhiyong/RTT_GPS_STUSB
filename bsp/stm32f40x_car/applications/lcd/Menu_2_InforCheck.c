@@ -102,7 +102,6 @@ static void keypress( unsigned int key )
 	switch( key )
 	{
 		case KEY_MENU:
-			CounterBack = 0;
 			pMenuItem	= &Menu_3_InforInteract; //scr_CarMulTrans;
 			pMenuItem->show( );
 			break;

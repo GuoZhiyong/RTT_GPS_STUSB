@@ -72,7 +72,6 @@ static void keypress( unsigned int key )
 	switch( key )
 	{
 		case KEY_MENU:
-			CounterBack = 0;
 			pMenuItem	= &Menu_4_InforTirExspd;    //
 			pMenuItem->show( );
 			break;

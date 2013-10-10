@@ -1255,7 +1255,8 @@ static void jt808_socket_proc( void )
 
  */
 ALIGN( RT_ALIGN_SIZE )
-static char thread_jt808_stack [2048];
+//static char thread_jt808_stack [2048] CCM_RT_STACK;
+static char thread_jt808_stack [2048] __attribute__((section("CCM_RT_STACK")));
 struct rt_thread thread_jt808;
 
 /***/

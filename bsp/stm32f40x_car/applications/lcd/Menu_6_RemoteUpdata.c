@@ -39,6 +39,7 @@ static void keypress(unsigned int key)
 	switch(key)
 		{
 		case KEY_MENU:
+			#if 0
 			pMenuItem=&Menu_7_CentreTextDisplay;
 			pMenuItem->show();
 			if(ISP_Updata_Flag==2)
@@ -48,6 +49,7 @@ static void keypress(unsigned int key)
 				pMenuItem=&Menu_1_Idle;
 				pMenuItem->show();
 				}
+			#endif
 			break;
 		case KEY_OK:
 				
@@ -63,6 +65,7 @@ static void keypress(unsigned int key)
 
 static void timetick(unsigned int systick)  
 {
+	#if 0
 if(ISP_Updata_Flag==1)
 	{
 	counter++;
@@ -78,6 +81,7 @@ else if(ISP_Updata_Flag==2)
 	lcd_text12(24,10,"远程升级完成",12,LCD_MODE_SET);
 	lcd_update_all();
 	}
+	#endif
 }
 
 

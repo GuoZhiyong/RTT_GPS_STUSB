@@ -30,7 +30,6 @@ static void keypress(unsigned int key)
 		case KEY_MENU:
 			pMenuItem=&Menu_5_other;
 			pMenuItem->show();
-			CounterBack=0;
 
 			concuss_screen=0;
 			break;

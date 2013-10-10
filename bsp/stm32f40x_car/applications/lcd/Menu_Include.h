@@ -62,12 +62,13 @@ typedef   struct _menuitem {
 
 typedef struct _menuitem * PMENUITEM;
 
+
+#if 0
 #define HMI_TEXTMSG_NEW 0x80000000  /*新的文本信息*/
 
 /*定义hmi要显示的信息*/
 extern uint32_t			hmi_status;
 
-extern unsigned int		CounterBack;
 extern unsigned char	UpAndDown;
 extern unsigned char	KeyValue;
 extern unsigned char	KeyCheck_Flag[4];
@@ -136,6 +137,8 @@ extern unsigned char	OneKeyCallFlag;
 extern unsigned char	data_tirexps[120];
 extern u8				CarSet_0_counter;               //记录设置车辆信息的设置内容1:车牌号2:类型3:颜色
 
+#endif
+
 extern MENUITEM			*pMenuItem;
 extern MENUITEM			Menu_0_0_password;
 extern MENUITEM			Menu_0_1_license;
@@ -189,6 +192,7 @@ extern MENUITEM			Menu_7_CentreTextDisplay;
 
 extern MENUITEM			Menu_Popup;
 
+#if 0
 extern unsigned char	SetVIN_NUM;                     //   1:设置车牌号码  2:设置VIN
 extern unsigned char	OK_Counter;                     //记录在快捷菜单下ok键按下的次数
 extern unsigned char	Screen_In, Screen_in0Z;         //记录备选屏内选中的汉字
@@ -255,7 +259,7 @@ extern void Dis_chaosu( unsigned char *p );
 
 
 extern unsigned char Fetch_15minSpeed( unsigned char Num15 );
-
+#endif
 
 /*add by bitter*/
 
@@ -292,7 +296,7 @@ typedef struct
 
 extern HMI_15MIN_SPEED	hmi_15min_speed[15];
 extern uint8_t			hmi_15min_speed_curr;
-extern uint8_t			fconfirm_bd_upgrade_mode;
+
 extern IMG_DEF			BMP_arrow_left;
 extern IMG_DEF			BMP_arrow_right;
 

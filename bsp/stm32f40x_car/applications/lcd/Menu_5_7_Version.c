@@ -12,7 +12,7 @@ static void show(void)
 {
 	pMenuItem->tick=rt_tick_get();
 
-	version_disp();
+	//version_disp();
 }
 
 
@@ -24,12 +24,11 @@ static void keypress(unsigned int key)
 		case KEY_MENU:
 			pMenuItem=&Menu_5_other;
 			pMenuItem->show();
-			CounterBack=0;
 
 			version_screen=0;
 			break;
 		case KEY_OK:
-			version_disp();
+			//version_disp();
 			break;
 		case KEY_UP:
 			break;

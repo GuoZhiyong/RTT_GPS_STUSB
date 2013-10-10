@@ -104,7 +104,6 @@ static void keypress( unsigned int key )
 		case KEY_MENU:
 			pMenuItem = &Menu_1_Idle;
 			pMenuItem->show( );
-			CounterBack = 0;
 			break;
 		case KEY_OK:
 			pMenuItem = psubmenu[menu_pos]; //∆£¿Õº› ª

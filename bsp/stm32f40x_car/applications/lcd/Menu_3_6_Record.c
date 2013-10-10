@@ -42,7 +42,6 @@ switch(key)
 	case KEY_MENU:
 		pMenuItem=&Menu_3_InforInteract;
 		pMenuItem->show();
-		CounterBack=0;
 		    
 		Record_screen=0;//进入录音界面=1,准备发送开始/结束时为2	 开始/结束已发送为3    到下一界面恢复初试值
 		Record_StartEnd=0;//==1录音开始	 ==2录音结束   到下一界面恢复初试值

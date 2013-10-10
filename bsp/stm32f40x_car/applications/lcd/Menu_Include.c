@@ -18,6 +18,8 @@
 #include "sed1520.h"
 #include "stm32f4xx.h"
 
+#if 0
+
 unsigned int		tzxs_value = 6000;
 unsigned char		send_data[10];
 MB_SendDataType		mb_senddata;
@@ -95,6 +97,7 @@ u8				CarSet_0_counter;
 
 
 
+#endif
 
 
 
@@ -134,199 +137,8 @@ u8				CarSet_0_counter;
 
 
 
-
-
-
-
-
-
-
-
-//------------ 使用前锁定相关 ------------------
-unsigned char	Menu_Car_license[10];                           //存放车牌号码
-u8				Menu_VechileType[10];                           //  车辆类型
-u8				Menu_VecLogoColor[10];                          // 车牌颜色
-u8				Menu_Vin_Code[17];
-
-u8				Menu_color_num = 0;                             // JT415    1  蓝 2 黄 3 黑 4 白 9其他
-
-u8				menu_type_flag = 0, menu_color_flag = 0;
 
 MENUITEM		*pMenuItem;
-
-//中心下发消息或者条件触发显示消息函数
-void Cent_To_Disp( void )
-{
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void version_disp( void )
-{
-	lcd_fill( 0 );
-	lcd_text12( 0, 3, (char*)device_version, strlen( (const char*)device_version ), LCD_MODE_SET );
-	lcd_text12( 0, 19, (char*)bd_version, sizeof( bd_version ), LCD_MODE_SET );
-	lcd_update_all( );
-}
-
-//  0   1            34             67
-//(3)  1 [2-33]   2 [35-66]   3 [68-99]
-void ReadPiLao( unsigned char NumPilao )
-{
-	unsigned char	i = 0, j = 0;
-	unsigned char	Read_PilaoData[32];
-
-	data_tirexps[0] = NumPilao; //总条数
-	for( i = 0, j = 0; i < NumPilao; i++, j++ )
-	{
-		data_tirexps[1 + j * 31] = i + 1;
-	}
-	for( i = 0; i < NumPilao; i++ )
-	{
-#if NEED_TODO
-		Api_DFdirectory_Read( tired_warn, Read_PilaoData, 31, 0, i ); // 从new-->old  读取
-#endif
-		memcpy( &data_tirexps[i * 31 + 2], Read_PilaoData, 30 );
-	}
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void ReadEXspeed( unsigned char NumExspeed )
-{
-	unsigned char	i = 0, j = 0;
-	unsigned char	Read_ChaosuData[32];
-
-	data_tirexps[0] = NumExspeed; //总条数
-	for( i = 0, j = 0; i < NumExspeed; i++, j++ )
-	{
-		data_tirexps[1 + j * 32] = i + 1;
-	}
-	for( i = 0; i < NumExspeed; i++ )
-	{
-#if NEED_TODO
-		Api_DFdirectory_Read( spd_warn, Read_ChaosuData, 32, 0, i ); // 从new-->old  读取
-#endif
-		memcpy( &data_tirexps[i * 32 + 2], Read_ChaosuData, 31 );
-	}
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void Dis_pilao( unsigned char *p )
-{
-	unsigned char i, j;
-	pilaoCounter = *p;
-	if( pilaoCounter == 0 )
-	{
-		return;
-	}
-	if( pilaoCounter > 12 )
-	{
-		return;
-	}
-
-	pilaoCouAscii[0]	= pilaoCounter / 10 + 0x30;
-	pilaoCouAscii[1]	= pilaoCounter % 10 + 0x30;
-	for( i = 0; i < pilaoCounter; i++ )
-	{
-		PilaoJilu[i].Num = *( p + 1 + i * 31 );
-		memcpy( PilaoJilu[i].PCard, p + 2 + i * 31, 18 );
-		memcpy( PilaoJilu[i].StartTime, p + 20 + i * 31, 6 );
-		memcpy( PilaoJilu[i].EndTime, p + 26 + i * 31, 6 );
-		for( j = 0; j < 6; j++ )
-		{
-			PilaoJilu[i].StartTime[j] = ( PilaoJilu[i].StartTime[j] >> 4 ) * 10 + ( PilaoJilu[i].StartTime[j] & 0x0f );
-		}
-		for( j = 0; j < 6; j++ )
-		{
-			PilaoJilu[i].EndTime[j] = ( PilaoJilu[i].EndTime[j] >> 4 ) * 10 + ( PilaoJilu[i].EndTime[j] & 0x0f );
-		}
-
-		if( ( PilaoJilu[i].StartTime[0] > 99 ) || ( PilaoJilu[i].StartTime[1] > 12 ) || ( PilaoJilu[i].StartTime[2] > 31 ) || PilaoJilu[i].StartTime[3] > 23 || PilaoJilu[i].StartTime[4] > 59 || PilaoJilu[i].StartTime[5] > 59 )
-		{
-			ErrorRecord = 1;
-		}
-		if( ( PilaoJilu[i].EndTime[0] > 99 ) || ( PilaoJilu[i].EndTime[1] > 12 ) || ( PilaoJilu[i].EndTime[2] > 31 ) || PilaoJilu[i].EndTime[3] > 23 || PilaoJilu[i].EndTime[4] > 59 || PilaoJilu[i].EndTime[5] > 59 )
-		{
-			ErrorRecord = 1;
-		}
-	}
-}
-
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void Dis_chaosu( unsigned char *p )
-{
-	unsigned char i, j;
-	chaosuCounter = *p;
-	if( chaosuCounter == 0 )
-	{
-		return;
-	}
-	if( chaosuCounter > 20 )
-	{
-		return;
-	}
-
-	chaosuCouAscii[0]	= chaosuCounter / 10 + 0x30;
-	chaosuCouAscii[1]	= chaosuCounter % 10 + 0x30;
-
-	for( i = 0; i < chaosuCounter; i++ )
-	{
-		ChaosuJilu[i].Num = *( p + 1 + i * 46 );
-		memcpy( ChaosuJilu[i].PCard, p + 2 + i * 32, 18 );
-		memcpy( ChaosuJilu[i].StartTime, p + 20 + i * 32, 6 );
-		memcpy( ChaosuJilu[i].EndTime, p + 26 + i * 32, 6 );
-
-		for( j = 0; j < 6; j++ )
-		{
-			ChaosuJilu[i].StartTime[j] = ( ChaosuJilu[i].StartTime[j] >> 4 ) * 10 + ( ChaosuJilu[i].StartTime[j] & 0x0f );
-		}
-		for( j = 0; j < 6; j++ )
-		{
-			ChaosuJilu[i].EndTime[j] = ( ChaosuJilu[i].EndTime[j] >> 4 ) * 10 + ( ChaosuJilu[i].EndTime[j] & 0x0f );
-		}
-		ChaosuJilu[i].Speed = *( p + 32 + i * 32 );
-
-		if( ( ChaosuJilu[i].StartTime[0] > 99 ) || ( ChaosuJilu[i].StartTime[1] > 12 ) || ( ChaosuJilu[i].StartTime[2] > 31 ) || ChaosuJilu[i].StartTime[3] > 23 || ChaosuJilu[i].StartTime[4] > 59 || ChaosuJilu[i].StartTime[5] > 59 )
-		{
-			ErrorRecord = 2;
-		}
-		if( ( ChaosuJilu[i].EndTime[0] > 99 ) || ( ChaosuJilu[i].EndTime[1] > 12 ) || ( ChaosuJilu[i].EndTime[2] > 31 ) || ChaosuJilu[i].EndTime[3] > 23 || ChaosuJilu[i].EndTime[4] > 59 || ChaosuJilu[i].EndTime[5] > 59 )
-		{
-			ErrorRecord = 2;
-		}
-	}
-}
 
 /*add by bitter*/
 #include "jt808.h"
@@ -334,7 +146,6 @@ void Dis_chaosu( unsigned char *p )
 
 uint32_t		hmi_status;
 
-uint8_t	fconfirm_bd_upgrade_mode=0;	/*北斗升级模式确认 1:查看信息 2:U盘升级*/
 
 HMI_15MIN_SPEED hmi_15min_speed[15];
 uint8_t			hmi_15min_speed_curr = 0;

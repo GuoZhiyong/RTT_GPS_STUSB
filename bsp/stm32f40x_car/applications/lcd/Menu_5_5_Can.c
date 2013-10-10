@@ -143,7 +143,6 @@ static void keypress( unsigned int key )
 		case KEY_MENU:
 			pMenuItem = &Menu_5_other;
 			pMenuItem->show( );
-			CounterBack = 0;
 
 			can_screen		= 0;
 			can_counter		= 1;

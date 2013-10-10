@@ -966,7 +966,7 @@ static rt_err_t printer_close( rt_device_t dev )
 }
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_printer_stack[512];
+static char thread_printer_stack[512]  __attribute__((section("CCM_RT_STACK")));
 struct rt_thread thread_printer;
 
 

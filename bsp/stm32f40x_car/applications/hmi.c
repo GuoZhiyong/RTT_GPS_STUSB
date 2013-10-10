@@ -143,7 +143,7 @@ static void key_lcd_port_init( void )
 }
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_hmi_stack[2048];
+static char thread_hmi_stack[2048]  __attribute__((section("CCM_RT_STACK")));
 struct rt_thread thread_hmi;
 /*hmiœﬂ≥Ã*/
 static void rt_thread_entry_hmi( void* parameter )

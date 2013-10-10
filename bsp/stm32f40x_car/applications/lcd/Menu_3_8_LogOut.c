@@ -64,7 +64,6 @@ static void keypress( unsigned int key )
 		case KEY_MENU:
 			pMenuItem = &Menu_3_InforInteract;
 			pMenuItem->show( );
-			CounterBack = 0;
 
 			Menu_Logout			= 0;
 			LogInorOut_screen	= 0;

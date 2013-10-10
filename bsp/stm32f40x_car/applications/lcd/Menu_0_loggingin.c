@@ -69,6 +69,7 @@ static void keypress( unsigned int key )
 	switch( key )
 	{
 		case KEY_MENU:
+			#if NEED_TODO
 			if( menu_color_flag )
 			{
 				menu_type_flag	= 0;
@@ -77,6 +78,7 @@ static void keypress( unsigned int key )
 				pMenuItem = &Menu_1_Idle; //进入信息查看界面
 				pMenuItem->show( );
 			}
+			#endif
 			break;
 		case KEY_OK:
 			pMenuItem = mnu[pos];  //车牌号输入

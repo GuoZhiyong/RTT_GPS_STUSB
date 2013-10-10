@@ -31,8 +31,6 @@ unsigned char CurrentDisplen=0;
 		case KEY_MENU:
 			pMenuItem=&Menu_1_Idle;
 			pMenuItem->show();
-			CounterBack=0;
-
 			Menu_Text=0;
 			TxtInfo_len=0;//要显示的信息长度
 
