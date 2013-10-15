@@ -58,7 +58,7 @@ static struct _stu_menu m[4] =
 static uint8_t			pos;
 
 char					*bd_mode[3] = { "单北斗", "单GPS", "双模" };
-char					*bd_restart[2] = { "冷启动", "热启动" };
+char					*bd_restart[2] = { "热启动", "冷启动" };
 
 /*显示菜单*/
 static void menu_disp( void )
@@ -219,7 +219,7 @@ static void keypress( unsigned int key )
 			}
 			else if( oper_mode == OPER_RESTART)
 			{
-				
+				gps_reset(pos);			/*0:热启动 1:冷启动*/
 				oper_mode=OPER_MENU_SELECT;
 				pos=0;
 				pop_msg("模块重启完成",RT_TICK_PER_SECOND*3);

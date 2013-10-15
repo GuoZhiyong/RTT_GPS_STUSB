@@ -18,6 +18,8 @@
 #include "jt808.h"
 #include "jt808_vehicle.h"
 #include "jt808_param.h"
+#include "jt808_camera.h"
+#include "camera.h"
 
 uint8_t car_stop_run = 0;  /*车辆启动停止状态*/
 
@@ -25,7 +27,7 @@ uint8_t car_stop_run = 0;  /*车辆启动停止状态*/
 struct rt_timer tmr_50ms;
 
 /*紧急情况的处理*/
-void onemg( uint8_t value )
+void onemg( uint8_t index, uint8_t value )
 {
 	if( value )
 	{
@@ -37,7 +39,7 @@ void onemg( uint8_t value )
 }
 
 /*ACC状态变化*/
-void onacc( uint8_t value )
+void onacc( uint8_t index, uint8_t value )
 {
 	if( value )
 	{
@@ -48,30 +50,65 @@ void onacc( uint8_t value )
 	}
 }
 
-/***********************************************************
-* Function:
-* Description:
-* Input:
-* Input:
-* Output:
-* Return:
-* Others:
-***********************************************************/
-void ondefault( uint8_t value )
+/*车门触发拍照*/
+void ondoor( uint8_t index, uint8_t value )
+{
+	uint8_t					*pdestbuf;
+	uint16_t				datalen;
+	Style_Cam_Requset_Para	cam_para;
+
+	memset( &cam_para, 0, sizeof( cam_para ) );
+	cam_para.Channel_ID = 0xFF;             /*拍摄所有通道*/
+	cam_para.PhotoTotal = 1;
+	cam_para.PhoteSpace = 0;
+	cam_para.SavePhoto	= 0;
+	cam_para.SendPhoto	= 1;
+	if( value )
+	{
+		rt_kprintf( "\n车门开" );
+		cam_para.TiggerStyle = Cam_TRIGGER_OPENDOR; 
+	}else
+	{
+		rt_kprintf( "\n车门关" );
+		cam_para.TiggerStyle = Cam_TRIGGER_CLOSEDOR; 
+	}
+
+/*拍照上报，不需要0x0805*/
+#if 0
+	datalen		= cam_para.PhotoTotal * 4 + 5;      /*5字节头+4*n*/
+	pdestbuf	= rt_malloc( datalen );
+	if( pdestbuf == RT_NULL )
+	{
+		return;
+	}
+	memset( pdestbuf, 0, datalen );                 ///清空数据
+
+	pdestbuf[0]			= 0;
+	pdestbuf[1]			= 0;
+	cam_para.user_para	= (void*)pdestbuf;
+#endif
+	cam_para.user_para				= RT_NULL;
+	cam_para.cb_response_cam_ok		= cam_ok;       ///一张照片拍照成功回调函数
+	cam_para.cb_response_cam_end	= RT_NULL;      /*不需要立即拍照的应答*/
+	take_pic_request( &cam_para );                  ///发送拍照请求
+}
+
+/**/
+void ondefault( uint8_t index, uint8_t value )
 {
 }
 
-AUX_IN	PIN_IN[10] = {
+AUX_IN	PIN_IN[] = {
 	{ GPIOE, GPIO_Pin_8,  0, 20, 0, 0, onemg	 }, /*紧急按钮*/
 	{ GPIOE, GPIO_Pin_9,  0, 20, 0, 0, onacc	 }, /*ACC*/
 	{ GPIOE, GPIO_Pin_7,  0, 0,	 0, 0, ondefault }, /*输入*/
 	{ GPIOC, GPIO_Pin_0,  0, 0,	 0, 0, ondefault }, /*4.远光*/
-	{ GPIOC, GPIO_Pin_1,  0, 0,	 0, 0, ondefault }, /*5.车门*/
+	{ GPIOA, GPIO_Pin_1,  1, 20, 0, 0, ondoor	 }, /*5.车门*/
 	//{ GPIOA, GPIO_Pin_1,  0, 0,	 0, 0, ondefault }, /*6.喇叭 定义为AD输入*/
-	//{ GPIOC, GPIO_Pin_3,  0, 0,	 0, 0, ondefault }, /*7.左转 定义为AD输入*/
+	{ GPIOC, GPIO_Pin_3,  0, 20, 0, 0, ondefault }, /*7. 定义为AD输入,也可作为车门检测*/
 	{ GPIOC, GPIO_Pin_2,  0, 0,	 0, 0, ondefault }, /*8.右转*/
 	{ GPIOE, GPIO_Pin_11, 0, 0,	 0, 0, ondefault }, /*9.刹车*/
-	{ GPIOE, GPIO_Pin_10, 0, 0,	 0, 0, ondefault }, /*10.雨刷*/
+	{ GPIOE, GPIO_Pin_10, 0, 0,	 0, 0, ondefault }, /*10.左转*/
 };
 
 AUX_OUT PIN_OUT[] = {
@@ -82,8 +119,7 @@ AUX_OUT PIN_OUT[] = {
 /*外接车速信号*/
 __IO uint16_t	IC2Value	= 0;
 __IO uint16_t	DutyCycle	= 0;
-//__IO uint32_t	Frequency	= 0;
-uint32_t		Frequency = 0;
+uint32_t		Frequency	= 0;
 
 #define ADC1_DR_Address			( (uint32_t)0X4001204C )
 #define    BD_IO_Pin6_7_A1C3            //  北斗应用用 PA1    6   灰线 PC3   7  绿线
@@ -121,14 +157,15 @@ static void cb_tmr_50ms( void* parameter )
 			if( PIN_IN[i].dithering_threshold == 0 )    /*不判门限*/
 			{
 				PIN_IN[i].value = st;
-				PIN_IN[i].onchange( st );               /*调用处理函数*/
+				PIN_IN[i].onchange( i, st );            /*调用处理函数*/
 			}else
 			{
 				PIN_IN[i].dithering_count++;
 				if( PIN_IN[i].dithering_count == PIN_IN[i].dithering_threshold )
 				{
+					rt_kprintf( "\nPin %d 改变", i );
 					PIN_IN[i].value = st;
-					PIN_IN[i].onchange( st );           /*调用处理函数*/
+					PIN_IN[i].onchange( i, st ); /*调用处理函数*/
 					PIN_IN[i].dithering_count = 0;
 				}
 			}
@@ -208,16 +245,13 @@ static void cb_tmr_50ms( void* parameter )
 	}
 }
 
-
-extern __IO uint32_t uwPeriodValue;
-extern __IO uint32_t uwCaptureNumber;
-uint16_t tmpCC4[2] = {0, 0};
-
+extern __IO uint32_t	uwPeriodValue;
+extern __IO uint32_t	uwCaptureNumber;
+uint16_t				tmpCC4[2] = { 0, 0 };
 
 /*TIM5_CH1,脉冲判断速度*/
 void TIM5_IRQHandler( void )
 {
-	
 	RCC_ClocksTypeDef RCC_Clocks;
 	RCC_GetClocksFreq( &RCC_Clocks );
 
@@ -230,11 +264,6 @@ void TIM5_IRQHandler( void )
 
 		if( IC2Value != 0 )
 		{
-			/* Duty cycle computation */
-			//DutyCycle = ( TIM_GetCapture1( TIM5 ) * 100 ) / IC2Value;
-			/* Frequency computation   TIM4 counter clock = (RCC_Clocks.HCLK_Frequency)/2 */
-			//Frequency = (RCC_Clocks.HCLK_Frequency)/2 / IC2Value;
-/*是不是反向电路?*/
 			DutyCycle	= ( IC2Value * 100 ) / TIM_GetCapture1( TIM5 );
 			Frequency	= ( RCC_Clocks.HCLK_Frequency ) / 2 / TIM_GetCapture1( TIM5 );
 		}else
@@ -258,7 +287,7 @@ void TIM5_IRQHandler( void )
 			uwPeriodValue = (uint16_t)( 0xFFFF - tmpCC4[0] + tmpCC4[1] + 1 );
 		}
 	}
-#endif	
+#endif
 }
 
 /*采用PA.0 作为外部脉冲计数*/
@@ -422,7 +451,7 @@ void jt808_vehicle_init( void )
 
 	rt_timer_start( &tmr_50ms );
 	pulse_init( );                              /*接脉冲计数*/
-	ad_init( );
+	//ad_init( );
 	Init_4442( );
 }
 

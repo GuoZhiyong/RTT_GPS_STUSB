@@ -189,6 +189,7 @@ rt_err_t rtc_init( void )
 {
 	if( RTC_ReadBackupRegister( RTC_BKP_DR0 ) != RTC_CONFIGED_FLAG )
 	{
+		RTC_WriteBackupRegister( RTC_BKP_DR0, RTC_CONFIGED_FLAG );
 		RTC_Config( );
 	}else
 	{

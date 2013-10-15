@@ -1288,7 +1288,6 @@ static void rt_thread_entry_jt808( void * parameter )
 	while( 1 )
 	{
 /*接收gprs信息,要做分发 重启还是断网怎么办?升级中不上报数据*/
-		//ret = rt_mb_recv( &mb_gprsrx, ( rt_uint32_t* )&pstr, 5 );
 		ret = rt_mb_recv( &mb_gprsrx, ( rt_uint32_t* )&pstr, 0 );
 		if( ret == RT_EOK )
 		{
@@ -1308,6 +1307,11 @@ static void rt_thread_entry_jt808( void * parameter )
 			jt808_tx_proc( iter );
 		}
 		rt_thread_delay( RT_TICK_PER_SECOND / 20 );
+
+
+
+
+		
 	}
 
 	msglist_destroy( list_jt808_tx );

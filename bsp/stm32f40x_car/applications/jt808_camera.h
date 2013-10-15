@@ -23,6 +23,8 @@ rt_err_t Cam_jt808_0x8802(uint8_t linkno,uint8_t *pmsg);
 rt_err_t Cam_jt808_0x8803(uint8_t linkno,uint8_t *pmsg);
 rt_err_t Cam_jt808_0x8805(uint8_t linkno,uint8_t *pmsg);
 
+void cam_ok( struct _Style_Cam_Requset_Para *para, uint32_t pic_id );
+void cam_end( struct _Style_Cam_Requset_Para *para );
 
 
 #endif

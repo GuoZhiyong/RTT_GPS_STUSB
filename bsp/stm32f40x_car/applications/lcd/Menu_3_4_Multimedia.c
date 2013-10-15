@@ -91,8 +91,8 @@ static void display( void )
 				lcd_text12( 25, 12, "没有图片记录", 12, LCD_MODE_SET );
 			}
 			break;
-		case SCR_PHOTO_SELECT_DETAILED:
-			pcurrhead	= (TypeDF_PackageHead*)( pHead + i * sizeof( TypeDF_PackageHead ) );
+		case SCR_PHOTO_SELECT_DETAILED:/*显示图片详细信息*/
+			pcurrhead	= (TypeDF_PackageHead*)( pHead + pos * sizeof( TypeDF_PackageHead ) );
 			t			= pcurrhead->Time;
 			
 			sprintf( buf, "%02d-%02d-%02d %02d:%02d:%02d",

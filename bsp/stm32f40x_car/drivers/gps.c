@@ -12,7 +12,6 @@
  *     David    96/10/12     1.0     build this moudle
  ***********************************************************/
 
-
 #include <stdio.h>
 #include <rtthread.h>
 #include <rtdevice.h>
@@ -393,7 +392,7 @@ static rt_err_t dev_gps_control( rt_device_t dev, rt_uint8_t cmd, void *arg )
 }
 
 ALIGN( RT_ALIGN_SIZE )
-static char thread_gps_stack[1024]  __attribute__((section("CCM_RT_STACK")));
+static char thread_gps_stack[1024]  __attribute__( ( section( "CCM_RT_STACK" ) ) );
 struct rt_thread thread_gps;
 
 
@@ -431,7 +430,7 @@ static void rt_thread_entry_gps( void* parameter )
 				}
 			}
 		}
-		rt_thread_delay( RT_TICK_PER_SECOND / 20 );	/*为了保证可靠的挂起线程*/
+		rt_thread_delay( RT_TICK_PER_SECOND / 20 );                         /*为了保证可靠的挂起线程*/
 		if( ( rt_tick_get( ) - tick_lastrx ) > RT_TICK_PER_SECOND * 10 )    /*长时间没有语句输出,模块损坏*/
 		{
 			rt_kprintf( "%d>gps no output\r\n", rt_tick_get( ) );
@@ -614,7 +613,7 @@ void thread_gps_check_ver( void* parameter )
 				ver[0]	= ( uart_buf.body[7] & 0xf0 ) >> 4;
 				ver[1]	= ( uart_buf.body[7] & 0xf );
 				ver[2]	= uart_buf.body[8];
-				ok = 1;
+				ok		= 1;
 				break;
 			}else
 			{
@@ -632,7 +631,7 @@ void thread_gps_check_ver( void* parameter )
 	{
 		dev_gps_write( &dev_gps, 0, "\x40\x16\xC0\x00\x16\x00\x01\x22\xE3\x0D\x0A", 11 );
 		res = rt_mq_recv( &mq_gps, (void*)&uart_buf, NEMA_SIZE, RT_TICK_PER_SECOND * 5 );
-		if( res == RT_EOK )                           //收到一包数据
+		if( res == RT_EOK )               //收到一包数据
 		{
 			if( ( uart_buf.wr == 28 ) && ( uart_buf.body[5] == 0x0 ) )
 			{
@@ -648,7 +647,7 @@ void thread_gps_check_ver( void* parameter )
 
 	if( ok )
 	{
-		sprintf( buf, "E模块TD%d (%d.%d.%d)", model , ver[0], ver[1], ver[2] );
+		sprintf( buf, "E模块TD%d (%d.%d.%d)", model, ver[0], ver[1], ver[2] );
 		msg( buf );
 	}else
 	{
@@ -1019,7 +1018,8 @@ static char *reset_str[] = {
 /**/
 rt_size_t gps_mode( uint8_t mode )
 {
-	dev_gps_write( &dev_gps, 0, reset_str[mode - 1], 15 ); switch( mode )
+	//dev_gps_write( &dev_gps, 0, reset_str[mode - 1], 15 );
+	switch( mode )
 	{
 		case 0:
 			break;
@@ -1043,13 +1043,20 @@ rt_size_t gps_reset( uint8_t start_mode )
 	dev_gps_write( &dev_gps, 0, reset_str[start_mode * 3 + gps_status.mode - 1], 15 );
 }
 
-
-
-void gps_write( char* s)
+/***********************************************************
+* Function:
+* Description:
+* Input:
+* Input:
+* Output:
+* Return:
+* Others:
+***********************************************************/
+void gps_write( char* s )
 {
-	dev_gps_write( &dev_gps, 0, s, strlen(s) );
+	dev_gps_write( &dev_gps, 0, s, strlen( s ) );
 }
-FINSH_FUNCTION_EXPORT( gps_write, write to gps );
 
+FINSH_FUNCTION_EXPORT( gps_write, write to gps );
 
 /************************************** The End Of File **************************************/
